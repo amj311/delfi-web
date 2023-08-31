@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { accounts, scheduledTransactions } from '../delfi-core/dummyData';
+import { accounts, scheduledTransactions } from '../../delfi-core/dummyData';
 </script>
 
 <template>
