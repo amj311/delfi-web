@@ -18,8 +18,9 @@ const beginLink = async () => {
 	handler.open();
 }
 
-const onLinkSuccess = (public_token, data) => {
-	console.log(data)
+const onLinkSuccess = async (public_token:string, metadata) => {
+	console.log(metadata)
+	const { data } = await request.post('/plaid/public-token/exchange', { public_token });
 }
 
 

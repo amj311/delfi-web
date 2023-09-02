@@ -2,9 +2,11 @@
 import { Configuration, CountryCode, PlaidApi, PlaidEnvironments, Products } from 'plaid';
 var dayjs = require('dayjs')
 
-var PLAID_CLIENT_ID = '5d0690004635d60014d9ea4e'
-var PLAID_SECRET = '9a2723cb459bd58c6c204679cd62d7'
-var PLAID_PUBLIC_KEY = 'a83ad803a5d4424db1cb75d5fdc2bf'
+const {
+	PLAID_CLIENT_ID,
+	PLAID_SECRET
+ } = process.env;
+
 var PLAID_ENV = 'sandbox';
 const PLAID_PRODUCTS = [Products.Transactions];
 
@@ -24,6 +26,7 @@ const PLAID_ACCESS = 'access-sandbox-4747bf96-46b4-40eb-a0c1-d5bc3189f8d2';
 const PLAID_ITEMID = 'wjQPEwk33XtGQellX9y8FDDV6aN86vCrpWxPa';
 
 
+console.log(process.env)
 
 export const PlaidService = {
 	async getLinkToken()  {
@@ -39,5 +42,14 @@ export const PlaidService = {
 			}
 		});
 		return data;
+	},
+
+	async exchangePublicToken(public_token)  {
+		const { data } = await client.itemPublicTokenExchange({
+			client_id: PLAID_CLIENT_ID,
+			secret: PLAID_SECRET,
+			public_token
+		});
+		return data;
 	}
-}
+};
