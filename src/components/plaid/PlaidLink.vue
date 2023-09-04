@@ -12,7 +12,7 @@ const beginLink = async () => {
 	const handler = Plaid.create({
 		token: data.data.link_token,
 		onSuccess: onLinkSuccess,
-		onExit: console.error,
+		onEvent: console.log
 	});
 
 	handler.open();
@@ -20,7 +20,7 @@ const beginLink = async () => {
 
 const onLinkSuccess = async (public_token:string, metadata) => {
 	console.log(metadata)
-	const { data } = await request.post('/plaid/public-token/exchange', { public_token });
+	const { data } = await request.post('/plaid/new-connection', { public_token });
 }
 
 

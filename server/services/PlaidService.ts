@@ -1,14 +1,19 @@
 // SETUP PLAID
 import { Configuration, CountryCode, PlaidApi, PlaidEnvironments, Products } from 'plaid';
+import { prisma } from '../prisma/client';
 var dayjs = require('dayjs')
 
 const {
 	PLAID_CLIENT_ID,
 	PLAID_SECRET
- } = process.env;
+} = process.env;
 
 var PLAID_ENV = 'sandbox';
-const PLAID_PRODUCTS = [Products.Transactions];
+const PLAID_PRODUCTS = [
+	Products.Transactions,
+	Products.Investments,
+	Products.Liabilities
+];
 
 const configuration = new Configuration({
   basePath: PlaidEnvironments.sandbox,
@@ -20,17 +25,11 @@ const configuration = new Configuration({
   },
 });
 
-const client = new PlaidApi(configuration);
-
-const PLAID_ACCESS = 'access-sandbox-4747bf96-46b4-40eb-a0c1-d5bc3189f8d2';
-const PLAID_ITEMID = 'wjQPEwk33XtGQellX9y8FDDV6aN86vCrpWxPa';
-
-
-console.log(process.env)
+const plaid = new PlaidApi(configuration);
 
 export const PlaidService = {
 	async getLinkToken()  {
-		const { data } = await client.linkTokenCreate({
+		const { data } = await plaid.linkTokenCreate({
 			client_id: PLAID_CLIENT_ID,
 			secret: PLAID_SECRET,
 			products: PLAID_PRODUCTS,
@@ -44,12 +43,42 @@ export const PlaidService = {
 		return data;
 	},
 
-	async exchangePublicToken(public_token)  {
-		const { data } = await client.itemPublicTokenExchange({
+	async saveNewConnection(public_token)  {
+		const { data } = await plaid.itemPublicTokenExchange({
 			client_id: PLAID_CLIENT_ID,
 			secret: PLAID_SECRET,
 			public_token
 		});
+		const { access_token } = data;
+		const { data: { accounts, item } } = await plaid.accountsBalanceGet({ access_token });
+		console.log("got accounts", accounts)
+		try {
+			const res = await prisma.plaidItem.create({
+				data: {
+					plaid_item_id: item.item_id,
+					access_token,
+					institution_id: item.institution_id,
+					accounts: {
+						create: accounts.map(a => ({
+							name: a.name,
+							official_name: a.official_name,
+							external_account_id: a.account_id,
+							mask: a.mask,
+							type: a.type.toString() || '',
+							subtype: a.subtype?.toString() || '',
+							current_balance: a.balances.current,
+							available_balance: a.balances.available,
+							iso_currency_code: a.balances.iso_currency_code,
+						}))
+					}
+				}
+			})
+			console.log(res)
+		}
+		catch (e) {
+			console.log(e)
+		}
+		
 		return data;
 	}
 };

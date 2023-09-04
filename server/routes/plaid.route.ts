@@ -10,9 +10,9 @@ export default (fastify, _, done) => {
 		}
 	});
 
-	fastify.post('/public-token/exchange', async function handler (request, reply) {
+	fastify.post('/new-connection', async function handler (request, reply) {
 		const { public_token } = request.body;
-		const accessTokenData = await PlaidService.exchangePublicToken(public_token);
+		const accessTokenData = await PlaidService.saveNewConnection(public_token);
 		console.log(accessTokenData)
 		return {};
 	});
