@@ -41,3 +41,4 @@ const onLinkSuccess = async (public_token:string, metadata) => {
 	}
 }
 </style>
+@/stores/delfi

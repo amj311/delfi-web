@@ -4,20 +4,33 @@
  * and handling 
  */
 
+import dayjs from "dayjs";
 import type { Account } from "./models/Account";
 import type { TransactionSchedule } from "./models/transactions/TransactionSchedule";
+import ForecastService from "./services/forecastService";
+
+export type DelfiConfig = {
+	accounts: Account[],
+	transactions: TransactionSchedule[]
+}
 
 export class Delfi {
-	constructor() {
-
+	constructor(config?: DelfiConfig) {
+		if (config) {
+			this.init(config);
+		}
 	}
 
-	initAccounts(accounts: Account[]): void {
-		// TODO load JS account data and register live account instances
-	}
+	init({
+		accounts,
+		transactions
+	}: DelfiConfig): void {
 
-	initTransactions(accounts: TransactionSchedule[]): void {
-		// TODO load JS transactions data and register live transactions instances
-	}
+		let forecast = ForecastService.computeForecast(accounts, transactions, dayjs(Date.now()), dayjs().endOf('year'))
 
+		for (let month of forecast) {
+			month.printReport();
+		}
+
+	}
 }
