@@ -1,6 +1,6 @@
 // SETUP PLAID
 import { Configuration, CountryCode, PlaidApi, PlaidEnvironments, Products } from 'plaid';
-import { prisma } from '../prisma/client';
+import { prisma } from '../../prisma/client';
 var dayjs = require('dayjs')
 
 const {
@@ -60,8 +60,8 @@ export const PlaidService = {
 					institution_id: item.institution_id,
 					accounts: {
 						create: accounts.map(a => ({
-							name: a.name,
-							official_name: a.official_name,
+							custom_name: null,
+							external_name: a.name,
 							external_account_id: a.account_id,
 							mask: a.mask,
 							type: a.type.toString() || '',

@@ -1,7 +1,7 @@
 import * as currencyUtils from "../utils/currencyUtils";
-import { newMoment } from "../utils/dateUtils";
+import { newDate } from "../utils/dateUtils";
 import { Snapshot } from "./Snapshot";
-import { TransactionType } from "./transactions/TransactionType";
+import { TransactionType } from "./transactions";
 
 
 export class MonthSummary {
@@ -16,7 +16,7 @@ export class MonthSummary {
     };
 
     constructor(date, public initialBalances = new Map()) {
-        this.date = newMoment(date);
+        this.date = newDate(date);
         this.id = this.date.format("YYYY-MM");
 
         for (let acct of initialBalances.values()) {
@@ -32,11 +32,11 @@ export class MonthSummary {
         this.snapshots.push(snapshot);
         let details = snapshot.mostRecentEvent.details;
         let changes = this.report.accountChanges.get(details.targetAccount);
-        if (details.type === TransactionType.Income) {
+        if (details.type === TransactionType.income) {
             changes.totalIncome += details.amount;
             this.report.totalIncome += details.amount;
         }
-        else if (details.type === TransactionType.Expense) {
+        else if (details.type === TransactionType.expense) {
             changes.totalExpense += details.amount;
             this.report.totalExpense += details.amount;
         }
@@ -54,12 +54,12 @@ export class MonthSummary {
         console.log("End Balance:");
         for (let acct of this.getEndBalances().values()) {
             let msg = acct.balance < 0 ? ' 🚨' : '';
-            console.log("  " + acct.toString() + msg);
+            console.log(`  ${acct.name}: ${acct.balance} ${msg}`);
         }
     }
 
     getEndBalances() {
-        return this.snapshots[this.snapshots.length - 1].balances;
+        return this.snapshots[this.snapshots.length - 1]?.balances;
     }
 
     toString() {

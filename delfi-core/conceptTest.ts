@@ -1,19 +1,17 @@
-import { Account } from "./models/Account";
-import { TransactionSchedule } from "./models/transactions/TransactionSchedule";
-import { TransactionTemplate } from "./models/transactions/TransactionTemplate";
-import { TransactionType } from "./models/transactions/TransactionType";
+import { AccountClass } from "./models/Account";
 import { OneTimeSchedule } from "./models/schedules/OneTimeSchedule";
 import { XPerMonthSchedule } from "./models/schedules/XPerMonthSchedule";
 import { MONTHS } from "./utils/constants";
-import { newMoment } from "./utils/dateUtils";
+import { newDate } from "./utils/dateUtils";
 import ForecastService from "./services/forecastService";
 import moment from "moment";
+import { TransactionSchedule, TransactionTemplate, TransactionType } from "./models/transactions";
 
 let accounts = {
-    afcu_checking: new Account("1", "AFCU Checking", 500),
-    afcu_savings: new Account("2", "AFCU Savings", 5500),
-    rothIra: new Account("3", "ROTH IRA", 6500),
-    us_savings: new Account("4", "US Bank", 22000),
+    afcu_checking: new AccountClass("1", "AFCU Checking", 500),
+    afcu_savings: new AccountClass("2", "AFCU Savings", 5500),
+    rothIra: new AccountClass("3", "ROTH IRA", 6500),
+    us_savings: new AccountClass("4", "US Bank", 22000),
     // new Account("savings",1500),
 };
 
@@ -157,7 +155,7 @@ let scheduledTransactions = [
 
 
 let forecast = ForecastService.computeForecast(initialAccounts, scheduledTransactions,
-                    newMoment(Date.now()), moment().endOf('year'))
+                    newDate(Date.now()), moment().endOf('year'))
 
 for (let month of forecast) {
     month.printReport();

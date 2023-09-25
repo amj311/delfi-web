@@ -1,15 +1,18 @@
-import { newMoment } from "../utils/dateUtils";
-import { Account } from "../models/Account";
-import { TransactionEvent } from "../models/transactions/TransactionEvent";
+import { newDate } from "../utils/dateUtils";
+import { type TransactionEvent, TransactionType } from "../models/transactions";
 import { MonthSummary } from "../models/MonthSummary";
-import { Snapshot } from "../models/Snapshot";
-import { TransactionType } from "../models/transactions/TransactionType";
 import TransactionService from "./transactionService";
+
+export type Snapshot = {
+	balances: Map<string, any>,
+	event: TransactionEvent,
+	date: string
+}
 
 export default class ForecastService {
     static computeForecast(initialBalances, scheduledTransactions, begin, end) {
-        let now = newMoment(begin)
-        end = newMoment(end);
+        let now = newDate(begin)
+        end = newDate(end);
     
         let events:TransactionEvent[] = [];
         for (let t of scheduledTransactions) { 
@@ -20,62 +23,60 @@ export default class ForecastService {
         // set initial
         let accounts = new Map();
         for (let a  of initialBalances){
-            accounts.set(a.id,a)
+            accounts.set(a.id, {...a, balance: a.initialBalance})
         }
     
-        let accountsCopy = this.copyAccounts(accounts)
-        let monthlySummaries: MonthSummary[] = [];
-        let month = new MonthSummary(now, this.copyAccounts(accounts));
-        for (let event of events) {
-            let eventDate = newMoment(event.date);
+        let accountsCopy = this.copyAccounts(accounts);
+		let snapshots: Snapshot[] = [];
+
+		for (let event of events) {
+            let eventDate = newDate(event.date);
             if (eventDate.isAfter(end)) break;
-            while (eventDate.year() > now.year() || eventDate.month() > now.month()) {
-                monthlySummaries.push(month);
-                month = new MonthSummary(now.add(1,'M'), this.copyAccounts(accounts))
-            }
-            let details = event.details;
+
             accountsCopy = this.copyAccounts(accountsCopy)
 
             // Handle Income
-            if (details.type === TransactionType.Income) {
-                let changedAccount = accountsCopy.get(details.targetAccount)
-                changedAccount.balance += details.amount
+            if (event.type === TransactionType.income) {
+                let changedAccount = accountsCopy.get(event.targetAccount)
+                changedAccount.balance += event.amount
             }
 
-            if (details.type === TransactionType.Expense) {
-                let changedAccount = accountsCopy.get(details.targetAccount)
-                changedAccount.balance -= details.amount
+            if (event.type === TransactionType.expense) {
+                let changedAccount = accountsCopy.get(event.targetAccount)
+                changedAccount.balance -= event.amount
             }
 
-            if (details.type === TransactionType.Transfer) {
-                let target = accountsCopy.get(details.targetAccount)
-                let origin = accountsCopy.get(details.originAccount)
-                target.balance += details.amount
-                origin.balance -= details.amount
+            if (event.type === TransactionType.transfer) {
+                let target = accountsCopy.get(event.targetAccount)
+                let origin = accountsCopy.get(event.originAccount)
+                target.balance += event.amount
+                origin.balance -= event.amount
             }
 
             // Nice logging per transaction, could be useful somewhere.
             //
             // console.log("\n--- "+format(event.date)+" ---")
-            // let sign = details.amount > 0 ? '💹' : '🔻'
-            // console.log(sign+" $"+Math.abs(details.amount)+" for "+details.memo)
+            // let sign = event.amount > 0 ? '💹' : '🔻'
+            // console.log(sign+" $"+Math.abs(event.amount)+" for "+event.memo)
             // console.log(changedAccount.toString())
             // if (changedAccount.balance < 0) {
             //     console.log("⭕ NEGATIVE BALANCE !!!")
             // }
 
-            month.addSnapshot(new Snapshot(accountsCopy,event))
+			snapshots.push({
+				date: eventDate,
+				balances: this.copyAccounts(accountsCopy),
+				event,
+			})
+
         }
-    
-        monthlySummaries.push(month);
-    
-        return monthlySummaries;
+        return snapshots;
     }
 
     static copyAccounts(accounts) {
         let newAccounts = new Map();
         for (let a of accounts.values()) {
-            newAccounts.set(a.id, new Account(a.id,a.name,Number(a.balance)))
+            newAccounts.set(a.id, {...a})
         }
         return newAccounts
     }

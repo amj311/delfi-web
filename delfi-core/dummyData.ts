@@ -1,139 +1,213 @@
-import { Account } from "./models/Account";
+import { AccountClass, type Account } from "./models/Account";
 import { OneTimeSchedule } from "./models/schedules/OneTimeSchedule";
 import { XPerMonthSchedule } from "./models/schedules/XPerMonthSchedule";
-import { TransactionSchedule } from "./models/transactions/TransactionSchedule";
-import { TransactionTemplate } from "./models/transactions/TransactionTemplate";
-import { TransactionType } from "./models/transactions/TransactionType";
+import { type TransactionSchedule, TransactionType } from "./models/transactions";
 import { MONTHS } from "./utils/constants";
 
-export const accounts = {
-	afcu_checking: new Account("AFCU Checking", 500),
-	afcu_savings: new Account("AFCU Savings", 5500),
-	rothIra: new Account("ROTH IRA", 6500),
-	us_savings: new Account("US Bank", 22000),
+export const accounts: {[key: string]: Account} = {
+	afcu_checking: {
+		id: "AFCU_Checking",
+		name: "AFCU Checking",
+		initialBalance: 500,
+	},
+	afcu_savings: {
+		id: "AFCU_Savings",
+		name: "AFCU Savings",
+		initialBalance: 5500,
+	},
+	rothIra: {
+		id: "ROTH_IRA",
+		name: "ROTH IRA",
+		initialBalance: 6500,
+	},
+	us_savings: {
+		id: "US_Bank",
+		name: "US Bank",
+		initialBalance: 22000,
+	},
 };
 
 export const initialAccounts = Object.values(accounts);
 
-export const scheduledTransactions = [
+export const scheduledTransactions: TransactionSchedule[] = [
 	/**
 	 * EVERY MONTH
 	 */
-	new TransactionSchedule( // Groceries
-		"Groceries",
-		new TransactionTemplate(TransactionType.Expense, "Groceries", 300, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25))
-	),
-	new TransactionSchedule( // Groceries
-		"Baby",
-		new TransactionTemplate(TransactionType.Expense, "Baby Care", 50, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25))
-	),
-	new TransactionSchedule( // Car Insurance
-		"CarIns",
-		new TransactionTemplate(TransactionType.Expense, "Car Insurance", 81, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 8))
-	),
-	new TransactionSchedule(
-		"Fuel",
-		new TransactionTemplate(TransactionType.Expense, "Fuel", 50, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 8))
-	),
-	new TransactionSchedule( // Fun Money
-		"Fun",
-		new TransactionTemplate(TransactionType.Expense, "Fun Money", 150, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25))
-	),
+	{ // Groceries
+		id: "Groceries",
+		type: TransactionType.expense,
+		memo: "Groceries",
+		amount: 300,
+		targetAccount: accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25))
+	},
+	{ // Groceries
+		id: "Baby",
+		type: TransactionType.expense,
+		memo: "Baby Care",
+		amount: 50,
+		targetAccount: accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25))
+	},
+	{ // Car Insurance
+		id: "CarIns",
+		type: TransactionType.expense,
+		memo: "Car Insurance",
+		amount: 81,
+		targetAccount: accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 8))
+	},
+	{
+		id: "Fuel",
+		type: TransactionType.expense,
+		memo: "Fuel",
+		amount: 50,
+		targetAccount: accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 8))
+	},
+	{ // Fun Money
+		id: "Fun",
+		type: TransactionType.expense,
+		memo: "Fun Money",
+		amount: 150,
+		targetAccount: accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25))
+	},
 
-	new TransactionSchedule( // Clozd fulltime
-		"Full",
-		new TransactionTemplate(TransactionType.Income, "Full TIme Salary", 2712.5, accounts.afcu_checking.id),
-		new XPerMonthSchedule(2, new Date(2022, MONTHS.MAY, 14))
-	),
-	new TransactionSchedule(
-		"Tithing",
-		new TransactionTemplate(TransactionType.Expense, "Tithing", 542.5, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 28))
-	),
-	new TransactionSchedule(
-		"Fast Offering",
-		new TransactionTemplate(TransactionType.Expense, "Fast Offering", 100, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 7))
-	),
+	{ // Clozd fulltime
+		id: "Full",
+		type: TransactionType.income,
+		memo: "Full TIme Salary",
+		amount: 2712.5,
+		targetAccount:  accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(2, new Date(2022, MONTHS.MAY, 14))
+	},
+	{
+		id: "Tithing",
+		type: TransactionType.expense,
+		memo: "Tithing",
+		amount: 542.5,
+		targetAccount:  accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 28))
+	},
+	{
+		id: "Fast Offering",
+		type: TransactionType.expense,
+		memo: "Fast Offering",
+		amount: 100,
+		targetAccount: accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 7))
+	},
 
 	/**
 	 * HOME PURCHASE
 	 */
-	new TransactionSchedule(
-		"Down",
-		new TransactionTemplate(TransactionType.Expense, "Down Payment", 10000, accounts.us_savings.id),
-		new OneTimeSchedule(new Date(2022, MONTHS.MAY, 5))
-	),
-	new TransactionSchedule(
-		"Closing",
-		new TransactionTemplate(TransactionType.Expense, "Closing Costs", 10000, accounts.us_savings.id),
-		new OneTimeSchedule(new Date(2022, MONTHS.MAY, 5))
-	),
+	{
+		id: "Down",
+		type: TransactionType.expense,
+		memo: "Down Payment",
+		amount: 10000,
+		targetAccount: accounts.us_savings.id,
+		schedule: new OneTimeSchedule(new Date(2022, MONTHS.MAY, 5))
+	},
+	{
+		id: "Closing",
+		type: TransactionType.expense,
+		memo: "Closing Costs",
+		amount: 10000,
+		targetAccount: accounts.us_savings.id,
+		schedule: new OneTimeSchedule(new Date(2022, MONTHS.MAY, 5))
+	},
 
 
 
-	new TransactionSchedule(
-		"Subaru",
-		new TransactionTemplate(TransactionType.Income, "Sell SUbaru", 3000, accounts.us_savings.id),
-		new OneTimeSchedule(new Date(2022, MONTHS.MAY, 20))
-	),
+	{
+		id: "Subaru",
+		type: TransactionType.income,
+		memo: "Sell SUbaru",
+		amount: 3000,
+		targetAccount: accounts.us_savings.id,
+		schedule: new OneTimeSchedule(new Date(2022, MONTHS.MAY, 20))
+	},
 
 
 	/**
 	 * EVERY MONTH starting June
 	 */
-	new TransactionSchedule(
-		"Mortgage",
-		new TransactionTemplate(TransactionType.Expense, "Mortgage", 2160, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 5))
-	),
-	new TransactionSchedule(
-		"HOA",
-		new TransactionTemplate(TransactionType.Expense, "HOA", 215, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 5))
-	),
-	new TransactionSchedule(
-		"Utilities",
-		new TransactionTemplate(TransactionType.Expense, "Utilities", 175, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 28))
-	),
-	new TransactionSchedule(
-		"Home Insurance",
-		new TransactionTemplate(TransactionType.Expense, "Home Insurance", 30, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 8))
-	),
+	{
+		id: "Mortgage",
+		type: TransactionType.expense,
+		memo: "Mortgage",
+		amount: 2160,
+		targetAccount: accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 5))
+	},
+	{
+		id: "HOA",
+		type: TransactionType.expense,
+		memo: "HOA",
+		amount: 215,
+		targetAccount: accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 5))
+	},
+	{
+		id: "Utilities",
+		type: TransactionType.expense,
+		memo: "Utilities",
+		amount: 175,
+		targetAccount: accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 28))
+	},
+	{
+		id: "Home Insurance",
+		type: TransactionType.expense,
+		memo: "Home Insurance",
+		amount: 30,
+		targetAccount: accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 8))
+	},
 
-	new TransactionSchedule(
-		"Health Insurance",
-		new TransactionTemplate(TransactionType.Expense, "Health Insurance", 514, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 30))
-	),
+	{
+		id: "Health Insurance",
+		type: TransactionType.expense,
+		memo: "Health Insurance",
+		amount: 514,
+		targetAccount: accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 30))
+	},
 
 
 
 	/**
 	 * SAVINGS AFTER MAY
 	 */
-	new TransactionSchedule(
-		"Car",
-		new TransactionTemplate(TransactionType.Transfer, "New Car Fund", 250, accounts.us_savings.id, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 30))
-	),
-	new TransactionSchedule(
-		"roth",
-		new TransactionTemplate(TransactionType.Transfer, "RothIRA Fund", 250, accounts.rothIra.id, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 30))
-	),
-	new TransactionSchedule(
-		"Emergency",
-		new TransactionTemplate(TransactionType.Transfer, "Emergency Fund", 500, accounts.afcu_savings.id, accounts.afcu_checking.id),
-		new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 30))
-	),
+	{
+		id: "Car",
+		type: TransactionType.transfer,
+		memo: "New Car Fund",
+		amount: 250,
+		targetAccount: accounts.us_savings.id,
+		originAccount: accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 30))
+	},
+	{
+		id: "roth",
+		type: TransactionType.transfer,
+		memo: "RothIRA Fund",
+		amount: 250,
+		targetAccount: accounts.rothIra.id,
+		originAccount: accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 30))
+	},
+	{
+		id: "Emergency",
+		type: TransactionType.transfer,
+		memo: "Emergency Fund",
+		amount: 500,
+		targetAccount: accounts.afcu_savings.id,
+		originAccount: accounts.afcu_checking.id,
+		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 30))
+	},
 
 
 
@@ -141,10 +215,13 @@ export const scheduledTransactions = [
 	 * BIG ONE-TIMERS
 	 */
 
-	new TransactionSchedule(
-		"Register Car",
-		new TransactionTemplate(TransactionType.Expense, "Register Car", 200, accounts.afcu_savings.id),
-		new OneTimeSchedule(new Date(2022, MONTHS.AUG, 30))
-	),
+	{
+		id: "Register Car",
+		type: TransactionType.expense,
+		memo: "Register Car",
+		amount: 200,
+		targetAccount: accounts.afcu_savings.id,
+		schedule: new OneTimeSchedule(new Date(2022, MONTHS.AUG, 30))
+	},
 
 ]

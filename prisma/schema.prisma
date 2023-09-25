@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    user_id              String                @id @default(uuid())
+    auth_id              String
+    email                String                @unique
+    given_name           String
+    family_name          String
+    accounts             Account[]
+    transactionSchedules TransactionSchedule[]
+    categories           Category[]
+    tags                 Tag[]
+    budgets              Budget[]
+
+    @@map("user")
+}
+
+model Account {
+    account_id          String   @id @default(uuid())
+    external_account_id String?  @unique
+    custom_name         String?
+    external_name       String
+    mask                String?
+    type                String
+    subtype             String
+    current_balance     Decimal?
+    available_balance   Decimal?
+    iso_currency_code   String?
+
+    // relations
+    plaid_item               PlaidItem?            @relation(fields: [plaid_item_id], references: [plaid_item_id])
+    plaid_item_id            String?
+    user                     User?                 @relation(fields: [user_id], references: [user_id])
+    user_id                  String?
+    transaction_schedules    TransactionSchedule[] @relation("PrimaryTransactionAccount")
+    to_transaction_schedules TransactionSchedule[] @relation("TransferToAccount")
+
+    @@map("account")
+}
+
+model PlaidItem {
+    plaid_item_id  String    @id
+    access_token   String
+    accounts       Account[]
+    institution_id String?
+
+    @@map("plaid_item")
+}
+
+// TODO implement partitions
+// model account_partition {
+//     account_partition_id String  @id @default(uuid())
+//     account              Account @relation(fields: [account_id], references: [account_id])
+//     account_id           String  @unique
+//     name                 String?
+// }
+
+enum TransactionScheduleType {
+    CREDIT
+    DEBIT
+    TRANSFER
+}
+
+model TransactionSchedule {
+    transaction_schedule_id String                  @id @default(uuid())
+    type                    TransactionScheduleType
+    amount                  Decimal
+    schedule                String
+    // user
+    user                    User?                   @relation(fields: [user_id], references: [user_id])
+    user_id                 String?
+    // accounts
+    account                 Account                 @relation("PrimaryTransactionAccount", fields: [account_id], references: [account_id])
+    account_id              String
+    transfer_to_account     Account?                @relation("TransferToAccount", fields: [transfer_to_account_id], references: [account_id])
+    transfer_to_account_id  String?
+    // categories and tags
+    category                Category?               @relation(fields: [category_id], references: [category_id])
+    category_id             String?
+    tag                     Tag?                    @relation(fields: [tag_id], references: [tag_id])
+    tag_id                  String?
+
+    @@map("transaction_schedule")
+}
+
+model Category {
+    category_id           String                @id @default(uuid())
+    name                  String
+    parent_category_id    String
+    parent_category       Category              @relation("SubCategories", fields: [parent_category_id], references: [category_id])
+    children              Category[]            @relation("SubCategories")
+    system_defined        Boolean
+    user_id               String?
+    user                  User?                 @relation(fields: [user_id], references: [user_id])
+    transaction_schedules TransactionSchedule[]
+    budget                Budget[]
+
+    @@map("category")
+}
+
+model Tag {
+    tag_id         String  @id @default(uuid())
+    name           String
+    system_defined Boolean
+    user_id        String?
+    user           User?   @relation(fields: [user_id], references: [user_id])
+
+    transaction_schedules TransactionSchedule[]
+    budgets               Budget[]
+
+    @@map("tag")
+}
+
+model Budget {
+    budget_id   String  @id @default(uuid())
+    name        String
+    description String?
+    schedule    Json
+    amount      Decimal
+
+    category_id String
+    category    Category @relation(fields: [category_id], references: [category_id])
+    tags        Tag[]
+    User        User?    @relation(fields: [userUser_id], references: [user_id])
+    userUser_id String?
+
+    @@map("budget")
+}

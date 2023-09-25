@@ -1,15 +1,17 @@
-import moment from "moment"
+import dayjs from "dayjs"
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore"
+dayjs.extend(isSameOrBefore);
 
-const momentFormat = "YYYY-MM-DD"
-export const newMoment = date => {
+const dayjsFormat = "YYYY-MM-DD"
+export const newDate = date => {
     if (date.isMoment) return date
-    if (typeof date === 'string') return moment(date, momentFormat)
-    if (date instanceof Date) return moment(date.toISOString());
-    else return moment(date)
+    if (typeof date === 'string') return dayjs(date, dayjsFormat)
+    if (date instanceof Date) return dayjs(date.toISOString());
+    else return dayjs(date)
 }
 export const format = date => {
-    if (date.isMoment) return date.format(momentFormat)
-    else return moment(date).format(momentFormat)
+    if (date.isMoment) return date.format(dayjsFormat)
+    else return dayjs(date).format(dayjsFormat)
 }
 
 export const dateToValue = (date) => {

@@ -1,5 +1,24 @@
 import axios from "axios";
+import { AuthService } from "./authService";
 
-export default axios.create({
-	baseURL: 'http://localhost:3000'
+const instance = axios.create({
+	baseURL: 'http://localhost:3000',
 })
+
+instance.interceptors.request.use(async (config) => {
+	const token = await AuthService.getToken(); // Assuming you have a method to retrieve the Firebase token
+	if (token) {
+		config.headers.Authorization = token;
+	}
+	return config;
+});
+
+
+instance.interceptors.response.use(null, (error) => {
+	if (error.isAxiosError && error.response.status === 401) {
+		console.log("Received unauthorized response. Logging out");
+		AuthService.signOut();
+	}
+})
+
+export default instance;

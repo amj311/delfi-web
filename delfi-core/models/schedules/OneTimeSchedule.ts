@@ -1,4 +1,4 @@
-import { newMoment } from "../../utils/dateUtils";
+import { newDate } from "../../utils/dateUtils";
 import { Schedule } from "./Schedule";
 
 
@@ -8,12 +8,12 @@ export class OneTimeSchedule extends Schedule {
 
     constructor(date) {
         super();
-        this.date = newMoment(date);
+        this.date = newDate(date);
     }
 
     getOccurrencesBetween(start, end) {
-        start = newMoment(start);
-        end = newMoment(end);
+        start = newDate(start);
+        end = newDate(end);
 
         if (end.isBefore(this.date) || this.date.isBefore(start))
             return [];
