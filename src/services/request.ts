@@ -6,7 +6,7 @@ const instance = axios.create({
 })
 
 instance.interceptors.request.use(async (config) => {
-	const token = await AuthService.getToken(); // Assuming you have a method to retrieve the Firebase token
+	const token = await AuthService.getToken();
 	if (token) {
 		config.headers.Authorization = token;
 	}
