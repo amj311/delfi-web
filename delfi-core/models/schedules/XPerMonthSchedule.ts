@@ -44,7 +44,7 @@ export class XPerMonthSchedule extends Schedule {
                 if (date.month() === MONTHS.FEB && day > 28)
                     day = 28;
                 let occurrence = dayjs(date).date(day);
-                if (occurrence.isSameOrBefore(end) && dayjs(date).isSameOrBefore(occurrence)) {
+                if (occurrence.isSameOrBefore(end)) {
                     occurrences.push(occurrence);
                 }
             });

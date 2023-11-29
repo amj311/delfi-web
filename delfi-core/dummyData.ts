@@ -1,29 +1,28 @@
-import { AccountClass, type Account } from "./models/Account";
 import { OneTimeSchedule } from "./models/schedules/OneTimeSchedule";
 import { XPerMonthSchedule } from "./models/schedules/XPerMonthSchedule";
 import { type TransactionSchedule, TransactionType } from "./models/transactions";
 import { MONTHS } from "./utils/constants";
 
-export const accounts: {[key: string]: Account} = {
+export const accounts = {
 	afcu_checking: {
-		id: "AFCU_Checking",
+		id: "afcu_checking",
 		name: "AFCU Checking",
-		initialBalance: 500,
+		balance: 500,
 	},
 	afcu_savings: {
-		id: "AFCU_Savings",
+		id: "afcu_savings",
 		name: "AFCU Savings",
-		initialBalance: 5500,
+		balance: 5500,
 	},
 	rothIra: {
-		id: "ROTH_IRA",
+		id: "rothIra",
 		name: "ROTH IRA",
-		initialBalance: 6500,
+		balance: 6500,
 	},
 	us_savings: {
-		id: "US_Bank",
+		id: "us_savings",
 		name: "US Bank",
-		initialBalance: 22000,
+		balance: 22000,
 	},
 };
 
@@ -39,6 +38,7 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Groceries",
 		amount: 300,
 		targetAccount: accounts.afcu_checking.id,
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25))
 	},
 	{ // Groceries
@@ -47,6 +47,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Baby Care",
 		amount: 50,
 		targetAccount: accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25))
 	},
 	{ // Car Insurance
@@ -55,6 +57,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Car Insurance",
 		amount: 81,
 		targetAccount: accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 8))
 	},
 	{
@@ -63,6 +67,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Fuel",
 		amount: 50,
 		targetAccount: accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 8))
 	},
 	{ // Fun Money
@@ -71,6 +77,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Fun Money",
 		amount: 150,
 		targetAccount: accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25))
 	},
 
@@ -80,6 +88,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Full TIme Salary",
 		amount: 2712.5,
 		targetAccount:  accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(2, new Date(2022, MONTHS.MAY, 14))
 	},
 	{
@@ -88,6 +98,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Tithing",
 		amount: 542.5,
 		targetAccount:  accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 28))
 	},
 	{
@@ -96,6 +108,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Fast Offering",
 		amount: 100,
 		targetAccount: accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 7))
 	},
 
@@ -108,6 +122,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Down Payment",
 		amount: 10000,
 		targetAccount: accounts.us_savings.id,
+
+		recurrenceType: 'schedule',
 		schedule: new OneTimeSchedule(new Date(2022, MONTHS.MAY, 5))
 	},
 	{
@@ -116,6 +132,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Closing Costs",
 		amount: 10000,
 		targetAccount: accounts.us_savings.id,
+
+		recurrenceType: 'schedule',
 		schedule: new OneTimeSchedule(new Date(2022, MONTHS.MAY, 5))
 	},
 
@@ -127,6 +145,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Sell SUbaru",
 		amount: 3000,
 		targetAccount: accounts.us_savings.id,
+
+		recurrenceType: 'schedule',
 		schedule: new OneTimeSchedule(new Date(2022, MONTHS.MAY, 20))
 	},
 
@@ -140,6 +160,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Mortgage",
 		amount: 2160,
 		targetAccount: accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 5))
 	},
 	{
@@ -148,6 +170,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "HOA",
 		amount: 215,
 		targetAccount: accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 5))
 	},
 	{
@@ -156,6 +180,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Utilities",
 		amount: 175,
 		targetAccount: accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 28))
 	},
 	{
@@ -164,6 +190,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Home Insurance",
 		amount: 30,
 		targetAccount: accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 8))
 	},
 
@@ -173,6 +201,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Health Insurance",
 		amount: 514,
 		targetAccount: accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 30))
 	},
 
@@ -188,6 +218,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		amount: 250,
 		targetAccount: accounts.us_savings.id,
 		originAccount: accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 30))
 	},
 	{
@@ -197,6 +229,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		amount: 250,
 		targetAccount: accounts.rothIra.id,
 		originAccount: accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 30))
 	},
 	{
@@ -206,6 +240,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		amount: 500,
 		targetAccount: accounts.afcu_savings.id,
 		originAccount: accounts.afcu_checking.id,
+
+		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 30))
 	},
 
@@ -221,6 +257,8 @@ export const scheduledTransactions: TransactionSchedule[] = [
 		memo: "Register Car",
 		amount: 200,
 		targetAccount: accounts.afcu_savings.id,
+
+		recurrenceType: 'schedule',
 		schedule: new OneTimeSchedule(new Date(2022, MONTHS.AUG, 30))
 	},
 

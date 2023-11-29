@@ -1,7 +1,9 @@
 import { newDate } from "../utils/dateUtils";
-import { type TransactionEvent, TransactionType } from "../models/transactions";
+import { type TransactionEvent, TransactionType, type TransactionSchedule } from "../models/transactions";
 import { MonthSummary } from "../models/MonthSummary";
 import TransactionService from "./transactionService";
+import type { Account } from "../../delfi-core/models/Account";
+import { ImmediateMatchTrigger } from "../../delfi-core/models/schedules/triggers";
 
 export type Snapshot = {
 	balances: Map<string, any>,
@@ -9,24 +11,70 @@ export type Snapshot = {
 	date: string
 }
 
-export default class ForecastService {
-    static computeForecast(initialBalances, scheduledTransactions, begin, end) {
+type ForecastTransactionSchedule = TransactionSchedule & {
+	dependentSchedules: TransactionSchedule[] // schedules with triggers matching this
+}
+
+export default class Forecast {
+	initialAccounts: Map<string, Account>;
+	transactionSchedules: ForecastTransactionSchedule[];
+
+	constructor({
+		accounts,
+		transactionSchedules,
+	}) {
+		this.initialAccounts = accounts;
+		this.transactionSchedules = transactionSchedules.map(t => ({
+			...t,
+			dependentSchedules: [],
+		}));
+		this.prepareImmediateTriggers();
+	}
+
+	private prepareImmediateTriggers() {
+		// Check each schedule against each triggered schedule for dependencies
+		for (let schedule of this.transactionSchedules) {
+			schedule.dependentSchedules = [];
+
+			for (let triggerSchedule of this.transactionSchedules) {
+				// Skip if schedule is not an immediate match trigger
+				if (triggerSchedule.trigger?.type !== 'immediateMatch') continue;
+
+				const trigger = triggerSchedule.trigger as ImmediateMatchTrigger;
+				// Check if schedule matches
+				if (trigger.matchesSchedule(schedule)) {
+					schedule.dependentSchedules.push(triggerSchedule);
+				}
+			}
+		}
+	}
+
+
+	generateEvents(transactionSchedules, begin, end) {
         let now = newDate(begin)
         end = newDate(end);
-    
-        let events:TransactionEvent[] = [];
-        for (let t of scheduledTransactions) { 
-            events.push(...TransactionService.generateEventsBetween(now,end,t)) 
+		
+		let events:TransactionEvent[] = [];
+        for (let schedule of transactionSchedules) {
+			if (schedule.schedule) {
+				const scheduleEvents = TransactionService.generateEventsBetween(now,end,schedule);
+				events.push(...scheduleEvents);
+				for (let scheduleEvent of scheduleEvents) {
+					for (let triggerSchedule of schedule.dependentSchedules) {
+						events.push((<ImmediateMatchTrigger>triggerSchedule.trigger).createEventFromTrigger(triggerSchedule, scheduleEvent));
+					}
+				}
+			}
         }
         events.sort((a,b)=>(a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0));
+		return events;
+	}
+
+
+    computeForecast(begin, end) {
+        const events = this.generateEvents(this.transactionSchedules, begin, end);
     
-        // set initial
-        let accounts = new Map();
-        for (let a  of initialBalances){
-            accounts.set(a.id, {...a, balance: a.initialBalance})
-        }
-    
-        let accountsCopy = this.copyAccounts(accounts);
+        let accountsCopy = this.copyAccounts(this.initialAccounts);
 		let snapshots: Snapshot[] = [];
 
 		for (let event of events) {
@@ -35,49 +83,36 @@ export default class ForecastService {
 
             accountsCopy = this.copyAccounts(accountsCopy)
 
-            // Handle Income
             if (event.type === TransactionType.income) {
-                let changedAccount = accountsCopy.get(event.targetAccount)
+                let changedAccount = accountsCopy[event.targetAccount]
                 changedAccount.balance += event.amount
             }
 
             if (event.type === TransactionType.expense) {
-                let changedAccount = accountsCopy.get(event.targetAccount)
+                let changedAccount = accountsCopy[event.targetAccount]
                 changedAccount.balance -= event.amount
             }
 
             if (event.type === TransactionType.transfer) {
-                let target = accountsCopy.get(event.targetAccount)
-                let origin = accountsCopy.get(event.originAccount)
+				if (!event.originAccount) {
+					throw Error('Origin account not found')
+				}
+                let target = accountsCopy[event.targetAccount]
+                let origin = accountsCopy[event.originAccount]
                 target.balance += event.amount
                 origin.balance -= event.amount
             }
 
-            // Nice logging per transaction, could be useful somewhere.
-            //
-            // console.log("\n--- "+format(event.date)+" ---")
-            // let sign = event.amount > 0 ? '💹' : '🔻'
-            // console.log(sign+" $"+Math.abs(event.amount)+" for "+event.memo)
-            // console.log(changedAccount.toString())
-            // if (changedAccount.balance < 0) {
-            //     console.log("⭕ NEGATIVE BALANCE !!!")
-            // }
-
 			snapshots.push({
-				date: eventDate,
+				date: eventDate.toISOString(),
 				balances: this.copyAccounts(accountsCopy),
 				event,
 			})
-
         }
         return snapshots;
     }
 
-    static copyAccounts(accounts) {
-        let newAccounts = new Map();
-        for (let a of accounts.values()) {
-            newAccounts.set(a.id, {...a})
-        }
-        return newAccounts
+    copyAccounts(accounts) {
+        return JSON.parse(JSON.stringify(accounts));
     }
 }

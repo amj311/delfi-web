@@ -1,4 +1,5 @@
 import type { Schedule } from "./schedules/Schedule"
+import type { Trigger } from "./schedules/triggers"
 
 export enum TransactionType {
     "income" = "income",
@@ -18,7 +19,9 @@ type TransactionDetails = {
 
 export type TransactionSchedule = TransactionDetails & {
 	id: string,
-	schedule: Schedule,
+	recurrenceType: 'schedule' | 'trigger',
+	schedule?: Schedule,
+	trigger?: Trigger,
 }
 
 export type TransactionEvent = TransactionDetails & {

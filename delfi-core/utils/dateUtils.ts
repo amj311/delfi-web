@@ -4,7 +4,6 @@ dayjs.extend(isSameOrBefore);
 
 const dayjsFormat = "YYYY-MM-DD"
 export const newDate = date => {
-    if (date.isMoment) return date
     if (typeof date === 'string') return dayjs(date, dayjsFormat)
     if (date instanceof Date) return dayjs(date.toISOString());
     else return dayjs(date)
