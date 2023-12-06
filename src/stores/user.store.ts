@@ -36,7 +36,7 @@ export const useUserStore = defineStore('user', () => {
 		if (currentUser.value) {
 			throw Error("There is already a user for this session");
 		}
-		const { data } = await request.post('user', {
+		const { data } = await request.post('signup/create-account', {
 			...newUser,
 			auth_id: AuthService.currentUser?.uid,
 			email: AuthService.currentUser?.email

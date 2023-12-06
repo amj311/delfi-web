@@ -8,15 +8,16 @@ import dayjs from "dayjs";
 import type { Account } from "./models/Account";
 import ForecastService, { type Snapshot } from "./services/forecastService";
 import { TransactionType, type TransactionSchedule } from "./models/transactions";
+import Forecast from "./services/forecastService";
 
 export type DelfiConfig = {
-	accounts: Account[],
+	accounts: {[key: string]: Account},
 	transactions: TransactionSchedule[]
 }
 
 export class Delfi {
-	public forecast: Snapshot[] = [];
-	public accounts: Account[] = [];
+	public forecast!: Forecast;
+	public accounts: {[key: string]: Account} = {};
 	public transactions: TransactionSchedule[] = [];
 
 	constructor(config?: DelfiConfig) {
@@ -26,21 +27,12 @@ export class Delfi {
 	}
 
 	init({accounts, transactions}: DelfiConfig): void {
-		this.accounts = accounts || [];
+		this.accounts = accounts || {};
 		this.transactions = transactions || [];
+		this.forecast = new Forecast({accounts: this.accounts, transactionSchedules: this.transactions});
 	}
 
 	computeForecast() {
-		let forecast = ForecastService.computeForecast(this.accounts, this.transactions, dayjs(Date.now()), dayjs().endOf('year'))
-
-		console.table(forecast.map(snapshot => ({
-			memo: snapshot.event.memo,
-			date: dayjs(snapshot.date).format("M/DD/YYYY"),
-			amount: `${snapshot.event.type === TransactionType.income ? '+' : ''}${snapshot.event.amount}`,
-			balances: JSON.stringify(Array.from(snapshot.balances.values())),
-		})))
-
-		this.forecast = forecast;
-		return forecast;
+		this.forecast.computeForecast(dayjs(Date.now()), dayjs().endOf('year'))
 	}
 }

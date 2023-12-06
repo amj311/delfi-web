@@ -20,24 +20,27 @@ export const firebaseAuthMiddleware = async (request, reply) => {
     try {
         const authToken = request.headers.authorization;
 		if (!authToken) {
-			throw Error("Auth token is missing");
+			// Send 401 for no auth
+			reply.status(401).send();
 		}
         // Verify the Firebase ID token
         const decodedToken = await admin.auth().verifyIdToken(authToken);
         const uid = decodedToken.uid;
 
+        request.sessionUid = uid;
+
         // Attach the user ID to the request object
 		const user = await UserService.getUserByAuthId(uid);
 		if (!user) {
-			throw Error("User not found for token");
+			// Send 403 for auth but no account
+			reply.status(403).send();
 		}
         request.sessionUser = user;
-		console.log(request.sessionUser);
     }
 	catch (error) {
         // Return an error response if the Firebase user session is not valid
 		console.error(error)
-		reply.status(401).send();
+		reply.status(500).send();
     }
 };
 

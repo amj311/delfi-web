@@ -11,14 +11,5 @@ export default (fastify, _, done) => {
         }
     });
 
-	fastify.post('/', async (request, reply) => {
-		const data = request.body as Omit<User, 'user_id'>;
-		const user = await UserService.createUser(data);
-		return {
-			success: true,
-			data: user
-		}
-	})
-
     done();
 }

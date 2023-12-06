@@ -9,6 +9,7 @@ import accountRoute from "./routes/account.route";
 import transactionScheduleRoute from "./routes/transactionSchedule.route";
 import userRoute from "./routes/user.route";
 import firebaseAuthMiddleware, { firebaseConfig } from "./services/FirebaseService";
+import signupRoute from "./routes/signup.route";
 
 
 const app = Fastify({
@@ -22,14 +23,18 @@ app.get('/firebase-config', () => {
 	}
 });
 
-// protected routes
-app.register((fastify, _, done) => {
-	fastify.addHook('preValidation', firebaseAuthMiddleware);
+// Signup routes
+app.register(signupRoute, { prefix: '/signup' });
 
-	app.register(userRoute, { prefix: '/user' });
-	app.register(plaidRoute, { prefix: '/plaid' });
-	app.register(accountRoute, { prefix: '/account' });
-	app.register(transactionScheduleRoute, { prefix: '/transactionSchedule' });
+
+// authenticated routes
+app.register((authRoutes, _, done) => {
+	authRoutes.addHook('preValidation', firebaseAuthMiddleware);
+
+	authRoutes.register(userRoute, { prefix: '/user' });
+	authRoutes.register(plaidRoute, { prefix: '/plaid' });
+	authRoutes.register(accountRoute, { prefix: '/account' });
+	authRoutes.register(transactionScheduleRoute, { prefix: '/transactionSchedule' });
 
 	done();
 }, { prefix: '/' });
@@ -49,7 +54,9 @@ app.setErrorHandler((error: any, request) => {
 // Run the server!
 (async () => {
 	try {
-		await app.listen({ port: 3000 })
+		const port = Number(process.env.PORT || 3000);
+		const host = ("RENDER" in process.env) ? `0.0.0.0` : `localhost`;
+		await app.listen({ port, host });
 		console.log('Server started')
 	} catch (err) {
 		console.error(err)

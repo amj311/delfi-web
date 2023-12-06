@@ -1,26 +1,28 @@
 <script setup lang="ts">
-import PlaidLink from '@/components/plaid/PlaidLink.vue';
-import { accounts, initialAccounts, scheduledTransactions } from '../../delfi-core/dummyData';
-import { useDelfiStore } from '@/stores/delfi';
-import { useAccountStore } from '@/stores/account';
-import { ref } from 'vue';
-import { useTransactionScheduleStore } from '@/stores/transactionSchedule';
+import { useDelfiStore } from '@/stores/delfi.store';
+import { useAccountStore } from '@/stores/account.store';
+import { reactive, ref } from 'vue';
+import { useTransactionScheduleStore } from '@/stores/transactionSchedule.store';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
 const transactionStore = useTransactionScheduleStore();
 
-let loading = ref(true);
+const state = reactive({
+	loading: false,
+	chartData: [],
+});
 
 (async () => {
+	state.loading = true;
 	await accountStore.loadAccounts();
-	console.log(accountStore.accounts)
 	await transactionStore.loadTransactionSchedules();
 	delfiStore.delfi.init({
-		accounts: initialAccounts,
-		transactions: scheduledTransactions
+		accounts: delfiStore.translateAccounts(accountStore.accounts),
+		transactions: delfiStore.translateTransactionSchedules(transactionStore.transactionSchedules),
 	});
-	loading.value = false;
+	delfiStore.delfi.computeForecast()
+	state.loading = false;
 })();
 
 
@@ -29,7 +31,7 @@ let loading = ref(true);
 
 <template>
 	<main>
-		<div v-if="loading">Loading...</div>
+		<div v-if="state.loading">Loading...</div>
 
 		<h2>Accounts</h2>
 		<!-- <PlaidLink /> -->
@@ -38,14 +40,13 @@ let loading = ref(true);
 		</div>
 
 		<br/>
-		<div v-for="transaction of scheduledTransactions">
-			{{ transaction.id }}
+		<div v-for="transaction of transactionStore.transactionSchedules">
+			{{ transaction.memo }}
 		</div>
 
 		<br />
 		<h2>Forecast</h2>
-		<button @click="delfiStore.delfi.computeForecast()">Compute</button>
-		<div v-for="snapshot of delfiStore.delfi.forecast">
+		<div v-for="snapshot of delfiStore.delfi.forecast?.snapshots">
 			{{ snapshot.event.memo }}
 		</div>
 	</main>

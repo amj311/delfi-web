@@ -1,4 +1,3 @@
-import request from '@/services/request';
 import { initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, type Auth } from 'firebase/auth';
 

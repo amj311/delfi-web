@@ -4,9 +4,10 @@ import { MonthSummary } from "../models/MonthSummary";
 import TransactionService from "./transactionService";
 import type { Account } from "../../delfi-core/models/Account";
 import { ImmediateMatchTrigger } from "../../delfi-core/models/schedules/triggers";
+import dayjs from "dayjs";
 
 export type Snapshot = {
-	balances: Map<string, any>,
+	balances: { [key: string]: Account },
 	event: TransactionEvent,
 	date: string
 }
@@ -18,6 +19,7 @@ type ForecastTransactionSchedule = TransactionSchedule & {
 export default class Forecast {
 	initialAccounts: Map<string, Account>;
 	transactionSchedules: ForecastTransactionSchedule[];
+	snapshots: Snapshot[] = [];
 
 	constructor({
 		accounts,
@@ -109,10 +111,87 @@ export default class Forecast {
 				event,
 			})
         }
+		this.snapshots = snapshots;
         return snapshots;
     }
 
     copyAccounts(accounts) {
         return JSON.parse(JSON.stringify(accounts));
     }
+
+	public getTimeline(start, end, interval: 'day' = 'day') {
+		const points: {
+			start: string,
+			end: string,
+			startingBalances?: { [key: string]: Account },
+			endingBalances?: { [key: string]: Account },
+			snapshots: Snapshot[],
+		}[] = [];
+
+		let intervalBegin = dayjs(start).startOf('day');
+		let intervalEnd = intervalBegin.add(1, interval).subtract(1, 'ms');
+
+		// create one point for every 
+		const advancePoint = () => {
+			const lastPoint = points[points.length - 1];
+			// handle moving from previous point
+			if (lastPoint) {
+				lastPoint.endingBalances = lastPoint.snapshots[lastPoint.snapshots.length - 1]?.balances || lastPoint.startingBalances;
+				intervalBegin = intervalBegin.add(1, interval);
+				intervalEnd = intervalEnd.add(1, interval);
+			}
+			// create new point
+			const newPoint = {
+				start: intervalBegin.toISOString(),
+				end: intervalEnd.toISOString(),
+				startingBalances: lastPoint?.endingBalances || undefined,
+				endingBalances: undefined,
+				snapshots: <Snapshot[]>[],
+			};
+			points.push(newPoint);
+			return newPoint;
+		};
+
+
+
+		let currentPoint = advancePoint();
+		let snapshotIndex = 0;
+		let snap = this.snapshots[snapshotIndex];
+
+		while (intervalBegin.isBefore(end)) {
+			// gather snapshots for this interval
+			while (snapshotIndex < this.snapshots.length) {
+				snap = this.snapshots[snapshotIndex];
+				if (dayjs(snap.date) < intervalBegin || dayjs(snap.date) > intervalEnd) {
+					break;
+				}
+				if (dayjs(snap.date) > end) {
+					// don't add snapshot but keep creating points
+					break;
+				}
+	
+				// Get starting balance for first point
+				if (!currentPoint.startingBalances) {
+					if (snapshotIndex === 0) {
+						// use initial balances if this is the first snapshot
+						currentPoint.startingBalances = this.copyAccounts(this.initialAccounts);
+					}
+					else {
+						// get initial from the previous snapshot
+						currentPoint.startingBalances = this.copyAccounts(this.snapshots[snapshotIndex - 1].balances);
+					}
+				}
+
+
+				currentPoint.snapshots.push(snap);
+				snapshotIndex++;
+			}
+			
+			currentPoint = advancePoint();
+		}
+
+		// The loop breaks when the last point is out of the range, so pop it
+		points.pop();
+		return points;
+	}
 }
