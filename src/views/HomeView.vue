@@ -53,7 +53,7 @@ const state = reactive({
 			transactionStore.transactionSchedules.filter(s => s.recurrenceType === 'trigger')
 		) as unknown as TransactionTrigger[],
 		start: date(dayjs().startOf('month')),
-		end: date(dayjs().endOf('month').add(12, 'month')),
+		end: date(dayjs().endOf('month').add(5, 'year')),
 	});
 	state.viewingMonth = dayjs().startOf('month');
 	state.loading = false;
@@ -129,27 +129,33 @@ const goBack = () => {
 	<main>
 		<div v-if="state.loading">Loading...</div>
 
-		<h2>Accounts</h2>
+		<!-- <h2>Accounts</h2> -->
 		<!-- <PlaidLink /> -->
-		<div v-for="account of accountStore.accounts">
+		<!-- <div v-for="account of accountStore.accounts">
 			{{ account.custom_name || account.external_name }}
-		</div>
+		</div> -->
 		<!-- 
 		<br/>
 		<div v-for="transaction of transactionStore.transactionSchedules">
 			{{ transaction.memo }}
 		</div> -->
+		<!-- <br /> -->
 
-		<br />
 		<h2>Forecast</h2>
-		<div><a @click="goBack()">Back</a> | <a @click="goForward()">Forward</a></div>
-		<div>
-			{{ state.viewingMonth?.format('MMMM YYYY') }}
-			<div>{{ chartData?.timeline.endingBalance('total') }}</div>
-			<div v-for="account of accountStore.accounts">
-				{{ account.custom_name || account.external_name }} ...... {{ chartData?.timeline.endingBalance('account_' + account.account_id) }}
-			</div>
+		<div style="display: flex; justify-content: space-between">
+			<a @click="goBack()">Back</a>
+			<span>{{ state.viewingMonth?.format('MMMM YYYY') }}</span>
+			<a @click="goForward()">Forward</a>
 		</div>
+		
+		<div>
+			<h3>Accounts</h3>
+			<div v-for="account of accountStore.accounts">
+				{{ account.custom_name || account.external_name }} ...... {{ chartData?.timeline.endingBalance('account_' + account.account_id) }} ({{ chartData?.timeline.change('account_' + account.account_id) }})
+			</div>
+			<div>Net Growth ...... {{ chartData?.timeline.change('total') }}</div>
+		</div>
+		<br />
 		<div>
 
 			<!-- <VueApexCharts width="500" type="area" :options="{
@@ -185,8 +191,14 @@ const goBack = () => {
 			/> -->
 
 		</div>
-		<div v-for="snapshot of chartData?.timeline.events">
-			{{ snapshot.transaction.memo }} ...... {{ snapshot.transaction.amount > 0 ? '+' : '' }}{{ snapshot.transaction.amount }}
+		<h3>Transactions</h3>
+		<div v-for="day of chartData?.timeline.periods">
+			<template v-if="day.events.length > 0">
+				<div>{{ day.start }}</div>
+				<div v-for="event of day.events">
+					{{ event.transaction.memo }} ...... {{ event.transaction.amount > 0 ? '+' : '' }}{{ event.transaction.amount }}
+				</div>
+			</template>
 		</div>
 	</main>
 </template>
