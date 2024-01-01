@@ -13,6 +13,7 @@ export enum TransactionScheduleType {
 
 export type TransactionDetails = {
 	memo: string,
+	type: TransactionScheduleType,
 	targetAccount: string,
 	categoryId?: string,
 	tagIds?: string[],
@@ -20,7 +21,6 @@ export type TransactionDetails = {
 
 type PlannedTransactionDetails = TransactionDetails & {
 	id: string,
-	type: TransactionScheduleType,
 	originAccount?: string,
 	recurrenceType: 'schedule' | 'trigger',
 }
@@ -49,6 +49,7 @@ export default class TransactionService {
 	static copyTransactionDetails(source: TransactionDetails): TransactionDetails {
 		return {
 			memo: source.memo,
+			type: source.type,
 			targetAccount: source.targetAccount,
 			categoryId: source.categoryId,
 			tagIds: source.tagIds,
