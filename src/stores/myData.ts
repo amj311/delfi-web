@@ -129,9 +129,9 @@ export const my_scheduledTransactions: any[] = [
 		recurrenceType: 'trigger',
 		trigger: new ImmediateMatchTrigger({
 			filter: [{
-				property: 'amount',
-				operator: 'gt',
-				operand: 0,
+				property: 'type',
+				operator: 'eq',
+				operand: TransactionScheduleType.income,
 			}],
 			computation: {
 				operator: 'percent',
@@ -191,4 +191,30 @@ export const my_scheduledTransactions: any[] = [
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 8))
 	},
 
+	
+	{
+		transaction_schedule_id: uuid(),
+		type: TransactionScheduleType.expense,
+		memo: "Preschool",
+		amount: 170,
+		targetAccount: my_accounts.afcu_checking.account_id,
+
+		recurrenceType: 'schedule',
+		schedule: new XPerMonthSchedule(1, new Date(2024, MONTHS.SEP, 1), new Date(2025, MONTHS.MAY, 1))
+	},
+
+	
+	{
+		transaction_schedule_id: uuid(),
+		type: TransactionScheduleType.transfer,
+		memo: "Emergency Savings Transfer",
+		amount: 500,
+		targetAccount: my_accounts.afcu_savings.account_id,
+		originAccount: my_accounts.afcu_checking.account_id,
+
+		recurrenceType: 'schedule',
+		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.SEP, 1))
+	},
+
+	
 ]
