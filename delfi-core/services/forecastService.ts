@@ -53,14 +53,14 @@ class ForecastPeriod {
 		if (!this.accumulatorPeriods[accumulatorKey]?.length) {
 			throw Error("No periods for key " + accumulatorKey);
 		}
-		return peek(this.accumulatorPeriods[accumulatorKey])?.startingBalance || 0;
+		return this.accumulatorPeriods[accumulatorKey][0]?.startingBalance || 0;
 	}
 
 	endingBalance(accumulatorKey: string) {
 		if (!this.accumulatorPeriods[accumulatorKey]?.length) {
 			throw Error("No periods for key " + accumulatorKey);
 		}
-		return this.accumulatorPeriods[accumulatorKey][0].endingBalance;
+		return peek(this.accumulatorPeriods[accumulatorKey])?.endingBalance || 0;
 	}
 
 	change(accumulatorKey: string) {
