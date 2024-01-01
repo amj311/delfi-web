@@ -34,9 +34,9 @@ const transactionTriggers: TransactionTrigger[] = [
 		recurrenceType: 'trigger',
 		trigger: new ImmediateMatchTrigger({
 			filter: [{
-				property: 'amount',
-				operator: 'gt',
-				operand: 0,
+				property: 'type',
+				operator: 'eq',
+				operand: TransactionScheduleType.income,
 			}],
 			computation: {
 				operator: 'percent',
@@ -158,7 +158,6 @@ describe('Forecast', () => {
 				start: date('2023-01-01'),
 				end: date('2023-01-31')
 			});
-			console.log(forecast.days.length)
 			const timeline = forecast.getTimeline(date('2023-01-01'), date('2023-01-31'));
 			expect(timeline.periods.length).toBe(31);
 			expect(timeline.periods[0].start.toString()).toBe('2023-01-01');
@@ -167,44 +166,61 @@ describe('Forecast', () => {
 			expect(timeline.periods[30].end.toString()).toBe('2023-01-31');
 		})
 
-		// test('snapshots on appropriate days', () => {
-		// 	const timeline = forecast.getTimeline('2023-01-01', '2023-02-01');
+		test('snapshots on appropriate days', () => {
+			const forecast = new Forecast({
+				accumulators: [
+					new Accumulator(
+						'total',
+						500,
+						[{
+							operator: '*',
+						}]
+					)
+				],
+				transactionSchedules,
+				transactionTriggers,
+				start: date('2023-01-01'),
+				end: date('2023-01-31')
+			});
+			const timeline = forecast.getTimeline(date('2023-01-01'), date('2023-01-31'));
 
-		// 	expect(timeline.startingBalances).toMatchObject(accounts);
-		// 	expect(timeline.periods[24].start).toBe('2023-01-25T07:00:00.000Z');
- 		// 	expect(timeline.periods[24].startingBalances).toMatchObject(accounts);
-		// 	expect(timeline.periods[24].events).toHaveLength(2)
-		// 	expect(timeline.periods[24].endingBalances).toMatchObject({
-		// 		afcu_checking: {
-		// 			id: "afcu_checking",
-		// 			name: "AFCU Checking",
-		// 			balance: 2750,
-		// 		}
-		// 	})
-		// 	expect(timeline.endingBalances).toMatchObject({
-		// 		afcu_checking: {
-		// 			id: "afcu_checking",
-		// 			name: "AFCU Checking",
-		// 			balance: 2750,
-		// 		}
-		// 	})
-		// })
+			expect(timeline.startingBalance('total')).toBe(500);
+			expect(timeline.periods[24].start.toString()).toBe('2023-01-25');
+ 			expect(timeline.periods[24].startingBalance('total')).toBe(500);
+			expect(timeline.periods[24].events).toHaveLength(2)
+			expect(timeline.periods[24].endingBalance('total')).toBe(2750);
+			expect(timeline.endingBalance('total')).toBe(2750);
+		})
 
 
-		// test('gets subsequent periods', () => {
-		// 	forecast.computeForecast('2023-01-01', '2023-04-01');
-		// 	// check first month snapshots
-		// 	let timeline = forecast.getTimeline('2023-01-01', '2023-02-01');
-		// 	expect(timeline.snapshots).toHaveLength(2);
-		// 	expect(timeline.snapshots[0].date).toBe('2023-01-25T07:00:00.000Z');
-		// 	// check second month snapshots
-		// 	timeline = forecast.getTimeline('2023-02-01', '2023-03-01');
-		// 	expect(timeline.snapshots).toHaveLength(2);
-		// 	expect(timeline.snapshots[0].date).toBe('2023-02-25T07:00:00.000Z');
-		// 	// check third month snapshots
-		// 	timeline = forecast.getTimeline('2023-03-01', '2023-04-01');
-		// 	expect(timeline.snapshots).toHaveLength(2);
-		// 	expect(timeline.snapshots[0].date).toBe('2023-03-25T06:00:00.000Z');
-		// })
+		test('gets subsequent periods', () => {
+			const forecast = new Forecast({
+				accumulators: [
+					new Accumulator(
+						'total',
+						500,
+						[{
+							operator: '*',
+						}]
+					)
+				],
+				transactionSchedules,
+				transactionTriggers,
+				start: date('2023-01-01'),
+				end: date('2023-03-31')
+			});
+			// check first month snapshots
+			let timeline = forecast.getTimeline(date('2023-01-01'), date('2023-01-31'), 'week');
+			expect(timeline.events).toHaveLength(2);
+			expect(timeline.events[0].date.toString()).toBe('2023-01-25');
+			// check second month snapshots
+			timeline = forecast.getTimeline(date('2023-02-01'), date('2023-02-31'), 'week');
+			expect(timeline.events).toHaveLength(2);
+			expect(timeline.events[0].date.toString()).toBe('2023-02-25');
+			// check third month snapshots
+			timeline = forecast.getTimeline(date('2023-03-01'), date('2023-03-31'), 'week');
+			expect(timeline.events).toHaveLength(2);
+			expect(timeline.events[0].date.toString()).toBe('2023-03-25');
+		})
 	});
 })
