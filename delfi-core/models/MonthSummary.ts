@@ -1,7 +1,7 @@
 import * as currencyUtils from "../utils/currencyUtils";
-import { newDate } from "../utils/dateUtils";
+import { date } from "../utils/dateUtils";
 import { Snapshot } from "./Snapshot";
-import { TransactionType } from "./transactions";
+import { TransactionScheduleType } from "./transactions";
 
 
 export class MonthSummary {
@@ -16,7 +16,7 @@ export class MonthSummary {
     };
 
     constructor(date, public initialBalances = new Map()) {
-        this.date = newDate(date);
+        this.date = date(date);
         this.id = this.date.format("YYYY-MM");
 
         for (let acct of initialBalances.values()) {
@@ -32,11 +32,11 @@ export class MonthSummary {
         this.snapshots.push(snapshot);
         let details = snapshot.mostRecentEvent.details;
         let changes = this.report.accountChanges.get(details.targetAccount);
-        if (details.type === TransactionType.income) {
+        if (details.type === TransactionScheduleType.income) {
             changes.totalIncome += details.amount;
             this.report.totalIncome += details.amount;
         }
-        else if (details.type === TransactionType.expense) {
+        else if (details.type === TransactionScheduleType.expense) {
             changes.totalExpense += details.amount;
             this.report.totalExpense += details.amount;
         }

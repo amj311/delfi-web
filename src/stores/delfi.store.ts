@@ -2,7 +2,7 @@ import { reactive } from 'vue'
 import { defineStore } from 'pinia'
 import { Delfi, type DelfiConfig } from '../../delfi-core';
 import type { Account } from 'delfi-core/models/Account';
-import type { TransactionSchedule } from 'delfi-core/models/transactions';
+import type { TransactionSchedule } from 'delfi-core/services/transactionService';
 
 export const useDelfiStore = defineStore('delfi', () => {
 	let delfi = reactive(new Delfi());

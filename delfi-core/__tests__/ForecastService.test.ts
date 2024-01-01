@@ -1,9 +1,11 @@
 import Forecast from "../services/forecastService";
 import { beforeEach, describe, expect, test } from 'vitest'
-import { ImmediateMatchTrigger } from "../../delfi-core/models/schedules/triggers";
-import { XPerMonthSchedule } from "../../delfi-core/models/schedules/XPerMonthSchedule";
-import { MONTHS } from "../../delfi-core/utils/constants";
-import { TransactionType } from "../../delfi-core/models/transactions";
+import { ImmediateMatchTrigger } from "../models/schedules/triggers";
+import { XPerMonthSchedule } from "../models/schedules/XPerMonthSchedule";
+import { MONTHS } from "../utils/constants";
+import { TransactionScheduleType, type TransactionSchedule, type TransactionTrigger } from "../services/transactionService";
+import { date } from "../utils/dateUtils";
+import Accumulator from "../models/Accumulator";
 
 const accounts = {
 	afcu_checking: {
@@ -12,27 +14,29 @@ const accounts = {
 		balance: 500,
 	},
 };
-const transactionSchedules = [
+const transactionSchedules: TransactionSchedule[] = [
 	{
 		id: "clozdincome",
-		type: 'income',
+		type: TransactionScheduleType.income,
 		memo: "Clozd Income",
 		amount: 2500,
 		targetAccount: accounts.afcu_checking.id,
 		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25))
 	},
+];
+const transactionTriggers: TransactionTrigger[] = [
 	{
 		id: "tithing",
-		type: TransactionType.expense,
+		type: TransactionScheduleType.expense,
 		memo: "Tithing",
 		targetAccount: accounts.afcu_checking.id,
 		recurrenceType: 'trigger',
 		trigger: new ImmediateMatchTrigger({
-			rules: [{
-				property: 'type',
-				operator: 'eq',
-				operand: 'income',
+			filter: [{
+				property: 'amount',
+				operator: 'gt',
+				operand: 0,
 			}],
 			computation: {
 				operator: 'percent',
@@ -43,60 +47,164 @@ const transactionSchedules = [
 ]
 
 describe('Forecast', () => {
-	let forecast! : Forecast;
+	// let forecast! : Forecast;
 	beforeEach(() => {
-		forecast = new Forecast({
-			accounts,
-			transactionSchedules,
-		});
+		
+	})
+
+	describe('computeForecast', () => {
+		test('computes events', () => {
+			const forecast = new Forecast({
+				accumulators: [
+					new Accumulator(
+						'total',
+						500,
+						[{
+							operator: '*',
+						}]
+					)
+				],
+				transactionSchedules,
+				transactionTriggers: [],
+				start: date('2023-01-01'),
+				end: date('2023-01-31')
+			});
+
+			// check days accuracy
+			expect(forecast.days).toHaveLength(31);
+			expect(forecast.days[0].start.toString()).toBe('2023-01-01');
+			expect(forecast.days[0].end.toString()).toBe('2023-01-01');
+			expect(forecast.days[30].start.toString()).toBe('2023-01-31');
+			expect(forecast.days[30].end.toString()).toBe('2023-01-31');
+			// the 25th should have the only event
+			for (let i in forecast.days) {
+				expect(forecast.days[i].events).toHaveLength(i === '24' ? 1 : 0);
+			}
+
+			// Check event accuracy
+			expect(forecast.events).toHaveLength(1);
+			expect(forecast.events[0].date.toString()).toBe('2023-01-25');
+			expect(forecast.events[0]).toMatchObject(expect.objectContaining({
+				transaction: expect.objectContaining({
+					targetAccount: 'afcu_checking',
+					amount: 2500,
+					sourceSchedule: transactionSchedules[0],
+				}),
+				accumulatorEvents: {
+					total: expect.objectContaining({
+						startingBalance: 500,
+						endingBalance: 3000
+					})
+				}
+			}))
+		})
+		test('computes triggered events', () => {
+			const forecast = new Forecast({
+				accumulators: [
+					new Accumulator(
+						'total',
+						500,
+						[{
+							operator: '*',
+						}]
+					)
+				],
+				transactionSchedules,
+				transactionTriggers,
+				start: date('2023-01-01'),
+				end: date('2023-01-31')
+			});
+
+			// check days accuracy
+			// the 25th should have TWO events
+			for (let i in forecast.days) {
+				expect(forecast.days[i].events).toHaveLength(i === '24' ? 2 : 0);
+			}
+
+			// Check event accuracy
+			expect(forecast.events).toHaveLength(2);
+			expect(forecast.events[1].date.toString()).toBe('2023-01-25');
+			expect(forecast.events[1]).toMatchObject(expect.objectContaining({
+				transaction: expect.objectContaining({
+					targetAccount: 'afcu_checking',
+					amount: -250,
+					sourceTrigger: transactionTriggers[0],
+				}),
+				accumulatorEvents: {
+					total: expect.objectContaining({
+						startingBalance: 3000,
+						endingBalance: 2750
+					})
+				}
+			}))
+		})
+
 	})
 
 	describe('getTimeline', () => {
 		test('returns all intervals', () => {
-			forecast.computeForecast('2023-01-01', '2023-02-01');
-			const timeline = forecast.getTimeline('2023-01-01', '2023-02-01');
-			expect(timeline.length).toBe(31);
-			expect(timeline[0].start).toBe('2023-01-01T07:00:00.000Z');
-			expect(timeline[0].end).toBe('2023-01-02T06:59:59.999Z');
-			expect(timeline[30].start).toBe('2023-01-31T07:00:00.000Z');
-			expect(timeline[30].end).toBe('2023-02-01T06:59:59.999Z');
+			const forecast = new Forecast({
+				accumulators: [
+					new Accumulator(
+						'total',
+						500,
+						[{
+							operator: '*',
+						}]
+					)
+				],
+				transactionSchedules,
+				transactionTriggers,
+				start: date('2023-01-01'),
+				end: date('2023-01-31')
+			});
+			console.log(forecast.days.length)
+			const timeline = forecast.getTimeline(date('2023-01-01'), date('2023-01-31'));
+			expect(timeline.periods.length).toBe(31);
+			expect(timeline.periods[0].start.toString()).toBe('2023-01-01');
+			expect(timeline.periods[0].end.toString()).toBe('2023-01-01');
+			expect(timeline.periods[30].start.toString()).toBe('2023-01-31');
+			expect(timeline.periods[30].end.toString()).toBe('2023-01-31');
 		})
 
-		test('snapshots on appropriate days', () => {
-			forecast.computeForecast('2023-01-01', '2023-02-01');
-			const timeline = forecast.getTimeline('2023-01-01', '2023-02-01');
-			
-			expect(timeline[24].start).toBe('2023-01-25T07:00:00.000Z');
- 			expect(timeline[24].startingBalances).toMatchObject(accounts);
-			expect(timeline[24].snapshots).toHaveLength(2)
-			expect(timeline[24].endingBalances).toMatchObject({
-				afcu_checking: {
-					id: "afcu_checking",
-					name: "AFCU Checking",
-					balance: 2750,
-				}
-			})
-		})
-	});
+		// test('snapshots on appropriate days', () => {
+		// 	const timeline = forecast.getTimeline('2023-01-01', '2023-02-01');
 
-	describe('computeForecast', () => {
-		test('generates triggered events', () => {
-			const events = forecast.computeForecast('2023-01-01', '2023-02-01');
-			expect(events.length).toBe(2);
-			expect(events[1].event.type).toBe(TransactionType.expense);
-			expect(events[1].event.amount).toBe(250);
-		})
-
-		// test('computes events', () => {
-		// 	let forecast = new Forecast({
-		// 		accounts: initialAccounts,
-		// 		transactionSchedules: scheduledTransactions
-		// 	});
-		// 	const events = forecast.computeForecast(accounts, scheduledTransactions,
-		// 		newDate(Date.now()), dayjs().endOf('year')
-		// 	);
-		// 	console.log(JSON.stringify(events, null, 2))
+		// 	expect(timeline.startingBalances).toMatchObject(accounts);
+		// 	expect(timeline.periods[24].start).toBe('2023-01-25T07:00:00.000Z');
+ 		// 	expect(timeline.periods[24].startingBalances).toMatchObject(accounts);
+		// 	expect(timeline.periods[24].events).toHaveLength(2)
+		// 	expect(timeline.periods[24].endingBalances).toMatchObject({
+		// 		afcu_checking: {
+		// 			id: "afcu_checking",
+		// 			name: "AFCU Checking",
+		// 			balance: 2750,
+		// 		}
+		// 	})
+		// 	expect(timeline.endingBalances).toMatchObject({
+		// 		afcu_checking: {
+		// 			id: "afcu_checking",
+		// 			name: "AFCU Checking",
+		// 			balance: 2750,
+		// 		}
+		// 	})
 		// })
-		
-	})
+
+
+		// test('gets subsequent periods', () => {
+		// 	forecast.computeForecast('2023-01-01', '2023-04-01');
+		// 	// check first month snapshots
+		// 	let timeline = forecast.getTimeline('2023-01-01', '2023-02-01');
+		// 	expect(timeline.snapshots).toHaveLength(2);
+		// 	expect(timeline.snapshots[0].date).toBe('2023-01-25T07:00:00.000Z');
+		// 	// check second month snapshots
+		// 	timeline = forecast.getTimeline('2023-02-01', '2023-03-01');
+		// 	expect(timeline.snapshots).toHaveLength(2);
+		// 	expect(timeline.snapshots[0].date).toBe('2023-02-25T07:00:00.000Z');
+		// 	// check third month snapshots
+		// 	timeline = forecast.getTimeline('2023-03-01', '2023-04-01');
+		// 	expect(timeline.snapshots).toHaveLength(2);
+		// 	expect(timeline.snapshots[0].date).toBe('2023-03-25T06:00:00.000Z');
+		// })
+	});
 })

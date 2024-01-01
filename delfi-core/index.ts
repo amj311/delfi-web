@@ -6,8 +6,7 @@
 
 import dayjs from "dayjs";
 import type { Account } from "./models/Account";
-import ForecastService, { type Snapshot } from "./services/forecastService";
-import { TransactionType, type TransactionSchedule } from "./models/transactions";
+import { TransactionScheduleType, type TransactionSchedule } from "./models/transactions";
 import Forecast from "./services/forecastService";
 
 export type DelfiConfig = {

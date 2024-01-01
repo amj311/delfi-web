@@ -1,15 +1,8 @@
-import { v4 as uuid } from "uuid"
-import type { TransactionEvent, TransactionSchedule } from "../transactions"
+import type { TransactionFilter } from "../../services/FilterService"
 
 
 export interface Trigger {
 	type: string,
-}
-
-type MatchingRule = {
-	property: 'amount' | 'memo' | 'type'
-	operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'inc'
-	operand: number | string | string[]
 }
 
 type Computation = {
@@ -18,54 +11,20 @@ type Computation = {
 }
 
 type Props = {
-	rules: MatchingRule[];
+	filter: TransactionFilter;
 	computation: Computation;
 }
 
 export class ImmediateMatchTrigger implements Trigger {
 	type = 'immediateMatch';
-	rules!: MatchingRule[];
+	filter!: TransactionFilter;
 	computation!: Computation;
 	
 	constructor(props: Props) {
 		Object.assign(this, props);
 	}
 
-	public matchesSchedule (schedule: TransactionSchedule) {
-		for (let rule of this.rules) {
-			const { property, operator, operand } = rule;
-			const value = schedule[property];
-			if (!value) continue;
-			switch (operator) {
-				case 'eq':
-					if (value === operand) return true;
-					break;
-				case 'neq':
-					if (value !== operand) return true;
-					break;
-				case 'gt':
-					if (value > operand) return true;
-					break;
-				case 'gte':
-					if (value >= operand) return true;
-					break;
-				case 'lt':
-					if (value < operand) return true;
-					break;
-				case 'lte':
-					if (value <= operand) return true;
-					break;
-				case 'inc':
-					if (Array.isArray(value) && value.includes(operand)) return true;
-					break;
-				default:
-					break;
-			}
-		}
-		return true;
-	}
-
-	private computeAmount(triggerAmount: number): number {
+	public computeAmount(triggerAmount: number): number {
 		switch (this.computation.operator) {
 			case 'exactly':
 				return this.computation.operand;
@@ -83,26 +42,11 @@ export class ImmediateMatchTrigger implements Trigger {
 				throw Error('Unknown operator: ' + this.computation.operator);
 		};
 	}
-
-	public createEventFromTrigger (selfSchedule: TransactionSchedule, triggerEvent: TransactionEvent): TransactionEvent {
-		return {
-			id: uuid(),
-			transactionScheduleId: selfSchedule.id,
-			type: selfSchedule.type,
-			memo: selfSchedule.memo,
-			originAccount: selfSchedule.originAccount,
-			targetAccount: selfSchedule.targetAccount,
-			categoryId: selfSchedule.categoryId,
-			tagIds: selfSchedule.tagIds,
-			date: triggerEvent.date,
-			amount: this.computeAmount(triggerEvent.amount),
-		};
-	}
 }
 
-export type PeriodTotalTrigger = Trigger & {
-	type: 'periodTotal',
-	period: 'day' | 'week' | 'month' | 'year',
-	interval: number,
-	createEventFromPeriod: (periodEvents: TransactionEvent[]) => TransactionEvent
-}
+// export type PeriodTotalTrigger = Trigger & {
+// 	type: 'periodTotal',
+// 	period: 'day' | 'week' | 'month' | 'year',
+// 	interval: number,
+// 	createEventFromPeriod: (periodEvents: TransactionEvent[]) => TransactionEvent
+// }

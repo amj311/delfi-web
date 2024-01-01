@@ -1,197 +1,245 @@
-import { newDate } from "../utils/dateUtils";
-import { type TransactionEvent, TransactionType, type TransactionSchedule } from "../models/transactions";
-import { MonthSummary } from "../models/MonthSummary";
+import { date, type DelfiDate } from "../utils/dateUtils";
+import { TransactionScheduleType, type TransactionSchedule, type TransactionEvent, type TransactionTrigger } from "./transactionService";
 import TransactionService from "./transactionService";
-import type { Account } from "../../delfi-core/models/Account";
 import { ImmediateMatchTrigger } from "../../delfi-core/models/schedules/triggers";
-import dayjs from "dayjs";
+import { v4 as uuid } from "uuid";
+import FilterService from "./FilterService";
+import type Accumulator from "delfi-core/models/Accumulator";
+import type { AccumulatorEvent, AccumulatorPeriod } from "delfi-core/models/Accumulator";
+import { peek } from "../utils/miscUtils";
 
-export type Snapshot = {
-	balances: { [key: string]: Account },
-	event: TransactionEvent,
-	date: string
-}
+type Interval = 'day' | 'week' | 'month' | 'year';
 
-type ForecastTransactionSchedule = TransactionSchedule & {
-	dependentSchedules: TransactionSchedule[] // schedules with triggers matching this
-}
-
-export default class Forecast {
-	initialAccounts: Map<string, Account>;
-	transactionSchedules: ForecastTransactionSchedule[];
-	snapshots: Snapshot[] = [];
-
-	constructor({
-		accounts,
-		transactionSchedules,
-	}) {
-		this.initialAccounts = accounts;
-		this.transactionSchedules = transactionSchedules.map(t => ({
-			...t,
-			dependentSchedules: [],
-		}));
-		this.prepareImmediateTriggers();
+type ForecastEvent = {
+	date: DelfiDate,
+	transaction: TransactionEvent,
+	accumulatorEvents: {
+		[key: string]: AccumulatorEvent,
 	}
+}
 
-	private prepareImmediateTriggers() {
-		// Check each schedule against each triggered schedule for dependencies
-		for (let schedule of this.transactionSchedules) {
-			schedule.dependentSchedules = [];
+class ForecastPeriod {
+	constructor(
+		readonly start: DelfiDate,
+		readonly end: DelfiDate,
+		readonly events: ForecastEvent[] = [],
+		readonly accumulatorEvents: { [key: string]: AccumulatorEvent[] } = {},
+		readonly accumulatorPeriods: { [key: string]: AccumulatorPeriod[] } = {},
+	) {}
 
-			for (let triggerSchedule of this.transactionSchedules) {
-				// Skip if schedule is not an immediate match trigger
-				if (triggerSchedule.trigger?.type !== 'immediateMatch') continue;
-
-				const trigger = triggerSchedule.trigger as ImmediateMatchTrigger;
-				// Check if schedule matches
-				if (trigger.matchesSchedule(schedule)) {
-					schedule.dependentSchedules.push(triggerSchedule);
+	addEvents(events: ForecastEvent[]) {
+		this.events.push(...events);
+		for (const event of events) {
+			for (const key in event.accumulatorEvents) {
+				if (!this.accumulatorEvents[key]) {
+					this.accumulatorEvents[key] = [];
 				}
+				this.accumulatorEvents[key].push(event.accumulatorEvents[key]);
 			}
 		}
 	}
 
+	addFromPeriod(period: ForecastPeriod) {
+		this.addEvents(period.events);
+		for (const key in period.accumulatorPeriods) {
+				if (!this.accumulatorPeriods[key]) {
+					this.accumulatorPeriods[key] = [];
+				}
+				this.accumulatorPeriods[key].push(...period.accumulatorPeriods[key]);
+		}
+	}
 
-	generateEvents(transactionSchedules, begin, end) {
-        let now = newDate(begin)
-        end = newDate(end);
-		
-		let events:TransactionEvent[] = [];
+	startingBalance(accumulatorKey: string) {
+		if (!this.accumulatorPeriods[accumulatorKey]?.length) {
+			throw Error("No periods for key " + accumulatorKey);
+		}
+		return peek(this.accumulatorPeriods[accumulatorKey])?.startingBalance || 0;
+	}
+
+	endingBalance(accumulatorKey: string) {
+		if (!this.accumulatorPeriods[accumulatorKey]?.length) {
+			throw Error("No periods for key " + accumulatorKey);
+		}
+		return this.accumulatorPeriods[accumulatorKey][0].endingBalance;
+	}
+
+	change(accumulatorKey: string) {
+		return this.endingBalance(accumulatorKey) - this.startingBalance(accumulatorKey);
+	}
+}
+
+class Timeline extends ForecastPeriod {
+	constructor(
+		readonly start: DelfiDate,
+		readonly end: DelfiDate,
+		readonly interval: Interval,
+		readonly events: ForecastEvent[] = [],
+		readonly accumulatorEvents: { [key: string]: AccumulatorEvent[] } = {},
+		readonly periods: ForecastPeriod[] = [],
+	) {
+		super(start, end, events, accumulatorEvents);
+	}
+}
+
+type ForecastProps = {
+	readonly accumulators: Accumulator[],
+	readonly transactionSchedules: TransactionSchedule[],
+	readonly transactionTriggers: TransactionTrigger[],
+	readonly start: DelfiDate,
+	readonly end: DelfiDate
+}
+interface Forecast extends ForecastProps {};
+
+class Forecast {
+	readonly accumulatorMap: { [key: string]: Accumulator } = {};
+	events: ForecastEvent[] = [];
+	days: ForecastPeriod[] = [];
+
+	constructor(props: ForecastProps) {
+		Object.assign(this, props);
+		this.accumulatorMap = props.accumulators.reduce((accumulators, accumulator) => {
+			accumulators[accumulator.key] = accumulator;
+			return accumulators;
+		}, {});
+		this.computeForecast();
+	}
+
+    private computeForecast() {
+        const scheduledEventDates = this.generateScheduledDates(this.transactionSchedules, this.start, this.end);
+    
+		let events: ForecastEvent[] = [];
+		let days: ForecastPeriod[] = [];
+		let currentDate = date(this.start);
+		let eventIdx = 0;
+
+		while (currentDate <= date(this.end)) {
+			// Create forecast period
+			const dayPeriod = new ForecastPeriod(date(currentDate), date(currentDate));
+			// Create accumulator periods
+			for (const accumulator of this.accumulators) {
+				dayPeriod.accumulatorPeriods[accumulator.key] = [accumulator.createNewPeriod(
+					date(currentDate), date(currentDate)
+				)];
+			}
+
+			// Gather events for day
+			while (
+				eventIdx < scheduledEventDates.length
+				&& scheduledEventDates[eventIdx].date.isSame(currentDate))
+			{
+				// Compute event
+				const schedule = scheduledEventDates[eventIdx].schedule;
+				const newEvents = this.computeScheduleForDate(currentDate, schedule);
+				events.push(...newEvents);
+				dayPeriod.addEvents(newEvents);
+
+				// Advance to next event for day
+				eventIdx++;
+			}
+
+			// Go to next day
+			days.push(dayPeriod);
+			currentDate = date(currentDate.add(1, 'day'));
+		}
+		this.days = days;
+		this.events = events;
+    }
+
+	private generateScheduledDates(transactionSchedules: TransactionSchedule[], start, end): {
+		date: DelfiDate,
+		schedule: TransactionSchedule
+	}[] {
+		let events = <any[]>[];
         for (let schedule of transactionSchedules) {
 			if (schedule.schedule) {
-				const scheduleEvents = TransactionService.generateEventsBetween(now,end,schedule);
-				events.push(...scheduleEvents);
-				for (let scheduleEvent of scheduleEvents) {
-					for (let triggerSchedule of schedule.dependentSchedules) {
-						events.push((<ImmediateMatchTrigger>triggerSchedule.trigger).createEventFromTrigger(triggerSchedule, scheduleEvent));
-					}
-				}
+				if (!schedule.schedule) throw Error('Transaction schedule has no schedule. Is this a trigger instead?');
+        		let dates = schedule.schedule.getOccurrencesBetween(start, end).map((d:DelfiDate) => ({
+					date: date(d),
+					schedule: schedule
+				}));
+				events.push(...dates);
 			}
         }
         events.sort((a,b)=>(a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0));
 		return events;
 	}
 
+	private computeScheduleForDate(date: DelfiDate, schedule: TransactionSchedule): ForecastEvent[] {
+		const events = <ForecastEvent[]><unknown>[];
 
-    computeForecast(begin, end) {
-        const events = this.generateEvents(this.transactionSchedules, begin, end);
-    
-        let accountsCopy = this.copyAccounts(this.initialAccounts);
-		let snapshots: Snapshot[] = [];
+		const transactionEvents = this.createEventsFromSchedule(date, schedule);
 
-		for (let event of events) {
-            let eventDate = newDate(event.date);
-            if (eventDate.isAfter(end)) break;
-
-            accountsCopy = this.copyAccounts(accountsCopy)
-
-            if (event.type === TransactionType.income) {
-                let changedAccount = accountsCopy[event.targetAccount]
-                changedAccount.balance += event.amount
-            }
-
-            if (event.type === TransactionType.expense) {
-                let changedAccount = accountsCopy[event.targetAccount]
-                changedAccount.balance -= event.amount
-            }
-
-            if (event.type === TransactionType.transfer) {
-				if (!event.originAccount) {
-					throw Error('Origin account not found')
-				}
-                let target = accountsCopy[event.targetAccount]
-                let origin = accountsCopy[event.originAccount]
-                target.balance += event.amount
-                origin.balance -= event.amount
-            }
-
-			snapshots.push({
-				date: eventDate.toISOString(),
-				balances: this.copyAccounts(accountsCopy),
-				event,
-			})
-        }
-		this.snapshots = snapshots;
-        return snapshots;
-    }
-
-    copyAccounts(accounts) {
-        return JSON.parse(JSON.stringify(accounts));
-    }
-
-	public getTimeline(start, end, interval: 'day' = 'day') {
-		const points: {
-			start: string,
-			end: string,
-			startingBalances?: { [key: string]: Account },
-			endingBalances?: { [key: string]: Account },
-			snapshots: Snapshot[],
-		}[] = [];
-
-		let intervalBegin = dayjs(start).startOf('day');
-		let intervalEnd = intervalBegin.add(1, interval).subtract(1, 'ms');
-
-		// create one point for every 
-		const advancePoint = () => {
-			const lastPoint = points[points.length - 1];
-			// handle moving from previous point
-			if (lastPoint) {
-				lastPoint.endingBalances = lastPoint.snapshots[lastPoint.snapshots.length - 1]?.balances || lastPoint.startingBalances;
-				intervalBegin = intervalBegin.add(1, interval);
-				intervalEnd = intervalEnd.add(1, interval);
+		// Create a ForecastEvent for each event with an accumulator event for each accumulator
+		for (const event of transactionEvents) {
+			const forecastEvent: ForecastEvent = {
+				date: date,
+				transaction: event,
+				accumulatorEvents: {},
 			}
-			// create new point
-			const newPoint = {
-				start: intervalBegin.toISOString(),
-				end: intervalEnd.toISOString(),
-				startingBalances: lastPoint?.endingBalances || undefined,
-				endingBalances: undefined,
-				snapshots: <Snapshot[]>[],
-			};
-			points.push(newPoint);
-			return newPoint;
-		};
-
-
-
-		let currentPoint = advancePoint();
-		let snapshotIndex = 0;
-		let snap = this.snapshots[snapshotIndex];
-
-		while (intervalBegin.isBefore(end)) {
-			// gather snapshots for this interval
-			while (snapshotIndex < this.snapshots.length) {
-				snap = this.snapshots[snapshotIndex];
-				if (dayjs(snap.date) < intervalBegin || dayjs(snap.date) > intervalEnd) {
-					break;
+			for (const accumulator of this.accumulators) {
+				const accumulatorEvent = accumulator.processNextTransaction(event);
+				if (accumulatorEvent) {
+					forecastEvent.accumulatorEvents[accumulator.key] = accumulatorEvent;
 				}
-				if (dayjs(snap.date) > end) {
-					// don't add snapshot but keep creating points
-					break;
-				}
-	
-				// Get starting balance for first point
-				if (!currentPoint.startingBalances) {
-					if (snapshotIndex === 0) {
-						// use initial balances if this is the first snapshot
-						currentPoint.startingBalances = this.copyAccounts(this.initialAccounts);
-					}
-					else {
-						// get initial from the previous snapshot
-						currentPoint.startingBalances = this.copyAccounts(this.snapshots[snapshotIndex - 1].balances);
-					}
-				}
-
-
-				currentPoint.snapshots.push(snap);
-				snapshotIndex++;
 			}
-			
-			currentPoint = advancePoint();
+			events.push(forecastEvent);
 		}
 
-		// The loop breaks when the last point is out of the range, so pop it
-		points.pop();
-		return points;
+ 		return events;
+	}
+
+	private createEventsFromSchedule(date: DelfiDate, schedule: TransactionSchedule): TransactionEvent[] {
+		const events: TransactionEvent[] = [];
+		
+		const scheduledEvents = TransactionService.createEventsFromSchedule(date, schedule);
+
+		// Create triggered events
+		for (const event of scheduledEvents) {
+			events.push(event);
+			for (let transactionTrigger of this.transactionTriggers) {
+				const trigger = new ImmediateMatchTrigger(transactionTrigger.trigger as ImmediateMatchTrigger);
+				if (FilterService.matches(trigger.filter, event)) {
+					events.push(...TransactionService.createEventsFromTrigger(date, transactionTrigger, event))
+				}
+			}	
+		}
+		return events;
+	}
+
+	
+	public getTimeline(start = this.start, end = this.end, interval: Interval = 'day') {
+		if (date(start) < this.start) throw Error('Start date is before start of forecast');
+		if (date(end) > this.end) throw Error('End date is after end of forecast');
+
+		const timeline = new Timeline(start, end, interval);
+
+		let currentPeriod = new ForecastPeriod(
+			date(start),
+			date(start.add(1, interval).subtract(1, 'day'))
+		);
+		timeline.periods.push(currentPeriod);
+
+		for (const forecastDay of this.days) {
+			// Advance period when necessary
+			if (forecastDay.start > currentPeriod.end) {
+				currentPeriod = new ForecastPeriod(
+					date(currentPeriod.end.add(1, 'day')),
+					date(currentPeriod.end.add(1, 'day')),
+				);
+				if (currentPeriod.end > date(end)) break;
+				timeline.periods.push(currentPeriod);
+			}
+
+			// Skip date if before period
+			if (forecastDay.start < currentPeriod.start) continue;
+			
+			// Add to period
+			currentPeriod.addFromPeriod(forecastDay);
+			timeline.addFromPeriod(forecastDay);
+		}
+
+		return timeline;
 	}
 }
+
+export default Forecast;
