@@ -46,30 +46,45 @@ export default class Accumulator {
 		readonly periods: AccumulatorPeriod[] = [],
 	) {}
 
+	public get endingBalance(): number {
+		return peek(this.events)?.endingBalance || this.startingBalance;
+	}
+
+	public get change(): number {
+		return this.endingBalance - this.startingBalance;
+	}
+
 	public createNewPeriod(start: DelfiDate, end: DelfiDate): AccumulatorPeriod {
 		const newPeriod = new AccumulatorPeriod(start, end, this.endingBalance);
 		this.periods.push(newPeriod);
+		this._postCreatePeriod(newPeriod);
 		return newPeriod;
 	}
 	
-	public processNextTransaction(transaction: TransactionEvent): AccumulatorEvent | undefined {
+	private canProcessTransaction(transaction: TransactionEvent) {
 		if (!this.periods.length) throw Error("Do not add event to accumulator with no periods");
-		if (!FilterService.matches(this.filter, transaction)) return;
+		return FilterService.matches(this.filter, transaction);
+	}
+
+	public processNextTransaction(transaction: TransactionEvent): AccumulatorEvent | undefined {
+		if (!this.canProcessTransaction(transaction)) return;
 		const newEvent = new AccumulatorEvent(
 			transaction.date,
 			transaction,
 			this.endingBalance
 		);
 		this.events.push(newEvent);
+		this._postProcessTransaction(transaction, newEvent);
 		peek(this.periods)?.events.push(newEvent);
 		return newEvent;
 	}
 
-	get endingBalance(): number {
-		return peek(this.events)?.endingBalance || this.startingBalance;
-	}
 
-	get change(): number {
-		return this.endingBalance - this.startingBalance;
-	}
+	// Overrides for Derived Classes
+	_postCreatePeriod(newPeriod: AccumulatorPeriod) {};
+	_postProcessTransaction(transaction: TransactionEvent, newEvent: AccumulatorEvent) {};
+
+	// call after all other transactions for the month have been processed.
+	// handles summary-type transactions based on period totals
+	doEndOfMonthTrigger(date: DelfiDate): TransactionEvent[] { return [] };
 }

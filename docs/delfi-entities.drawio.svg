@@ -1,269 +1,90 @@
-<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="721px" height="619px" viewBox="-0.5 -0.5 721 619" content="&lt;mxfile&gt;&lt;diagram id=&quot;TJjH4DSLy41swaSi62Nc&quot; name=&quot;Data Models&quot;&gt;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&lt;/diagram&gt;&lt;diagram id=&quot;9TqKPJ2Rtvtx8mYwKwqN&quot; name=&quot;Business Classes&quot;&gt;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&lt;/diagram&gt;&lt;/mxfile&gt;">
-    <defs>
-        <clipPath id="mx-clip-4-123-272-26-0">
-            <rect x="4" y="123" width="272" height="26"/>
-        </clipPath>
-        <clipPath id="mx-clip-4-149-272-26-0">
-            <rect x="4" y="149" width="272" height="26"/>
-        </clipPath>
-        <clipPath id="mx-clip-4-175-272-30-0">
-            <rect x="4" y="175" width="272" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-4-205-272-30-0">
-            <rect x="4" y="205" width="272" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-4-235-272-30-0">
-            <rect x="4" y="235" width="272" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-364-123-232-30-0">
-            <rect x="364" y="123" width="232" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-364-153-232-30-0">
-            <rect x="364" y="153" width="232" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-364-183-232-30-0">
-            <rect x="364" y="183" width="232" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-364-213-232-30-0">
-            <rect x="364" y="213" width="232" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-364-251-232-30-0">
-            <rect x="364" y="251" width="232" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-44-442-272-26-0">
-            <rect x="44" y="442" width="272" height="26"/>
-        </clipPath>
-        <clipPath id="mx-clip-44-468-272-30-0">
-            <rect x="44" y="468" width="272" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-44-498-272-30-0">
-            <rect x="44" y="498" width="272" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-44-528-272-30-0">
-            <rect x="44" y="528" width="272" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-484-462-232-30-0">
-            <rect x="484" y="462" width="232" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-484-492-232-30-0">
-            <rect x="484" y="492" width="232" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-484-522-232-30-0">
-            <rect x="484" y="522" width="232" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-484-552-232-30-0">
-            <rect x="484" y="552" width="232" height="30"/>
-        </clipPath>
-        <clipPath id="mx-clip-484-590-232-30-0">
-            <rect x="484" y="590" width="232" height="30"/>
-        </clipPath>
-    </defs>
+<svg host="65bd71144e" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="691px" height="581px" viewBox="-0.5 -0.5 691 581" content="&lt;mxfile&gt;&lt;diagram id=&quot;TJjH4DSLy41swaSi62Nc&quot; name=&quot;Data Models&quot;&gt;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&lt;/diagram&gt;&lt;diagram id=&quot;9TqKPJ2Rtvtx8mYwKwqN&quot; name=&quot;Business Classes&quot;&gt;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&lt;/diagram&gt;&lt;diagram id=&quot;aFkkmi3lEvkF3dakYnSQ&quot; name=&quot;Budgets&quot;&gt;vVdZb9s4EP41xiYPKXwkafMYH8miu+lmaxdBnxa0NBaJUqTKI7bz6zscUoePNm4eFjBkakTO8c3MR7I3mpSbe8Mq/qBzkL1hP9/0RtPecDjoD27wL0i2UXJ9+T4KCiPyNKkVzMUL1CuT1Isc7M5Ep7V0otoVZlopyNyOjBmj17vTVlruWq1YAQeCecbkofRJ5I4n6aDfbz/8CaLgyfSHq/ShZPXkJLCc5XrdEY1mvdHEaO3iqNxMQAbwalziuruffG0cM6DcKQu+5jefP979+/Fhq+//c389vvDt4iJpeWbSp4Bvq8polnECGh8PWjkutzga+7wA1xteS7Q3XhocFWH0NslESxkShmmKbqpMl0ApMgG+YPYUPVNwTMhGjTNM2RUY22h6+G1Nt6RpXoHKhSoOJ17gVwPfvTAQzLDgrtjgU69CnjMOuZeQ196wzAmtaKYKwiXhaI/rnfuymZgLW0m2PdSzFo4LFaqeOSi0EfBb2hoHTlNUS2zFwlTrtqk5rr/7ULzjNRcOLvBzhvLbUJQG4ro0oaOpNxzddHRiuUa1rc8TJjMv0R8cc2wYBNdTORK6jjPXhEARULKWYbatQis0c14pof8rHAMxlk4O8Q2e0de2SJt4cqgkxDnHEjrRZeVdahPImHUpi6Fss8yXATndqX6WZdpHS69UH/6zssKBWtrqzW09Z8/UM3cUNw0TcfyisjrLM1DMCB2BbxamYKxftrUaKlljyBRlgEEYAwXGb4hNHBhkNfvu0MaCw5Z2DClxb2mUO041xIiEDiwlNMOOJDB1bXn1z5gnoixZMKqYyuD8iNVZ5FTOaspQ0VIO6GkpVIRqHUtX0KMN/CyjqFxknEmInJgq40zh/kUScNn5odkxcMwIKomAanK5JQDcPfAphXXEV17l0MFiH4RYQXENsvVSKFq1g9/+Gqcdk43NI8AcSr7O5rjgaYaPT7PZNPj9ZXo/W8xxdf8uVkJDznW3E1pKEzkwS35Row0w8sEhhYrgbGF0BnvpXXMtoU1vQHblw6EmjlDlZfwdCeWBbYmIEArCKCKlFW2fWtELQbXWtIXU1brn29KHKLbaE5LqD0d1GXSc0fJcR9maRbrTlMJSuPNQBhtURAbXnOrUxXLnrELMjjg9jgz6jHumt02iCEDY4BILJyXti6WqQOhjqXW7sWG3T/8sEswWkyf3aXF09zoJjVn2baHnGcdTIC1ATvQyr/eAxlTKqC88cSTyLSV6C8Gjg8MIN9gCJfXmI/YYcTMpH+/qm0IG5ZJ6JGgKOP9K18KwZ5Bv1XQoeYq1zpbat3CWzQmt7mu0F3+nBUqlXW+e+pl8or0RJYJKOHh4UhV8nt3+3dvf62qusVYUkTGoZFk3XU3/4RlFqb3q6z/uC49wVyKnehMkmYUKDI7l9oj3jxodWhJwgdN3eHElpOseIgPHX8QASkTlXTrSN2eHoYNN0MldiemeIumMmcTJOJawCl8QVifwXnGbxKXI87B4jFkQL2xJivr4XmlB1TftXY17V9OgCY3beDMKiq0z+hvg+Tmw+lQFXhmN0WG5J0pHe7QLm5/eGQbNTQSvcIAncEdtkhZcprtLury9v4qv6/YmdH2TpvDOJejqQxKydPsqGs3tBQUH6Y5Sv7Z3IfrWuVGOZj8A&lt;/diagram&gt;&lt;/mxfile&gt;">
+    <defs/>
     <g>
-        <path d="M 0 26 L 0 0 L 280 0 L 280 26" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="all"/>
-        <path d="M 0 26 L 0 268 L 280 268 L 280 26" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <path d="M 0 26 L 280 26" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" text-anchor="middle" font-size="12px">
-            <text x="139.5" y="17.5">
-                Forecast
-            </text>
-        </g>
+        <rect x="0" y="0" width="690" height="580" fill="none" stroke="none" pointer-events="all"/>
         <g transform="translate(-0.5 -0.5)">
             <switch>
                 <foreignObject pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility" style="overflow: visible; text-align: left;">
-                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 270px; height: 1px; padding-top: 33px; margin-left: 6px;">
-                        <div data-drawio-colors="color: rgb(0, 0, 0); " style="box-sizing: border-box; font-size: 0px; text-align: left; max-height: 80px; overflow: hidden;">
-                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.2; pointer-events: none; white-space: normal; overflow-wrap: normal;">
-                                Owner of all computed events for a period of time and a number of Accumulators.
+                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe center; justify-content: unsafe flex-start; width: 1px; height: 1px; padding-top: 290px; margin-left: 2px;">
+                        <div data-drawio-colors="color: rgb(0, 0, 0); " style="box-sizing: border-box; font-size: 0px; text-align: left;">
+                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.2; pointer-events: all; white-space: nowrap;">
+                                Approach to Monthly Budget
                                 <br/>
-                                Immediately computes all events and daily periods.
-                            </div>
-                        </div>
-                    </div>
-                </foreignObject>
-                <text x="6" y="45" fill="rgb(0, 0, 0)" font-family="Helvetica" font-size="12px">
-                    Owner of all computed events for a period of...
-                </text>
-            </switch>
-        </g>
-        <path d="M 0 114 L 280 114" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-4-123-272-26-0)" font-size="12px">
-            <text x="5.5" y="135.5">
-                start
-            </text>
-        </g>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-4-149-272-26-0)" font-size="12px">
-            <text x="5.5" y="161.5">
-                end
-            </text>
-        </g>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-4-175-272-30-0)" font-size="12px">
-            <text x="5.5" y="187.5">
-                days
-            </text>
-        </g>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-4-205-272-30-0)" font-size="12px">
-            <text x="5.5" y="217.5">
-                events: ForecastEvent[]
-            </text>
-        </g>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-4-235-272-30-0)" font-size="12px">
-            <text x="5.5" y="247.5">
-                accumulators: { key: string, value: Accumulator }
-            </text>
-        </g>
-        <path d="M 0 264 L 280 264" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <path d="M 360 26 L 360 0 L 600 0 L 600 26" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <path d="M 360 26 L 360 276 L 600 276 L 600 26" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <path d="M 360 26 L 600 26" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" text-anchor="middle" font-size="12px">
-            <text x="479.5" y="17.5">
-                Accumulator
-            </text>
-        </g>
-        <g transform="translate(-0.5 -0.5)">
-            <switch>
-                <foreignObject pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility" style="overflow: visible; text-align: left;">
-                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 230px; height: 1px; padding-top: 33px; margin-left: 366px;">
-                        <div data-drawio-colors="color: rgb(0, 0, 0); " style="box-sizing: border-box; font-size: 0px; text-align: left; max-height: 80px; overflow: hidden;">
-                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.2; pointer-events: none; white-space: normal; overflow-wrap: normal;">
-                                Defines a subset of all transactions and their relative changes and totals over a period of time.
                                 <br/>
-                                Eg, an account, a tag, a category, custom filter, etc
+                                <br/>
+                                <br/>
+                                Collect all income for month
+                                <br/>
+                                <br/>
+                                Detail all transfers for Month
+                                <br/>
+                                <br/>
+                                Detail All Spending
+                                <br/>
+                                - requires a mix of scheduled transactions and budgets
+                                <br/>
+                                - Sum and display transactions within categories
+                                <br/>
+                                - Sum and display budgets within categories
+                                <br/>
+                                <span style="white-space: pre;">
+                                </span>
+                                - Calculate how much of that budget will be spent that month
+                                <br/>
+                                <span style="white-space: pre;">
+                                </span>
+                                - Create transaction events for budget depletion
+                                <br/>
+                                - Compute forecast with Accumulators for accounts and budgets
+                                <br/>
+                                <br/>
+                                <br/>
+                                <br/>
+                                Saving/Creating Budgets
+                                <br/>
+                                <br/>
+                                Scenario: Budgets for sub category occur at irregular intervals.
+                                <br/>
+                                They collide for the same sub category for a given month (auto maintenance).
+                                <br/>
+                                Each has a name determining what it is for (car tires, oil change, etc)
+                                <br/>
+                                Behavior: Both budgets are listed under the sub category and are combined for the sub category total budget.
+                                <br/>
+                                <br/>
+                                YES WE NEED BUDGETS. For spending that is not based on 1:1 transactions ie grocery for a whole month, fuel, fun$$$.
+                                <br/>
+                                Maybe there are only one or two regular transactions but you can't say (or don't want to limit) exactly when they happen.
+                                <br/>
+                                Bill versus budgeted expense.
+                                <br/>
+                                <br/>
+                                Use case: irregular budget NOT a single transaction?
+                                <br/>
+                                BackToSchool? Could be budget for august every year
+                                <br/>
+                                Christmas Presents? Budget for December yearly
+                                <br/>
+                                Christmas Travel? Budget for December yearly
+                                <br/>
+                                <br/>
+                                What about NOT monthly budgets???
+                                <br/>
+                                Christmas Presents, spent over an entire year.
+                                <br/>
+                                <br/>
+                                REAL transaction gets assigned to a budget or a planned expense. Planned expenses are listed and accumulated seperately.
+                                <br/>
+                                Possibly give budgets filters for auto-assignment.
                             </div>
                         </div>
                     </div>
                 </foreignObject>
-                <text x="366" y="45" fill="rgb(0, 0, 0)" font-family="Helvetica" font-size="12px">
-                    Defines a subset of all transactions an...
+                <text x="2" y="294" fill="rgb(0, 0, 0)" font-family="Helvetica" font-size="12px">
+                    Approach to Monthly Budget...
                 </text>
             </switch>
         </g>
-        <path d="M 360 114 L 600 114" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-364-123-232-30-0)" font-size="12px">
-            <text x="365.5" y="135.5">
-                key: string
-            </text>
-        </g>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-364-153-232-30-0)" font-size="12px">
-            <text x="365.5" y="165.5">
-                filter: TransactionFilter
-            </text>
-        </g>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-364-183-232-30-0)" font-size="12px">
-            <text x="365.5" y="195.5">
-                startingBalance: Currency
-            </text>
-        </g>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-364-213-232-30-0)" font-size="12px">
-            <text x="365.5" y="225.5">
-                events: AccumulatorEvent[]
-            </text>
-        </g>
-        <path d="M 360 242 L 600 242" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-364-251-232-30-0)" font-size="12px">
-            <text x="365.5" y="263.5">
-                get endingBalance: Currency
-            </text>
-        </g>
-        <path d="M 40 345 L 40 319 L 320 319 L 320 345" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <path d="M 40 345 L 40 561 L 320 561 L 320 345" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <path d="M 40 345 L 320 345" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" text-anchor="middle" font-size="12px">
-            <text x="179.5" y="336.5">
-                ForecastEvent
-            </text>
-        </g>
-        <g transform="translate(-0.5 -0.5)">
-            <switch>
-                <foreignObject pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility" style="overflow: visible; text-align: left;">
-                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 270px; height: 1px; padding-top: 352px; margin-left: 46px;">
-                        <div data-drawio-colors="color: rgb(0, 0, 0); " style="box-sizing: border-box; font-size: 0px; text-align: left; max-height: 80px; overflow: hidden;">
-                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.2; pointer-events: none; white-space: normal; overflow-wrap: normal;">
-                                A transaction occurring on a forecast with totals for each accumulator
-                            </div>
-                        </div>
-                    </div>
-                </foreignObject>
-                <text x="46" y="364" fill="rgb(0, 0, 0)" font-family="Helvetica" font-size="12px">
-                    A transaction occurring on a forecast with to...
-                </text>
-            </switch>
-        </g>
-        <path d="M 40 433 L 320 433" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-44-442-272-26-0)" font-size="12px">
-            <text x="45.5" y="454.5">
-                date: DelfiDate
-            </text>
-        </g>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-44-468-272-30-0)" font-size="12px">
-            <text x="45.5" y="480.5">
-                forecastOrder: number
-            </text>
-        </g>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-44-498-272-30-0)" font-size="12px">
-            <text x="45.5" y="510.5">
-                transaction: Transaction
-            </text>
-        </g>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-44-528-272-30-0)" font-size="12px">
-            <text x="45.5" y="540.5">
-                snapshots: { key: string, value: AccumulatorEvent }
-            </text>
-        </g>
-        <path d="M 40 557 L 320 557" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <path d="M 480 365 L 480 339 L 720 339 L 720 365" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <path d="M 480 365 L 480 615 L 720 615 L 720 365" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <path d="M 480 365 L 720 365" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" text-anchor="middle" font-size="12px">
-            <text x="599.5" y="356.5">
-                AccumulatorEvent
-            </text>
-        </g>
-        <g transform="translate(-0.5 -0.5)">
-            <switch>
-                <foreignObject pointer-events="none" width="100%" height="100%" requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility" style="overflow: visible; text-align: left;">
-                    <div xmlns="http://www.w3.org/1999/xhtml" style="display: flex; align-items: unsafe flex-start; justify-content: unsafe flex-start; width: 230px; height: 1px; padding-top: 372px; margin-left: 486px;">
-                        <div data-drawio-colors="color: rgb(0, 0, 0); " style="box-sizing: border-box; font-size: 0px; text-align: left; max-height: 80px; overflow: hidden;">
-                            <div style="display: inline-block; font-size: 12px; font-family: Helvetica; color: rgb(0, 0, 0); line-height: 1.2; pointer-events: none; white-space: normal; overflow-wrap: normal;">
-                                A transaction occurring within an Accumulator with info about change and total at that time.
-                            </div>
-                        </div>
-                    </div>
-                </foreignObject>
-                <text x="486" y="384" fill="rgb(0, 0, 0)" font-family="Helvetica" font-size="12px">
-                    A transaction occurring within an Accum...
-                </text>
-            </switch>
-        </g>
-        <path d="M 480 453 L 720 453" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-484-462-232-30-0)" font-size="12px">
-            <text x="485.5" y="474.5">
-                date: DelfiDate
-            </text>
-        </g>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-484-492-232-30-0)" font-size="12px">
-            <text x="485.5" y="504.5">
-                eventOrder: number
-            </text>
-        </g>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-484-522-232-30-0)" font-size="12px">
-            <text x="485.5" y="534.5">
-                transaction: TransactionEvent
-            </text>
-        </g>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-484-552-232-30-0)" font-size="12px">
-            <text x="485.5" y="564.5">
-                startingBalance: Currency
-            </text>
-        </g>
-        <path d="M 480 581 L 720 581" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <g fill="rgb(0, 0, 0)" font-family="Helvetica" pointer-events="none" clip-path="url(#mx-clip-484-590-232-30-0)" font-size="12px">
-            <text x="485.5" y="602.5">
-                get endingBalance: Currency
-            </text>
-        </g>
-        <path d="M 600 223.06 L 650.06 223.06 Q 660.06 223.06 660.05 233.06 L 660 332.63" fill="none" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
-        <path d="M 660 337.88 L 656.5 330.88 L 660 332.63 L 663.5 330.88 Z" fill="rgb(0, 0, 0)" stroke="rgb(0, 0, 0)" stroke-miterlimit="10" pointer-events="none"/>
     </g>
     <switch>
         <g requiredFeatures="http://www.w3.org/TR/SVG11/feature#Extensibility"/>

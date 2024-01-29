@@ -7,6 +7,7 @@ import FilterService from "./FilterService";
 import type Accumulator from "delfi-core/models/Accumulator";
 import type { AccumulatorEvent, AccumulatorPeriod } from "delfi-core/models/Accumulator";
 import { peek } from "../utils/miscUtils";
+import type { Budget } from "../models/Budget";
 
 type Interval = 'day' | 'week' | 'month' | 'year';
 
@@ -105,7 +106,7 @@ class Forecast {
 	}
 
     private computeForecast() {
-        const scheduledEventDates = this.generateScheduledDates(this.transactionSchedules, this.start, this.end);
+        const scheduledEventDates = TransactionService.generateScheduledDates(this.transactionSchedules, this.start, this.end);
     
 		let events: ForecastEvent[] = [];
 		let days: ForecastPeriod[] = [];
@@ -137,6 +138,29 @@ class Forecast {
 				eventIdx++;
 			}
 
+			// Handle endOfMonth before advancing date
+			if (currentDate.isSame(date(currentDate.endOf('month')))) {
+				// Gather triggered events from each accumulator and allow each accumulator to process them
+				for (const accumulator of this.accumulators) {
+					const triggeredEvents = accumulator.doEndOfMonthTrigger(currentDate);
+					for (const event of triggeredEvents) {
+						const forecastEvent: ForecastEvent = {
+							date: currentDate,
+							transaction: event,
+							accumulatorEvents: {},
+						}
+						for (const accumulator of this.accumulators) {
+							const accumulatorEvent = accumulator.processNextTransaction(event);
+							if (accumulatorEvent) {
+								forecastEvent.accumulatorEvents[accumulator.key] = accumulatorEvent;
+							}
+						}
+						events.push(forecastEvent);
+						dayPeriod.addEvents([forecastEvent]);
+					}
+				}
+			}
+
 			// Go to next day
 			days.push(dayPeriod);
 			currentDate = date(currentDate.add(1, 'day'));
@@ -144,25 +168,6 @@ class Forecast {
 		this.days = days;
 		this.events = events;
     }
-
-	private generateScheduledDates(transactionSchedules: TransactionSchedule[], start, end): {
-		date: DelfiDate,
-		schedule: TransactionSchedule
-	}[] {
-		let events = <any[]>[];
-        for (let schedule of transactionSchedules) {
-			if (schedule.schedule) {
-				if (!schedule.schedule) throw Error('Transaction schedule has no schedule. Is this a trigger instead?');
-        		let dates = schedule.schedule.getOccurrencesBetween(start, end).map((d:DelfiDate) => ({
-					date: date(d),
-					schedule: schedule
-				}));
-				events.push(...dates);
-			}
-        }
-        events.sort((a,b)=>(a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0));
-		return events;
-	}
 
 	private computeScheduleForDate(date: DelfiDate, schedule: TransactionSchedule): ForecastEvent[] {
 		const events = <ForecastEvent[]><unknown>[];

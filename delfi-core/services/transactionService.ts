@@ -2,7 +2,7 @@ import { v4 as uuid } from "uuid";
 
 import type { Schedule } from "../models/schedules/Schedule"
 import { ImmediateMatchTrigger, type Trigger } from "../models/schedules/triggers"
-import type { DelfiDate } from "delfi-core/utils/dateUtils";
+import { date, type DelfiDate } from "../utils/dateUtils";
 import FilterService from "./FilterService";
 
 export enum TransactionScheduleType {
@@ -42,6 +42,7 @@ export type TransactionEvent = TransactionDetails & {
 	sourceSchedule?: TransactionSchedule,
 	sourceTrigger?: TransactionTrigger,
 	triggerEvent?: TransactionEvent
+	budgetId?: string
 }
 
 
@@ -56,6 +57,24 @@ export default class TransactionService {
 		}
 	}
 
+	static generateScheduledDates(transactionSchedules: TransactionSchedule[], start, end): {
+		date: DelfiDate,
+		schedule: TransactionSchedule
+	}[] {
+		let events = <any[]>[];
+        for (let schedule of transactionSchedules) {
+			if (schedule.schedule) {
+				if (!schedule.schedule) throw Error('Transaction schedule has no schedule. Is this a trigger instead?');
+        		let dates = schedule.schedule.getOccurrencesBetween(start, end).map((d:DelfiDate) => ({
+					date: date(d),
+					schedule: schedule
+				}));
+				events.push(...dates);
+			}
+        }
+        events.sort((a,b)=>(a.date < b.date) ? -1 : ((a.date > b.date) ? 1 : 0));
+		return events;
+	}
 
 	static createEventsFromSchedule(date: DelfiDate, schedule: TransactionSchedule): TransactionEvent[] {
 		const events: TransactionEvent[] = [];

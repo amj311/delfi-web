@@ -1,6 +1,6 @@
+import { date } from "../../utils/dateUtils";
 import { MONTHS } from "../../utils/constants";
 import { Schedule } from "./Schedule";
-import dayjs from "dayjs";
 
 
 
@@ -12,8 +12,8 @@ export class XPerMonthSchedule extends Schedule {
     constructor(public frequencyPerMonth, startDate, endDate?) {
         super();
         this.frequencyPerMonth = frequencyPerMonth;
-        this.startDate = dayjs(startDate);
-        this.endDate = endDate ? dayjs(endDate) : null;
+        this.startDate = date(startDate);
+        this.endDate = endDate ? date(endDate) : null;
         this.monthDays = [];
         let dayIval = Math.floor(30 / this.frequencyPerMonth);
         let offset = Math.min(30, this.startDate.date()) % dayIval;
@@ -24,32 +24,32 @@ export class XPerMonthSchedule extends Schedule {
     }
 
     getOccurrencesBetween(start, finish) {
-        let date = dayjs(start);
-        let end = dayjs(finish);
+        let currentDate = date(start);
+        let end = date(finish);
 
-        if (end.isBefore(this.startDate) || this.endDate?.isBefore(date))
+        if (end.isBefore(this.startDate) || this.endDate?.isBefore(currentDate))
             return [];
-        if (date.isBefore(this.startDate))
-            date = dayjs(this.startDate);
+        if (currentDate.isBefore(this.startDate))
+            currentDate = date(this.startDate);
         if (this.endDate && this.endDate.isBefore(end))
-            dayjs(end = this.endDate);
+            date(end = this.endDate);
 
         let occurrences: any[] = [];
 
         // For every month between start and end
-        while (dayjs(date).isSameOrBefore(end)) {
+        while (date(currentDate).isSameOrBefore(end)) {
             this.monthDays.forEach(day => {
                 // Catch invalid February days
                 // BUG: does not account for leap years
-                if (date.month() === MONTHS.FEB && day > 28)
+                if (currentDate.month() === MONTHS.FEB && day > 28)
                     day = 28;
-                let occurrence = dayjs(date).date(day);
+                let occurrence = date(currentDate.date(day));
                 if (occurrence.isSameOrBefore(end)) {
                     occurrences.push(occurrence);
                 }
             });
-            date.date(1);
-            date = date.add(1, 'M');
+            currentDate.date(1);
+            currentDate = date(currentDate.add(1, 'M'));
         }
 
         return occurrences;

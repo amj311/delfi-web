@@ -7,7 +7,19 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeView
+      component: HomeView,
+	  children: [
+		{
+			name: 'Forecast',
+			path: 'forecast-test',
+			component: () => import('../views/ForecastView.vue')
+		},
+		{
+			name: 'Budget',
+			path: 'budget-test',
+			component: () => import('../views/BudgetView.vue')
+		}
+	  ]
     },
     {
       path: '/about',

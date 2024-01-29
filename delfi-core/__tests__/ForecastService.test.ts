@@ -6,6 +6,8 @@ import { MONTHS } from "../utils/constants";
 import { TransactionScheduleType, type TransactionSchedule, type TransactionTrigger } from "../services/transactionService";
 import { date } from "../utils/dateUtils";
 import Accumulator from "../models/Accumulator";
+import BudgetService from "../services/BudgetService";
+import type { Budget } from "../models/Budget";
 
 const accounts = {
 	afcu_checking: {
@@ -137,6 +139,43 @@ describe('Forecast', () => {
 					})
 				}
 			}))
+		})
+
+		test('triggers and accumulates endOfMonth budget depletion', () => {
+			const budget: Budget = {
+				name: 'test-budget',
+				budget_id: '',
+				amount: 50,
+				numMonths: 1,
+				recurrenceSchedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JAN, 1)),
+				systemEventAccountId: 'test-account',
+			};
+			const budgetAccumulator = BudgetService.createBudgetAccumulator(budget);
+			const accountAccumulator = new Accumulator(
+				'account_test-account',
+				-25,
+				[{
+					property: 'targetAccount',
+					operator: 'eq',
+					operand: 'test-account',
+				}]
+			);
+			const forecast = new Forecast({
+				accumulators: [
+					budgetAccumulator,
+					accountAccumulator,
+				],
+				transactionSchedules: [],
+				transactionTriggers: [],
+				start: date('2023-01-01'),
+				end: date('2023-01-31')
+			});
+
+			expect(forecast.events).toHaveLength(1);
+			expect(budgetAccumulator.budgetPeriods[0].events).toHaveLength(1);
+			expect(budgetAccumulator.budgetPeriods[0].endingBalance).toBe(-50);
+			expect(accountAccumulator.events).toHaveLength(1);
+			expect(accountAccumulator.endingBalance).toBe(-75);
 		})
 
 	})

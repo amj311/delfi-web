@@ -33,9 +33,14 @@ export const useAccountStore = defineStore('account', () => {
 
 	}
 
+	const getAccountById = (id: string) => {
+		return accounts.value.find(a => a.account_id === id);
+	}
+
 	return {
 		accounts,
 		isLoadingAccounts,
 		loadAccounts,
+		getAccountById,
 	};
 })
