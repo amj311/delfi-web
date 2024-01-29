@@ -33,7 +33,7 @@ export class CategorySummary {
 
 	get hasInfo(): boolean {
 		return this.allEvents.length > 0 ||
-			this.budgets.some(b => b.summary.periods.length > 0);
+			this.budgets.some(b => b.periods.length > 0);
 	}
 
 	get netChange(): number {
