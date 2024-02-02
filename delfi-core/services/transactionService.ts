@@ -4,6 +4,7 @@ import type { Schedule } from "../models/schedules/Schedule"
 import { ImmediateMatchTrigger, type Trigger } from "../models/schedules/triggers"
 import { date, type DelfiDate } from "../utils/dateUtils";
 import FilterService from "./FilterService";
+import { peek } from "../utils/miscUtils";
 
 export enum TransactionScheduleType {
 	"income" = "income",
@@ -15,6 +16,7 @@ export type TransactionDetails = {
 	memo: string,
 	type: TransactionScheduleType,
 	targetAccount: string,
+	targetPartition?: string,
 	categoryId?: string,
 	tagIds?: string[],
 }
@@ -22,6 +24,7 @@ export type TransactionDetails = {
 type PlannedTransactionDetails = TransactionDetails & {
 	id: string,
 	originAccount?: string,
+	originPartition?: string,
 	recurrenceType: 'schedule' | 'trigger',
 }
 
@@ -52,6 +55,7 @@ export default class TransactionService {
 			memo: source.memo,
 			type: source.type,
 			targetAccount: source.targetAccount,
+			targetPartition: source.targetPartition,
 			categoryId: source.categoryId,
 			tagIds: source.tagIds,
 		}
@@ -76,6 +80,26 @@ export default class TransactionService {
 		return events;
 	}
 
+	static getNextOccurrence(asOfDate: DelfiDate, schedule: Schedule): DelfiDate | undefined {
+		// TODO Refactor to better library later
+		// For now just grab te first from a whole year.
+		const nextOccurrences = schedule.getOccurrencesBetween(
+			asOfDate,
+			asOfDate.add(1, 'year'),
+		);
+		return nextOccurrences[0];
+	}
+
+	static getPreviousOccurrence(asOfDate: DelfiDate, schedule: Schedule) {
+		// TODO Refactor to better library later
+		// For now just grab te first from a whole year.
+		const nextOccurrences = schedule.getOccurrencesBetween(
+			asOfDate.subtract(1, 'year'),
+			asOfDate,
+		);
+		return peek(nextOccurrences);
+	}
+
 	static createEventsFromSchedule(date: DelfiDate, schedule: TransactionSchedule): TransactionEvent[] {
 		const events: TransactionEvent[] = [];
 		// Origin transaction for Transfer
@@ -85,6 +109,7 @@ export default class TransactionService {
 				...TransactionService.copyTransactionDetails(schedule),
 				amount: -schedule.amount,
 				targetAccount: schedule.originAccount,
+				targetPartition: schedule.originPartition,
 				id: uuid(),
 				date,
 				sourceSchedule: schedule,

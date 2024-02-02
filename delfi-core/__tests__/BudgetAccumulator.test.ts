@@ -13,7 +13,7 @@ describe('BudgetAccumulator', () => {
 		
 	})
 
-	describe('createNewPeriod', () => {
+	describe('onDayStart', () => {
 		test('creates budgetPeriod with month boundaries and first month', () => {
 			const bAcc = new BudgetAccumulator(
 				'test-budget',
@@ -32,7 +32,7 @@ describe('BudgetAccumulator', () => {
 			);
 
 			// use day other than start of month
-			bAcc.createNewPeriod(date('2022-01-05'), date('2022-01-05'));
+			bAcc.onDayStart(date('2022-01-05'), date('2022-01-05'));
 
 			expect(bAcc.budgetPeriods.length).toBe(1);
 			expect(bAcc.budgetPeriods[0].start.toString()).toBe('2022-01-01');
@@ -60,9 +60,9 @@ describe('BudgetAccumulator', () => {
 				}
 			);
 
-			bAcc.createNewPeriod(date('2022-01-05'), date('2022-01-05'));
-			bAcc.createNewPeriod(date('2022-02-05'), date('2022-02-05'));
-			bAcc.createNewPeriod(date('2022-03-05'), date('2022-03-05'));
+			bAcc.onDayStart(date('2022-01-05'), date('2022-01-05'));
+			bAcc.onDayStart(date('2022-02-05'), date('2022-02-05'));
+			bAcc.onDayStart(date('2022-03-05'), date('2022-03-05'));
 
 			expect(bAcc.budgetPeriods.length).toBe(1);
 			// should create all 3 months
@@ -71,7 +71,7 @@ describe('BudgetAccumulator', () => {
 			expect(bAcc.budgetPeriods[0].months[2].end.toString()).toBe('2022-03-31');
 
 			// does not add more months
-			bAcc.createNewPeriod(date('2022-04-05'), date('2022-04-05'));
+			bAcc.onDayStart(date('2022-04-05'), date('2022-04-05'));
 			expect(bAcc.budgetPeriods[0].months.length).toBe(3);
 		})
 
@@ -93,15 +93,15 @@ describe('BudgetAccumulator', () => {
 				}
 			);
 
-			bAcc.createNewPeriod(date('2022-01-05'), date('2022-01-05'));
-			bAcc.createNewPeriod(date('2022-02-05'), date('2022-02-05'));
-			bAcc.createNewPeriod(date('2022-03-05'), date('2022-03-05'));
+			bAcc.onDayStart(date('2022-01-05'), date('2022-01-05'));
+			bAcc.onDayStart(date('2022-02-05'), date('2022-02-05'));
+			bAcc.onDayStart(date('2022-03-05'), date('2022-03-05'));
 			expect(bAcc.budgetPeriods.length).toBe(1);
 			expect(bAcc.budgetPeriods[0].end.toString()).toBe('2022-03-31');
 			expect(bAcc.budgetPeriods[0].endingBalance).toBe(50);
 
 			// is after first period end, should create a new one
-			bAcc.createNewPeriod(date('2022-04-05'), date('2022-04-05'));
+			bAcc.onDayStart(date('2022-04-05'), date('2022-04-05'));
 
 			expect(bAcc.budgetPeriods.length).toBe(2);
 			// should reset balance for new period
@@ -130,10 +130,10 @@ describe('BudgetAccumulator', () => {
 				}
 			);
 
-			bAcc.createNewPeriod(date('2022-01-05'), date('2022-01-05'));
+			bAcc.onDayStart(date('2022-01-05'), date('2022-01-05'));
 			expect(bAcc.budgetPeriods.length).toBe(1);
 			// is after budget end, should create a new period
-			bAcc.createNewPeriod(date('2022-04-05'), date('2022-04-05'));
+			bAcc.onDayStart(date('2022-04-05'), date('2022-04-05'));
 
 			expect(bAcc.budgetPeriods.length).toBe(1);
 		})
@@ -158,8 +158,8 @@ describe('BudgetAccumulator', () => {
 				}
 			);
 			// create two month periods
-			bAcc.createNewPeriod(date('2022-01-01'), date('2022-01-01'));
-			bAcc.createNewPeriod(date('2022-02-01'), date('2022-02-01'));
+			bAcc.onDayStart(date('2022-01-01'), date('2022-01-01'));
+			bAcc.onDayStart(date('2022-02-01'), date('2022-02-01'));
 
 			const transaction: TransactionEvent = {
 				id: 'test',
@@ -192,7 +192,7 @@ describe('BudgetAccumulator', () => {
 				}
 			);
 			// first period not active
-			bAcc.createNewPeriod(date('2022-01-01'), date('2022-01-01'));
+			bAcc.onDayStart(date('2022-01-01'), date('2022-01-01'));
 			expect(bAcc.budgetPeriods[0].start.toString()).toBe('2022-02-01');
 
 			const transaction: TransactionEvent = {
@@ -207,20 +207,20 @@ describe('BudgetAccumulator', () => {
 			expect(bAcc.budgetPeriods[0].events.length).toBe(0);
 
 			// add transaction while active
-			bAcc.createNewPeriod(date('2022-02-01'), date('2022-02-01'));
+			bAcc.onDayStart(date('2022-02-01'), date('2022-02-01'));
 			transaction.date = date('2022-02-01');
 			bAcc.processNextTransaction(transaction);
 			expect(bAcc.budgetPeriods[0].events.length).toBe(1);
 
 			// add transaction after end
-			bAcc.createNewPeriod(date('2022-03-01'), date('2022-03-01'));
+			bAcc.onDayStart(date('2022-03-01'), date('2022-03-01'));
 			transaction.date = date('2022-03-01');
 			bAcc.processNextTransaction(transaction);
 			expect(bAcc.budgetPeriods[0].events.length).toBe(1);
 		})
 	});
 
-	describe('doEndOfMonthTrigger', () => {
+	describe('doEndOfDayTrigger', () => {
 		test('triggers event for remaining budget if > 0', () => {
 			const bAcc = new BudgetAccumulator(
 				'test-budget',
@@ -238,7 +238,7 @@ describe('BudgetAccumulator', () => {
 					categoryId: 'test_category',
 				}
 			);
-			bAcc.createNewPeriod(date('2022-01-01'), date('2022-01-01'));
+			bAcc.onDayStart(date('2022-01-01'), date('2022-01-01'));
 			// process transaction to change balance
 			bAcc.processNextTransaction({
 				id: 'test',
@@ -249,7 +249,7 @@ describe('BudgetAccumulator', () => {
 				date: date('2022-01-01'),
 			});
 
-			const triggeredEvents = bAcc.doEndOfMonthTrigger(date('2022-01-31'));
+			const triggeredEvents = bAcc.doEndOfDayTrigger(date('2022-01-31'));
 			expect(triggeredEvents.length).toBe(1);
 			expect(triggeredEvents[0].amount).toBe(-25);
 			expect(triggeredEvents[0].targetAccount).toBe('test_account');
@@ -273,7 +273,7 @@ describe('BudgetAccumulator', () => {
 					systemEventAccountId: 'test-account',
 				}
 			);
-			bAcc.createNewPeriod(date('2022-01-01'), date('2022-01-01'));
+			bAcc.onDayStart(date('2022-01-01'), date('2022-01-01'));
 			// process transaction to change balance
 			bAcc.processNextTransaction({
 				id: 'test',
@@ -284,7 +284,7 @@ describe('BudgetAccumulator', () => {
 				date: date('2022-01-01'),
 			});
 
-			const triggeredEvents = bAcc.doEndOfMonthTrigger(date('2022-01-31'));
+			const triggeredEvents = bAcc.doEndOfDayTrigger(date('2022-01-31'));
 			expect(triggeredEvents.length).toBe(0);
 		})
 	})

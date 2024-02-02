@@ -5,6 +5,7 @@ import { computed, reactive, ref } from 'vue';
 import { useTransactionScheduleStore } from '@/stores/transactionSchedule.store';
 import Forecast from '../../delfi-core/services/forecastService'
 import Accumulator from '../../delfi-core/models/Accumulator';
+import { AccountAccumulator } from '../../delfi-core/models/Account';
 import { BudgetAccumulator } from '../../delfi-core/models/Budget';
 import { CategorySummary } from '../../delfi-core/models/Category'
 import TransactionService, { type TransactionTrigger } from '../../delfi-core/services/transactionService';
@@ -16,10 +17,6 @@ const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
 const transactionStore = useTransactionScheduleStore();
 
-// type CategorySummaryParent = CategorySummary & {
-// 	children: CategorySummary[];
-// };
-
 const state = reactive({
 	loading: false,
 	viewingMonth: <DelfiDate><unknown>null,
@@ -28,6 +25,8 @@ const state = reactive({
 
 (async () => {
 	state.loading = true;
+	state.viewingMonth = date(date().startOf('month'));
+	
 	await accountStore.loadAccounts();
 	await transactionStore.loadTransactionSchedules();
 
@@ -58,15 +57,8 @@ const state = reactive({
 		}]
 	));
 	for (const account of accountStore.accounts) {
-		accumulators.push(new Accumulator(
-			'account_' + account.account_id,
-			account.current_balance,
-			[{
-				property: 'targetAccount',
-				operator: 'eq',
-				operand: account.account_id
-			}]
-		))
+		const acc = new AccountAccumulator(account, state.viewingMonth);
+		accumulators.push(acc);
 	};
 
 	// Prepare categories w/ accumulators
@@ -99,14 +91,13 @@ const state = reactive({
 			transactionStore.transactionSchedules.filter(s => s.recurrenceType === 'trigger')
 		) as unknown as TransactionTrigger[],
 		start: date(date().startOf('month')),
-		end: date(date().endOf('month').add(5, 'year')),
+		end: date(date().endOf('month').add(5, 'months')),
 	});
-	state.viewingMonth = date(date().startOf('month'));
 	state.loading = false;
 })();
 
 const monthData = computed(() => {
-	if (!state.viewingMonth) {
+	if (!state.viewingMonth || !state.forecast) {
 		return null;
 	}
 	const monthStart = date(state.viewingMonth);
@@ -190,8 +181,8 @@ const goBack = () => {
 		<div>
 			<h3>Accounts</h3>
 			<div v-for="account of accountStore.accounts">
-				{{ account.custom_name || account.external_name }} ...... {{ monthData?.timeline.endingBalance('account_' +
-					account.account_id) }} ({{ monthData?.timeline.change('account_' + account.account_id) }})
+				{{ account.custom_name || account.external_name }} ...... {{ monthData?.timeline.endingBalance(
+					account.account_id) }} ({{ monthData?.timeline.change(account.account_id) }})
 			</div>
 			<div>Net Growth ...... {{ monthData?.timeline.change('total') }}</div>
 		</div>
@@ -226,7 +217,7 @@ const goBack = () => {
 			Total spending: {{ monthData?.timeline.change('expense') }}
 			<template v-for="category of monthData?.categorySummaries">
 				<div
-					v-if="category.hasInfo && !['Income', 'Transfer'].includes(category.category.name)">
+					v-if="category.hasInfo && !['Income'].includes(category.category.name)">
 					{{ category.category.name }} ...... {{ category.netChange }}
 					<template v-for="event of category.nonBudgetEvents">
 						<div>&nbsp;&nbsp;&nbsp;&nbsp;{{ event.transaction.memo }} ...... {{ event.transaction.amount > 0 ? '+' : '' }}{{ event.transaction.amount }}</div>
@@ -240,7 +231,7 @@ const goBack = () => {
 
 		<br />
 		
-		<!-- <div>
+		<div>
 			<h3>Transactions</h3>
 			<div v-for="day of monthData?.timeline.periods">
 				<template v-if="day.events.length > 0">
@@ -250,6 +241,6 @@ const goBack = () => {
 					</div>
 				</template>
 			</div>
-		</div> -->
+		</div>
 	</main>
 </template>

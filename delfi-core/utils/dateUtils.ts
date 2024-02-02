@@ -1,6 +1,8 @@
 import dayjs from "dayjs"
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore"
 dayjs.extend(isSameOrBefore);
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter"
+dayjs.extend(isSameOrAfter);
 
 type DelfiDateConfig = dayjs.ConfigType;
 export type DelfiDate = dayjs.Dayjs & {

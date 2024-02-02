@@ -1,7 +1,7 @@
 import type { Schedule } from "./schedules/Schedule";
 import Accumulator, { AccumulatorEvent, AccumulatorPeriod } from "./Accumulator";
 import type { TransactionFilter } from "delfi-core/services/FilterService";
-import { TransactionScheduleType, type TransactionEvent } from "../services/transactionService";
+import TransactionService, { TransactionScheduleType, type TransactionEvent } from "../services/transactionService";
 import { peek } from "../utils/miscUtils";
 import { date, type DelfiDate } from "../utils/dateUtils";
 import { v4 as uuid } from "uuid";
@@ -168,13 +168,7 @@ export class BudgetAccumulator extends Accumulator {
 	}
 
 	private createFirstPeriod(asOfDate: DelfiDate) {
-		// TODO Refactor to better library later
-		// For now just grab the latest from a whole year.
-		const previousOccurrences = this.budget.recurrenceSchedule.getOccurrencesBetween(
-			asOfDate.subtract(1, 'year'),
-			asOfDate,
-		);
-		const mostRecentOccurrence = peek(previousOccurrences);
+		const mostRecentOccurrence = TransactionService.getPreviousOccurrence(asOfDate, this.budget.recurrenceSchedule);
 
 		// Most recent might not exist if budget hasn't started yet at all
 		if (mostRecentOccurrence) {
@@ -199,13 +193,7 @@ export class BudgetAccumulator extends Accumulator {
 	}
 
 	private getNextBudgetOccurrence(asOfDate: DelfiDate) {
-		// TODO Refactor to better library later
-		// For now just grab te first from a whole year.
-		const nextOccurrences = this.budget.recurrenceSchedule.getOccurrencesBetween(
-			asOfDate,
-			asOfDate.add(1, 'year'),
-		);
-		return nextOccurrences[0];
+		return TransactionService.getNextOccurrence(asOfDate, this.budget.recurrenceSchedule);
 	}
 
 	private pushBudgetPeriod(startDate: DelfiDate, asOfDate: DelfiDate, balance: number = 0) {
@@ -231,7 +219,7 @@ export class BudgetAccumulator extends Accumulator {
 		currentPeriod.addEvent(newEvent);
 	}
 
-	doEndOfMonthTrigger(date: DelfiDate): TransactionEvent[] {
+	doEndOfDayTrigger(date: DelfiDate): TransactionEvent[] {
 		const currentPeriod = this.getCurrentBudgetPeriod(date);
 		if (this.hasCurrentOrFutureOccurrence && currentPeriod &&
 			date.isSame(currentPeriod.end)

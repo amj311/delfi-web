@@ -1,4 +1,4 @@
-import type { TransactionEvent } from "delfi-core/services/transactionService";
+import type { TransactionEvent, TransactionSchedule } from "delfi-core/services/transactionService";
 import type { TransactionFilter } from "../services/FilterService";
 import FilterService from "../services/FilterService";
 import { date, type DelfiDate } from "../utils/dateUtils";
@@ -54,7 +54,7 @@ export default class Accumulator {
 		return this.endingBalance - this.startingBalance;
 	}
 
-	public createNewPeriod(start: DelfiDate, end: DelfiDate): AccumulatorPeriod {
+	public onDayStart(start: DelfiDate, end: DelfiDate): AccumulatorPeriod {
 		const newPeriod = new AccumulatorPeriod(start, end, this.endingBalance);
 		this.periods.push(newPeriod);
 		this._postCreatePeriod(newPeriod);
@@ -84,7 +84,8 @@ export default class Accumulator {
 	_postCreatePeriod(newPeriod: AccumulatorPeriod) {};
 	_postProcessTransaction(transaction: TransactionEvent, newEvent: AccumulatorEvent) {};
 
-	// call after all other transactions for the month have been processed.
+	// call after all other transactions for the day have been processed.
 	// handles summary-type transactions based on period totals
-	doEndOfMonthTrigger(date: DelfiDate): TransactionEvent[] { return [] };
+	// Implementations can use this to do triggers at the end of any interval
+	doEndOfDayTrigger(date: DelfiDate): TransactionEvent[] { return [] };
 }

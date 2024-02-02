@@ -1,9 +1,6 @@
-import type { DecimalJsLike } from "@prisma/client/runtime/library";
-import { OneTimeSchedule } from "../../delfi-core/models/schedules/OneTimeSchedule";
 import { XPerMonthSchedule } from "../../delfi-core/models/schedules/XPerMonthSchedule";
 import { type TransactionSchedule, TransactionScheduleType } from "../../delfi-core/services/transactionService";
 import { MONTHS } from "../../delfi-core/utils/constants";
-import { type Account } from "@prisma/client";
 import { v4 as uuid } from "uuid";
 import { ImmediateMatchTrigger } from "../../delfi-core/models/schedules/triggers";
 import type { Budget } from "delfi-core/models/Budget";
@@ -24,21 +21,42 @@ export const my_accounts = {
 		type: "depository",
 		subtype: "checking",
 		current_balance: 2540,
+		partitions: <unknown[]>[],
 	},
 	afcu_savings: {
 		account_id: uuid(),
 		external_name: "asdfgtrf",
 		custom_name: "AFCU Savings",
 		current_balance: 5100,
+		partitions: <unknown[]>[],
 	},
 	us_savings: {
 		account_id: uuid(),
 		external_name: "asdfgtrf",
 		custom_name: "US Bank",
 		current_balance: 3000,
+		partitions: <unknown[]>[],
 	},
 };
 
+my_accounts.afcu_savings.partitions = [
+	{
+		partition_id: 'test-partition-id',
+		name: 'New Car',
+		balance: 5100,
+		target: 7000,
+		target_date: new Date(2024, MONTHS.SEP, 1),
+		transferSchedule: {
+			amount: 500,
+			memo: "New Car Savings",
+			type: TransactionScheduleType.transfer,
+			originAccount: my_accounts.afcu_checking.account_id,
+			targetAccount: my_accounts.afcu_savings.account_id,
+			targetPartition: 'test-partition-id',
+			schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25)),
+		}
+	}
+];
 
 
 
@@ -738,7 +756,7 @@ export const my_scheduledTransactions: any[] = [
 
 export const budgets: Budget[] = [
 	{
-		budget_id: 'test-grocery-budget',
+		budget_id: uuid(),
 		name: 'Groceries',
 		amount: 300,
 		recurrenceSchedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.SEP, 1)),

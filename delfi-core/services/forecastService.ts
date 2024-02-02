@@ -51,16 +51,10 @@ class ForecastPeriod {
 	}
 
 	startingBalance(accumulatorKey: string) {
-		if (!this.accumulatorPeriods[accumulatorKey]?.length) {
-			throw Error("No periods for key " + accumulatorKey);
-		}
-		return this.accumulatorPeriods[accumulatorKey][0]?.startingBalance || 0;
+		return this.accumulatorPeriods[accumulatorKey]?.[0]?.startingBalance || 0;
 	}
 
 	endingBalance(accumulatorKey: string) {
-		if (!this.accumulatorPeriods[accumulatorKey]?.length) {
-			throw Error("No periods for key " + accumulatorKey);
-		}
 		return peek(this.accumulatorPeriods[accumulatorKey])?.endingBalance || 0;
 	}
 
@@ -106,6 +100,7 @@ class Forecast {
 	}
 
     private computeForecast() {
+		const schedules = [...this.transactionSchedules];
         const scheduledEventDates = TransactionService.generateScheduledDates(this.transactionSchedules, this.start, this.end);
     
 		let events: ForecastEvent[] = [];
@@ -118,7 +113,7 @@ class Forecast {
 			const dayPeriod = new ForecastPeriod(date(currentDate), date(currentDate));
 			// Create accumulator periods
 			for (const accumulator of this.accumulators) {
-				dayPeriod.accumulatorPeriods[accumulator.key] = [accumulator.createNewPeriod(
+				dayPeriod.accumulatorPeriods[accumulator.key] = [accumulator.onDayStart(
 					date(currentDate), date(currentDate)
 				)];
 			}
@@ -138,26 +133,24 @@ class Forecast {
 				eventIdx++;
 			}
 
-			// Handle endOfMonth before advancing date
-			if (currentDate.isSame(date(currentDate.endOf('month')))) {
-				// Gather triggered events from each accumulator and allow each accumulator to process them
-				for (const accumulator of this.accumulators) {
-					const triggeredEvents = accumulator.doEndOfMonthTrigger(currentDate);
-					for (const event of triggeredEvents) {
-						const forecastEvent: ForecastEvent = {
-							date: currentDate,
-							transaction: event,
-							accumulatorEvents: {},
-						}
-						for (const accumulator of this.accumulators) {
-							const accumulatorEvent = accumulator.processNextTransaction(event);
-							if (accumulatorEvent) {
-								forecastEvent.accumulatorEvents[accumulator.key] = accumulatorEvent;
-							}
-						}
-						events.push(forecastEvent);
-						dayPeriod.addEvents([forecastEvent]);
+			// Handle endOfDay triggers before advancing date
+			// Gather triggered events from each accumulator and allow each accumulator to process them
+			for (const accumulator of this.accumulators) {
+				const triggeredEvents = accumulator.doEndOfDayTrigger(currentDate);
+				for (const event of triggeredEvents) {
+					const forecastEvent: ForecastEvent = {
+						date: currentDate,
+						transaction: event,
+						accumulatorEvents: {},
 					}
+					for (const accumulator of this.accumulators) {
+						const accumulatorEvent = accumulator.processNextTransaction(event);
+						if (accumulatorEvent) {
+							forecastEvent.accumulatorEvents[accumulator.key] = accumulatorEvent;
+						}
+					}
+					events.push(forecastEvent);
+					dayPeriod.addEvents([forecastEvent]);
 				}
 			}
 
