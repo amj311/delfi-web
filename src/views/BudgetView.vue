@@ -236,7 +236,7 @@ const goBack = () => {
 				<template v-for="category of monthData.categorySummaries">
 					<div
 						v-if="category.hasInfo && !['Income'].includes(category.category.name)">
-						{{ category.category.name }} ...... <Currency :amount="category.netChange" mode="transaction" />
+						{{ category.category.name }}
 						<template v-for="event of category.nonBudgetEvents">
 							<div>&nbsp;&nbsp;&nbsp;&nbsp;{{ event.transaction.memo }} ...... <Currency :amount="event.transaction.amount" mode="transaction" /></div>
 						</template>
