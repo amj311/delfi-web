@@ -110,4 +110,37 @@ export class AccountAccumulator extends Accumulator {
 		}
 		return events;
 	};
+
+	public createSummary(start: DelfiDate, end: DelfiDate): AccountSummary {
+		return new AccountSummary(
+			this.account,
+			this.accountPeriods.filter(period => period.start.isSameOrBefore(end) && period.end.isSameOrAfter(start)),
+		)
+	}
+}
+
+
+export class AccountSummary {
+	constructor(
+		readonly account: Account,
+		readonly accountPeriods: AccountPeriod[],
+	) {}
+
+	startingBalance(partition_id?): number {
+		if (partition_id) {
+			return this.accountPeriods[0]?.partitionPeriods[partition_id]?.startingBalance || 0;
+		}
+		return this.accountPeriods[0]?.totalPeriod?.startingBalance || 0;
+	}
+
+	endingBalance(partition_id?): number {
+		if (partition_id) {
+			return peek(this.accountPeriods)?.partitionPeriods[partition_id]?.endingBalance || 0;
+		}
+		return peek(this.accountPeriods)?.totalPeriod?.endingBalance || 0;
+	}
+
+	change(partition_id?): number {
+		return this.endingBalance(partition_id) - this.startingBalance(partition_id);
+	}
 }
