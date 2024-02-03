@@ -7,7 +7,7 @@
 import dayjs from "dayjs";
 import type { Account } from "./models/Account";
 import { TransactionScheduleType, type TransactionSchedule } from "./models/transactions";
-import Forecast from "./services/forecastService";
+import Forecast from "./models/Forecast";
 
 export type DelfiConfig = {
 	accounts: {[key: string]: Account},
@@ -31,7 +31,4 @@ export class Delfi {
 		this.forecast = new Forecast({accounts: this.accounts, transactionSchedules: this.transactions});
 	}
 
-	computeForecast() {
-		this.forecast.computeForecast(dayjs(Date.now()), dayjs().endOf('year'))
-	}
 }

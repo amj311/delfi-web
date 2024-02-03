@@ -20,7 +20,7 @@ export const my_accounts = {
 		custom_name: "AFCU Checking",
 		type: "depository",
 		subtype: "checking",
-		current_balance: 2540,
+		current_balance: 200,
 		partitions: <unknown[]>[],
 	},
 	afcu_savings: {
@@ -47,6 +47,7 @@ my_accounts.afcu_savings.partitions = [
 		target: 7000,
 		target_date: new Date(2024, MONTHS.SEP, 1),
 		transferSchedule: {
+			id: uuid(),
 			amount: 500,
 			memo: "New Car Savings",
 			type: TransactionScheduleType.transfer,

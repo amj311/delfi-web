@@ -3,7 +3,7 @@ import { useDelfiStore } from '@/stores/delfi.store';
 import { useAccountStore } from '@/stores/account.store';
 import { computed, reactive, ref } from 'vue';
 import { useTransactionScheduleStore } from '@/stores/transactionSchedule.store';
-import Forecast from '../../delfi-core/services/forecastService'
+import Forecast from '../../delfi-core/models/Forecast';
 import Accumulator from '../../delfi-core/models/Accumulator';
 import { AccountAccumulator } from '../../delfi-core/models/Account';
 import { BudgetAccumulator } from '../../delfi-core/models/Budget';
@@ -185,8 +185,8 @@ const goBack = () => {
 		<br />
 
 		<div v-if="monthData">
-		<div>
-			<h3>Accounts</h3>
+			<div>
+				<h3>Accounts</h3>
 				<div v-for="summary of monthData.accountSummaries">
 					{{ summary.account.custom_name || account.external_name }} ......
 					<Currency :amount="summary.endingBalance()" mode="balance" />
@@ -203,61 +203,61 @@ const goBack = () => {
 					</template>
 				</div>
 				<div>Net Growth ...... <Currency :amount="monthData.timeline.change('total')" mode="net_change" /></div>
-		</div>
-		<br />
+			</div>
+			<br />
 
-		<div>
-			<h3>Income</h3>
+			<div>
+				<h3>Income</h3>
 				<div v-for="income of monthData.incomesAndDates">
-				{{ income.schedule.memo }} ...... {{ income.schedule.amount }}
-				<br />
-				{{ income.dates.map(d => d.format('MMM D')).join(', ') }}
-			</div>
+					{{ income.schedule.memo }} ...... {{ income.schedule.amount }}
+					<br />
+					{{ income.dates.map(d => d.format('MMM D')).join(', ') }}
+				</div>
 				<div>Total ...... {{ monthData.timeline.endingBalance('income') }}</div>
-		</div>
-		<br />
-
-		<div>
-			<h3>Savings and Transfers</h3>
-				<div v-for="transfer of monthData.transfersAndDates">
-				{{ transfer.schedule.memo }} ...... {{ transfer.schedule.amount }}
-				<br/>
-				{{ accountStore.getAccountById(transfer.schedule.originAccount || '').custom_name }} → {{ accountStore.getAccountById(transfer.schedule.targetAccount).custom_name }}
-				<br />
-				{{ transfer.dates.map(d => d.format('MMM D')).join(', ') }}
 			</div>
-		</div>
-		<br />
+			<br />
+
+			<div>
+				<h3>Savings and Transfers</h3>
+				<div v-for="transfer of monthData.transfersAndDates">
+					{{ transfer.schedule.memo }} ...... {{ transfer.schedule.amount }}
+					<br/>
+					{{ accountStore.getAccountById(transfer.schedule.originAccount || '').custom_name }} → {{ accountStore.getAccountById(transfer.schedule.targetAccount).custom_name }}
+					<br />
+					{{ transfer.dates.map(d => d.format('MMM D')).join(', ') }}
+				</div>
+			</div>
+			<br />
 
 
-		<div>
-			<h3>Spending</h3>
+			<div>
+				<h3>Spending</h3>
 				Total spending: <Currency :amount="monthData.timeline.endingBalance('expense')" mode="transaction" />
 				<template v-for="category of monthData.categorySummaries">
-				<div
-					v-if="category.hasInfo && !['Income'].includes(category.category.name)">
+					<div
+						v-if="category.hasInfo && !['Income'].includes(category.category.name)">
 						{{ category.category.name }} ...... <Currency :amount="category.netChange" mode="transaction" />
-					<template v-for="event of category.nonBudgetEvents">
+						<template v-for="event of category.nonBudgetEvents">
 							<div>&nbsp;&nbsp;&nbsp;&nbsp;{{ event.transaction.memo }} ...... <Currency :amount="event.transaction.amount" mode="transaction" /></div>
-					</template>
-					<template v-for="budget of category.allBudgets">
+						</template>
+						<template v-for="budget of category.allBudgets">
 							<div>&nbsp;&nbsp;&nbsp;&nbsp;{{ budget.budget.name }} ...... <Currency :amount="-budget.budget.amount" mode="transaction" /></div>
-					</template>
-				</div>
-			</template>
-		</div>
-
-		<br />
-		
-		<div>
-			<h3>Transactions</h3>
-				<div v-for="day of monthData.timeline.periods">
-				<template v-if="day.events.length > 0">
-					<div>{{ day.start }}</div>
-					<div v-for="event of day.events">
-							{{ event.transaction.memo }} ...... <Currency :amount="event.transaction.amount" mode="transaction" />
+						</template>
 					</div>
 				</template>
+			</div>
+
+			<br />
+			
+			<div>
+				<h3>Transactions</h3>
+				<div v-for="day of monthData.timeline.periods">
+					<template v-if="day.events.length > 0">
+						<div>{{ day.start }}</div>
+						<div v-for="event of day.events">
+							{{ event.transaction.memo }} ...... <Currency :amount="event.transaction.amount" mode="transaction" />
+						</div>
+					</template>
 				</div>
 			</div>
 		</div>

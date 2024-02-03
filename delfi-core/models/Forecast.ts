@@ -1,13 +1,13 @@
 import { date, type DelfiDate } from "../utils/dateUtils";
-import { TransactionScheduleType, type TransactionSchedule, type TransactionEvent, type TransactionTrigger } from "./transactionService";
-import TransactionService from "./transactionService";
-import { ImmediateMatchTrigger } from "../../delfi-core/models/schedules/triggers";
+import { TransactionScheduleType, type TransactionSchedule, type TransactionEvent, type TransactionTrigger } from "../services/transactionService";
+import TransactionService from "../services/transactionService";
+import { ImmediateMatchTrigger } from "./schedules/triggers";
 import { v4 as uuid } from "uuid";
-import FilterService from "./FilterService";
+import FilterService from "../services/FilterService";
 import type Accumulator from "delfi-core/models/Accumulator";
 import type { AccumulatorEvent, AccumulatorPeriod } from "delfi-core/models/Accumulator";
 import { peek } from "../utils/miscUtils";
-import type { Budget } from "../models/Budget";
+import type { Budget } from "./Budget";
 
 type Interval = 'day' | 'week' | 'month' | 'year';
 

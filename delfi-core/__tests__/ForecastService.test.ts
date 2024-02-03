@@ -1,4 +1,4 @@
-import Forecast from "../services/forecastService";
+import Forecast from "../models/Forecast";
 import { beforeEach, describe, expect, test } from 'vitest'
 import { ImmediateMatchTrigger } from "../models/schedules/triggers";
 import { XPerMonthSchedule } from "../models/schedules/XPerMonthSchedule";
