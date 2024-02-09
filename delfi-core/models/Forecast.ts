@@ -1,6 +1,6 @@
 import { date, type DelfiDate } from "../utils/dateUtils";
-import { TransactionScheduleType, type TransactionSchedule, type TransactionEvent, type TransactionTrigger } from "../services/transactionService";
-import TransactionService from "../services/transactionService";
+import { TransactionScheduleType, type TransactionSchedule, type TransactionEvent, type TransactionTrigger } from "./Transaction";
+import TransactionService from "./Transaction";
 import { ImmediateMatchTrigger } from "./schedules/triggers";
 import { v4 as uuid } from "uuid";
 import FilterService from "../services/FilterService";
@@ -100,7 +100,6 @@ class Forecast {
 	}
 
     private computeForecast() {
-		const schedules = [...this.transactionSchedules];
         const scheduledEventDates = TransactionService.generateScheduledDates(this.transactionSchedules, this.start, this.end);
     
 		let events: ForecastEvent[] = [];

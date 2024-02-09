@@ -1,9 +1,11 @@
 import { XPerMonthSchedule } from "../../delfi-core/models/schedules/XPerMonthSchedule";
-import { type TransactionSchedule, TransactionScheduleType } from "../../delfi-core/services/transactionService";
+import { type TransactionSchedule, TransactionScheduleType } from "../../delfi-core/models/Transaction";
 import { MONTHS } from "../../delfi-core/utils/constants";
 import { v4 as uuid } from "uuid";
 import { ImmediateMatchTrigger } from "../../delfi-core/models/schedules/triggers";
 import type { Budget } from "delfi-core/models/Budget";
+import { flatCategoriesMap } from "../../delfi-core/models/systemCategories";
+import type { UserCategory } from "delfi-core/models/Category";
 
 const requiredStuff = {
 	mask: "**** **** **** 0942",
@@ -55,543 +57,31 @@ my_accounts.afcu_savings.partitions = [
 			targetAccount: my_accounts.afcu_savings.account_id,
 			targetPartition: 'test-partition-id',
 			schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25)),
+			categoryId: flatCategoriesMap["Transfer"].category_id,
 		}
 	}
 ];
 
 
 
-export const nestedCategories = [
-    {
-        "name": "Auto & Transport",
+export const customCategories: UserCategory[] = [
+	{
+		"name": "Tithing",
 		category_id: uuid(),
-        "children": [
-            {
-                "name": "Registration",
-				category_id: uuid(),
-            },
-            {
-                "name": "Auto Insurance",
-				category_id: uuid(),
-            },
-            {
-                "name": "Auto Payment",
-				category_id: uuid(),
-            },
-            {
-                "name": "Fuel",
-				category_id: uuid(),
-            },
-            {
-                "name": "Parking",
-				category_id: uuid(),
-            },
-            {
-                "name": "Public Transportation",
-				category_id: uuid(),
-            },
-            {
-                "name": "Service & Parts",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Bills & Utilities",
+		parent_id: flatCategoriesMap["Gifts & Donations"].category_id,
+		user_id: 'me',
+	},
+	{
+		"name": "Fast Offering",
 		category_id: uuid(),
-        "children": [
-            {
-                "name": "Home Phone",
-				category_id: uuid(),
-            },
-            {
-                "name": "Internet",
-				category_id: uuid(),
-            },
-            {
-                "name": "Mobile Phone",
-				category_id: uuid(),
-            },
-            {
-                "name": "Television",
-				category_id: uuid(),
-            },
-            {
-                "name": "Utilities",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Business Services",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Software",
-				category_id: uuid(),
-            },
-            {
-                "name": "Advertising",
-				category_id: uuid(),
-            },
-            {
-                "name": "Legal",
-				category_id: uuid(),
-            },
-            {
-                "name": "Office Supplies",
-				category_id: uuid(),
-            },
-            {
-                "name": "Printing",
-				category_id: uuid(),
-            },
-            {
-                "name": "Shipping",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Education",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Books & Supplies",
-				category_id: uuid(),
-            },
-            {
-                "name": "Student Loan",
-				category_id: uuid(),
-            },
-            {
-                "name": "Tuition",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Entertainment",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Amusement",
-				category_id: uuid(),
-            },
-            {
-                "name": "Arts",
-				category_id: uuid(),
-            },
-            {
-                "name": "Movies & DVDs",
-				category_id: uuid(),
-            },
-            {
-                "name": "Music",
-				category_id: uuid(),
-            },
-            {
-                "name": "Newspapers & Magazines",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Fees & Charges",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "ATM Fee",
-				category_id: uuid(),
-            },
-            {
-                "name": "Banking Fee",
-				category_id: uuid(),
-            },
-            {
-                "name": "Finance Charge",
-				category_id: uuid(),
-            },
-            {
-                "name": "Late Fee",
-				category_id: uuid(),
-            },
-            {
-                "name": "Service Fee",
-				category_id: uuid(),
-            },
-            {
-                "name": "Trade Commissions",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Financial",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Financial Advisor",
-				category_id: uuid(),
-            },
-            {
-                "name": "Life Insurance",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Food & Dining",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Treats and Sweets",
-				category_id: uuid(),
-            },
-            {
-                "name": "Alcohol & Bars",
-				category_id: uuid(),
-            },
-            {
-                "name": "Coffee Shops",
-				category_id: uuid(),
-            },
-            {
-                "name": "Fast Food",
-				category_id: uuid(),
-            },
-            {
-                "name": "Restaurants",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Gifts & Donations",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Christmas",
-				category_id: uuid(),
-            },
-            {
-                "name": "Birthday",
-				category_id: uuid(),
-            },
-            {
-                "name": "Charity",
-				category_id: uuid(),
-            },
-            {
-                "name": "Gift",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Health & Fitness",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Dentist",
-				category_id: uuid(),
-            },
-            {
-                "name": "Doctor",
-				category_id: uuid(),
-            },
-            {
-                "name": "Eyecare",
-				category_id: uuid(),
-            },
-            {
-                "name": "Gym",
-				category_id: uuid(),
-            },
-            {
-                "name": "Health Insurance",
-				category_id: uuid(),
-            },
-            {
-                "name": "Pharmacy",
-				category_id: uuid(),
-            },
-            {
-                "name": "Sports",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Home",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Furnishings",
-				category_id: uuid(),
-            },
-            {
-                "name": "Home Improvement",
-				category_id: uuid(),
-            },
-            {
-                "name": "Home Insurance",
-				category_id: uuid(),
-            },
-            {
-                "name": "Home Services",
-				category_id: uuid(),
-            },
-            {
-                "name": "Home Supplies",
-				category_id: uuid(),
-            },
-            {
-                "name": "Lawn & Garden",
-				category_id: uuid(),
-            },
-            {
-                "name": "Mortgage & Rent",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Income",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Interest Income",
-				category_id: uuid(),
-            },
-            {
-                "name": "Paycheck",
-				category_id: uuid(),
-            },
-            {
-                "name": "Reimbursement",
-				category_id: uuid(),
-            },
-            {
-                "name": "Rental Income",
-				category_id: uuid(),
-            },
-            {
-                "name": "Returned Purchase",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Investments",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Buy",
-				category_id: uuid(),
-            },
-            {
-                "name": "Deposit",
-				category_id: uuid(),
-            },
-            {
-                "name": "Dividend & Cap Gains",
-				category_id: uuid(),
-            },
-            {
-                "name": "Sell",
-				category_id: uuid(),
-            },
-            {
-                "name": "Withdrawal",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Kids",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Allowance",
-				category_id: uuid(),
-            },
-            {
-                "name": "Baby Supplies",
-				category_id: uuid(),
-            },
-            {
-                "name": "Babysitter & Daycare",
-				category_id: uuid(),
-            },
-            {
-                "name": "Child Support",
-				category_id: uuid(),
-            },
-            {
-                "name": "Kids Activities",
-				category_id: uuid(),
-            },
-            {
-                "name": "Toys",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Personal Care",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Hair",
-				category_id: uuid(),
-            },
-            {
-                "name": "Laundry",
-				category_id: uuid(),
-            },
-            {
-                "name": "Spa & Massage",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Pets",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Pet Food & Supplies",
-				category_id: uuid(),
-            },
-            {
-                "name": "Pet Grooming",
-				category_id: uuid(),
-            },
-            {
-                "name": "Veterinary",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Shopping",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Books",
-				category_id: uuid(),
-            },
-            {
-                "name": "Clothing",
-				category_id: uuid(),
-            },
-            {
-                "name": "Electronics & Software",
-				category_id: uuid(),
-            },
-            {
-                "name": "Hobbies",
-				category_id: uuid(),
-            },
-            {
-                "name": "Sporting Goods",
-				category_id: uuid(),
-            },
-			{
-				name: "Groceries",
-				category_id: uuid(),
-			}
-        ]
-    },
-    {
-        "name": "Taxes",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Federal Tax",
-				category_id: uuid(),
-            },
-            {
-                "name": "Local Tax",
-				category_id: uuid(),
-            },
-            {
-                "name": "Property Tax",
-				category_id: uuid(),
-            },
-            {
-                "name": "Sales Tax",
-				category_id: uuid(),
-            },
-            {
-                "name": "State Tax",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Transfer",
-		category_id: uuid(),
-        "children": [
-            {
-                "name": "Refund",
-				category_id: uuid(),
-            },
-            {
-                "name": "Credit Card Payment",
-				category_id: uuid(),
-            },
-            {
-                "name": "Transfer for Cash Spending",
-				category_id: uuid(),
-            },
-            {
-                "name": "Mortgage Payment",
-				category_id: uuid(),
-            }
-        ]
-    },
-    {
-        "name": "Travel",
-		category_id: uuid(),
-        "children": [
-            {
-				"name": "Hotel & Lodging",
-				category_id: uuid(),
-			},
-			{
-				"name": "Flights",
-				category_id: uuid(),
-			},
-			{
-				"name": "Transportation",
-				category_id: uuid(),
-			},
-			{
-				"name": "Activities",
-				category_id: uuid(),
-			},
-			{
-				"name": "Food",
-				category_id: uuid(),
-			},
-        ]
-    },
-    {
-        "name": "Uncategorized",
-		category_id: uuid(),
-        "children": []
-    }
+		parent_id: flatCategoriesMap["Gifts & Donations"].category_id,
+		user_id: 'me',
+	},
 ];
 
-export const flatCategoriesMap = Object.fromEntries(nestedCategories.flatMap(parent => ([
-	[parent.name, parent],
-	...parent.children.map(child => [child.name, {
-		...child,
-		parent: parent.name
-	}])
-])))
+export const customCategoriesMap = Object.fromEntries(customCategories.flatMap(category => ([
+	[category.name, category],
+])));
 
 
 
@@ -607,7 +97,7 @@ export const my_scheduledTransactions: any[] = [
 		targetAccount: my_accounts.afcu_checking.account_id,
 		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 5)),
-		categoryId: flatCategoriesMap["Life Insurance"].name
+		categoryId: flatCategoriesMap["Life Insurance"].category_id
 	},
 	{ 
 		transaction_schedule_id: uuid(),
@@ -617,7 +107,7 @@ export const my_scheduledTransactions: any[] = [
 		targetAccount: my_accounts.afcu_checking.account_id,
 		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 5)),
-		categoryId: flatCategoriesMap["Life Insurance"].name
+		categoryId: flatCategoriesMap["Life Insurance"].category_id
 	},
 	{ // Car Insurance
 		transaction_schedule_id: uuid(),
@@ -628,7 +118,7 @@ export const my_scheduledTransactions: any[] = [
 
 		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 8)),
-		categoryId: flatCategoriesMap["Auto Insurance"].name
+		categoryId: flatCategoriesMap["Auto Insurance"].category_id
 	},
 
 	{ // Clozd fulltime
@@ -640,14 +130,14 @@ export const my_scheduledTransactions: any[] = [
 
 		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(2, new Date(2022, MONTHS.MAY, 14)),
-		categoryId: flatCategoriesMap["Paycheck"].name
+		categoryId: flatCategoriesMap["Paycheck"].category_id
 	},
 	{
 		transaction_schedule_id: uuid(),
 		type: TransactionScheduleType.expense,
 		memo: "Tithing",
 		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: flatCategoriesMap["Charity"].name,
+		categoryId: customCategoriesMap["Tithing"].category_id,
 		recurrenceType: 'trigger',
 		trigger: new ImmediateMatchTrigger({
 			filter: [{
@@ -667,7 +157,7 @@ export const my_scheduledTransactions: any[] = [
 		memo: "Fast Offering",
 		amount: 100,
 		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: flatCategoriesMap["Charity"].name,
+		categoryId: customCategoriesMap["Fast Offering"].category_id,
 		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 7))
 	},
@@ -676,9 +166,9 @@ export const my_scheduledTransactions: any[] = [
 		transaction_schedule_id: uuid(),
 		type: TransactionScheduleType.expense,
 		memo: "Mortgage",
-		amount: 2240,
+		amount: 2445,
 		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: flatCategoriesMap["Mortgage & Rent"].name,
+		categoryId: flatCategoriesMap["Mortgage & Rent"].category_id,
 		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 17))
 	},
@@ -688,7 +178,7 @@ export const my_scheduledTransactions: any[] = [
 		memo: "HOA",
 		amount: 215,
 		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: flatCategoriesMap["Home Services"].name,
+		categoryId: flatCategoriesMap["Home Services"].category_id,
 		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 18))
 	},
@@ -698,7 +188,7 @@ export const my_scheduledTransactions: any[] = [
 		memo: "Gas Bill",
 		amount: 50,
 		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: flatCategoriesMap["Utilities"].name,
+		categoryId: flatCategoriesMap["Utilities"].category_id,
 		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 18))
 	},
@@ -708,7 +198,7 @@ export const my_scheduledTransactions: any[] = [
 		memo: "Power Bill",
 		amount: 30,
 		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: flatCategoriesMap["Utilities"].name,
+		categoryId: flatCategoriesMap["Utilities"].category_id,
 		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 17))
 	},
@@ -718,7 +208,7 @@ export const my_scheduledTransactions: any[] = [
 		memo: "Internet",
 		amount: 50,
 		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: flatCategoriesMap["Utilities"].name,
+		categoryId: flatCategoriesMap["Utilities"].category_id,
 		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 17))
 	},
@@ -729,7 +219,7 @@ export const my_scheduledTransactions: any[] = [
 		memo: "Preschool",
 		amount: 170,
 		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: flatCategoriesMap["Tuition"].name,
+		categoryId: flatCategoriesMap["Tuition"].category_id,
 		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2024, MONTHS.SEP, 1), new Date(2025, MONTHS.MAY, 1))
 	},
@@ -742,12 +232,12 @@ export const my_scheduledTransactions: any[] = [
 		transaction_schedule_id: uuid(),
 		type: TransactionScheduleType.transfer,
 		memo: "Emergency Savings Transfer",
-		amount: 500,
+		amount: 300,
 		targetAccount: my_accounts.afcu_savings.account_id,
 		originAccount: my_accounts.afcu_checking.account_id,
 		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.SEP, 1)),
-		categoryId: flatCategoriesMap["Transfer"].name,
+		categoryId: flatCategoriesMap["Transfer"].category_id,
 	},
 ];
 
@@ -762,14 +252,14 @@ export const budgets: Budget[] = [
 		amount: 300,
 		recurrenceSchedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.SEP, 1)),
 		numMonths: 1,
-		categoryId: flatCategoriesMap.Groceries.name,
+		categoryId: flatCategoriesMap.Groceries.category_id,
 		systemEventAccountId: my_accounts.afcu_checking.account_id,
 	},
 	{
 		budget_id: uuid(),
 		name: "Fuel",
 		amount: 50,
-		categoryId: flatCategoriesMap.Fuel.name,
+		categoryId: flatCategoriesMap.Fuel.category_id,
 		systemEventAccountId: my_accounts.afcu_checking.account_id,
 		recurrenceSchedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
 		numMonths: 1,
@@ -778,7 +268,7 @@ export const budgets: Budget[] = [
 	{
 		budget_id: uuid(),
 		name: "Fun Money",
-		categoryId: flatCategoriesMap.Shopping.name,
+		categoryId: flatCategoriesMap.Shopping.category_id,
 		recurrenceSchedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
 		amount: 150,
 		systemEventAccountId: my_accounts.afcu_checking.account_id,
@@ -788,7 +278,7 @@ export const budgets: Budget[] = [
 	{
 		budget_id: uuid(),
 		name: "Baby Care",
-		categoryId: flatCategoriesMap.Shopping.name,
+		categoryId: flatCategoriesMap.Shopping.category_id,
 		recurrenceSchedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
 		amount: 50,
 		systemEventAccountId: my_accounts.afcu_checking.account_id,

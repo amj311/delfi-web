@@ -19,3 +19,4 @@ const transactionStore = useTransactionScheduleStore();
 <template>
 	<router-view></router-view>
 </template>
+delfi-core/services/Transaction

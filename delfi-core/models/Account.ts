@@ -1,6 +1,6 @@
 import type { Schedule } from "./schedules/Schedule"
 import Accumulator, { AccumulatorEvent, AccumulatorPeriod } from "./Accumulator"
-import TransactionService, { TransactionScheduleType, type TransactionSchedule, type TransactionEvent } from "../services/transactionService"
+import TransactionService, { TransactionScheduleType, type TransactionSchedule, type TransactionEvent } from "./Transaction"
 import { v4 as uuid } from "uuid"
 import { date, type DelfiDate } from "../utils/dateUtils"
 import { peek } from "../utils/miscUtils"
@@ -15,9 +15,9 @@ export type AccountPartition = {
 }
 
 export type Account = {
-	id: string,
+	account_id: string,
 	name: string,
-	balance: number,
+	current_balance: number,
 	partitions: AccountPartition[],
 }
 

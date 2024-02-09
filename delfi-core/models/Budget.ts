@@ -1,7 +1,7 @@
 import type { Schedule } from "./schedules/Schedule";
 import Accumulator, { AccumulatorEvent, AccumulatorPeriod } from "./Accumulator";
 import type { TransactionFilter } from "delfi-core/services/FilterService";
-import TransactionService, { TransactionScheduleType, type TransactionEvent } from "../services/transactionService";
+import TransactionService, { TransactionScheduleType, type TransactionEvent } from "./Transaction";
 import { peek } from "../utils/miscUtils";
 import { date, type DelfiDate } from "../utils/dateUtils";
 import { v4 as uuid } from "uuid";
@@ -23,7 +23,7 @@ export class Budget {
 		readonly recurrenceSchedule: Schedule,
 		readonly numMonths: number,
 		readonly systemEventAccountId: string,
-		readonly categoryId?: string,
+		readonly categoryId: string,
 	) {}
 }
 
@@ -155,10 +155,13 @@ export class BudgetAccumulator extends Accumulator {
 		}
 
 		// Otherwise advance entire period
+		// Assume this to always occur on the first of the month!
+		// Will be true as long as periods are created daily and budgets
+		// last for full months
 		const lastPeriod = peek(this.budgetPeriods);
 		if (!lastPeriod) throw Error("There should always be a last period");
-		if (newPeriod.start > lastPeriod.end) {
-			const nextOccurrence = this.getNextBudgetOccurrence(newPeriod.start);
+		if (newPeriod.start.startOf('month') > lastPeriod.end) {
+			const nextOccurrence = this.getNextBudgetOccurrence(date(newPeriod.start.startOf('month')));
 			if (nextOccurrence) {
 				this.pushBudgetPeriod(nextOccurrence, nextOccurrence);
 			}

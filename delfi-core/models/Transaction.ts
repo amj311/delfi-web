@@ -1,9 +1,9 @@
 import { v4 as uuid } from "uuid";
 
-import type { Schedule } from "../models/schedules/Schedule"
-import { ImmediateMatchTrigger, type Trigger } from "../models/schedules/triggers"
+import type { Schedule } from "./schedules/Schedule"
+import { ImmediateMatchTrigger, type Trigger } from "./schedules/triggers"
 import { date, type DelfiDate } from "../utils/dateUtils";
-import FilterService from "./FilterService";
+import FilterService from "../services/FilterService";
 import { peek } from "../utils/miscUtils";
 
 export enum TransactionScheduleType {
@@ -17,7 +17,7 @@ export type TransactionDetails = {
 	type: TransactionScheduleType,
 	targetAccount: string,
 	targetPartition?: string,
-	categoryId?: string,
+	categoryId: string,
 	tagIds?: string[],
 }
 

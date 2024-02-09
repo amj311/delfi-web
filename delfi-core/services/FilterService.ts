@@ -1,4 +1,4 @@
-import { type TransactionDetails, type TransactionEvent, type TransactionSchedule } from "./transactionService"
+import { type TransactionDetails, type TransactionEvent, type TransactionSchedule } from "../models/Transaction"
 
 type MatchingRule = {
 	property?: 'budgetId' | 'amount' | 'memo' | 'type' | 'targetAccount' | 'categoryId'

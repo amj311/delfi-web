@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from 'vitest'
 import { ImmediateMatchTrigger } from "../models/schedules/triggers";
 import { XPerMonthSchedule } from "../models/schedules/XPerMonthSchedule";
 import { MONTHS } from "../utils/constants";
-import { TransactionScheduleType, type TransactionSchedule, type TransactionTrigger, type TransactionEvent } from "../services/transactionService";
+import { TransactionScheduleType, type TransactionSchedule, type TransactionTrigger, type TransactionEvent } from "../models/Transaction";
 import { date } from "../utils/dateUtils";
 import Accumulator from "../models/Accumulator";
 import { BudgetAccumulator } from "../models/Budget";
@@ -76,7 +76,7 @@ describe('BudgetAccumulator', () => {
 		})
 
 				
-		test('creates new budget period after fist', () => {
+		test('creates new budget period after first', () => {
 			const bAcc = new BudgetAccumulator(
 				'test-budget',
 				50,
