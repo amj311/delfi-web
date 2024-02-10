@@ -4,12 +4,6 @@ import { useAccountStore } from '@/stores/account.store';
 import { computed, reactive, ref } from 'vue';
 import { useTransactionScheduleStore } from '@/stores/transactionSchedule.store';
 import Forecast from '../../delfi-core/models/Forecast';
-import Accumulator from '../../delfi-core/models/Accumulator';
-import { AccountAccumulator } from '../../delfi-core/models/Account';
-import { BudgetAccumulator } from '../../delfi-core/models/Budget';
-import { CategorySummary } from '../../delfi-core/models/Category'
-import TransactionService, { type TransactionTrigger } from '../../delfi-core/services/transactionService';
-import BudgetService from '../../delfi-core/services/BudgetService';
 import { type DelfiDate, date} from '../../delfi-core/utils/dateUtils';
 import { budgets, customCategories } from '../stores/myData';
 import Currency from '@/components/Currency.vue';
@@ -140,9 +134,9 @@ const goBack = () => {
 			<div>
 				<h3>Spending</h3>
 				Total spending: <Currency :amount="monthData.timeline.change('expense')" mode="transaction" />
-				<template v-for="category of monthData.categorySummaries">
+				<template v-for="category of monthData.spendingCategories">
 					<div
-						v-if="category.hasInfo && !['Income'].includes(category.category.name)">
+						v-if="category.hasInfo">
 						{{ category.category.name }}
 						<template v-for="event of category.nonBudgetEvents">
 							<div>&nbsp;&nbsp;&nbsp;&nbsp;{{ event.transaction.memo }} ...... <Currency :amount="event.transaction.amount" mode="transaction" /></div>

@@ -36,10 +36,10 @@ const color = computed(() => {
 		return 'red';
 	}
 	if (props.mode === 'balance_reverse' && props.amount > 0) {
-		return 'limegreen';
+		return '#00bd7e';
 	}
 	if (props.mode === 'transaction' && props.amount > 0) {
-		return 'limegreen';
+		return '#00bd7e';
 	}
 });
 

@@ -115,7 +115,6 @@ export const my_scheduledTransactions: any[] = [
 		memo: "Car Insurance",
 		amount: 81,
 		targetAccount: my_accounts.afcu_checking.account_id,
-
 		recurrenceType: 'schedule',
 		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 8)),
 		categoryId: flatCategoriesMap["Auto Insurance"].category_id

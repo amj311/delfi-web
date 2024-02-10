@@ -108,18 +108,6 @@ export class Delfi {
 		const monthStart = date(monthDate.startOf('month'));
 		const monthEnd = date(monthDate.endOf('month'));
 		
-		const transferSchedules = this.transactionSchedules.filter(s => s.recurrenceType === 'schedule' && s.type === 'transfer');
-		const transfersAndDates = transferSchedules.map(schedule => ({
-			schedule,
-			dates: schedule.schedule.getOccurrencesBetween(monthStart, monthEnd),
-		}));
-
-		const incomeSchedules = this.transactionSchedules.filter(s => s.recurrenceType === 'schedule' && s.type === 'income');
-		const incomesAndDates = incomeSchedules.map(schedule => ({
-			schedule,
-			dates: schedule.schedule.getOccurrencesBetween(monthStart, monthEnd),
-		}));
-
 		const timeline = this.forecast.getTimeline(monthStart, monthEnd, 'day');
 
 		const accountSummaries = this.accounts.map(account => (
@@ -143,17 +131,17 @@ export class Delfi {
 			)
 		));
 
-		const incomeSummary = categorySummaries.find(c => c.category.category_id === flatCategoriesMap['Income'].category_id);
-		const transferSummary = categorySummaries.find(c => c.category.category_id === flatCategoriesMap['Transfer'].category_id);
+		const incomeSummary = categorySummaries.find(c => c.category.name === 'Income');
+		const transferSummary = categorySummaries.find(c => c.category.name === 'Transfer');
+		const spendingCategories = categorySummaries.filter(c => !['Income', 'Transfer'].includes(c.category.name));
 
 		return {
 			timeline,
 			accountSummaries,
 			categorySummaries,
-			// transfersAndDates,
-			// incomesAndDates,
 			incomeSummary,
 			transferSummary,
+			spendingCategories,
 		};
 	}
 }
