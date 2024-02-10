@@ -124,7 +124,7 @@ export const my_scheduledTransactions: any[] = [
 		transaction_schedule_id: uuid(),
 		type: PlannedTransactionType.income,
 		memo: "Clozd Salary",
-		amount: 2540,
+		amount: 3140,
 		targetAccount:  my_accounts.afcu_checking.account_id,
 
 		recurrenceType: 'schedule',

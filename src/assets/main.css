@@ -6,11 +6,42 @@
   padding: 2rem;
 }
 
+b, .text-bold {
+  font-weight: 600;
+}
+
+.text-semibold {
+  font-weight: 500;
+}
+
 a,
 .green {
   text-decoration: none;
   color: hsla(160, 100%, 37%, 1);
   transition: 0.4s;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+}
+
+.flex-center {
+	display: flex;
+	align-items: center;
+}
+  
+.gap-1 {
+  gap: '4px';
+}
+.gap-2 {
+  gap: '8px';
+}
+.gap-3 {
+  gap: '12px';
+}
+.gap-4 {
+  gap: '16px';
 }
 
 @media (hover: hover) {
