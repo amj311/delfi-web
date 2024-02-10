@@ -165,4 +165,3 @@ const goBack = () => {
 		
 	</main>
 </template>
-../../delfi-core/services/Transaction
