@@ -33,7 +33,7 @@ export const useAccountStore = defineStore('account', () => {
 
 	}
 
-	const getAccountById = (id: string) => {
+	const getAccountById = (id?: string) => {
 		return accounts.value.find(a => a.account_id === id);
 	}
 

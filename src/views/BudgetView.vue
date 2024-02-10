@@ -120,9 +120,9 @@ const goBack = () => {
 				<h3>Savings and Transfers</h3>
 				<div v-for="[schedule, events] of monthData.transferSummary?.eventsBySchedule.entries()">
 					<template v-if="schedule !== 'none'" >
-						{{ schedule.memo }} ...... <Currency :amount="schedule.amount" />
+						<b>{{ schedule.memo }} ...... <Currency :amount="schedule.amount" /></b>
 						<br/>
-						{{ accountStore.getAccountById(schedule.originAccount || '').custom_name }} → {{ accountStore.getAccountById(schedule.targetAccount).custom_name }}
+						{{ accountStore.getAccountById(schedule.originAccount).custom_name }} → {{ accountStore.getAccountById(schedule.targetAccount).custom_name }}
 						<br />
 						{{ events.map(e => e.date.format('MMM D')).join(', ') }}
 					</template>
@@ -134,10 +134,11 @@ const goBack = () => {
 			<div>
 				<h3>Spending</h3>
 				Total spending: <Currency :amount="monthData.timeline.change('expense')" mode="transaction" />
+				<br />
+				<br />
 				<template v-for="category of monthData.spendingCategories">
-					<div
-						v-if="category.hasInfo">
-						{{ category.category.name }}
+					<div v-if="category.hasInfo">
+						<b>{{ category.category.name }}</b>
 						<template v-for="event of category.nonBudgetEvents">
 							<div>&nbsp;&nbsp;&nbsp;&nbsp;{{ event.transaction.memo }} ...... <Currency :amount="event.transaction.amount" mode="transaction" /></div>
 						</template>
@@ -154,9 +155,13 @@ const goBack = () => {
 				<h3>Transactions</h3>
 				<div v-for="day of monthData.timeline.periods">
 					<template v-if="day.events.length > 0">
-						<div>{{ day.start }}</div>
-						<div v-for="event of day.events">
-							{{ event.transaction.memo }} ...... <Currency :amount="event.transaction.amount" mode="transaction" />
+						<div :style="{ padding: '5px 8px', marginTop: '8px'}">{{ day.start }}</div>
+						<div v-for="event of day.events" :style="{ padding: '12px 16px', background: '#fff', borderBottom: '1px solid #eee' }">
+							<div class="transaction-main-line">
+								{{ event.transaction.memo }}
+								<Currency :amount="event.transaction.amount" mode="transaction" />
+							</div>
+							{{ accountStore.getAccountById(event.transaction.targetAccount).custom_name }}
 						</div>
 					</template>
 				</div>
@@ -165,3 +170,14 @@ const goBack = () => {
 		
 	</main>
 </template>
+
+<style scoped>
+
+.transaction-main-line {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+	font-weight: 500;
+}
+
+</style>
