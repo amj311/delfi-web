@@ -4,6 +4,7 @@ import { computed, reactive, toRefs } from 'vue';
 const _props = defineProps<{
 	amount: number,
 	mode?: 'balance' | 'balance_reverse' | 'net_change' | 'transaction',
+	hideCurrency?: boolean
 }>();
 const props = reactive(_props);
 
@@ -24,7 +25,7 @@ const formatted = computed(() => {
 	}
 
 	const formatter = new Intl.NumberFormat('en-US', {
-		style: 'currency',
+		style: props.hideCurrency ? 'decimal' : 'currency',
 		currency: 'USD',
 		signDisplay,
 	});

@@ -91,7 +91,7 @@ const goBack = () => {
 							<div class="text-semibold">{{ summary.account.custom_name || account.external_name }}</div>
 							<div class="flex-center">
 								<small v-if="summary.change() !== 0">
-									<Currency :amount="summary.change()" mode="net_change" />
+									<Currency :amount="summary.change()" mode="net_change" hideCurrency />
 									&emsp13;
 								</small>
 								<span class="text-semibold"><Currency :amount="summary.endingBalance()" mode="balance" /></span>
@@ -101,7 +101,7 @@ const goBack = () => {
 							{{partition.name}}
 							<div class="flex-center">
 								<small v-if="summary.change() !== 0">
-									<Currency :amount="summary.change(partition.partition_id)" mode="net_change" />
+									<Currency :amount="summary.change(partition.partition_id)" mode="net_change" hideCurrency />
 									&emsp13;
 								</small>
 								<span><Currency :amount="summary.endingBalance(partition.partition_id)" mode="balance" /></span>
