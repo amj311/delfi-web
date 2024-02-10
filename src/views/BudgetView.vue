@@ -2,7 +2,7 @@
 import { useDelfiStore } from '@/stores/delfi.store';
 import { useAccountStore } from '@/stores/account.store';
 import { computed, reactive, ref } from 'vue';
-import { useTransactionScheduleStore } from '@/stores/transactionSchedule.store';
+import { usePlannedTransactionStore } from '@/stores/plannedTransaction.store';
 import Forecast from '../../delfi-core/models/Forecast';
 import { type DelfiDate, date} from '../../delfi-core/utils/dateUtils';
 import { budgets, customCategories } from '../stores/myData';
@@ -10,7 +10,7 @@ import Currency from '@/components/Currency.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
-const transactionStore = useTransactionScheduleStore();
+const transactionStore = usePlannedTransactionStore();
 
 const state = reactive({
 	loading: false,
@@ -23,11 +23,11 @@ const state = reactive({
 	state.viewingMonth = date(date().startOf('month'));
 	
 	await accountStore.loadAccounts();
-	await transactionStore.loadTransactionSchedules();
+	await transactionStore.loadPlannedTransactions();
 
 	delfiStore.initDelfi({
 		accounts: accountStore.accounts,
-		transactionSchedules: delfiStore.translateTransactionSchedules(transactionStore.transactionSchedules),
+		plannedTransactions: delfiStore.translatePlannedTransactions(transactionStore.plannedTransactions),
 		budgets: budgets,
 		userCategories: customCategories,
 	})

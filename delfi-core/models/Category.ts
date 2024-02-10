@@ -1,7 +1,7 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils";
 import Accumulator, { AccumulatorEvent, AccumulatorPeriod } from "./Accumulator";
 import type { Budget, BudgetAccumulator, BudgetPeriod, BudgetSummary } from "./Budget";
-import type { TransactionEvent, TransactionSchedule } from "./Transaction";
+import type { TransactionEvent, PlannedTransaction } from "./Transaction";
 
 type CategorySharedProps = {
 	category_id: string,
@@ -27,7 +27,7 @@ export type Category = SystemCategory | UserCategory;
 export class CategorySummary {
 	budgets!: BudgetSummary[];
 	period!: AccumulatorPeriod;
-	eventsBySchedule!: Map<TransactionSchedule | 'none', TransactionEvent[]>;
+	eventsBySchedule!: Map<PlannedTransaction | 'none', TransactionEvent[]>;
 
 	constructor(
 		readonly start: DelfiDate,
@@ -48,7 +48,7 @@ export class CategorySummary {
 			const key = event.transaction.sourceSchedule || 'none';
 			map.get(key)?.push(event.transaction) || map.set(key, [event.transaction]);
 			return map;
-		}, new Map<TransactionSchedule | 'none', TransactionEvent[]>());
+		}, new Map<PlannedTransaction | 'none', TransactionEvent[]>());
 	}
 
 	get hasInfo(): boolean {

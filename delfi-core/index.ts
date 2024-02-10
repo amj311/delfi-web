@@ -5,7 +5,7 @@
  */
 
 import { AccountAccumulator, type Account } from "./models/Account";
-import { TransactionScheduleType, type TransactionSchedule } from "./models/Transaction";
+import { type PlannedTransaction } from "./models/Transaction";
 import Forecast from "./models/Forecast";
 import Accumulator from "./models/Accumulator";
 import { CategorySummary, type Category, type UserCategory, type SystemCategory, type ParentCategory } from "./models/Category";
@@ -18,7 +18,7 @@ import { flatCategoriesMap, nestedCategories } from "./models/systemCategories";
 export type DelfiConfig = {
 	readonly accounts: Account[],
 	readonly budgets: Budget[],
-	readonly transactionSchedules: TransactionSchedule[],
+	readonly plannedTransactions: PlannedTransaction[],
 	readonly userCategories: UserCategory[],
 }
 
@@ -94,8 +94,7 @@ export class Delfi {
 		// Put everything in the forecast
 		this.forecast = new Forecast({
 			accumulators,
-			transactionSchedules: this.transactionSchedules.filter(s => s.recurrenceType === 'schedule'),
-			transactionTriggers: this.transactionSchedules.filter(s => s.recurrenceType === 'trigger') as unknown as TransactionTrigger[],
+			plannedTransactions: this.plannedTransactions,
 			start,
 			end,
 		});

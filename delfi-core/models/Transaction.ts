@@ -6,7 +6,7 @@ import { date, type DelfiDate } from "../utils/dateUtils";
 import FilterService from "../services/FilterService";
 import { peek } from "../utils/miscUtils";
 
-export enum TransactionScheduleType {
+export enum PlannedTransactionType {
 	"income" = "income",
 	"expense" = "expense",
 	"transfer" = "transfer"
@@ -14,7 +14,7 @@ export enum TransactionScheduleType {
 
 export type TransactionDetails = {
 	memo: string,
-	type: TransactionScheduleType,
+	type: PlannedTransactionType,
 	targetAccount: string,
 	targetPartition?: string,
 	categoryId: string,
@@ -28,12 +28,19 @@ type PlannedTransactionDetails = TransactionDetails & {
 	recurrenceType: 'schedule' | 'trigger',
 }
 
-export type TransactionSchedule = PlannedTransactionDetails & {
-	schedule: Schedule,
-	amount: number,
+export type PlannedTransaction = PlannedTransactionDetails & {
+	schedule?: Schedule,
+	amount?: number,
+	trigger?: Trigger,
 }
 
-export type TransactionTrigger = PlannedTransactionDetails & {
+export type TransactionSchedule = PlannedTransaction & {
+	schedule: Schedule,
+	amount: number,
+	trigger: undefined,
+}
+
+export type TransactionTrigger = PlannedTransaction & {
 	trigger: Trigger,
 	amount?: number,
 }
@@ -100,10 +107,10 @@ export default class TransactionService {
 		return peek(nextOccurrences);
 	}
 
-	static createEventsFromSchedule(date: DelfiDate, schedule: TransactionSchedule): TransactionEvent[] {
+	static createEventsFromSchedule(date: DelfiDate, schedule: PlannedTransaction): TransactionEvent[] {
 		const events: TransactionEvent[] = [];
 		// Origin transaction for Transfer
-		if (schedule.type === TransactionScheduleType.transfer && schedule.originAccount) {
+		if (schedule.type === PlannedTransactionType.transfer && schedule.originAccount) {
 			// TODO don't allow transfers without origin account
 			events.push({
 				...TransactionService.copyTransactionDetails(schedule),
@@ -132,7 +139,7 @@ export default class TransactionService {
 		if (FilterService.matches(trigger.filter, triggerEvent)) {
 			const events: TransactionEvent[] = [];
 			// Origin transaction for Transfer
-			if (transactionTrigger.type === TransactionScheduleType.transfer && transactionTrigger.originAccount) {
+			if (transactionTrigger.type === PlannedTransactionType.transfer && transactionTrigger.originAccount) {
 				// TODO don't allow transfers without origin account
 				events.push({
 					...TransactionService.copyTransactionDetails(transactionTrigger),
@@ -159,7 +166,7 @@ export default class TransactionService {
 	}
 
 	static resolveScheduleAmount(schedule: PlannedTransactionDetails, amount: number): number {
-		if (schedule.type === TransactionScheduleType.expense) {
+		if (schedule.type === PlannedTransactionType.expense) {
 			return -amount;
 		}
 		return amount;

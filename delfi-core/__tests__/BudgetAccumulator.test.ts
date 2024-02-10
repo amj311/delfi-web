@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from 'vitest'
 import { ImmediateMatchTrigger } from "../models/schedules/triggers";
 import { XPerMonthSchedule } from "../models/schedules/XPerMonthSchedule";
 import { MONTHS } from "../utils/constants";
-import { TransactionScheduleType, type TransactionSchedule, type TransactionTrigger, type TransactionEvent } from "../models/Transaction";
+import { PlannedTransactionType, type PlannedTransaction, type TransactionTrigger, type TransactionEvent } from "../models/Transaction";
 import { date } from "../utils/dateUtils";
 import Accumulator from "../models/Accumulator";
 import { BudgetAccumulator } from "../models/Budget";
@@ -166,7 +166,7 @@ describe('BudgetAccumulator', () => {
 				amount: 1,
 				memo: 'test',
 				targetAccount: 'test_account',
-				type: TransactionScheduleType.expense,
+				type: PlannedTransactionType.expense,
 				date: date('2022-01-01'),
 			}
 			bAcc.processNextTransaction(transaction);
@@ -200,7 +200,7 @@ describe('BudgetAccumulator', () => {
 				amount: 1,
 				memo: 'test',
 				targetAccount: 'test_account',
-				type: TransactionScheduleType.expense,
+				type: PlannedTransactionType.expense,
 				date: date('2022-01-01'),
 			}
 			bAcc.processNextTransaction(transaction);
@@ -245,7 +245,7 @@ describe('BudgetAccumulator', () => {
 				amount: -25,
 				memo: 'test',
 				targetAccount: 'test_account',
-				type: TransactionScheduleType.expense,
+				type: PlannedTransactionType.expense,
 				date: date('2022-01-01'),
 			});
 
@@ -280,7 +280,7 @@ describe('BudgetAccumulator', () => {
 				amount: -50,
 				memo: 'test',
 				targetAccount: 'test_account',
-				type: TransactionScheduleType.expense,
+				type: PlannedTransactionType.expense,
 				date: date('2022-01-01'),
 			});
 

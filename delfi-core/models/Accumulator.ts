@@ -1,4 +1,4 @@
-import type { TransactionEvent, TransactionSchedule } from "delfi-core/models/Transaction";
+import type { TransactionEvent, PlannedTransaction } from "delfi-core/models/Transaction";
 import type { TransactionFilter } from "../services/FilterService";
 import FilterService from "../services/FilterService";
 import { date, type DelfiDate } from "../utils/dateUtils";

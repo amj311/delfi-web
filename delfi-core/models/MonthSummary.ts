@@ -1,7 +1,7 @@
 import * as currencyUtils from "../utils/currencyUtils";
 import { date } from "../utils/dateUtils";
 import { Snapshot } from "./Snapshot";
-import { TransactionScheduleType } from "./transactions";
+import { PlannedTransactionType } from "./transactions";
 
 
 export class MonthSummary {
@@ -32,11 +32,11 @@ export class MonthSummary {
         this.snapshots.push(snapshot);
         let details = snapshot.mostRecentEvent.details;
         let changes = this.report.accountChanges.get(details.targetAccount);
-        if (details.type === TransactionScheduleType.income) {
+        if (details.type === PlannedTransactionType.income) {
             changes.totalIncome += details.amount;
             this.report.totalIncome += details.amount;
         }
-        else if (details.type === TransactionScheduleType.expense) {
+        else if (details.type === PlannedTransactionType.expense) {
             changes.totalExpense += details.amount;
             this.report.totalExpense += details.amount;
         }

@@ -2,7 +2,7 @@
 import { useDelfiStore } from '@/stores/delfi.store';
 import { useAccountStore } from '@/stores/account.store';
 import { computed, reactive, ref } from 'vue';
-import { useTransactionScheduleStore } from '@/stores/transactionSchedule.store';
+import { usePlannedTransactionStore } from '@/stores/plannedTransaction.store';
 import dayjs, { Dayjs } from 'dayjs';
 import VueApexCharts from "vue3-apexcharts";
 import Forecast from '../../delfi-core/models/Forecast';
@@ -12,7 +12,7 @@ import type { TransactionTrigger } from 'delfi-core/services/transactionService'
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
-const transactionStore = useTransactionScheduleStore();
+const transactionStore = usePlannedTransactionStore();
 
 
 const state = reactive({
@@ -24,7 +24,7 @@ const state = reactive({
 (async () => {
 	state.loading = true;
 	await accountStore.loadAccounts();
-	await transactionStore.loadTransactionSchedules();
+	await transactionStore.loadPlannedTransactions();
 	const accumulators: Accumulator[] = [];
 	accumulators.push(new Accumulator(
 		'total',
@@ -46,11 +46,11 @@ const state = reactive({
 	}
 	state.forecast = new Forecast({
 		accumulators,
-		transactionSchedules: delfiStore.translateTransactionSchedules(
-			transactionStore.transactionSchedules.filter(s => s.recurrenceType === 'schedule')
+		plannedTransactions: delfiStore.translatePlannedTransactions(
+			transactionStore.plannedTransactions.filter(s => s.recurrenceType === 'schedule')
 		),
-		transactionTriggers: delfiStore.translateTransactionSchedules(
-			transactionStore.transactionSchedules.filter(s => s.recurrenceType === 'trigger')
+		transactionTriggers: delfiStore.translatePlannedTransactions(
+			transactionStore.plannedTransactions.filter(s => s.recurrenceType === 'trigger')
 		) as unknown as TransactionTrigger[],
 		start: date(dayjs().startOf('month')),
 		end: date(dayjs().endOf('month').add(5, 'year')),
@@ -136,7 +136,7 @@ const goBack = () => {
 		</div> -->
 		<!-- 
 		<br/>
-		<div v-for="transaction of transactionStore.transactionSchedules">
+		<div v-for="transaction of transactionStore.plannedTransactions">
 			{{ transaction.memo }}
 		</div> -->
 		<!-- <br /> -->

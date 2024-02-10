@@ -1,5 +1,5 @@
 import { date, type DelfiDate } from "../utils/dateUtils";
-import { TransactionScheduleType, type TransactionSchedule, type TransactionEvent, type TransactionTrigger } from "./Transaction";
+import { type PlannedTransaction, type TransactionSchedule, type TransactionEvent, type TransactionTrigger } from "./Transaction";
 import TransactionService from "./Transaction";
 import { ImmediateMatchTrigger } from "./schedules/triggers";
 import { v4 as uuid } from "uuid";
@@ -15,7 +15,7 @@ type ForecastEvent = {
 	date: DelfiDate,
 	transaction: TransactionEvent,
 	accumulatorEvents: {
-		[key: string]: AccumulatorEvent,
+		[key: string]: AccumulatorEvent | null,
 	}
 }
 
@@ -35,7 +35,9 @@ class ForecastPeriod {
 				if (!this.accumulatorEvents[key]) {
 					this.accumulatorEvents[key] = [];
 				}
-				this.accumulatorEvents[key].push(event.accumulatorEvents[key]);
+				if (event.accumulatorEvents[key] !== null) {
+					this.accumulatorEvents[key].push(event.accumulatorEvents[key] as AccumulatorEvent);
+				}
 			}
 		}
 	}
@@ -78,14 +80,14 @@ class Timeline extends ForecastPeriod {
 
 type ForecastProps = {
 	readonly accumulators: Accumulator[],
-	readonly transactionSchedules: TransactionSchedule[],
-	readonly transactionTriggers: TransactionTrigger[],
+	readonly plannedTransactions: PlannedTransaction[],
 	readonly start: DelfiDate,
 	readonly end: DelfiDate
 }
 interface Forecast extends ForecastProps {};
-
 class Forecast {
+	readonly transactionSchedules!: TransactionSchedule[];
+	readonly transactionTriggers!: TransactionTrigger[];
 	readonly accumulatorMap: { [key: string]: Accumulator } = {};
 	events: ForecastEvent[] = [];
 	days: ForecastPeriod[] = [];
@@ -96,6 +98,8 @@ class Forecast {
 			accumulators[accumulator.key] = accumulator;
 			return accumulators;
 		}, {});
+		this.transactionSchedules = this.plannedTransactions.filter(s => s.recurrenceType === 'schedule') as unknown as TransactionSchedule[],
+		this.transactionTriggers = this.plannedTransactions.filter(s => s.recurrenceType === 'trigger') as unknown as TransactionTrigger[],
 		this.computeForecast();
 	}
 
@@ -175,9 +179,7 @@ class Forecast {
 			}
 			for (const accumulator of this.accumulators) {
 				const accumulatorEvent = accumulator.processNextTransaction(event);
-				if (accumulatorEvent) {
-					forecastEvent.accumulatorEvents[accumulator.key] = accumulatorEvent;
-				}
+				forecastEvent.accumulatorEvents[accumulator.key] = accumulatorEvent || null;
 			}
 			events.push(forecastEvent);
 		}

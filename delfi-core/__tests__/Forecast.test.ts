@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from 'vitest'
 import { ImmediateMatchTrigger } from "../models/schedules/triggers";
 import { XPerMonthSchedule } from "../models/schedules/XPerMonthSchedule";
 import { MONTHS } from "../utils/constants";
-import { TransactionScheduleType, type TransactionSchedule, type TransactionTrigger } from "../models/Transaction";
+import { PlannedTransactionType, type PlannedTransaction, type TransactionTrigger } from "../models/Transaction";
 import { date } from "../utils/dateUtils";
 import Accumulator from "../models/Accumulator";
 import BudgetService from "../services/BudgetService";
@@ -16,21 +16,20 @@ const accounts = {
 		balance: 500,
 	},
 };
-const transactionSchedules: TransactionSchedule[] = [
+const plannedTransactions: PlannedTransaction[] = [
 	{
 		id: "clozdincome",
-		type: TransactionScheduleType.income,
+		type: PlannedTransactionType.income,
 		memo: "Clozd Income",
 		amount: 2500,
 		targetAccount: accounts.afcu_checking.id,
 		recurrenceType: 'schedule',
-		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25))
+		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25)),
+		categoryId: "",
 	},
-];
-const transactionTriggers: TransactionTrigger[] = [
 	{
 		id: "tithing",
-		type: TransactionScheduleType.expense,
+		type: PlannedTransactionType.expense,
 		memo: "Tithing",
 		targetAccount: accounts.afcu_checking.id,
 		recurrenceType: 'trigger',
@@ -38,14 +37,15 @@ const transactionTriggers: TransactionTrigger[] = [
 			filter: [{
 				property: 'type',
 				operator: 'eq',
-				operand: TransactionScheduleType.income,
+				operand: PlannedTransactionType.income,
 			}],
 			computation: {
 				operator: 'percent',
 				operand: 10
 			}
-		})
-	}
+		}),
+		categoryId: "",
+	} as TransactionTrigger
 ]
 
 describe('Forecast', () => {
@@ -66,8 +66,7 @@ describe('Forecast', () => {
 						}]
 					)
 				],
-				transactionSchedules,
-				transactionTriggers: [],
+				plannedTransactions: [plannedTransactions[0]],
 				start: date('2023-01-01'),
 				end: date('2023-01-31')
 			});
@@ -90,7 +89,7 @@ describe('Forecast', () => {
 				transaction: expect.objectContaining({
 					targetAccount: 'afcu_checking',
 					amount: 2500,
-					sourceSchedule: transactionSchedules[0],
+					sourceSchedule: plannedTransactions[0],
 				}),
 				accumulatorEvents: {
 					total: expect.objectContaining({
@@ -111,8 +110,7 @@ describe('Forecast', () => {
 						}]
 					)
 				],
-				transactionSchedules,
-				transactionTriggers,
+				plannedTransactions,
 				start: date('2023-01-01'),
 				end: date('2023-01-31')
 			});
@@ -130,7 +128,7 @@ describe('Forecast', () => {
 				transaction: expect.objectContaining({
 					targetAccount: 'afcu_checking',
 					amount: -250,
-					sourceTrigger: transactionTriggers[0],
+					sourceTrigger: plannedTransactions[1],
 				}),
 				accumulatorEvents: {
 					total: expect.objectContaining({
@@ -149,6 +147,7 @@ describe('Forecast', () => {
 				numMonths: 1,
 				recurrenceSchedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JAN, 1)),
 				systemEventAccountId: 'test-account',
+				categoryId: '',
 			};
 			const budgetAccumulator = BudgetService.createBudgetAccumulator(budget);
 			const accountAccumulator = new Accumulator(
@@ -165,8 +164,7 @@ describe('Forecast', () => {
 					budgetAccumulator,
 					accountAccumulator,
 				],
-				transactionSchedules: [],
-				transactionTriggers: [],
+				plannedTransactions: [],
 				start: date('2023-01-01'),
 				end: date('2023-01-31')
 			});
@@ -192,8 +190,7 @@ describe('Forecast', () => {
 						}]
 					)
 				],
-				transactionSchedules,
-				transactionTriggers,
+				plannedTransactions,
 				start: date('2023-01-01'),
 				end: date('2023-01-31')
 			});
@@ -216,8 +213,7 @@ describe('Forecast', () => {
 						}]
 					)
 				],
-				transactionSchedules,
-				transactionTriggers,
+				plannedTransactions,
 				start: date('2023-01-01'),
 				end: date('2023-01-31')
 			});
@@ -243,8 +239,7 @@ describe('Forecast', () => {
 						}]
 					)
 				],
-				transactionSchedules,
-				transactionTriggers,
+				plannedTransactions,
 				start: date('2023-01-01'),
 				end: date('2023-03-31')
 			});

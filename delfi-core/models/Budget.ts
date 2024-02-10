@@ -1,7 +1,7 @@
 import type { Schedule } from "./schedules/Schedule";
 import Accumulator, { AccumulatorEvent, AccumulatorPeriod } from "./Accumulator";
 import type { TransactionFilter } from "delfi-core/services/FilterService";
-import TransactionService, { TransactionScheduleType, type TransactionEvent } from "./Transaction";
+import TransactionService, { PlannedTransactionType, type TransactionEvent } from "./Transaction";
 import { peek } from "../utils/miscUtils";
 import { date, type DelfiDate } from "../utils/dateUtils";
 import { v4 as uuid } from "uuid";
@@ -235,7 +235,7 @@ export class BudgetAccumulator extends Accumulator {
 					id: uuid(),
 					date,
 					memo: 'Automatic Budget Depletion - ' + this.budget.name,
-					type: TransactionScheduleType.expense,
+					type: PlannedTransactionType.expense,
 					targetAccount: this.budget.systemEventAccountId,
 					amount: remainder,
 					budgetId: this.budget.budget_id,

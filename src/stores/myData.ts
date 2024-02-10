@@ -1,5 +1,5 @@
 import { XPerMonthSchedule } from "../../delfi-core/models/schedules/XPerMonthSchedule";
-import { type TransactionSchedule, TransactionScheduleType } from "../../delfi-core/models/Transaction";
+import { type PlannedTransaction, PlannedTransactionType } from "../../delfi-core/models/Transaction";
 import { MONTHS } from "../../delfi-core/utils/constants";
 import { v4 as uuid } from "uuid";
 import { ImmediateMatchTrigger } from "../../delfi-core/models/schedules/triggers";
@@ -52,7 +52,7 @@ my_accounts.afcu_savings.partitions = [
 			id: uuid(),
 			amount: 500,
 			memo: "New Car Savings",
-			type: TransactionScheduleType.transfer,
+			type: PlannedTransactionType.transfer,
 			originAccount: my_accounts.afcu_checking.account_id,
 			targetAccount: my_accounts.afcu_savings.account_id,
 			targetPartition: 'test-partition-id',
@@ -91,7 +91,7 @@ export const my_scheduledTransactions: any[] = [
 	 */
 	{ 
 		transaction_schedule_id: uuid(),
-		type: TransactionScheduleType.expense,
+		type: PlannedTransactionType.expense,
 		memo: "Arthur Life Insurance",
 		amount: 300,
 		targetAccount: my_accounts.afcu_checking.account_id,
@@ -101,7 +101,7 @@ export const my_scheduledTransactions: any[] = [
 	},
 	{ 
 		transaction_schedule_id: uuid(),
-		type: TransactionScheduleType.expense,
+		type: PlannedTransactionType.expense,
 		memo: "Rachel Life Insurance",
 		amount: 70,
 		targetAccount: my_accounts.afcu_checking.account_id,
@@ -111,7 +111,7 @@ export const my_scheduledTransactions: any[] = [
 	},
 	{ // Car Insurance
 		transaction_schedule_id: uuid(),
-		type: TransactionScheduleType.expense,
+		type: PlannedTransactionType.expense,
 		memo: "Car Insurance",
 		amount: 81,
 		targetAccount: my_accounts.afcu_checking.account_id,
@@ -122,7 +122,7 @@ export const my_scheduledTransactions: any[] = [
 
 	{ // Clozd fulltime
 		transaction_schedule_id: uuid(),
-		type: TransactionScheduleType.income,
+		type: PlannedTransactionType.income,
 		memo: "Clozd Salary",
 		amount: 2540,
 		targetAccount:  my_accounts.afcu_checking.account_id,
@@ -133,7 +133,7 @@ export const my_scheduledTransactions: any[] = [
 	},
 	{
 		transaction_schedule_id: uuid(),
-		type: TransactionScheduleType.expense,
+		type: PlannedTransactionType.expense,
 		memo: "Tithing",
 		targetAccount: my_accounts.afcu_checking.account_id,
 		categoryId: customCategoriesMap["Tithing"].category_id,
@@ -142,7 +142,7 @@ export const my_scheduledTransactions: any[] = [
 			filter: [{
 				property: 'type',
 				operator: 'eq',
-				operand: TransactionScheduleType.income,
+				operand: PlannedTransactionType.income,
 			}],
 			computation: {
 				operator: 'percent',
@@ -152,7 +152,7 @@ export const my_scheduledTransactions: any[] = [
 	},
 	{
 		transaction_schedule_id: uuid(),
-		type: TransactionScheduleType.expense,
+		type: PlannedTransactionType.expense,
 		memo: "Fast Offering",
 		amount: 100,
 		targetAccount: my_accounts.afcu_checking.account_id,
@@ -163,7 +163,7 @@ export const my_scheduledTransactions: any[] = [
 
 	{
 		transaction_schedule_id: uuid(),
-		type: TransactionScheduleType.expense,
+		type: PlannedTransactionType.expense,
 		memo: "Mortgage",
 		amount: 2445,
 		targetAccount: my_accounts.afcu_checking.account_id,
@@ -173,7 +173,7 @@ export const my_scheduledTransactions: any[] = [
 	},
 	{
 		transaction_schedule_id: uuid(),
-		type: TransactionScheduleType.expense,
+		type: PlannedTransactionType.expense,
 		memo: "HOA",
 		amount: 215,
 		targetAccount: my_accounts.afcu_checking.account_id,
@@ -183,7 +183,7 @@ export const my_scheduledTransactions: any[] = [
 	},
 	{
 		transaction_schedule_id: uuid(),
-		type: TransactionScheduleType.expense,
+		type: PlannedTransactionType.expense,
 		memo: "Gas Bill",
 		amount: 50,
 		targetAccount: my_accounts.afcu_checking.account_id,
@@ -193,7 +193,7 @@ export const my_scheduledTransactions: any[] = [
 	},
 	{
 		transaction_schedule_id: uuid(),
-		type: TransactionScheduleType.expense,
+		type: PlannedTransactionType.expense,
 		memo: "Power Bill",
 		amount: 30,
 		targetAccount: my_accounts.afcu_checking.account_id,
@@ -203,7 +203,7 @@ export const my_scheduledTransactions: any[] = [
 	},
 	{
 		transaction_schedule_id: uuid(),
-		type: TransactionScheduleType.expense,
+		type: PlannedTransactionType.expense,
 		memo: "Internet",
 		amount: 50,
 		targetAccount: my_accounts.afcu_checking.account_id,
@@ -214,7 +214,7 @@ export const my_scheduledTransactions: any[] = [
 
 	{
 		transaction_schedule_id: uuid(),
-		type: TransactionScheduleType.expense,
+		type: PlannedTransactionType.expense,
 		memo: "Preschool",
 		amount: 170,
 		targetAccount: my_accounts.afcu_checking.account_id,
@@ -229,7 +229,7 @@ export const my_scheduledTransactions: any[] = [
 	 */
 	{
 		transaction_schedule_id: uuid(),
-		type: TransactionScheduleType.transfer,
+		type: PlannedTransactionType.transfer,
 		memo: "Emergency Savings Transfer",
 		amount: 300,
 		targetAccount: my_accounts.afcu_savings.account_id,

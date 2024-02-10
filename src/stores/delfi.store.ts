@@ -2,7 +2,7 @@ import { reactive } from 'vue'
 import { defineStore } from 'pinia'
 import { Delfi, type DelfiConfig } from '../../delfi-core';
 import type { Account } from 'delfi-core/models/Account';
-import type { TransactionSchedule } from 'delfi-core/models/Transaction';
+import type { PlannedTransaction } from 'delfi-core/models/Transaction';
 
 export const useDelfiStore = defineStore('delfi', {
 	state: () => ({
@@ -26,7 +26,7 @@ export const useDelfiStore = defineStore('delfi', {
 			}, {});
 		},
 	
-		translateTransactionSchedules(schedules: any[]): TransactionSchedule[] {
+		translatePlannedTransactions(schedules: any[]): PlannedTransaction[] {
 			return schedules.map(schedule => ({
 				...schedule,
 				id: schedule.transaction_schedule_id,
