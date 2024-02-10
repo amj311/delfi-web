@@ -133,7 +133,7 @@ const goBack = () => {
 
 			<div>
 				<h3>Spending</h3>
-				Total spending: <Currency :amount="monthData.timeline.change('expense')" mode="transaction" />
+				Total spending: <Currency :amount="monthData.spendingTotal" mode="transaction" />
 				<br />
 				<br />
 				<template v-for="category of monthData.spendingCategories">

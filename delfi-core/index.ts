@@ -48,24 +48,24 @@ export class Delfi {
 				operator: '*'
 			}]
 		));
-		accumulators.push(new Accumulator(
-			'income',
-			0,
-			[{
-				property: 'type',
-				operator: 'eq',
-				operand: 'income',
-			}]
-		));
-		accumulators.push(new Accumulator(
-			'expense',
-			0,
-			[{
-				property: 'type',
-				operator: 'eq',
-				operand: 'expense',
-			}]
-		));
+		// accumulators.push(new Accumulator(
+		// 	'income',
+		// 	0,
+		// 	[{
+		// 		property: 'type',
+		// 		operator: 'eq',
+		// 		operand: 'income',
+		// 	}]
+		// ));
+		// accumulators.push(new Accumulator(
+		// 	'expense',
+		// 	0,
+		// 	[{
+		// 		property: 'type',
+		// 		operator: 'eq',
+		// 		operand: 'expense',
+		// 	}]
+		// ));
 		for (const account of this.accounts) {
 			const acc = new AccountAccumulator(account, start);
 			accumulators.push(acc);
@@ -134,6 +134,8 @@ export class Delfi {
 		const transferSummary = categorySummaries.find(c => c.category.name === 'Transfer');
 		const spendingCategories = categorySummaries.filter(c => !['Income', 'Transfer'].includes(c.category.name));
 
+
+
 		return {
 			timeline,
 			accountSummaries,
@@ -141,6 +143,7 @@ export class Delfi {
 			incomeSummary,
 			transferSummary,
 			spendingCategories,
+			spendingTotal: spendingCategories.reduce((acc, c) => acc + c.netChange, 0),
 		};
 	}
 }
