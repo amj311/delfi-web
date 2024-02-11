@@ -34,13 +34,13 @@ const formatted = computed(() => {
 });
 const color = computed(() => {
 	if (props.mode === 'balance' && props.amount < 0) {
-		return 'red';
+		return '#c72850';
 	}
 	if (props.mode === 'balance_reverse' && props.amount > 0) {
-		return '#00bd7e';
+		return '#4ccd8d';
 	}
 	if (props.mode === 'transaction' && props.amount > 0) {
-		return '#00bd7e';
+		return '#4ccd8d';
 	}
 });
 

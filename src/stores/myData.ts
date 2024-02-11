@@ -46,11 +46,11 @@ my_accounts.afcu_savings.partitions = [
 		partition_id: 'test-partition-id',
 		name: 'New Car',
 		balance: 5100,
-		target: 7000,
+		target: 70000,
 		target_date: new Date(2024, MONTHS.SEP, 1),
 		transferSchedule: {
 			id: uuid(),
-			amount: 500,
+			amount: 1500,
 			memo: "New Car Savings",
 			type: PlannedTransactionType.transfer,
 			originAccount: my_accounts.afcu_checking.account_id,
