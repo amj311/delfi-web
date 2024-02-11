@@ -197,6 +197,7 @@ const goBack = () => {
 			<div style="padding: 20px; background: #53E1F9" />
 			<div style="padding: 20px; background: #50CEFF" /> -->
 
+			<br />
 			<!-- sea foam -->
 			<div style="padding: 20px; background: #e3fafe" />
 			<div style="padding: 20px; background: #c5f4fd" />
@@ -207,6 +208,7 @@ const goBack = () => {
 			<div style="padding: 20px; background: #10798b" />
 			<div style="padding: 20px; background: #03414c" />
 
+			<br />
 			<!-- purple 2 -->
 			<div style="padding: 20px; background: #f3deff" />
 			<div style="padding: 20px; background: #e6bdff" />
@@ -217,6 +219,7 @@ const goBack = () => {
 			<div style="padding: 20px; background: #5e1f7e" />
 			<div style="padding: 20px; background: #330d46" />
 
+			<br />
 			<!-- green -->
 			<div style="padding: 20px; background: #e0f6e8" />
 			<div style="padding: 20px; background: #c0ecd1" />
@@ -237,6 +240,7 @@ const goBack = () => {
 			<div style="padding: 20px; background: #08614a" />
 			<div style="padding: 20px; background: #023527" /> -->
 
+			<br />
 			<!-- red -->
 			<div style="padding: 20px; background: #fad7da" />
 			<div style="padding: 20px; background: #f1b0b6" />
@@ -277,6 +281,7 @@ const goBack = () => {
 			<div style="padding: 20px; background: #005B6F" />
 			<div style="padding: 20px; background: #00323D" /> -->
 
+			<br />
 			<div style="padding: 20px; background: #F8F9FA" />
 			<div style="padding: 20px; background: #F4F5F6" />
 			<div style="padding: 20px; background: #F0F1F2" />
