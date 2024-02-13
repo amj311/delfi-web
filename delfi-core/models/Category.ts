@@ -27,7 +27,7 @@ export type Category = SystemCategory | UserCategory;
 export class CategorySummary {
 	budgets!: BudgetSummary[];
 	period!: AccumulatorPeriod;
-	eventsBySchedule!: Map<PlannedTransaction | 'none', TransactionEvent[]>;
+	eventsBySchedule!: Map<PlannedTransaction | 'none', {total: number, events: TransactionEvent[]}>;
 
 	constructor(
 		readonly start: DelfiDate,
@@ -46,9 +46,18 @@ export class CategorySummary {
 		this.budgets = budgetAccumulators.map(b => b.getSummary(start, end));
 		this.eventsBySchedule = this.allEvents.reduce((map, event) => {
 			const key = event.transaction.sourceSchedule || 'none';
-			map.get(key)?.push(event.transaction) || map.set(key, [event.transaction]);
+			if (map.has(key)) {
+				map.get(key)!.total += event.transaction.amount;
+				map.get(key)!.events.push(event.transaction);
+			}
+			else {
+				map.set(key, {
+					total: event.transaction.amount,
+					events: [event.transaction],
+				});
+			}
 			return map;
-		}, new Map<PlannedTransaction | 'none', TransactionEvent[]>());
+		}, new Map<PlannedTransaction | 'none', {total: number, events: TransactionEvent[]}>());
 	}
 
 	get hasInfo(): boolean {

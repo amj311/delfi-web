@@ -88,7 +88,7 @@ const goBack = () => {
 				<div class="list">
 					<div v-for="summary of monthData.accountSummaries" class="list-row">
 						<div class="flex-between">
-							<div class="text-semibold">{{ summary.account.custom_name || account.external_name }}</div>
+							<div class="text-semibold">{{ summary.account.custom_name || summary.account.external_name }}</div>
 							<div class="flex-center">
 								<small v-if="summary.change() !== 0">
 									<Currency :amount="summary.change()" mode="net_change" hideCurrency />
@@ -117,11 +117,11 @@ const goBack = () => {
 				<h3>Income</h3>
 				<div>Total ...... <Currency :amount="monthData.incomeSummary?.netChange || 0" mode="net_change" /></div>
 				<div class="list">
-					<div v-for="[schedule, events] of monthData.incomeSummary?.eventsBySchedule.entries()" class="list-row">
+					<div v-for="[schedule, {total, events}] of monthData.incomeSummary?.eventsBySchedule.entries()" class="list-row">
 						<template v-if="schedule !== 'none'" >
 							<div class="transaction-main-line">
 								{{ schedule.memo }}
-								<Currency :amount="schedule.amount" mode="transaction" />
+								<Currency :amount="total" mode="transaction" />
 							</div>
 							{{ events.map(e => e.date.format('MMM D')).join(', ') }}
 							&emsp;{{ accountStore.getAccountById(schedule.targetAccount).custom_name }}
@@ -134,11 +134,11 @@ const goBack = () => {
 			<div>
 				<h3>Savings and Transfers</h3>
 				<div class="list">
-					<div v-for="[schedule, events] of monthData.transferSummary?.eventsBySchedule.entries()" class="list-row">
+					<div v-for="[schedule, {total, events}] of monthData.transferSummary?.eventsBySchedule.entries()" class="list-row">
 						<template v-if="schedule !== 'none'" >
 							<div class="transaction-main-line">
 								{{ schedule.memo }}
-								<Currency :amount="schedule.amount" />
+								<Currency :amount="total" />
 							</div>
 							{{ events.map(e => e.date.format('MMM D')).join(', ') }}
 							&emsp;{{ accountStore.getAccountById(schedule.originAccount).custom_name }} → {{ accountStore.getAccountById(schedule.targetAccount).custom_name }}
