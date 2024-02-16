@@ -1,22 +1,19 @@
-import type { Schedule } from "./schedules/Schedule"
 import Accumulator, { AccumulatorEvent, AccumulatorPeriod } from "./Accumulator"
-import TransactionService, { PlannedTransactionType, type PlannedTransaction, type TransactionEvent } from "./Transaction"
-import { v4 as uuid } from "uuid"
+import TransactionService, { type PlannedTransaction, type TransactionEvent, type TransactionSchedule } from "./Transaction"
 import { date, type DelfiDate } from "../utils/dateUtils"
 import { peek } from "../utils/miscUtils"
 
 export type AccountPartition = {
-	partition_id: string,
+	account_partition_id: string,
 	name: string,
-	balance: number,
-	target?: number,
+	current_balance: number,
+	target_balance?: number,
 	target_date?: string,
-	transferSchedule: PlannedTransaction
+	schedule_details: PlannedTransaction
 }
 
 export type Account = {
 	account_id: string,
-	name: string,
 	current_balance: number,
 	partitions: AccountPartition[],
 }
@@ -32,7 +29,7 @@ class AccountPeriod {
 		readonly end = totalPeriod.end,
 	) {
 		this.partitionPeriods = Object.fromEntries(partitions.map(partition => (
-			[partition.partition_id, new AccumulatorPeriod(this.start, this.end, previousBalances[partition.partition_id] || partition.balance)])
+			[partition.account_partition_id, new AccumulatorPeriod(this.start, this.end, previousBalances[partition.account_partition_id] || partition.current_balance)])
 		));
 	}
 }
@@ -50,15 +47,15 @@ export class AccountAccumulator extends Accumulator {
 			account.account_id,
 			startingBalance,
 			[{
-				property: 'targetAccount',
+				property: 'target_account_id',
 				operator: 'eq',
 				operand: account.account_id
 			}]
 		);
 		// Get first next transfer dates
 		for (const partition of account.partitions) {
-			if (partition.transferSchedule) {
-				this.nextPartitionTransfer[partition.partition_id] = TransactionService.getNextOccurrence(start, partition.transferSchedule.schedule);
+			if (partition.schedule_details && partition.target_balance) {
+				this.nextPartitionTransfer[partition.account_partition_id] = TransactionService.getNextOccurrence(start, partition.schedule_details.schedule);
 			}
 		}
 	}
@@ -69,18 +66,18 @@ export class AccountAccumulator extends Accumulator {
 		this.accountPeriods.push(new AccountPeriod(
 			newPeriod, this.account.partitions,
 			Object.fromEntries(this.account.partitions.map(partition => (
-				[partition.partition_id, lastPeriod?.partitionPeriods[partition.partition_id]?.endingBalance || partition.balance]
+				[partition.account_partition_id, lastPeriod?.partitionPeriods[partition.account_partition_id]?.endingBalance || partition.current_balance]
 			))),
 		));
 	}
 
 	_postProcessTransaction(transaction: TransactionEvent, newEvent: AccumulatorEvent): void {
 		const currentPeriod = peek(this.accountPeriods);
-		if (currentPeriod && transaction.targetPartition) {
-			currentPeriod.partitionPeriods[transaction.targetPartition].events.push(new AccumulatorEvent(
+		if (currentPeriod && transaction.target_account_partition_id) {
+			currentPeriod.partitionPeriods[transaction.target_account_partition_id].events.push(new AccumulatorEvent(
 				transaction.date,
 				transaction,
-				currentPeriod.partitionPeriods[transaction.targetPartition].endingBalance,
+				currentPeriod.partitionPeriods[transaction.target_account_partition_id].endingBalance,
 			));
 		}
 	}
@@ -91,20 +88,20 @@ export class AccountAccumulator extends Accumulator {
 		}
 		const events = <TransactionEvent[]>[];
 		for (const partition of this.account.partitions) {
-			const partitionPeriod = peek(this.accountPeriods)?.partitionPeriods[partition.partition_id];
+			const partitionPeriod = peek(this.accountPeriods)?.partitionPeriods[partition.account_partition_id];
 			if (
 				partitionPeriod &&
-				partition.target &&
-				partition.transferSchedule &&
-				this.nextPartitionTransfer[partition.partition_id]?.isSame(dayDate)
+				partition.target_balance &&
+				partition.schedule_details &&
+				this.nextPartitionTransfer[partition.account_partition_id]?.isSame(dayDate)
 			) {
-				if (partitionPeriod.endingBalance < partition.target) {
-					const transferEvents = TransactionService.createEventsFromSchedule(dayDate, partition.transferSchedule);
+				if (partitionPeriod.endingBalance < partition.target_balance) {
+					const transferEvents = TransactionService.createEventsFromSchedule(dayDate, partition.schedule_details as TransactionSchedule);
 					events.push(...transferEvents);
-					this.nextPartitionTransfer[partition.partition_id] = TransactionService.getNextOccurrence(date(dayDate.add(1, 'day')), partition.transferSchedule.schedule);
+					this.nextPartitionTransfer[partition.account_partition_id] = TransactionService.getNextOccurrence(date(dayDate.add(1, 'day')), partition.schedule_details.schedule);
 				}
 				else {
-					this.nextPartitionTransfer[partition.partition_id] = undefined;
+					this.nextPartitionTransfer[partition.account_partition_id] = undefined;
 				}
 			}
 		}

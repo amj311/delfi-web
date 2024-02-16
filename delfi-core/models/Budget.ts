@@ -20,10 +20,10 @@ export class Budget {
 		readonly budget_id: string,
 		readonly name: string,
 		readonly amount: number,
-		readonly recurrenceSchedule: Schedule,
-		readonly numMonths: number,
-		readonly systemEventAccountId: string,
-		readonly categoryId: string,
+		readonly schedule: Schedule,
+		readonly num_months: number,
+		readonly system_event_account_id: string,
+		readonly category_id: string,
 	) {}
 }
 
@@ -171,12 +171,12 @@ export class BudgetAccumulator extends Accumulator {
 	}
 
 	private createFirstPeriod(asOfDate: DelfiDate) {
-		const mostRecentOccurrence = TransactionService.getPreviousOccurrence(asOfDate, this.budget.recurrenceSchedule);
+		const mostRecentOccurrence = TransactionService.getPreviousOccurrence(asOfDate, this.budget.schedule);
 
 		// Most recent might not exist if budget hasn't started yet at all
 		if (mostRecentOccurrence) {
 			// check occurrence end
-			const occurrenceEnd = date(mostRecentOccurrence.add(this.budget.numMonths, 'months'));
+			const occurrenceEnd = date(mostRecentOccurrence.add(this.budget.num_months, 'months'));
 			if (occurrenceEnd >= asOfDate) {
 				// this is the current period
 				this.pushBudgetPeriod(mostRecentOccurrence, asOfDate, this.startingBalance);
@@ -196,13 +196,13 @@ export class BudgetAccumulator extends Accumulator {
 	}
 
 	private getNextBudgetOccurrence(asOfDate: DelfiDate) {
-		return TransactionService.getNextOccurrence(asOfDate, this.budget.recurrenceSchedule);
+		return TransactionService.getNextOccurrence(asOfDate, this.budget.schedule);
 	}
 
 	private pushBudgetPeriod(startDate: DelfiDate, asOfDate: DelfiDate, balance: number = 0) {
 		this.budgetPeriods.push(new BudgetPeriod(
 			startDate,
-			date(startDate.add(this.budget.numMonths, 'months').subtract(1, 'day')),
+			date(startDate.add(this.budget.num_months, 'months').subtract(1, 'day')),
 			asOfDate,
 			balance,
 		));
@@ -235,11 +235,11 @@ export class BudgetAccumulator extends Accumulator {
 					id: uuid(),
 					date,
 					memo: 'Automatic Budget Depletion - ' + this.budget.name,
-					type: PlannedTransactionType.expense,
-					targetAccount: this.budget.systemEventAccountId,
+					type: PlannedTransactionType.DEBIT,
+					target_account_id: this.budget.system_event_account_id,
 					amount: remainder,
 					budgetId: this.budget.budget_id,
-					categoryId: this.budget.categoryId
+					category_id: this.budget.category_id
 				}]
 			}
 		}

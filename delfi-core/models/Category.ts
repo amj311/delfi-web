@@ -10,7 +10,7 @@ type CategorySharedProps = {
 
 export type SystemCategory = CategorySharedProps & {
 	user_assignable?: boolean,
-	parent_id?: string,
+	parent_category_id?: string,
 }
 
 export type ParentCategory = SystemCategory & {
@@ -19,7 +19,7 @@ export type ParentCategory = SystemCategory & {
 
 export type UserCategory = CategorySharedProps & {
 	user_id: string,
-	parent_id: string,
+	parent_category_id: string,
 }
 
 export type Category = SystemCategory | UserCategory;

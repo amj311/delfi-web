@@ -6,7 +6,7 @@ dotenv.config({
 import Fastify from "fastify";
 import plaidRoute from "./routes/plaid.route";
 import accountRoute from "./routes/account.route";
-import transactionScheduleRoute from "./routes/transactionSchedule.route";
+import plannedTransactionRoute from "./routes/plannedTransaction.route";
 import userRoute from "./routes/user.route";
 import firebaseAuthMiddleware, { firebaseConfig } from "./services/FirebaseService";
 import signupRoute from "./routes/signup.route";
@@ -34,7 +34,7 @@ app.register((authRoutes, _, done) => {
 	authRoutes.register(userRoute, { prefix: '/user' });
 	authRoutes.register(plaidRoute, { prefix: '/plaid' });
 	authRoutes.register(accountRoute, { prefix: '/account' });
-	authRoutes.register(transactionScheduleRoute, { prefix: '/transactionSchedule' });
+	authRoutes.register(plannedTransactionRoute, { prefix: '/plannedTransaction' });
 
 	done();
 }, { prefix: '/' });

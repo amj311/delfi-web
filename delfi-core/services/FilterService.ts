@@ -1,7 +1,7 @@
 import { type TransactionDetails, type TransactionEvent, type TransactionSchedule } from "../models/Transaction"
 
 type MatchingRule = {
-	property?: 'budgetId' | 'amount' | 'memo' | 'type' | 'targetAccount' | 'categoryId'
+	property?: 'budgetId' | 'amount' | 'memo' | 'type' | 'target_account_id' | 'category_id'
 	operator: '*' | 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'inc'
 	operand?: number | string | string[]
 }

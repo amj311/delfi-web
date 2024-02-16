@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from 'vitest'
 import { ImmediateMatchTrigger } from "../models/schedules/triggers";
 import { XPerMonthSchedule } from "../models/schedules/XPerMonthSchedule";
 import { MONTHS } from "../utils/constants";
-import { PlannedTransactionType, type PlannedTransaction, type TransactionTrigger } from "../models/Transaction";
+import { PlannedTransactionType, type PlannedTransaction, type TransactionTrigger, RecurrenceType } from "../models/Transaction";
 import { date } from "../utils/dateUtils";
 import Accumulator from "../models/Accumulator";
 import BudgetService from "../services/BudgetService";
@@ -19,32 +19,32 @@ const accounts = {
 const plannedTransactions: PlannedTransaction[] = [
 	{
 		id: "clozdincome",
-		type: PlannedTransactionType.income,
+		type: PlannedTransactionType.CREDIT,
 		memo: "Clozd Income",
 		amount: 2500,
-		targetAccount: accounts.afcu_checking.id,
-		recurrenceType: 'schedule',
+		target_account_id: accounts.afcu_checking.id,
+		recurrence_type: RecurrenceType.SCHEDULE,
 		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25)),
-		categoryId: "",
+		category_id: "",
 	},
 	{
 		id: "tithing",
-		type: PlannedTransactionType.expense,
+		type: PlannedTransactionType.DEBIT,
 		memo: "Tithing",
-		targetAccount: accounts.afcu_checking.id,
-		recurrenceType: 'trigger',
+		target_account_id: accounts.afcu_checking.id,
+		recurrence_type: RecurrenceType.TRIGGER,
 		trigger: new ImmediateMatchTrigger({
 			filter: [{
 				property: 'type',
 				operator: 'eq',
-				operand: PlannedTransactionType.income,
+				operand: PlannedTransactionType.CREDIT,
 			}],
 			computation: {
 				operator: 'percent',
 				operand: 10
 			}
 		}),
-		categoryId: "",
+		category_id: "",
 	} as TransactionTrigger
 ]
 
@@ -87,7 +87,7 @@ describe('Forecast', () => {
 			expect(forecast.events[0].date.toString()).toBe('2023-01-25');
 			expect(forecast.events[0]).toMatchObject(expect.objectContaining({
 				transaction: expect.objectContaining({
-					targetAccount: 'afcu_checking',
+					target_account_id: 'afcu_checking',
 					amount: 2500,
 					sourceSchedule: plannedTransactions[0],
 				}),
@@ -126,7 +126,7 @@ describe('Forecast', () => {
 			expect(forecast.events[1].date.toString()).toBe('2023-01-25');
 			expect(forecast.events[1]).toMatchObject(expect.objectContaining({
 				transaction: expect.objectContaining({
-					targetAccount: 'afcu_checking',
+					target_account_id: 'afcu_checking',
 					amount: -250,
 					sourceTrigger: plannedTransactions[1],
 				}),
@@ -144,17 +144,17 @@ describe('Forecast', () => {
 				name: 'test-budget',
 				budget_id: '',
 				amount: 50,
-				numMonths: 1,
-				recurrenceSchedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JAN, 1)),
-				systemEventAccountId: 'test-account',
-				categoryId: '',
+				num_months: 1,
+				schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JAN, 1)),
+				system_event_account_id: 'test-account',
+				category_id: '',
 			};
 			const budgetAccumulator = BudgetService.createBudgetAccumulator(budget);
 			const accountAccumulator = new Accumulator(
 				'account_test-account',
 				-25,
 				[{
-					property: 'targetAccount',
+					property: 'target_account_id',
 					operator: 'eq',
 					operand: 'test-account',
 				}]

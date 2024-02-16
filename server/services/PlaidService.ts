@@ -69,6 +69,7 @@ export const PlaidService = {
 							current_balance: a.balances.current,
 							available_balance: a.balances.available,
 							iso_currency_code: a.balances.iso_currency_code,
+							user_id: 'user-id',
 						}))
 					}
 				}

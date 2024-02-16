@@ -1,13 +1,11 @@
 import { date, type DelfiDate } from "../utils/dateUtils";
-import { type PlannedTransaction, type TransactionSchedule, type TransactionEvent, type TransactionTrigger } from "./Transaction";
+import { type PlannedTransaction, type TransactionSchedule, type TransactionEvent, type TransactionTrigger, RecurrenceType } from "./Transaction";
 import TransactionService from "./Transaction";
 import { ImmediateMatchTrigger } from "./schedules/triggers";
-import { v4 as uuid } from "uuid";
 import FilterService from "../services/FilterService";
 import type Accumulator from "delfi-core/models/Accumulator";
 import type { AccumulatorEvent, AccumulatorPeriod } from "delfi-core/models/Accumulator";
 import { peek } from "../utils/miscUtils";
-import type { Budget } from "./Budget";
 
 type Interval = 'day' | 'week' | 'month' | 'year';
 
@@ -98,8 +96,8 @@ class Forecast {
 			accumulators[accumulator.key] = accumulator;
 			return accumulators;
 		}, {});
-		this.transactionSchedules = this.plannedTransactions.filter(s => s.recurrenceType === 'schedule') as unknown as TransactionSchedule[],
-		this.transactionTriggers = this.plannedTransactions.filter(s => s.recurrenceType === 'trigger') as unknown as TransactionTrigger[],
+		this.transactionSchedules = this.plannedTransactions.filter(s => s.recurrence_type === RecurrenceType.SCHEDULE) as unknown as TransactionSchedule[];
+		this.transactionTriggers = this.plannedTransactions.filter(s => s.recurrence_type === RecurrenceType.TRIGGER) as unknown as TransactionTrigger[];
 		this.computeForecast();
 	}
 

@@ -11,16 +11,16 @@ datasource db {
 }
 
 model User {
-    user_id              String                @id @default(uuid())
-    auth_id              String
-    email                String                @unique
-    given_name           String
-    family_name          String
-    accounts             Account[]
-    transactionSchedules TransactionSchedule[]
-    categories           Category[]
-    tags                 Tag[]
-    budgets              Budget[]
+    user_id             String                @id @default(uuid())
+    auth_id             String                @unique
+    email               String                @unique
+    given_name          String
+    family_name         String
+    accounts            Account[]
+    plannedTransactions PlannedTransaction[]
+    categories          UserDefinedCategory[]
+    tags                Tag[]
+    budgets             Budget[]
 
     @@map("user")
 }
@@ -38,12 +38,14 @@ model Account {
     iso_currency_code   String?
 
     // relations
-    plaid_item               PlaidItem?            @relation(fields: [plaid_item_id], references: [plaid_item_id])
-    plaid_item_id            String?
-    user                     User?                 @relation(fields: [user_id], references: [user_id])
-    user_id                  String?
-    transaction_schedules    TransactionSchedule[] @relation("PrimaryTransactionAccount")
-    to_transaction_schedules TransactionSchedule[] @relation("TransferToAccount")
+    plaid_item           PlaidItem?           @relation(fields: [plaid_item_id], references: [plaid_item_id])
+    plaid_item_id        String?
+    User                 User                 @relation(fields: [user_id], references: [user_id])
+    user_id              String
+    partitions           AccountPartition[]
+    TransactionsAsTarget PlannedTransaction[] @relation("TargetAccount")
+    TransactionsAsOrigin PlannedTransaction[] @relation("OriginAccount")
+    Budget               Budget[]
 
     @@map("account")
 }
@@ -57,68 +59,73 @@ model PlaidItem {
     @@map("plaid_item")
 }
 
-// TODO implement partitions
-// model account_partition {
-//     account_partition_id String  @id @default(uuid())
-//     account              Account @relation(fields: [account_id], references: [account_id])
-//     account_id           String  @unique
-//     name                 String?
-// }
+model AccountPartition {
+    account_partition_id String               @id @default(uuid())
+    account              Account              @relation(fields: [account_id], references: [account_id])
+    account_id           String
+    name                 String?
+    current_balance      Decimal
+    target_balance       Decimal?
+    target_date          DateTime?
+    schedule_details     Json?
+    TransactionAsTarget  PlannedTransaction[] @relation("TargetPartition")
+    TransactionAsOrigin  PlannedTransaction[] @relation("OriginPartition")
+}
 
-enum TransactionScheduleType {
+enum PlannedTransactionType {
     CREDIT
     DEBIT
     TRANSFER
 }
 
-model TransactionSchedule {
-    transaction_schedule_id String                  @id @default(uuid())
-    type                    TransactionScheduleType
-    amount                  Decimal
-    schedule                String
-    // user
-    user                    User?                   @relation(fields: [user_id], references: [user_id])
-    user_id                 String?
-    // accounts
-    account                 Account                 @relation("PrimaryTransactionAccount", fields: [account_id], references: [account_id])
-    account_id              String
-    transfer_to_account     Account?                @relation("TransferToAccount", fields: [transfer_to_account_id], references: [account_id])
-    transfer_to_account_id  String?
-    // categories and tags
-    category                Category?               @relation(fields: [category_id], references: [category_id])
-    category_id             String?
-    tag                     Tag?                    @relation(fields: [tag_id], references: [tag_id])
-    tag_id                  String?
-
-    @@map("transaction_schedule")
+enum RecurrenceType {
+    SCHEDULE
+    TRIGGER
 }
 
-model Category {
-    category_id           String                @id @default(uuid())
-    name                  String
-    parent_category_id    String
-    parent_category       Category              @relation("SubCategories", fields: [parent_category_id], references: [category_id])
-    children              Category[]            @relation("SubCategories")
-    system_defined        Boolean
-    user_id               String?
-    user                  User?                 @relation(fields: [user_id], references: [user_id])
-    transaction_schedules TransactionSchedule[]
-    budget                Budget[]
+model PlannedTransaction {
+    planned_transaction_id      String                 @id @default(uuid())
+    memo                        String
+    type                        PlannedTransactionType
+    amount                      Decimal
+    schedule                    Json?
+    trigger                     Json?
+    recurrence_type             RecurrenceType
+    // user
+    User                        User                   @relation(fields: [user_id], references: [user_id])
+    user_id                     String
+    // accounts
+    TargetAccount               Account                @relation(name: "TargetAccount", fields: [target_account_id], references: [account_id])
+    OriginAccount               Account?               @relation(name: "OriginAccount", fields: [origin_account_id], references: [account_id])
+    target_account_id           String
+    origin_account_id           String?
+    // partitions
+    TargetPartition             AccountPartition?      @relation(name: "TargetPartition", fields: [target_account_partition_id], references: [account_partition_id])
+    OriginPartition             AccountPartition?      @relation(name: "OriginPartition", fields: [origin_account_partition_id], references: [account_partition_id])
+    target_account_partition_id String?
+    origin_account_partition_id String?
 
-    @@map("category")
+    Category    UserDefinedCategory @relation(fields: [category_id], references: [category_id])
+    category_id String
+    tags        Tag[]
+}
+
+model UserDefinedCategory {
+    category_id         String               @id @default(uuid())
+    parent_category_id  String // References a system defined category
+    name                String
+    user                User                 @relation(fields: [user_id], references: [user_id])
+    user_id             String
+    Budgets             Budget[]
+    PlannedTransactions PlannedTransaction[]
 }
 
 model Tag {
-    tag_id         String  @id @default(uuid())
-    name           String
-    system_defined Boolean
-    user_id        String?
-    user           User?   @relation(fields: [user_id], references: [user_id])
-
-    transaction_schedules TransactionSchedule[]
-    budgets               Budget[]
-
-    @@map("tag")
+    tag_id              String               @id @default(uuid())
+    name                String
+    user                User                 @relation(fields: [user_id], references: [user_id])
+    user_id             String
+    PlannedTransactions PlannedTransaction[]
 }
 
 model Budget {
@@ -127,12 +134,12 @@ model Budget {
     description String?
     schedule    Json
     amount      Decimal
+    num_months  Int
 
-    category_id String
-    category    Category @relation(fields: [category_id], references: [category_id])
-    tags        Tag[]
-    User        User?    @relation(fields: [userUser_id], references: [user_id])
-    userUser_id String?
-
-    @@map("budget")
+    Category                UserDefinedCategory @relation(fields: [category_id], references: [category_id])
+    category_id             String
+    User                    User                @relation(fields: [user_id], references: [user_id])
+    user_id                 String
+    SystemEventAccount      Account             @relation(fields: [system_event_account_id], references: [account_id])
+    system_event_account_id String
 }

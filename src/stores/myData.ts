@@ -1,80 +1,116 @@
 import { XPerMonthSchedule } from "../../delfi-core/models/schedules/XPerMonthSchedule";
-import { type PlannedTransaction, PlannedTransactionType } from "../../delfi-core/models/Transaction";
 import { MONTHS } from "../../delfi-core/utils/constants";
 import { v4 as uuid } from "uuid";
-import { ImmediateMatchTrigger } from "../../delfi-core/models/schedules/triggers";
-import type { Budget } from "delfi-core/models/Budget";
+import { ImmediateMatchTrigger, type Trigger } from "../../delfi-core/models/schedules/triggers";
 import { flatCategoriesMap } from "../../delfi-core/models/systemCategories";
-import type { UserCategory } from "delfi-core/models/Category";
+import {
+	type Account as AccountRaw,
+	type UserDefinedCategory,
+	type AccountPartition as AccountPartitionRaw,
+	type PlannedTransaction as PlannedTransactionRaw,
+	type Budget as BudgetRaw,
+} from "@prisma/client";
+import type { Schedule } from "delfi-core/models/schedules/Schedule";
+import { PlannedTransactionType, RecurrenceType } from "../../delfi-core/models/Transaction";
 
 const requiredStuff = {
 	mask: "**** **** **** 0942",
 	iso_currency_code: "USD",
 	plaid_item_id: "afcu_checking",
 	user_id: "myself",
+	external_account_id: uuid(),
+	external_name: "asdfgtrf",
+	type: "depository",
+	subtype: "checking",
 }
 
-export const my_accounts = {
+type Account = Omit<AccountRaw, 'current_balance' | 'available_balance'> & {
+	partitions: AccountPartition[],
+	current_balance: number,
+	available_balance: number,
+}
+
+
+type AccountPartition = Omit<AccountPartitionRaw, 'current_balance' | 'target_balance' | 'schedule_details'> & {
+	current_balance: number,
+	target_balance?: number,
+	schedule_details: object,
+}
+
+type Budget = Omit<BudgetRaw, 'amount' | 'schedule'> & {
+	amount: number,
+	schedule: Schedule,
+}
+
+type PlannedTransaction = Omit<PlannedTransactionRaw, 'schedule' | 'type' | 'amount' | 'recurrence_type' | 'trigger'> & {
+	type: PlannedTransactionType,
+	recurrence_type: RecurrenceType,
+	schedule: Schedule | null,
+	trigger: Trigger | null,
+	amount: number,
+}
+
+export const my_accounts: { [key: string]: Account } = {
 	afcu_checking: {
 		account_id: uuid(),
-		external_account_id: uuid(),
-		external_name: "asdfgtrf",
 		custom_name: "AFCU Checking",
-		type: "depository",
-		subtype: "checking",
 		current_balance: 200,
-		partitions: <unknown[]>[],
+		available_balance: 200,
+		partitions: [],
+		...requiredStuff,
 	},
 	afcu_savings: {
 		account_id: uuid(),
-		external_name: "asdfgtrf",
 		custom_name: "AFCU Savings",
 		current_balance: 5100,
-		partitions: <unknown[]>[],
+		available_balance: 5100,
+		partitions: [],
+		...requiredStuff,
 	},
 	us_savings: {
 		account_id: uuid(),
-		external_name: "asdfgtrf",
 		custom_name: "US Bank",
 		current_balance: 3000,
-		partitions: <unknown[]>[],
+		available_balance: 3000,
+		partitions: [],
+		...requiredStuff,
 	},
 };
 
 my_accounts.afcu_savings.partitions = [
 	{
-		partition_id: 'test-partition-id',
+		account_partition_id: 'test-partition-id',
+		account_id: my_accounts.afcu_savings.account_id,
 		name: 'New Car',
-		balance: 5100,
-		target: 70000,
+		current_balance: 5100,
+		target_balance: 7000,
 		target_date: new Date(2024, MONTHS.SEP, 1),
-		transferSchedule: {
-			id: uuid(),
-			amount: 1500,
+		schedule_details: {
+			planned_transaction_id: uuid(),
+			amount: 1800,
 			memo: "New Car Savings",
-			type: PlannedTransactionType.transfer,
-			originAccount: my_accounts.afcu_checking.account_id,
-			targetAccount: my_accounts.afcu_savings.account_id,
-			targetPartition: 'test-partition-id',
+			type: PlannedTransactionType.TRANSFER,
+			origin_account_id: my_accounts.afcu_checking.account_id,
+			target_account_id: my_accounts.afcu_savings.account_id,
+			user_id: 'myself',
+			target_account_partition_id: 'test-partition-id',
 			schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25)),
-			categoryId: flatCategoriesMap["Transfer"].category_id,
-		}
+			category_id: flatCategoriesMap["Transfer"].category_id,
+		},
 	}
 ];
 
-
-
-export const customCategories: UserCategory[] = [
+export const customCategories: UserDefinedCategory[] = [
 	{
-		"name": "Tithing",
+		name: "Tithing",
 		category_id: uuid(),
-		parent_id: flatCategoriesMap["Gifts & Donations"].category_id,
+		parent_category_id: flatCategoriesMap["Gifts & Donations"].category_id,
 		user_id: 'me',
 	},
 	{
-		"name": "Fast Offering",
+		name: "Fast Offering",
 		category_id: uuid(),
-		parent_id: flatCategoriesMap["Gifts & Donations"].category_id,
+		parent_category_id: flatCategoriesMap["Gifts & Donations"].category_id,
 		user_id: 'me',
 	},
 ];
@@ -83,66 +119,84 @@ export const customCategoriesMap = Object.fromEntries(customCategories.flatMap(c
 	[category.name, category],
 ])));
 
+const defaultTransaction: PlannedTransaction = {
+	user_id: 'myself',
+	planned_transaction_id: 'replaceMee',
+	type: PlannedTransactionType.DEBIT,
+	memo: "",
+	amount: 0,
+	target_account_id: '',
+	origin_account_id: null,
+	target_account_partition_id: null,
+	origin_account_partition_id: null,
+	recurrence_type: RecurrenceType.SCHEDULE,
+	schedule: new XPerMonthSchedule(1, new Date(3021, MONTHS.APR, 5)),
+	trigger: null,
+	category_id: flatCategoriesMap["Life Insurance"].category_id,
+}
 
-
-export const my_scheduledTransactions: any[] = [
+export const my_scheduledTransactions: PlannedTransaction[] = [
 	/**
 	 * EVERY MONTH
 	 */
 	{ 
-		transaction_schedule_id: uuid(),
-		type: PlannedTransactionType.expense,
+		...defaultTransaction,
+		planned_transaction_id: uuid(),
+		type: PlannedTransactionType.DEBIT,
 		memo: "Arthur Life Insurance",
 		amount: 300,
-		targetAccount: my_accounts.afcu_checking.account_id,
-		recurrenceType: 'schedule',
+		target_account_id: my_accounts.afcu_checking.account_id,
+		recurrence_type: RecurrenceType.SCHEDULE,
 		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 5)),
-		categoryId: flatCategoriesMap["Life Insurance"].category_id
+		category_id: flatCategoriesMap["Life Insurance"].category_id,
 	},
 	{ 
-		transaction_schedule_id: uuid(),
-		type: PlannedTransactionType.expense,
+		...defaultTransaction,
+		planned_transaction_id: uuid(),
+		type: PlannedTransactionType.DEBIT,
 		memo: "Rachel Life Insurance",
 		amount: 70,
-		targetAccount: my_accounts.afcu_checking.account_id,
-		recurrenceType: 'schedule',
+		target_account_id: my_accounts.afcu_checking.account_id,
+		recurrence_type: RecurrenceType.SCHEDULE,
 		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 5)),
-		categoryId: flatCategoriesMap["Life Insurance"].category_id
+		category_id: flatCategoriesMap["Life Insurance"].category_id
 	},
 	{ // Car Insurance
-		transaction_schedule_id: uuid(),
-		type: PlannedTransactionType.expense,
+		...defaultTransaction,
+		planned_transaction_id: uuid(),
+		type: PlannedTransactionType.DEBIT,
 		memo: "Car Insurance",
 		amount: 81,
-		targetAccount: my_accounts.afcu_checking.account_id,
-		recurrenceType: 'schedule',
+		target_account_id: my_accounts.afcu_checking.account_id,
+		recurrence_type: RecurrenceType.SCHEDULE,
 		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 8)),
-		categoryId: flatCategoriesMap["Auto Insurance"].category_id
+		category_id: flatCategoriesMap["Auto Insurance"].category_id
 	},
 
 	{ // Clozd fulltime
-		transaction_schedule_id: uuid(),
-		type: PlannedTransactionType.income,
+		...defaultTransaction,
+		planned_transaction_id: uuid(),
+		type: PlannedTransactionType.CREDIT,
 		memo: "Clozd Salary",
 		amount: 3140,
-		targetAccount:  my_accounts.afcu_checking.account_id,
-
-		recurrenceType: 'schedule',
+		target_account_id:  my_accounts.afcu_checking.account_id,
+		recurrence_type: RecurrenceType.SCHEDULE,
 		schedule: new XPerMonthSchedule(2, new Date(2022, MONTHS.MAY, 14)),
-		categoryId: flatCategoriesMap["Paycheck"].category_id
+		category_id: flatCategoriesMap["Paycheck"].category_id
 	},
 	{
-		transaction_schedule_id: uuid(),
-		type: PlannedTransactionType.expense,
+		...defaultTransaction,
+		planned_transaction_id: uuid(),
+		type: PlannedTransactionType.DEBIT,
 		memo: "Tithing",
-		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: customCategoriesMap["Tithing"].category_id,
-		recurrenceType: 'trigger',
+		target_account_id: my_accounts.afcu_checking.account_id,
+		category_id: customCategoriesMap["Tithing"].category_id,
+		recurrence_type: RecurrenceType.TRIGGER,
 		trigger: new ImmediateMatchTrigger({
 			filter: [{
 				property: 'type',
 				operator: 'eq',
-				operand: PlannedTransactionType.income,
+				operand: PlannedTransactionType.CREDIT,
 			}],
 			computation: {
 				operator: 'percent',
@@ -151,75 +205,82 @@ export const my_scheduledTransactions: any[] = [
 		}),
 	},
 	{
-		transaction_schedule_id: uuid(),
-		type: PlannedTransactionType.expense,
+		...defaultTransaction,
+		planned_transaction_id: uuid(),
+		type: PlannedTransactionType.DEBIT,
 		memo: "Fast Offering",
 		amount: 100,
-		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: customCategoriesMap["Fast Offering"].category_id,
-		recurrenceType: 'schedule',
+		target_account_id: my_accounts.afcu_checking.account_id,
+		category_id: customCategoriesMap["Fast Offering"].category_id,
+		recurrence_type: RecurrenceType.SCHEDULE,
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 7))
 	},
 
 	{
-		transaction_schedule_id: uuid(),
-		type: PlannedTransactionType.expense,
+		...defaultTransaction,
+		planned_transaction_id: uuid(),
+		type: PlannedTransactionType.DEBIT,
 		memo: "Mortgage",
 		amount: 2445,
-		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: flatCategoriesMap["Mortgage & Rent"].category_id,
-		recurrenceType: 'schedule',
+		target_account_id: my_accounts.afcu_checking.account_id,
+		category_id: flatCategoriesMap["Mortgage & Rent"].category_id,
+		recurrence_type: RecurrenceType.SCHEDULE,
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 17))
 	},
 	{
-		transaction_schedule_id: uuid(),
-		type: PlannedTransactionType.expense,
+		...defaultTransaction,
+		planned_transaction_id: uuid(),
+		type: PlannedTransactionType.DEBIT,
 		memo: "HOA",
 		amount: 215,
-		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: flatCategoriesMap["Home Services"].category_id,
-		recurrenceType: 'schedule',
+		target_account_id: my_accounts.afcu_checking.account_id,
+		category_id: flatCategoriesMap["Home Services"].category_id,
+		recurrence_type: RecurrenceType.SCHEDULE,
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 18))
 	},
 	{
-		transaction_schedule_id: uuid(),
-		type: PlannedTransactionType.expense,
+		...defaultTransaction,
+		planned_transaction_id: uuid(),
+		type: PlannedTransactionType.DEBIT,
 		memo: "Gas Bill",
 		amount: 50,
-		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: flatCategoriesMap["Utilities"].category_id,
-		recurrenceType: 'schedule',
+		target_account_id: my_accounts.afcu_checking.account_id,
+		category_id: flatCategoriesMap["Utilities"].category_id,
+		recurrence_type: RecurrenceType.SCHEDULE,
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 18))
 	},
 	{
-		transaction_schedule_id: uuid(),
-		type: PlannedTransactionType.expense,
+		...defaultTransaction,
+		planned_transaction_id: uuid(),
+		type: PlannedTransactionType.DEBIT,
 		memo: "Power Bill",
 		amount: 30,
-		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: flatCategoriesMap["Utilities"].category_id,
-		recurrenceType: 'schedule',
+		target_account_id: my_accounts.afcu_checking.account_id,
+		category_id: flatCategoriesMap["Utilities"].category_id,
+		recurrence_type: RecurrenceType.SCHEDULE,
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 17))
 	},
 	{
-		transaction_schedule_id: uuid(),
-		type: PlannedTransactionType.expense,
+		...defaultTransaction,
+		planned_transaction_id: uuid(),
+		type: PlannedTransactionType.DEBIT,
 		memo: "Internet",
 		amount: 50,
-		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: flatCategoriesMap["Utilities"].category_id,
-		recurrenceType: 'schedule',
+		target_account_id: my_accounts.afcu_checking.account_id,
+		category_id: flatCategoriesMap["Utilities"].category_id,
+		recurrence_type: RecurrenceType.SCHEDULE,
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 17))
 	},
 
 	{
-		transaction_schedule_id: uuid(),
-		type: PlannedTransactionType.expense,
+		...defaultTransaction,
+		planned_transaction_id: uuid(),
+		type: PlannedTransactionType.DEBIT,
 		memo: "Preschool",
 		amount: 170,
-		targetAccount: my_accounts.afcu_checking.account_id,
-		categoryId: flatCategoriesMap["Tuition"].category_id,
-		recurrenceType: 'schedule',
+		target_account_id: my_accounts.afcu_checking.account_id,
+		category_id: flatCategoriesMap["Tuition"].category_id,
+		recurrence_type: RecurrenceType.SCHEDULE,
 		schedule: new XPerMonthSchedule(1, new Date(2024, MONTHS.SEP, 1), new Date(2025, MONTHS.MAY, 1))
 	},
 
@@ -228,59 +289,67 @@ export const my_scheduledTransactions: any[] = [
 	 * SAVINGS
 	 */
 	{
-		transaction_schedule_id: uuid(),
-		type: PlannedTransactionType.transfer,
+		...defaultTransaction,
+		planned_transaction_id: uuid(),
+		type: PlannedTransactionType.TRANSFER,
 		memo: "Emergency Savings Transfer",
 		amount: 300,
-		targetAccount: my_accounts.afcu_savings.account_id,
-		originAccount: my_accounts.afcu_checking.account_id,
-		recurrenceType: 'schedule',
+		target_account_id: my_accounts.afcu_savings.account_id,
+		origin_account_id: my_accounts.afcu_checking.account_id,
+		recurrence_type: RecurrenceType.SCHEDULE,
 		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.SEP, 1)),
-		categoryId: flatCategoriesMap["Transfer"].category_id,
+		category_id: flatCategoriesMap["Transfer"].category_id,
 	},
 ];
 
 
 
-
+const sharedBudgetThings = {
+	user_id: 'myself',
+	description: null,
+}
 
 export const budgets: Budget[] = [
 	{
+		...sharedBudgetThings,
 		budget_id: uuid(),
 		name: 'Groceries',
 		amount: 300,
-		recurrenceSchedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.SEP, 1)),
-		numMonths: 1,
-		categoryId: flatCategoriesMap.Groceries.category_id,
-		systemEventAccountId: my_accounts.afcu_checking.account_id,
+		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.SEP, 1)),
+		num_months: 1,
+		category_id: flatCategoriesMap.Groceries.category_id,
+		system_event_account_id: my_accounts.afcu_checking.account_id,
 	},
 	{
+		...sharedBudgetThings,
 		budget_id: uuid(),
 		name: "Fuel",
 		amount: 50,
-		categoryId: flatCategoriesMap.Fuel.category_id,
-		systemEventAccountId: my_accounts.afcu_checking.account_id,
-		recurrenceSchedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
-		numMonths: 1,
+		category_id: flatCategoriesMap.Fuel.category_id,
+		system_event_account_id: my_accounts.afcu_checking.account_id,
+		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
+		num_months: 1,
 	},
 	// Fun Money
 	{
+		...sharedBudgetThings,
 		budget_id: uuid(),
 		name: "Fun Money",
-		categoryId: flatCategoriesMap.Shopping.category_id,
-		recurrenceSchedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
+		category_id: flatCategoriesMap.Shopping.category_id,
+		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
 		amount: 150,
-		systemEventAccountId: my_accounts.afcu_checking.account_id,
-		numMonths: 1,
+		system_event_account_id: my_accounts.afcu_checking.account_id,
+		num_months: 1,
 	},
 	// Baby Care
 	{
+		...sharedBudgetThings,
 		budget_id: uuid(),
 		name: "Baby Care",
-		categoryId: flatCategoriesMap.Shopping.category_id,
-		recurrenceSchedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
+		category_id: flatCategoriesMap.Shopping.category_id,
+		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
 		amount: 50,
-		systemEventAccountId: my_accounts.afcu_checking.account_id,
-		numMonths: 1,
+		system_event_account_id: my_accounts.afcu_checking.account_id,
+		num_months: 1,
 	},
 ];

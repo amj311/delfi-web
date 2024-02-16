@@ -8,12 +8,11 @@ import { AccountAccumulator, type Account } from "./models/Account";
 import { type PlannedTransaction } from "./models/Transaction";
 import Forecast from "./models/Forecast";
 import Accumulator from "./models/Accumulator";
-import { CategorySummary, type Category, type UserCategory, type SystemCategory, type ParentCategory } from "./models/Category";
+import { CategorySummary, type Category, type UserCategory, type ParentCategory } from "./models/Category";
 import type { Budget, BudgetAccumulator } from "./models/Budget";
 import BudgetService from "./services/BudgetService";
-import type { TransactionEvent, TransactionTrigger } from "./models/Transaction";
 import { date, type DelfiDate } from "./utils/dateUtils";
-import { flatCategoriesMap, nestedCategories } from "./models/systemCategories";
+import { nestedCategories } from "./models/systemCategories";
 
 export type DelfiConfig = {
 	readonly accounts: Account[],
@@ -32,7 +31,7 @@ export class Delfi {
 	constructor(config: DelfiConfig) {
 		Object.assign(this, config);
 		this.composedCategories = JSON.parse(JSON.stringify(nestedCategories));
-		this.userCategories.forEach(c => this.composedCategories.find(p => p.category_id === c.parent_id)?.children?.push(c));
+		this.userCategories.forEach(c => this.composedCategories.find(p => p.category_id === c.parent_category_id)?.children?.push(c));
 	}
 
 	get flatCategories(): Category[] {
@@ -77,7 +76,7 @@ export class Delfi {
 				'cat_' + category.category_id,
 				0,
 				[{
-					property: 'categoryId',
+					property: 'category_id',
 					operator: 'eq',
 					operand: category.category_id,
 				}]
@@ -119,13 +118,13 @@ export class Delfi {
 				monthEnd,
 				category,
 				timeline.accumulatorEvents['cat_' + category.category_id],
-				this.budgets.filter(b => b.categoryId === category.category_id).map(b => this.forecast.accumulatorMap[b.budget_id] as BudgetAccumulator),
+				this.budgets.filter(b => b.category_id === category.category_id).map(b => this.forecast.accumulatorMap[b.budget_id] as BudgetAccumulator),
 				category.children?.map(child => new CategorySummary(
 					monthStart,
 					monthEnd,
 					child,
 					timeline.accumulatorEvents['cat_' + child.category_id],
-					this.budgets.filter(b => b.categoryId === child.category_id).map(b => this.forecast.accumulatorMap[b.budget_id] as BudgetAccumulator),
+					this.budgets.filter(b => b.category_id === child.category_id).map(b => this.forecast.accumulatorMap[b.budget_id] as BudgetAccumulator),
 				)),
 			)
 		));
@@ -133,8 +132,6 @@ export class Delfi {
 		const incomeSummary = categorySummaries.find(c => c.category.name === 'Income');
 		const transferSummary = categorySummaries.find(c => c.category.name === 'Transfer');
 		const spendingCategories = categorySummaries.filter(c => !['Income', 'Transfer'].includes(c.category.name));
-
-
 
 		return {
 			timeline,

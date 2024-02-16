@@ -124,7 +124,7 @@ const goBack = () => {
 								<Currency :amount="total" mode="transaction" />
 							</div>
 							{{ events.map(e => e.date.format('MMM D')).join(', ') }}
-							&emsp;{{ accountStore.getAccountById(schedule.targetAccount).custom_name }}
+							&emsp;{{ accountStore.getAccountById(schedule.target_account_id).custom_name }}
 						</template>
 					</div>
 				</div>
@@ -141,7 +141,7 @@ const goBack = () => {
 								<Currency :amount="total" />
 							</div>
 							{{ events.map(e => e.date.format('MMM D')).join(', ') }}
-							&emsp;{{ accountStore.getAccountById(schedule.originAccount).custom_name }} → {{ accountStore.getAccountById(schedule.targetAccount).custom_name }}
+							&emsp;{{ accountStore.getAccountById(schedule.origin_account_id).custom_name }} → {{ accountStore.getAccountById(schedule.target_account_id).custom_name }}
 						</template>
 					</div>
 				</div>
@@ -180,7 +180,7 @@ const goBack = () => {
 									{{ event.transaction.memo }}
 									<Currency :amount="event.transaction.amount" mode="transaction" />
 								</div>
-								{{ accountStore.getAccountById(event.transaction.targetAccount).custom_name }}
+								<!-- {{ accountStore.getAccountById(event.transaction.target_account_id).custom_name }} -->
 							</div>
 						</div>
 					</template>

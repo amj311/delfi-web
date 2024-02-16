@@ -1,12 +1,12 @@
-import { TransactionSchedule } from "@prisma/client";
-import { TransactionScheduleService } from "../services/TransactionScheduleService";
+import { PlannedTransaction } from "@prisma/client";
+import { PlannedTransactionService } from "../services/plannedTransactionService";
 
 export default (fastify, _, done) => {
 
     fastify.post('/', async function handler (request, reply) {
-        const transactionScheduleData = request.body as TransactionSchedule;
+        const plannedTransactionData = request.body as PlannedTransaction;
         const user_id = request.sessionUser.user_id;
-        const data = await TransactionScheduleService.createTransactionSchedule(user_id, transactionScheduleData);
+        const data = await PlannedTransactionService.createPlannedTransaction(user_id, plannedTransactionData);
         return {
             success: true,
             data,
@@ -15,7 +15,7 @@ export default (fastify, _, done) => {
 
     fastify.get('/', async function handler (request, reply) {
         const user_id = request.sessionUser.user_id;
-        const data = await TransactionScheduleService.getAllTransactionSchedules(user_id);
+        const data = await PlannedTransactionService.getAllPlannedTransactions(user_id);
         return {
             success: true,
             data,
@@ -23,9 +23,9 @@ export default (fastify, _, done) => {
     });
 
     fastify.get('/:id', async function handler (request, reply) {
-        const transactionScheduleId = request.params.id;
+        const plannedTransactionId = request.params.id;
         const user_id = request.sessionUser.user_id;
-        const data = await TransactionScheduleService.getTransactionScheduleById(user_id, transactionScheduleId);
+        const data = await PlannedTransactionService.getPlannedTransactionById(user_id, plannedTransactionId);
         return {
             success: true,
             data,
@@ -33,10 +33,10 @@ export default (fastify, _, done) => {
     });
 
     fastify.put('/:id', async function handler (request, reply) {
-        const transactionScheduleId = request.params.id;
-        const transactionScheduleData = request.body as TransactionSchedule;
+        const plannedTransactionId = request.params.id;
+        const plannedTransactionData = request.body as PlannedTransaction;
         const user_id = request.sessionUser.user_id;
-        const data = await TransactionScheduleService.updateTransactionSchedule(user_id, transactionScheduleId, transactionScheduleData);
+        const data = await PlannedTransactionService.updatePlannedTransaction(user_id, plannedTransactionId, plannedTransactionData);
         return {
             success: true,
             data,
@@ -44,9 +44,9 @@ export default (fastify, _, done) => {
     });
 
     fastify.delete('/:id', async function handler (request, reply) {
-        const transactionScheduleId = request.params.id;
+        const plannedTransactionId = request.params.id;
         const user_id = request.sessionUser.user_id;
-        await TransactionScheduleService.deleteTransactionSchedule(user_id, transactionScheduleId);
+        await PlannedTransactionService.deletePlannedTransaction(user_id, plannedTransactionId);
         return {
             success: true,
         };

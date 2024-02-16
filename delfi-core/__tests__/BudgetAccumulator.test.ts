@@ -25,9 +25,9 @@ describe('BudgetAccumulator', () => {
 					name: 'My Test Budget',
 					budget_id: 'test-budget-id',
 					amount: 1,
-					numMonths: 3,
-					recurrenceSchedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
-					systemEventAccountId: 'test-account',
+					num_months: 3,
+					schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
+					system_event_account_id: 'test-account',
 				}
 			);
 
@@ -54,9 +54,9 @@ describe('BudgetAccumulator', () => {
 					name: 'My Test Budget',
 					budget_id: 'test-budget-id',
 					amount: 1,
-					numMonths: 3,
-					recurrenceSchedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
-					systemEventAccountId: 'test-account',
+					num_months: 3,
+					schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
+					system_event_account_id: 'test-account',
 				}
 			);
 
@@ -87,9 +87,9 @@ describe('BudgetAccumulator', () => {
 					name: 'My Test Budget',
 					budget_id: 'test-budget-id',
 					amount: 1,
-					numMonths: 3,
-					recurrenceSchedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
-					systemEventAccountId: 'test-account',
+					num_months: 3,
+					schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
+					system_event_account_id: 'test-account',
 				}
 			);
 
@@ -124,9 +124,9 @@ describe('BudgetAccumulator', () => {
 					name: 'My Test Budget',
 					budget_id: 'test-budget-id',
 					amount: 1,
-					numMonths: 3,
-					recurrenceSchedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1), new Date(2022, MONTHS.MAR, 31)),
-					systemEventAccountId: 'test-account',
+					num_months: 3,
+					schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1), new Date(2022, MONTHS.MAR, 31)),
+					system_event_account_id: 'test-account',
 				}
 			);
 
@@ -152,9 +152,9 @@ describe('BudgetAccumulator', () => {
 					name: 'My Test Budget',
 					budget_id: 'test-budget-id',
 					amount: 1,
-					numMonths: 3,
-					recurrenceSchedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
-					systemEventAccountId: 'test-account',
+					num_months: 3,
+					schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
+					system_event_account_id: 'test-account',
 				}
 			);
 			// create two month periods
@@ -165,8 +165,8 @@ describe('BudgetAccumulator', () => {
 				id: 'test',
 				amount: 1,
 				memo: 'test',
-				targetAccount: 'test_account',
-				type: PlannedTransactionType.expense,
+				target_account_id: 'test_account',
+				type: PlannedTransactionType.DEBIT,
 				date: date('2022-01-01'),
 			}
 			bAcc.processNextTransaction(transaction);
@@ -186,9 +186,9 @@ describe('BudgetAccumulator', () => {
 					name: 'My Test Budget',
 					budget_id: 'test-budget-id',
 					amount: 1,
-					numMonths: 1,
-					recurrenceSchedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.FEB, 1), new Date(2022, MONTHS.FEB, 30)),
-					systemEventAccountId: 'test-account',
+					num_months: 1,
+					schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.FEB, 1), new Date(2022, MONTHS.FEB, 30)),
+					system_event_account_id: 'test-account',
 				}
 			);
 			// first period not active
@@ -199,8 +199,8 @@ describe('BudgetAccumulator', () => {
 				id: 'test',
 				amount: 1,
 				memo: 'test',
-				targetAccount: 'test_account',
-				type: PlannedTransactionType.expense,
+				target_account_id: 'test_account',
+				type: PlannedTransactionType.DEBIT,
 				date: date('2022-01-01'),
 			}
 			bAcc.processNextTransaction(transaction);
@@ -232,10 +232,10 @@ describe('BudgetAccumulator', () => {
 					name: 'My Test Budget',
 					budget_id: 'test-budget-id',
 					amount: 50,
-					numMonths: 1,
-					recurrenceSchedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JAN, 1)),
-					systemEventAccountId: 'test_account',
-					categoryId: 'test_category',
+					num_months: 1,
+					schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JAN, 1)),
+					system_event_account_id: 'test_account',
+					category_id: 'test_category',
 				}
 			);
 			bAcc.onDayStart(date('2022-01-01'), date('2022-01-01'));
@@ -244,17 +244,17 @@ describe('BudgetAccumulator', () => {
 				id: 'test',
 				amount: -25,
 				memo: 'test',
-				targetAccount: 'test_account',
-				type: PlannedTransactionType.expense,
+				target_account_id: 'test_account',
+				type: PlannedTransactionType.DEBIT,
 				date: date('2022-01-01'),
 			});
 
 			const triggeredEvents = bAcc.doEndOfDayTrigger(date('2022-01-31'));
 			expect(triggeredEvents.length).toBe(1);
 			expect(triggeredEvents[0].amount).toBe(-25);
-			expect(triggeredEvents[0].targetAccount).toBe('test_account');
+			expect(triggeredEvents[0].target_account_id).toBe('test_account');
 			expect(triggeredEvents[0].budgetId).toBe('test-budget-id');
-			expect(triggeredEvents[0].categoryId).toBe('test_category');
+			expect(triggeredEvents[0].category_id).toBe('test_category');
 		})
 
 		test('triggers no events if remaining budget <= 0', () => {
@@ -268,9 +268,9 @@ describe('BudgetAccumulator', () => {
 					name: 'My Test Budget',
 					budget_id: 'test-budget-id',
 					amount: 50,
-					numMonths: 1,
-					recurrenceSchedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JAN, 1)),
-					systemEventAccountId: 'test-account',
+					num_months: 1,
+					schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JAN, 1)),
+					system_event_account_id: 'test-account',
 				}
 			);
 			bAcc.onDayStart(date('2022-01-01'), date('2022-01-01'));
@@ -279,8 +279,8 @@ describe('BudgetAccumulator', () => {
 				id: 'test',
 				amount: -50,
 				memo: 'test',
-				targetAccount: 'test_account',
-				type: PlannedTransactionType.expense,
+				target_account_id: 'test_account',
+				type: PlannedTransactionType.DEBIT,
 				date: date('2022-01-01'),
 			});
 

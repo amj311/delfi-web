@@ -21,8 +21,8 @@ export default (fastify, _, done) => {
     });
 
     fastify.get('/:id', async function handler (request, reply) {
-        const categoryId = request.params.id;
-        const data = await CategoryService.getCategoryById(categoryId);
+        const category_id = request.params.id;
+        const data = await CategoryService.getCategoryById(category_id);
         return {
             success: true,
             data,
@@ -30,9 +30,9 @@ export default (fastify, _, done) => {
     });
 
     fastify.put('/:id', async function handler (request, reply) {
-        const categoryId = request.params.id;
+        const category_id = request.params.id;
         const categoryData = request.body as Category;
-        const data = await CategoryService.updateCategory(categoryId, categoryData);
+        const data = await CategoryService.updateCategory(category_id, categoryData);
         return {
             success: true,
             data,
@@ -40,8 +40,8 @@ export default (fastify, _, done) => {
     });
 
     fastify.delete('/:id', async function handler (request, reply) {
-        const categoryId = request.params.id;
-        await CategoryService.deleteCategory(categoryId);
+        const category_id = request.params.id;
+        await CategoryService.deleteCategory(category_id);
         return {
             success: true,
         };

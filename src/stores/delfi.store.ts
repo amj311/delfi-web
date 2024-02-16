@@ -29,7 +29,7 @@ export const useDelfiStore = defineStore('delfi', {
 		translatePlannedTransactions(schedules: any[]): PlannedTransaction[] {
 			return schedules.map(schedule => ({
 				...schedule,
-				id: schedule.transaction_schedule_id,
+				id: schedule.planned_transaction_id,
 			}))
 		}
 	}
