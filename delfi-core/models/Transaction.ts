@@ -150,6 +150,7 @@ export default class TransactionService {
 					...TransactionService.copyTransactionDetails(transactionTrigger),
 					amount: -trigger.computeAmount(triggerEvent.amount),
 					target_account_id: transactionTrigger.origin_account_id,
+					target_account_partition_id: transactionTrigger.origin_account_partition_id,
 					id: uuid(),
 					date,
 					sourceTrigger: transactionTrigger,
