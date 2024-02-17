@@ -1,7 +1,7 @@
 import type { Schedule } from "./schedules/Schedule";
 import Accumulator, { AccumulatorEvent, AccumulatorPeriod } from "./Accumulator";
 import type { TransactionFilter } from "delfi-core/services/FilterService";
-import TransactionService, { PlannedTransactionType, type TransactionEvent } from "./Transaction";
+import TransactionService, { EventFlag, PlannedTransactionType, type TransactionEvent } from "./Transaction";
 import { peek } from "../utils/miscUtils";
 import { date, type DelfiDate } from "../utils/dateUtils";
 import { v4 as uuid } from "uuid";
@@ -239,7 +239,8 @@ export class BudgetAccumulator extends Accumulator {
 					target_account_id: this.budget.system_event_account_id,
 					amount: remainder,
 					budgetId: this.budget.budget_id,
-					category_id: this.budget.category_id
+					category_id: this.budget.category_id,
+					flags: [EventFlag.SYSTEM_GENERATED],
 				}]
 			}
 		}

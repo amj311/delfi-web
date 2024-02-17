@@ -50,6 +50,11 @@ export type TransactionTrigger = PlannedTransaction & {
 	amount?: number,
 }
 
+export enum EventFlag {
+	TRANSFER_COPY,
+	SYSTEM_GENERATED,
+}
+
 export type TransactionEvent = TransactionDetails & {
 	id: string,
 	date: DelfiDate,
@@ -58,6 +63,7 @@ export type TransactionEvent = TransactionDetails & {
 	sourceTrigger?: TransactionTrigger,
 	triggerEvent?: TransactionEvent
 	budgetId?: string
+	flags: EventFlag[],
 }
 
 
@@ -125,6 +131,7 @@ export default class TransactionService {
 				id: uuid(),
 				date,
 				sourceSchedule: schedule,
+				flags: [EventFlag.TRANSFER_COPY],
 			});
 		}
 
@@ -135,6 +142,7 @@ export default class TransactionService {
 			id: uuid(),
 			date,
 			sourceSchedule: schedule,
+			flags: [],
 		});
 		return events;
 	}
@@ -154,6 +162,7 @@ export default class TransactionService {
 					id: uuid(),
 					date,
 					sourceTrigger: transactionTrigger,
+					flags: [EventFlag.TRANSFER_COPY],
 				});
 			}
 
@@ -165,6 +174,7 @@ export default class TransactionService {
 				sourceTrigger: transactionTrigger,
 				triggerEvent: triggerEvent,
 				amount: TransactionService.resolveScheduleAmount(transactionTrigger, trigger.computeAmount(triggerEvent.amount)),
+				flags: [],
 			})
 			return events;
 		}

@@ -1,7 +1,7 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils";
 import Accumulator, { AccumulatorEvent, AccumulatorPeriod } from "./Accumulator";
 import type { Budget, BudgetAccumulator, BudgetPeriod, BudgetSummary } from "./Budget";
-import type { TransactionEvent, PlannedTransaction } from "./Transaction";
+import { type TransactionEvent, type PlannedTransaction, EventFlag } from "./Transaction";
 
 type CategorySharedProps = {
 	category_id: string,
@@ -47,12 +47,12 @@ export class CategorySummary {
 		this.eventsBySchedule = this.allEvents.reduce((map, event) => {
 			const key = event.transaction.sourceSchedule || 'none';
 			if (map.has(key)) {
-				map.get(key)!.total += event.transaction.amount;
+				map.get(key)!.total += event.transaction.flags.includes(EventFlag.TRANSFER_COPY) ? 0 : event.transaction.amount;
 				map.get(key)!.events.push(event.transaction);
 			}
 			else {
 				map.set(key, {
-					total: event.transaction.amount,
+					total: event.transaction.flags.includes(EventFlag.TRANSFER_COPY) ? 0 : event.transaction.amount,
 					events: [event.transaction],
 				});
 			}
