@@ -1,8 +1,9 @@
-import { Account } from "@prisma/client";
+import { Account } from "../../models/types";
 import { prisma } from "../../prisma/client";
+import { my_accounts } from "./myData";
 
 export const AccountService = {
-    async createAccount(user_id: string, accountData: Omit<Account, 'account_id'>) {
+    async createAccount(user_id: string, accountData: Omit<Account, 'account_id' | 'partitions'>) {
         return await prisma.account.create({
             data: {
                 ...accountData,
@@ -11,12 +12,23 @@ export const AccountService = {
         });
     },
 
-    async getAllAccounts(user_id: string) {
-        return await prisma.account.findMany({
+    async getAllAccounts(user_id: string): Promise<Account[]>  {
+        const accounts = await prisma.account.findMany({
             where: {
                 user_id,
             },
+			include: {
+				partitions: true,
+			}
         });
+		// return accounts.map(a => ({
+		// 	...a,
+		// 	partitions: a.partitions.map(p => ({
+		// 		...p,
+		// 		schedule_details: p.schedule_details as object,
+		// 	}))
+		// }))
+		return Object.values(my_accounts);
     },
 
     async getAccountById(user_id: string, accountId: string) {
@@ -28,7 +40,7 @@ export const AccountService = {
         });
     },
 
-    async updateAccount(user_id: string, accountId: string, accountData: Partial<Account>) {
+    async updateAccount(user_id: string, accountId: string, accountData: Partial<Omit<Account, 'partitions'>>) {
         return await prisma.account.update({
             where: {
                 account_id: accountId,

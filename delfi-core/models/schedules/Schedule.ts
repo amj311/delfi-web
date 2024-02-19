@@ -1,4 +1,4 @@
-import type { DelfiDate } from "delfi-core/utils/dateUtils";
+import type { DelfiDate } from "../../utils/dateUtils";
 
 
 export class Schedule {

@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 // import { type Account as AccountDef } from "@prisma/client";
-// import request from '@/services/request';
+import request from '@/services/request';
 import { my_accounts } from './myData';
 
 // interface Account extends AccountDef {}
@@ -23,9 +23,9 @@ export const useAccountStore = defineStore('account', () => {
 	async function loadAccounts() {
 		try {
 			isLoadingAccounts.value = true;
-			// const { data } = await request.get('/account');
-			// accounts.value = data.data.map(a => new Account(a));
-			accounts.value = Object.values(my_accounts);
+			const { data } = await request.get('/account');
+			accounts.value = data.data;
+			// accounts.value = Object.values(my_accounts);
 		}
 		catch (e) {
 			console.error("Could not load accounts!")

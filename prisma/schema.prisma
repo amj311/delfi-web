@@ -26,15 +26,15 @@ model User {
 }
 
 model Account {
-    account_id          String   @id @default(uuid())
-    external_account_id String?  @unique
+    account_id          String  @id @default(uuid())
+    external_account_id String? @unique
     custom_name         String? // nickname provided by user
     external_name       String // "real" name provided by institution
     mask                String?
     type                String
     subtype             String
-    current_balance     Decimal?
-    available_balance   Decimal?
+    current_balance     Float?
+    available_balance   Float?
     iso_currency_code   String?
 
     // relations
@@ -64,8 +64,8 @@ model AccountPartition {
     account              Account              @relation(fields: [account_id], references: [account_id])
     account_id           String
     name                 String?
-    current_balance      Decimal
-    target_balance       Decimal?
+    current_balance      Float
+    target_balance       Float?
     target_date          DateTime?
     schedule_details     Json?
     TransactionAsTarget  PlannedTransaction[] @relation("TargetPartition")
@@ -87,7 +87,7 @@ model PlannedTransaction {
     planned_transaction_id      String                 @id @default(uuid())
     memo                        String
     type                        PlannedTransactionType
-    amount                      Decimal
+    amount                      Float
     schedule                    Json?
     trigger                     Json?
     recurrence_type             RecurrenceType
@@ -133,7 +133,7 @@ model Budget {
     name        String
     description String?
     schedule    Json
-    amount      Decimal
+    amount      Float
     num_months  Int
 
     Category                UserDefinedCategory @relation(fields: [category_id], references: [category_id])
