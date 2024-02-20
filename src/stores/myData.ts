@@ -1,4 +1,3 @@
-import { XPerMonthSchedule } from "../../delfi-core/models/schedules/XPerMonthSchedule";
 import { MONTHS } from "../../delfi-core/utils/constants";
 import { v4 as uuid } from "uuid";
 import { ImmediateMatchTrigger, type Trigger } from "../../delfi-core/models/schedules/triggers";
@@ -94,7 +93,7 @@ my_accounts.afcu_savings.partitions = [
 			target_account_id: my_accounts.afcu_savings.account_id,
 			user_id: 'myself',
 			target_account_partition_id: 'test-partition-id',
-			schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25)),
+			schedule: { rrules: [ { start: '2021-04-25', frequency: 'MONTHLY', byDayOfMonth: [25] } ] },
 			category_id: flatCategoriesMap["Transfer"].category_id,
 		},
 	}
@@ -130,7 +129,7 @@ const defaultTransaction: PlannedTransaction = {
 	target_account_partition_id: null,
 	origin_account_partition_id: null,
 	recurrence_type: RecurrenceType.SCHEDULE,
-	schedule: new XPerMonthSchedule(1, new Date(3021, MONTHS.APR, 5)),
+	schedule: { rrules: [] },
 	trigger: null,
 	category_id: flatCategoriesMap["Life Insurance"].category_id,
 }
@@ -147,7 +146,7 @@ export const my_scheduledTransactions: PlannedTransaction[] = [
 		amount: 300,
 		target_account_id: my_accounts.afcu_checking.account_id,
 		recurrence_type: RecurrenceType.SCHEDULE,
-		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 5)),
+		schedule: { rrules: [ { start: '2021-04-05', frequency: 'MONTHLY', byDayOfMonth: [5] } ] },
 		category_id: flatCategoriesMap["Life Insurance"].category_id,
 	},
 	{ 
@@ -158,7 +157,7 @@ export const my_scheduledTransactions: PlannedTransaction[] = [
 		amount: 70,
 		target_account_id: my_accounts.afcu_checking.account_id,
 		recurrence_type: RecurrenceType.SCHEDULE,
-		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 5)),
+		schedule: { rrules: [ { start: '2021-04-05', frequency: 'MONTHLY', byDayOfMonth: [5] } ] },
 		category_id: flatCategoriesMap["Life Insurance"].category_id
 	},
 	{ // Car Insurance
@@ -169,7 +168,7 @@ export const my_scheduledTransactions: PlannedTransaction[] = [
 		amount: 81,
 		target_account_id: my_accounts.afcu_checking.account_id,
 		recurrence_type: RecurrenceType.SCHEDULE,
-		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 8)),
+		schedule: { rrules: [ { start: '2021-04-08', frequency: 'MONTHLY', byDayOfMonth: [8] } ] },
 		category_id: flatCategoriesMap["Auto Insurance"].category_id
 	},
 
@@ -181,7 +180,7 @@ export const my_scheduledTransactions: PlannedTransaction[] = [
 		amount: 3140,
 		target_account_id:  my_accounts.afcu_checking.account_id,
 		recurrence_type: RecurrenceType.SCHEDULE,
-		schedule: new XPerMonthSchedule(2, new Date(2022, MONTHS.MAY, 14)),
+		schedule: { rrules: [ { start: '2021-04-08', frequency: 'MONTHLY', byDayOfMonth: [14, 29] } ] },
 		category_id: flatCategoriesMap["Paycheck"].category_id
 	},
 	{
@@ -213,7 +212,7 @@ export const my_scheduledTransactions: PlannedTransaction[] = [
 		target_account_id: my_accounts.afcu_checking.account_id,
 		category_id: customCategoriesMap["Fast Offering"].category_id,
 		recurrence_type: RecurrenceType.SCHEDULE,
-		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.MAY, 7))
+		schedule: { rrules: [ { start: '2022-05-07', frequency: 'MONTHLY', byDayOfMonth: [7] } ] }
 	},
 
 	{
@@ -225,7 +224,7 @@ export const my_scheduledTransactions: PlannedTransaction[] = [
 		target_account_id: my_accounts.afcu_checking.account_id,
 		category_id: flatCategoriesMap["Mortgage & Rent"].category_id,
 		recurrence_type: RecurrenceType.SCHEDULE,
-		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 17))
+		schedule: { rrules: [ { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] } ] }
 	},
 	{
 		...defaultTransaction,
@@ -236,7 +235,7 @@ export const my_scheduledTransactions: PlannedTransaction[] = [
 		target_account_id: my_accounts.afcu_checking.account_id,
 		category_id: flatCategoriesMap["Home Services"].category_id,
 		recurrence_type: RecurrenceType.SCHEDULE,
-		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 18))
+		schedule: { rrules: [ { start: '2022-06-18', frequency: 'MONTHLY', byDayOfMonth: [18] } ] }
 	},
 	{
 		...defaultTransaction,
@@ -247,7 +246,7 @@ export const my_scheduledTransactions: PlannedTransaction[] = [
 		target_account_id: my_accounts.afcu_checking.account_id,
 		category_id: flatCategoriesMap["Utilities"].category_id,
 		recurrence_type: RecurrenceType.SCHEDULE,
-		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 18))
+		schedule: { rrules: [ { start: '2022-06-18', frequency: 'MONTHLY', byDayOfMonth: [18] } ] }
 	},
 	{
 		...defaultTransaction,
@@ -258,7 +257,7 @@ export const my_scheduledTransactions: PlannedTransaction[] = [
 		target_account_id: my_accounts.afcu_checking.account_id,
 		category_id: flatCategoriesMap["Utilities"].category_id,
 		recurrence_type: RecurrenceType.SCHEDULE,
-		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 17))
+		schedule: { rrules: [ { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] } ] }
 	},
 	{
 		...defaultTransaction,
@@ -269,7 +268,7 @@ export const my_scheduledTransactions: PlannedTransaction[] = [
 		target_account_id: my_accounts.afcu_checking.account_id,
 		category_id: flatCategoriesMap["Utilities"].category_id,
 		recurrence_type: RecurrenceType.SCHEDULE,
-		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JUN, 17))
+		schedule: { rrules: [ { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] } ] }
 	},
 
 	{
@@ -281,7 +280,7 @@ export const my_scheduledTransactions: PlannedTransaction[] = [
 		target_account_id: my_accounts.afcu_checking.account_id,
 		category_id: flatCategoriesMap["Tuition"].category_id,
 		recurrence_type: RecurrenceType.SCHEDULE,
-		schedule: new XPerMonthSchedule(1, new Date(2024, MONTHS.SEP, 1), new Date(2025, MONTHS.MAY, 1))
+		schedule: { rrules: [ { start: '2024-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] } ] }
 	},
 
 
@@ -297,7 +296,7 @@ export const my_scheduledTransactions: PlannedTransaction[] = [
 		target_account_id: my_accounts.afcu_savings.account_id,
 		origin_account_id: my_accounts.afcu_checking.account_id,
 		recurrence_type: RecurrenceType.SCHEDULE,
-		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.SEP, 1)),
+		schedule: { rrules: [ { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] } ] },
 		category_id: flatCategoriesMap["Transfer"].category_id,
 	},
 ];
@@ -315,7 +314,7 @@ export const budgets: Budget[] = [
 		budget_id: uuid(),
 		name: 'Groceries',
 		amount: 300,
-		schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.SEP, 1)),
+		schedule: { rrules: [ { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] } ] },
 		num_months: 1,
 		category_id: flatCategoriesMap.Groceries.category_id,
 		system_event_account_id: my_accounts.afcu_checking.account_id,
@@ -327,7 +326,7 @@ export const budgets: Budget[] = [
 		amount: 50,
 		category_id: flatCategoriesMap.Fuel.category_id,
 		system_event_account_id: my_accounts.afcu_checking.account_id,
-		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
+		schedule: { rrules: [ { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] } ] },
 		num_months: 1,
 	},
 	// Fun Money
@@ -336,7 +335,7 @@ export const budgets: Budget[] = [
 		budget_id: uuid(),
 		name: "Fun Money",
 		category_id: flatCategoriesMap.Shopping.category_id,
-		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
+		schedule: { rrules: [ { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] } ] },
 		amount: 150,
 		system_event_account_id: my_accounts.afcu_checking.account_id,
 		num_months: 1,
@@ -347,7 +346,7 @@ export const budgets: Budget[] = [
 		budget_id: uuid(),
 		name: "Baby Care",
 		category_id: flatCategoriesMap.Shopping.category_id,
-		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 1)),
+		schedule: { rrules: [ { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] } ] },
 		amount: 50,
 		system_event_account_id: my_accounts.afcu_checking.account_id,
 		num_months: 1,

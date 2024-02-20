@@ -1,6 +1,6 @@
 import { v4 as uuid } from "uuid";
 
-import type { Schedule } from "./schedules/Schedule"
+import { ScheduleService, type Schedule } from "./schedules/Schedule"
 import { ImmediateMatchTrigger, type Trigger } from "./schedules/triggers"
 import { date, type DelfiDate } from "../utils/dateUtils";
 import FilterService from "../services/FilterService";
@@ -87,7 +87,7 @@ export default class TransactionService {
         for (let schedule of transactionSchedules) {
 			if (schedule.schedule) {
 				if (!schedule.schedule) throw Error('Transaction schedule has no schedule. Is this a trigger instead?');
-        		let dates = schedule.schedule.getOccurrencesBetween(start, end).map((d:DelfiDate) => ({
+        		let dates = ScheduleService.getOccurrences(schedule.schedule, { start, end }).map((d:DelfiDate) => ({
 					date: date(d),
 					schedule: schedule
 				}));
@@ -99,23 +99,11 @@ export default class TransactionService {
 	}
 
 	static getNextOccurrence(asOfDate: DelfiDate, schedule: Schedule): DelfiDate | undefined {
-		// TODO Refactor to better library later
-		// For now just grab te first from a whole year.
-		const nextOccurrences = schedule.getOccurrencesBetween(
-			asOfDate,
-			asOfDate.add(1, 'year'),
-		);
-		return nextOccurrences[0];
+		return ScheduleService.getOccurrences(schedule, { start: asOfDate, take: 1 })[0];
 	}
 
 	static getPreviousOccurrence(asOfDate: DelfiDate, schedule: Schedule) {
-		// TODO Refactor to better library later
-		// For now just grab te first from a whole year.
-		const nextOccurrences = schedule.getOccurrencesBetween(
-			asOfDate.subtract(1, 'year'),
-			asOfDate,
-		);
-		return peek(nextOccurrences);
+		return ScheduleService.getOccurrences(schedule, { end: asOfDate, take: 1, reverse: true })[0];
 	}
 
 	static createEventsFromSchedule(date: DelfiDate, schedule: TransactionSchedule): TransactionEvent[] {

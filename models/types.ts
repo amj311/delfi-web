@@ -19,9 +19,9 @@ export type Account = Replace<AccountRaw, {
 }>
 
 export type AccountPartition = Replace<AccountPartitionRaw, {
-	current_balance: number,
 	target_balance?: Maybe<number>,
-	schedule_details?: object,
+	target_date?: Maybe<Date>,
+	schedule_details?: Maybe<object>,
 }>
 
 export type Budget = Replace<BudgetRaw, {

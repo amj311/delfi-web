@@ -1,6 +1,8 @@
 import dayjs from "dayjs"
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore"
 dayjs.extend(isSameOrBefore);
+import UTC from "dayjs/plugin/UTC"
+dayjs.extend(UTC);
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter"
 dayjs.extend(isSameOrAfter);
 

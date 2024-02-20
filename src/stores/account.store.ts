@@ -30,6 +30,9 @@ export const useAccountStore = defineStore('account', () => {
 		catch (e) {
 			console.error("Could not load accounts!")
 		}
+		finally {
+			isLoadingAccounts.value = false;
+		}
 
 	}
 

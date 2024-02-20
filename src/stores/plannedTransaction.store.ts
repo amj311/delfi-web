@@ -18,9 +18,9 @@ export const usePlannedTransactionStore = defineStore('plannedTransaction', () =
 	async function loadPlannedTransactions() {
 		try {
 			isLoadingPlannedTransactions.value = true;
-			// const { data } = await request.get('/plannedTransaction');
-			// plannedTransactions.value = data.data;
-			plannedTransactions.value = my_scheduledTransactions;
+			const { data } = await request.get('/plannedTransaction');
+			plannedTransactions.value = data.data;
+			// plannedTransactions.value = my_scheduledTransactions;
 		}
 		catch (e) {
 			console.error("Could not load plannedTransactions!")

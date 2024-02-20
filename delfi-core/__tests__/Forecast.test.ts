@@ -1,7 +1,6 @@
 import Forecast from "../models/Forecast";
 import { beforeEach, describe, expect, test } from 'vitest'
 import { ImmediateMatchTrigger } from "../models/schedules/triggers";
-import { XPerMonthSchedule } from "../models/schedules/XPerMonthSchedule";
 import { MONTHS } from "../utils/constants";
 import { PlannedTransactionType, type PlannedTransaction, type TransactionTrigger, RecurrenceType } from "../models/Transaction";
 import { date } from "../utils/dateUtils";
@@ -24,8 +23,8 @@ const plannedTransactions: PlannedTransaction[] = [
 		amount: 2500,
 		target_account_id: accounts.afcu_checking.id,
 		recurrence_type: RecurrenceType.SCHEDULE,
-		schedule: new XPerMonthSchedule(1, new Date(2021, MONTHS.APR, 25)),
-		category_id: "",
+		schedule: { rrules: [ { start: '2021-04-25', frequency: 'MONTHLY', byDayOfMonth: [25] } ] },
+		category_id: 'test-category',
 	},
 	{
 		id: "tithing",
@@ -145,9 +144,9 @@ describe('Forecast', () => {
 				budget_id: '',
 				amount: 50,
 				num_months: 1,
-				schedule: new XPerMonthSchedule(1, new Date(2022, MONTHS.JAN, 1)),
+				schedule: { rrules: [ { start: '2021-01-01', frequency: 'MONTHLY', byDayOfMonth: [1] } ] },
+				category_id: 'test-category',
 				system_event_account_id: 'test-account',
-				category_id: '',
 			};
 			const budgetAccumulator = BudgetService.createBudgetAccumulator(budget);
 			const accountAccumulator = new Accumulator(
