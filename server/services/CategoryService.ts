@@ -1,38 +1,47 @@
-import { Category } from "@prisma/client";
 import { prisma } from "../../prisma/client";
+import { UserCategory } from "../../models/types";
+import { customCategories } from "./myData";
 
 export const CategoryService = {
-    async createCategory(categoryData: Omit<Category, 'category_id'>) {
-        return await prisma.category.create({
+    async createUserCategory(categoryData: Omit<UserCategory, 'category_id'>) {
+        return await prisma.userDefinedCategory.create({
             data: categoryData,
         });
     },
 
-    async getAllCategories() {
-        return await prisma.category.findMany();
+    async getUserCategories(user_id: string) {
+        // return await prisma.userDefinedCategory.findMany({
+		// 	where: {
+		// 		user_id,
+		// 	},
+		// });
+		return customCategories;
     },
 
-    async getCategoryById(category_id: string) {
-        return await prisma.category.findUnique({
+    async getCategoryById(user_id: string, category_id: string) {
+        return await prisma.userDefinedCategory.findUnique({
             where: {
                 category_id,
+				user_id,
             },
         });
     },
 
-    async updateCategory(category_id: string, categoryData: Partial<Category>) {
-        return await prisma.category.update({
+    async updateCategory(user_id: string, category_id: string, categoryData: Partial<UserCategory>) {
+        return await prisma.userDefinedCategory.update({
             where: {
                 category_id,
+				user_id,
             },
             data: categoryData,
         });
     },
 
-    async deleteCategory(category_id: string) {
-        await prisma.category.delete({
+    async deleteCategory(user_id, category_id: string) {
+        await prisma.userDefinedCategory.delete({
             where: {
                 category_id,
+				user_id,
             },
         });
     },

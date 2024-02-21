@@ -5,12 +5,15 @@ import { computed, reactive, ref } from 'vue';
 import { usePlannedTransactionStore } from '@/stores/plannedTransaction.store';
 import Forecast from '../../delfi-core/models/Forecast';
 import { type DelfiDate, date} from '../../delfi-core/utils/dateUtils';
-import { budgets, customCategories } from '../stores/myData';
 import Currency from '@/components/Currency.vue';
+import { useBudgetStore } from '@/stores/budget.store';
+import { useCategoryStore } from '@/stores/category.store';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
 const transactionStore = usePlannedTransactionStore();
+const budgetStore = useBudgetStore();
+const categoryStore = useCategoryStore();
 
 const state = reactive({
 	loading: false,
@@ -22,14 +25,18 @@ const state = reactive({
 	state.loading = true;
 	state.viewingMonth = date(date().startOf('month'));
 	
-	await accountStore.loadAccounts();
-	await transactionStore.loadPlannedTransactions();
+	await Promise.all([
+		await accountStore.loadAccounts(),
+		await transactionStore.loadPlannedTransactions(),
+		await budgetStore.loadBudgets(),
+		await categoryStore.loadCategories(),
+	]);
 
 	delfiStore.initDelfi({
 		accounts: accountStore.accounts,
 		plannedTransactions: delfiStore.translatePlannedTransactions(transactionStore.plannedTransactions),
-		budgets: budgets,
-		userCategories: customCategories,
+		budgets: budgetStore.budgets,
+		userCategories: categoryStore.categories,
 	})
 	state.forecast = await delfiStore.delfi.createFullForecast(state.viewingMonth, date(state.viewingMonth.add(1, 'year')));
 	state.loading = false;

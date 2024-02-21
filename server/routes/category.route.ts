@@ -1,11 +1,11 @@
-import { Category } from "@prisma/client";
+import { UserCategory } from "../../models/types";
 import { CategoryService } from "../services/CategoryService";
 
 export default (fastify, _, done) => {
 
     fastify.post('/', async function handler (request, reply) {
-        const categoryData = request.body as Category;
-        const data = await CategoryService.createCategory(categoryData);
+        const categoryData = request.body as UserCategory;
+        const data = await CategoryService.createUserCategory(categoryData);
         return {
             success: true,
             data,
@@ -13,7 +13,8 @@ export default (fastify, _, done) => {
     });
 
     fastify.get('/', async function handler (request, reply) {
-        const data = await CategoryService.getAllCategories();
+		const user_id = request.sessionUser.user_id;
+		const data = await CategoryService.getUserCategories(user_id);
         return {
             success: true,
             data,
@@ -21,8 +22,9 @@ export default (fastify, _, done) => {
     });
 
     fastify.get('/:id', async function handler (request, reply) {
-        const category_id = request.params.id;
-        const data = await CategoryService.getCategoryById(category_id);
+		const user_id = request.sessionUser.user_id;
+		const category_id = request.params.id;
+        const data = await CategoryService.getCategoryById(user_id, category_id);
         return {
             success: true,
             data,
@@ -31,8 +33,9 @@ export default (fastify, _, done) => {
 
     fastify.put('/:id', async function handler (request, reply) {
         const category_id = request.params.id;
-        const categoryData = request.body as Category;
-        const data = await CategoryService.updateCategory(category_id, categoryData);
+        const categoryData = request.body as UserCategory;
+		const user_id = request.sessionUser.user_id;
+		const data = await CategoryService.updateCategory(user_id, category_id, categoryData);
         return {
             success: true,
             data,
@@ -40,8 +43,9 @@ export default (fastify, _, done) => {
     });
 
     fastify.delete('/:id', async function handler (request, reply) {
-        const category_id = request.params.id;
-        await CategoryService.deleteCategory(category_id);
+		const user_id = request.sessionUser.user_id;
+		const category_id = request.params.id;
+        await CategoryService.deleteCategory(user_id, category_id);
         return {
             success: true,
         };

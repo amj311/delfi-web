@@ -29,6 +29,10 @@ export type Budget = Replace<BudgetRaw, {
 	schedule: Schedule,
 }>
 
+export type BudgetDbInput = Replace<Budget, {
+	schedule: any,
+}>;
+
 export type PlannedTransaction = Replace<PlannedTransactionRaw, {
 	// type: PlannedTransactionType,
 	// recurrence_type: RecurrenceType,

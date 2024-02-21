@@ -1,12 +1,11 @@
-import { PlannedTransaction } from "@prisma/client";
-import { PlannedTransactionService } from "../services/PlannedTransactionService";
+import { Budget } from "@prisma/client";
+import { BudgetService } from "../services/BudgetService";
 
 export default (fastify, _, done) => {
-
     fastify.post('/', async function handler (request, reply) {
-        const plannedTransactionData = request.body as PlannedTransaction;
+        const budgetData = request.body as Budget;
         const user_id = request.sessionUser.user_id;
-        const data = await PlannedTransactionService.createPlannedTransaction(user_id, plannedTransactionData);
+        const data = await BudgetService.createBudget(user_id, budgetData);
         return {
             success: true,
             data,
@@ -15,7 +14,7 @@ export default (fastify, _, done) => {
 
     fastify.get('/', async function handler (request, reply) {
         const user_id = request.sessionUser.user_id;
-        const data = await PlannedTransactionService.getAllPlannedTransactions(user_id);
+        const data = await BudgetService.getAllBudgets(user_id);
         return {
             success: true,
             data,
@@ -23,9 +22,9 @@ export default (fastify, _, done) => {
     });
 
     fastify.get('/:id', async function handler (request, reply) {
-        const plannedTransactionId = request.params.id;
+        const budgetId = request.params.id;
         const user_id = request.sessionUser.user_id;
-        const data = await PlannedTransactionService.getPlannedTransactionById(user_id, plannedTransactionId);
+        const data = await BudgetService.getBudgetById(user_id, budgetId);
         return {
             success: true,
             data,
@@ -33,10 +32,10 @@ export default (fastify, _, done) => {
     });
 
     fastify.put('/:id', async function handler (request, reply) {
-        const plannedTransactionId = request.params.id;
-        const plannedTransactionData = request.body as PlannedTransaction;
+        const budgetId = request.params.id;
+        const budgetData = request.body as Budget;
         const user_id = request.sessionUser.user_id;
-        const data = await PlannedTransactionService.updatePlannedTransaction(user_id, plannedTransactionId, plannedTransactionData);
+        const data = await BudgetService.updateBudget(user_id, budgetId, budgetData);
         return {
             success: true,
             data,
@@ -44,9 +43,9 @@ export default (fastify, _, done) => {
     });
 
     fastify.delete('/:id', async function handler (request, reply) {
-        const plannedTransactionId = request.params.id;
+        const budgetId = request.params.id;
         const user_id = request.sessionUser.user_id;
-        await PlannedTransactionService.deletePlannedTransaction(user_id, plannedTransactionId);
+        await BudgetService.deleteBudget(user_id, budgetId);
         return {
             success: true,
         };
