@@ -30,11 +30,16 @@ export type Budget = Replace<BudgetRaw, {
 }>
 
 export type PlannedTransaction = Replace<PlannedTransactionRaw, {
-	type: PlannedTransactionType,
-	recurrence_type: RecurrenceType,
-	schedule: Schedule | null,
-	trigger: Trigger | null,
+	// type: PlannedTransactionType,
+	// recurrence_type: RecurrenceType,
+	schedule: Maybe<Schedule>,
+	trigger: Maybe<Trigger>,
 	amount: number,
 }>
+
+export type PlannedTransactionDbInput = Replace<PlannedTransaction, {
+	schedule: any,
+	trigger: any,
+}>;
 
 export type UserCategory = UserDefinedCategory;

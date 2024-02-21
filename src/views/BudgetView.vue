@@ -100,11 +100,11 @@ const goBack = () => {
 						<small v-for="partition of summary.account.partitions" class="flex-between">
 							&emsp13;- {{partition.name}}
 							<div class="flex-center">
-								<small v-if="summary.change(partition.partition_id) !== 0">
-									<Currency :amount="summary.change(partition.partition_id)" mode="net_change" hideCurrency />
+								<small v-if="summary.change(partition.account_partition_id) !== 0">
+									<Currency :amount="summary.change(partition.account_partition_id)" mode="net_change" hideCurrency />
 									&emsp13;
 								</small>
-								<span><Currency :amount="summary.endingBalance(partition.partition_id)" mode="balance" /></span>
+								<span><Currency :amount="summary.endingBalance(partition.account_partition_id)" mode="balance" /></span>
 							</div>
 						</small>
 					</div>
