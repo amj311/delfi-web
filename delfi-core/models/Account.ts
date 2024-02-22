@@ -9,7 +9,7 @@ export type AccountPartition = {
 	current_balance: number,
 	target_balance?: number,
 	target_date?: string,
-	schedule_details: PlannedTransaction
+	schedule_details: TransactionSchedule
 }
 
 export type Account = {

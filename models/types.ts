@@ -10,7 +10,7 @@ import type { Schedule } from "../delfi-core/models/schedules/Schedule";
 import { PlannedTransactionType, RecurrenceType } from "../delfi-core/models/Transaction";
 
 type Replace<T1, T2> = Omit<T1, keyof T2> & T2;
-type Maybe<T> = T | null | undefined;
+type Maybe<T> = T | null;
 
 export type Account = Replace<AccountRaw, {
 	partitions: AccountPartition[],
@@ -19,9 +19,9 @@ export type Account = Replace<AccountRaw, {
 }>
 
 export type AccountPartition = Replace<AccountPartitionRaw, {
-	target_balance?: Maybe<number>,
-	target_date?: Maybe<Date>,
-	schedule_details?: Maybe<object>,
+	target_balance: Maybe<number>,
+	target_date: Maybe<Date>,
+	schedule_details: Maybe<object>,
 }>
 
 export type Budget = Replace<BudgetRaw, {

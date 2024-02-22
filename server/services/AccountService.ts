@@ -7,7 +7,7 @@ export const AccountService = {
         return await prisma.account.create({
             data: {
                 ...accountData,
-                user_id,
+				user_id,
             },
         });
     },
@@ -21,14 +21,13 @@ export const AccountService = {
 				partitions: true,
 			}
         });
-		// return accounts.map(a => ({
-		// 	...a,
-		// 	partitions: a.partitions.map(p => ({
-		// 		...p,
-		// 		schedule_details: p.schedule_details as object,
-		// 	}))
-		// }))
-		return Object.values(my_accounts);
+		return accounts.map(a => ({
+			...a,
+			partitions: a.partitions.map(p => ({
+				...p,
+				schedule_details: p.schedule_details as any,
+			}))
+		})).concat(Object.values(my_accounts))
     },
 
     async getAccountById(user_id: string, accountId: string) {

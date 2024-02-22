@@ -60,7 +60,7 @@ export const PlaidService = {
 					institution_id: item.institution_id,
 					accounts: {
 						create: accounts.map(a => ({
-							custom_name: null,
+							display_name: null,
 							external_name: a.name,
 							external_account_id: a.account_id,
 							mask: a.mask,

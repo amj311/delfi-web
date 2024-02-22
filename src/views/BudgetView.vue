@@ -8,6 +8,8 @@ import { type DelfiDate, date} from '../../delfi-core/utils/dateUtils';
 import Currency from '@/components/Currency.vue';
 import { useBudgetStore } from '@/stores/budget.store';
 import { useCategoryStore } from '@/stores/category.store';
+import type { Account } from 'models/types';
+import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -19,6 +21,7 @@ const state = reactive({
 	loading: false,
 	viewingMonth: <DelfiDate><unknown>null,
 	forecast: <Forecast><unknown>null,
+	upsertingAccount: <Account | {} | null>null
 });
 
 (async () => {
@@ -95,7 +98,7 @@ const goBack = () => {
 				<div class="list">
 					<div v-for="summary of monthData.accountSummaries" class="list-row">
 						<div class="flex-between">
-							<div class="text-semibold">{{ summary.account.custom_name || summary.account.external_name }}</div>
+							<div class="text-semibold">{{ accountStore.getAccountById(summary.account.account_id)?.display_name }}</div>
 							<div class="flex-center">
 								<small v-if="summary.change() !== 0">
 									<Currency :amount="summary.change()" mode="net_change" hideCurrency />
@@ -116,6 +119,8 @@ const goBack = () => {
 						</small>
 					</div>
 				</div>
+				<UpsertAccountForm v-if="state.upsertingAccount" :account="state.upsertingAccount || {}" :close="() => state.upsertingAccount = null" />
+				<button v-else @click="() => state.upsertingAccount = {}">Add Account</button>
 			</div>
 			<br />
 
@@ -131,7 +136,7 @@ const goBack = () => {
 								<Currency :amount="total" mode="transaction" />
 							</div>
 							{{ events.map(e => e.date.format('MMM D')).join(', ') }}
-							&emsp;{{ accountStore.getAccountById(schedule.target_account_id).custom_name }}
+							&emsp;{{ accountStore.getAccountById(schedule.target_account_id).display_name }}
 						</template>
 					</div>
 				</div>
@@ -148,7 +153,7 @@ const goBack = () => {
 								<Currency :amount="total" />
 							</div>
 							{{ events.map(e => e.date.format('MMM D')).join(', ') }}
-							&emsp;{{ accountStore.getAccountById(schedule.origin_account_id).custom_name }} → {{ accountStore.getAccountById(schedule.target_account_id).custom_name }}
+							&emsp;{{ accountStore.getAccountById(schedule.origin_account_id).display_name }} → {{ accountStore.getAccountById(schedule.target_account_id).display_name }}
 						</template>
 					</div>
 				</div>
@@ -187,7 +192,7 @@ const goBack = () => {
 									{{ event.transaction.memo }}
 									<Currency :amount="event.transaction.amount" mode="transaction" />
 								</div>
-								<!-- {{ accountStore.getAccountById(event.transaction.target_account_id).custom_name }} -->
+								<!-- {{ accountStore.getAccountById(event.transaction.target_account_id).display_name }} -->
 							</div>
 						</div>
 					</template>

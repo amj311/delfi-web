@@ -28,8 +28,8 @@ model User {
 model Account {
     account_id          String  @id @default(uuid())
     external_account_id String? @unique
-    custom_name         String? // nickname provided by user
-    external_name       String // "real" name provided by institution
+    display_name        String  // nickname provided by user or default to external
+    external_name       String? // "real" name provided by institution
     mask                String?
     type                String
     subtype             String

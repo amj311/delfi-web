@@ -20,7 +20,7 @@ const accountStuff = {
 export const my_accounts: { [key: string]: Account } = {
 	afcu_checking: {
 		account_id: uuid(),
-		custom_name: "AFCU Checking",
+		display_name: "AFCU Checking",
 		current_balance: 200,
 		available_balance: 200,
 		partitions: [],
@@ -28,7 +28,7 @@ export const my_accounts: { [key: string]: Account } = {
 	},
 	afcu_savings: {
 		account_id: uuid(),
-		custom_name: "AFCU Savings",
+		display_name: "AFCU Savings",
 		current_balance: 5100,
 		available_balance: 5100,
 		partitions: [],
@@ -36,7 +36,7 @@ export const my_accounts: { [key: string]: Account } = {
 	},
 	us_savings: {
 		account_id: uuid(),
-		custom_name: "US Bank",
+		display_name: "US Bank",
 		current_balance: 3000,
 		available_balance: 3000,
 		partitions: [],
