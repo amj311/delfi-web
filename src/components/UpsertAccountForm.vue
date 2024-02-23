@@ -27,13 +27,7 @@ const isNew = computed(() => {
 const finalize = async () => {
 	try {
 		state.isSaving = true;
-		let account;
-		if (isNew.value) {
-			account = await accountStore.createAccount(state.data);
-		}
-		else {
-			account = await accountStore.updateAccount(state.data);
-		}
+		let account = await accountStore.upsertAccount(state.data);
 		props.onSave && props.onSave({account, isNew: isNew.value});
 		props.close();
 	}
@@ -51,11 +45,11 @@ const finalize = async () => {
   <small>{{state.data.external_name}}</small>
   <small>{{state.data.mask}}</small>
 
-  <div><label for="custom_name">Custom Name</label><input id="custom_name" v-model="state.data.custom_name" /></div>
+  <div><label for="display_name">Account Name</label><input id="display_name" v-model="state.data.display_name" /></div>
   <div><label for="current_balance">Balance</label><input id="current_balance" v-model="state.data.current_balance" type="number" /></div>
-  <div><label for="type">type</label><input id="type" v-model="state.data.type" type="number" /></div>
-  <div><label for="subtype">subtype</label><input id="subtype" v-model="state.data.subtype" type="number" /></div>
-  <div><label for="subtype">iso_currency_code</label><input id="iso_currency_code" v-model="state.data.iso_currency_code" type="number" /></div>
+  <div><label for="type">type</label><input id="type" v-model="state.data.type" /></div>
+  <div><label for="subtype">subtype</label><input id="subtype" v-model="state.data.subtype" /></div>
+  <div><label for="subtype">iso_currency_code</label><input id="iso_currency_code" v-model="state.data.iso_currency_code" /></div>
   <div><button @click="finalize">Save</button></div>
 </template>
 

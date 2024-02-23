@@ -27,9 +27,10 @@ export class Delfi {
 	public forecast!: Forecast;
 	readonly composedCategories!: ParentCategory[];
 
-
 	constructor(config: DelfiConfig) {
-		Object.assign(this, config);
+		// Copy config so that it is not connected to external state
+		const configCopy = JSON.parse(JSON.stringify(config));
+		Object.assign(this, configCopy);
 		this.composedCategories = JSON.parse(JSON.stringify(nestedCategories));
 		this.userCategories.forEach(c => this.composedCategories.find(p => p.category_id === c.parent_category_id)?.children?.push(c));
 	}
