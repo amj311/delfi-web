@@ -63,7 +63,7 @@ model AccountPartition {
     account_partition_id String               @id @default(uuid())
     account              Account              @relation(fields: [account_id], references: [account_id])
     account_id           String
-    name                 String?
+    name                 String
     current_balance      Float
     target_balance       Float?
     target_date          DateTime?

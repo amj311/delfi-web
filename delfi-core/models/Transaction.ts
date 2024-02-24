@@ -4,7 +4,9 @@ import { ScheduleService, type Schedule } from "./schedules/Schedule"
 import { ImmediateMatchTrigger, type Trigger } from "./schedules/triggers"
 import { date, type DelfiDate } from "../utils/dateUtils";
 import FilterService from "../services/FilterService";
-import { peek } from "../utils/miscUtils";
+
+type Replace<T1, T2> = Omit<T1, keyof T2> & T2;
+type Maybe<T> = T | null;
 
 export enum PlannedTransactionType {
 	CREDIT = "CREDIT",
@@ -21,34 +23,34 @@ export type TransactionDetails = {
 	memo: string,
 	type: PlannedTransactionType,
 	target_account_id: string,
-	target_account_partition_id?: string,
+	target_account_partition_id: string | null,
 	category_id: string,
 	tagIds?: string[],
 }
 
 type PlannedTransactionDetails = TransactionDetails & {
 	id: string,
-	origin_account_id?: string,
-	origin_account_partition_id?: string,
+	origin_account_id: string | null,
+	origin_account_partition_id: string | null,
 	recurrence_type: RecurrenceType,
 }
 
 export type PlannedTransaction = PlannedTransactionDetails & {
-	schedule?: Schedule,
-	amount?: number,
-	trigger?: Trigger,
+	schedule?: Maybe<Schedule>,
+	amount: number,
+	trigger: Maybe<Trigger>,
 }
 
-export type TransactionSchedule = PlannedTransaction & {
+export type TransactionSchedule = Replace<PlannedTransaction, {
 	schedule: Schedule,
 	amount: number,
 	trigger: undefined,
-}
+}>
 
-export type TransactionTrigger = PlannedTransaction & {
+export type TransactionTrigger = Replace<PlannedTransaction, {
 	trigger: Trigger,
 	amount?: number,
-}
+}>
 
 export enum EventFlag {
 	TRANSFER_COPY,

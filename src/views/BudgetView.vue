@@ -21,8 +21,31 @@ const state = reactive({
 	loading: false,
 	viewingMonth: <DelfiDate><unknown>null,
 	forecast: <Forecast><unknown>null,
-	upsertingAccount: <Account | {} | null>null
+	upsertingAccount: <Account | {} | null>null,
+	summaryData: <any>null,
 });
+
+const getSummary = (month: DelfiDate) => {
+	if (!state.viewingMonth || !delfiStore.delfi?.forecast) {
+		return null;
+	}
+	let summary = delfiStore.delfi.getMonthSummary(month);
+	return summary;
+};
+
+const createDelfi = async () => {
+	state.loading = true;
+	
+	await delfiStore.initDelfi({
+		accounts: accountStore.accounts,
+		planned_transactions: transactionStore.plannedTransactions,
+		budgets: budgetStore.budgets,
+		user_categories: categoryStore.categories,
+	})
+	state.forecast = await delfiStore.delfi.createFullForecast(state.viewingMonth, date(state.viewingMonth.add(1, 'year')));
+	state.summaryData = getSummary(state.viewingMonth);
+	state.loading = false;
+};
 
 (async () => {
 	state.loading = true;
@@ -35,23 +58,9 @@ const state = reactive({
 		await categoryStore.loadCategories(),
 	]);
 
-	delfiStore.initDelfi({
-		accounts: accountStore.accounts,
-		plannedTransactions: delfiStore.translatePlannedTransactions(transactionStore.plannedTransactions),
-		budgets: budgetStore.budgets,
-		userCategories: categoryStore.categories,
-	})
-	state.forecast = await delfiStore.delfi.createFullForecast(state.viewingMonth, date(state.viewingMonth.add(1, 'year')));
+	await createDelfi();
 	state.loading = false;
 })();
-
-const monthData = computed(() => {
-	if (!state.viewingMonth || !delfiStore.delfi?.forecast) {
-		return null;
-	}
-	const summary = delfiStore.delfi.getMonthSummary(state.viewingMonth);
-	return summary;
-});
 
 const canGoBack = computed(() => {
 	if (!state.viewingMonth) {
@@ -65,6 +74,7 @@ const goForward = () => {
 		return;
 	}
 	state.viewingMonth = date(state.viewingMonth.add(1, 'month'));
+	state.summaryData = getSummary(state.viewingMonth);
 };
 
 const goBack = () => {
@@ -75,14 +85,13 @@ const goBack = () => {
 		return;
 	}
 	state.viewingMonth = date(state.viewingMonth.subtract(1, 'month'));
+	state.summaryData = getSummary(state.viewingMonth);
 };
 
 </script>
 
 <template>
 	<main>
-		<div v-if="state.loading">Loading...</div>
-
 		<h2>Monthly Budget</h2>
 		<div style="display: flex; justify-content: space-between">
 			<a @click="goBack()">Back</a>
@@ -90,15 +99,19 @@ const goBack = () => {
 			<a @click="goForward()">Forward</a>
 		</div>
 		<br />
+		<div v-if="state.loading">Loading...</div>
 
-		<div v-if="monthData">
+		<div v-if="state.summaryData">
 			<div>
 				<h3>Accounts</h3>
-				<div>Net Growth ...... <Currency :amount="monthData.timeline.change('total')" mode="net_change" /></div>
+				<div>Net Growth ...... <Currency :amount="state.summaryData.timeline.change('total')" mode="net_change" /></div>
 				<div class="list">
-					<div v-for="summary of monthData.accountSummaries" class="list-row">
-						<div class="flex-between">
-							<div class="text-semibold">{{ accountStore.getAccountById(summary.account.account_id)?.display_name }}</div>
+					<div v-for="summary of state.summaryData.accountSummaries" class="list-row">
+						<div class="flex-between hover-show-trigger">
+							<div class="flex-center gap-2">
+								<div class="text-semibold">{{ accountStore.getAccountById(summary.account.account_id)?.display_name }}</div>
+								<button class="hover-show" @click="() => state.upsertingAccount = accountStore.getAccountById(summary.account.account_id)">Edit</button>
+							</div>
 							<div class="flex-center">
 								<small v-if="summary.change() !== 0">
 									<Currency :amount="summary.change()" mode="net_change" hideCurrency />
@@ -119,7 +132,7 @@ const goBack = () => {
 						</small>
 					</div>
 				</div>
-				<UpsertAccountForm v-if="state.upsertingAccount" :account="state.upsertingAccount || {}" :close="() => state.upsertingAccount = null" />
+				<UpsertAccountForm v-if="state.upsertingAccount" :account="state.upsertingAccount || {}" :close="() => state.upsertingAccount = null" :onSave="createDelfi" />
 				<button v-else @click="() => state.upsertingAccount = {}">Add Account</button>
 			</div>
 			<br />
@@ -127,16 +140,16 @@ const goBack = () => {
 			
 			<div>
 				<h3>Income</h3>
-				<div>Total ...... <Currency :amount="monthData.incomeSummary?.netChange || 0" mode="net_change" /></div>
+				<div>Total ...... <Currency :amount="state.summaryData.incomeSummary?.netChange || 0" mode="net_change" /></div>
 				<div class="list">
-					<div v-for="[schedule, {total, events}] of monthData.incomeSummary?.eventsBySchedule.entries()" class="list-row">
+					<div v-for="[schedule, {total, events}] of state.summaryData.incomeSummary?.eventsBySchedule.entries()" class="list-row">
 						<template v-if="schedule !== 'none'" >
 							<div class="transaction-main-line">
 								{{ schedule.memo }}
 								<Currency :amount="total" mode="transaction" />
 							</div>
 							{{ events.map(e => e.date.format('MMM D')).join(', ') }}
-							&emsp;{{ accountStore.getAccountById(schedule.target_account_id).display_name }}
+							&emsp;{{ accountStore.getAccountById(schedule.target_account_id)?.display_name }}
 						</template>
 					</div>
 				</div>
@@ -146,14 +159,14 @@ const goBack = () => {
 			<div>
 				<h3>Savings and Transfers</h3>
 				<div class="list">
-					<div v-for="[schedule, {total, events}] of monthData.transferSummary?.eventsBySchedule.entries()" class="list-row">
+					<div v-for="[schedule, {total, events}] of state.summaryData.transferSummary?.eventsBySchedule.entries()" class="list-row">
 						<template v-if="schedule !== 'none'" >
 							<div class="transaction-main-line">
 								{{ schedule.memo }}
 								<Currency :amount="total" />
 							</div>
 							{{ events.map(e => e.date.format('MMM D')).join(', ') }}
-							&emsp;{{ accountStore.getAccountById(schedule.origin_account_id).display_name }} → {{ accountStore.getAccountById(schedule.target_account_id).display_name }}
+							&emsp;{{ accountStore.getAccountById(schedule.origin_account_id)?.display_name }} → {{ accountStore.getAccountById(schedule.target_account_id)?.display_name }}
 						</template>
 					</div>
 				</div>
@@ -163,10 +176,10 @@ const goBack = () => {
 
 			<div>
 				<h3>Spending</h3>
-				Total spending: <Currency :amount="monthData.spendingTotal" mode="transaction" />
+				Total spending: <Currency :amount="state.summaryData.spendingTotal" mode="transaction" />
 				<br />
 				<br />
-				<template v-for="category of monthData.spendingCategories">
+				<template v-for="category of state.summaryData.spendingCategories">
 					<div v-if="category.hasInfo">
 						<b>{{ category.category.name }}</b>
 						<template v-for="event of category.nonBudgetEvents">
@@ -183,7 +196,7 @@ const goBack = () => {
 			
 			<div>
 				<h3>Transactions</h3>
-				<div v-for="day of monthData.timeline.periods">
+				<div v-for="day of state.summaryData.timeline.periods">
 					<template v-if="day.events.length > 0">
 						<div :style="{ padding: '5px 8px', marginTop: '8px'}">{{ day.start }}</div>
 						<div class="list">

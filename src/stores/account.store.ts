@@ -2,11 +2,17 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import request from '@/services/request';
 import type { Account } from 'models/types';
+import type { Account as DelfiAccount } from '../../delfi-core/models/Account';
+import { useDelfiStore } from './delfi.store';
+import { date } from '../../delfi-core/utils/dateUtils';
 
 export const useAccountStore = defineStore('account', () => {
+	const delfiStore = useDelfiStore();
+
 	let accounts = ref([] as any[]);
 	let isLoadingAccounts = ref(false);
 	let isUpsertingAccount = ref(false);
+	let isDeletingAccount = ref(false);
 
 	async function loadAccounts() {
 		try {
@@ -27,7 +33,7 @@ export const useAccountStore = defineStore('account', () => {
 		return accounts.value.find(a => a.account_id === id);
 	}
 
-	const upsertAccount = async (accountData): Promise<Account> => {
+	const upsertAccount = async (accountData: Partial<Account>): Promise<Account> => {
 		let accountRes: Account;
 		try {
 			isUpsertingAccount.value = true;
@@ -40,12 +46,28 @@ export const useAccountStore = defineStore('account', () => {
 				: accounts.value.push(accountRes);
 		}
 		catch (e) {
+			console.error(e)
 			throw ('Could not upsert account');
 		}
 		finally {
 			isUpsertingAccount.value = false;
-		}
+		} 
 		return accountRes;
+	}
+
+	const deleteAccount = async (accountId: string) => {
+		try {
+			isDeletingAccount.value = true;
+			await request.delete(`/account/${accountId}`);
+			accounts.value = accounts.value.filter(a => a.account_id !== accountId)
+		}
+		catch (e) {
+			console.error(e)
+			throw ('Could not upsert account');
+		}
+		finally {
+			isDeletingAccount.value = false;
+		} 
 	}
 
 	return {
@@ -54,5 +76,6 @@ export const useAccountStore = defineStore('account', () => {
 		loadAccounts,
 		getAccountById,
 		upsertAccount,
+		deleteAccount
 	};
 })

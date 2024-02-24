@@ -34,8 +34,8 @@ export type BudgetDbInput = Replace<Budget, {
 }>;
 
 export type PlannedTransaction = Replace<PlannedTransactionRaw, {
-	// type: PlannedTransactionType,
-	// recurrence_type: RecurrenceType,
+	type: PlannedTransactionType,
+	recurrence_type: RecurrenceType,
 	schedule: Maybe<Schedule>,
 	trigger: Maybe<Trigger>,
 	amount: number,

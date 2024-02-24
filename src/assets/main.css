@@ -32,16 +32,23 @@ a,
 }
   
 .gap-1 {
-  gap: '4px';
+  gap: 4px;
 }
 .gap-2 {
-  gap: '8px';
+  gap: 8px;
 }
 .gap-3 {
-  gap: '12px';
+  gap: 12px;
 }
 .gap-4 {
-  gap: '16px';
+  gap: 16px;
+}
+
+.hover-show-trigger .hover-show {
+  display: none;
+}
+.hover-show-trigger:hover .hover-show {
+  display: block;
 }
 
 @media (hover: hover) {

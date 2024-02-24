@@ -8,7 +8,7 @@ const accountStore = useAccountStore();
 const _props = defineProps<{
 	account: Account | {},
 	close: () => void,
-	onSave?: (data: { account: Account, isNew: boolean }) => void,
+	onSave?: (data: { account: Account | null, isNew: boolean }) => void,
 }>();
 const props = reactive(_props);
 
@@ -38,6 +38,21 @@ const finalize = async () => {
 		state.isSaving = false;
 	}
 }
+const deleteAccount = async () => {
+	if (!state.data.account_id) return;
+	try {
+		state.isSaving = true;
+		await accountStore.deleteAccount(state.data.account_id);
+		props.onSave && props.onSave({account: null, isNew: isNew.value});
+		props.close();
+	}
+	catch (e) {
+		console.error(e);
+	}
+	finally {
+		state.isSaving = false;
+	}
+}
 </script>
 
 <template>
@@ -50,7 +65,10 @@ const finalize = async () => {
   <div><label for="type">type</label><input id="type" v-model="state.data.type" /></div>
   <div><label for="subtype">subtype</label><input id="subtype" v-model="state.data.subtype" /></div>
   <div><label for="subtype">iso_currency_code</label><input id="iso_currency_code" v-model="state.data.iso_currency_code" /></div>
-  <div><button @click="finalize">Save</button></div>
+  <div>
+	<button @click="close">Cancel</button>
+	<button  v-if="!isNew" :disabled="state.isSaving" @click="deleteAccount">Delete</button>
+	<button @click="finalize" :disabled="state.isSaving">Save</button></div>
 </template>
 
 <style scoped>

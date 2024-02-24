@@ -48,24 +48,6 @@ export class Delfi {
 				operator: '*'
 			}]
 		));
-		// accumulators.push(new Accumulator(
-		// 	'income',
-		// 	0,
-		// 	[{
-		// 		property: 'type',
-		// 		operator: 'eq',
-		// 		operand: 'income',
-		// 	}]
-		// ));
-		// accumulators.push(new Accumulator(
-		// 	'expense',
-		// 	0,
-		// 	[{
-		// 		property: 'type',
-		// 		operator: 'eq',
-		// 		operand: 'expense',
-		// 	}]
-		// ));
 		for (const account of this.accounts) {
 			const acc = new AccountAccumulator(account, start);
 			accumulators.push(acc);
@@ -98,8 +80,16 @@ export class Delfi {
 			start,
 			end,
 		});
+		await this.forecast.computeForecast();
 		return this.forecast;
 	}
+
+	// async processNewAccount(account: Account) {
+	// 	console.log(account);
+	// 	const accumulator = new AccountAccumulator(account, this.forecast.start);
+	// 	await this.forecast.processNewAccumulator(accumulator);
+	// 	this.accounts.push(account);
+	// }
 
 
 	getMonthSummary(monthDate: DelfiDate) {

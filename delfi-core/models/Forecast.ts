@@ -98,10 +98,9 @@ class Forecast {
 		}, {});
 		this.transactionSchedules = this.plannedTransactions.filter(s => s.recurrence_type === RecurrenceType.SCHEDULE) as unknown as TransactionSchedule[];
 		this.transactionTriggers = this.plannedTransactions.filter(s => s.recurrence_type === RecurrenceType.TRIGGER) as unknown as TransactionTrigger[];
-		this.computeForecast();
 	}
 
-    private computeForecast() {
+    async computeForecast() {
         const scheduledEventDates = TransactionService.generateScheduledDates(this.transactionSchedules, this.start, this.end);
     
 		let events: ForecastEvent[] = [];
@@ -237,6 +236,7 @@ class Forecast {
 
 		return timeline;
 	}
+
 }
 
 export default Forecast;
