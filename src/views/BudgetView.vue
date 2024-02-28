@@ -8,8 +8,10 @@ import { type DelfiDate, date} from '../../delfi-core/utils/dateUtils';
 import Currency from '@/components/Currency.vue';
 import { useBudgetStore } from '@/stores/budget.store';
 import { useCategoryStore } from '@/stores/category.store';
-import type { Account } from 'models/types';
+import type { Account, Budget, PlannedTransaction } from 'models/types';
 import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
+import UpsertPlannedTransactionForm from '@/components/UpsertPlannedTransactionForm.vue';
+import UpsertBudgetForm from '@/components/UpsertBudgetForm.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -22,6 +24,8 @@ const state = reactive({
 	viewingMonth: <DelfiDate><unknown>null,
 	forecast: <Forecast><unknown>null,
 	upsertingAccount: <Account | {} | null>null,
+	upsertingPlannedTransaction: <PlannedTransaction | {} | null>null,
+	upsertingBudget: <Budget | {} | null>null,
 	summaryData: <any>null,
 });
 
@@ -174,6 +178,12 @@ const goBack = () => {
 			<br />
 
 
+			<UpsertPlannedTransactionForm v-if="state.upsertingPlannedTransaction" :plannedTransaction="state.upsertingPlannedTransaction || {}" :close="() => state.upsertingPlannedTransaction = null" :onSave="createDelfi" />
+			<button v-else @click="() => state.upsertingPlannedTransaction = {}">Add Transaction</button>
+			<br />
+			<UpsertBudgetForm v-if="state.upsertingBudget" :budget="state.upsertingBudget || {}" :close="() => state.upsertingBudget = null" :onSave="createDelfi" />
+			<button v-else @click="() => state.upsertingBudget = {}">Add Budget</button>
+
 			<div>
 				<h3>Spending</h3>
 				Total spending: <Currency :amount="state.summaryData.spendingTotal" mode="transaction" />
@@ -183,10 +193,26 @@ const goBack = () => {
 					<div v-if="category.hasInfo">
 						<b>{{ category.category.name }}</b>
 						<template v-for="event of category.nonBudgetEvents">
-							<div>&nbsp;&nbsp;&nbsp;&nbsp;{{ event.transaction.memo }} ...... <Currency :amount="event.transaction.amount" mode="transaction" /></div>
+							<div class="flex hover-show-trigger">
+								<div class="flex-center">
+									&nbsp;&nbsp;&nbsp;&nbsp;
+									{{ event.transaction.memo }}
+									<button class="hover-show" @click="() => state.upsertingPlannedTransaction = event.transaction.sourceSchedule">Edit</button>
+								</div>
+								&nbsp;......&nbsp;
+								<Currency :amount="event.transaction.amount" mode="transaction" />
+							</div>
 						</template>
 						<template v-for="budget of category.allBudgets">
-							<div>&nbsp;&nbsp;&nbsp;&nbsp;{{ budget.budget.name }} ...... <Currency :amount="-budget.budget.amount" mode="transaction" /></div>
+							<div class="flex hover-show-trigger">
+								<div class="flex-center">
+									&nbsp;&nbsp;&nbsp;&nbsp;
+									{{ budget.budget.name }}
+									<button class="hover-show" @click="() => state.upsertingBudget = budget.budget">Edit</button>
+								</div>
+								&nbsp;......&nbsp;
+								<Currency :amount="budget.budget.amount" mode="transaction" />
+							</div>
 						</template>
 					</div>
 				</template>
@@ -320,6 +346,31 @@ const goBack = () => {
 			<div style="padding: 20px; background: #363F44" />
 			<div style="padding: 20px; background: #1F2528" />
 			<div style="padding: 20px; background: #101516" />
+			<br />
+			<div style="color: #fff; padding: 10px; background: #FFB9AA">red3</div>
+			<div style="color: #fff; padding: 10px; background: #F14035">red4</div>
+			<div style="color: #fff; padding: 10px; background: #AF0015">red6</div>
+			<div style="color: #fff; padding: 10px; background: #FEAD62">orange3</div>
+			<div style="color: #fff; padding: 10px; background: #EB7319">orange4</div>
+			<div style="color: #fff; padding: 10px; background: #C94C00">orange5</div>
+			<div style="color: #fff; padding: 10px; background: #F8C220">yellow4</div>
+			<div style="color: #fff; padding: 10px; background: #CF9500">yellow5</div>
+			<div style="color: #fff; padding: 10px; background: #996504">yellow6</div>
+			<div style="color: #fff; padding: 10px; background: #AED70D">#AED70D</div>
+			<div style="color: #fff; padding: 10px; background: #7CB100">#7CB100</div>
+			<div style="color: #fff; padding: 10px; background: #348500">#348500</div>
+			<div style="color: #fff; padding: 10px; background: #09D4CB">teal4</div>
+			<div style="color: #fff; padding: 10px; background: #0AB2AC">teal5</div>
+			<div style="color: #fff; padding: 10px; background: #007E88">teal6</div>
+			<div style="color: #fff; padding: 10px; background: #7DC9FF">blue3</div>
+			<div style="color: #fff; padding: 10px; background: #14A6F8">blue4</div>
+			<div style="color: #fff; padding: 10px; background: #274FDB">blue6</div>
+			<div style="color: #fff; padding: 10px; background: #865CFF">violet4</div>
+			<div style="color: #fff; padding: 10px; background: #7031F5">violet5</div>
+			<div style="color: #fff; padding: 10px; background: #471FBA">violet6</div>
+			<div style="color: #fff; padding: 10px; background: #E55EC8">pink4</div>
+			<div style="color: #fff; padding: 10px; background: #C50099">pink5</div>
+			<div style="color: #fff; padding: 10px; background: #95007D">pink6</div>
 		</div>
 		
 	</main>

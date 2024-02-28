@@ -105,7 +105,6 @@ model PlannedTransaction {
     target_account_partition_id String?
     origin_account_partition_id String?
 
-    Category    UserDefinedCategory @relation(fields: [category_id], references: [category_id])
     category_id String
     tags        Tag[]
 }
@@ -116,8 +115,6 @@ model UserDefinedCategory {
     name                String
     user                User                 @relation(fields: [user_id], references: [user_id])
     user_id             String
-    Budgets             Budget[]
-    PlannedTransactions PlannedTransaction[]
 }
 
 model Tag {
@@ -136,7 +133,6 @@ model Budget {
     amount      Float
     num_months  Int
 
-    Category                UserDefinedCategory @relation(fields: [category_id], references: [category_id])
     category_id             String
     User                    User                @relation(fields: [user_id], references: [user_id])
     user_id                 String

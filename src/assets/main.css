@@ -1,71 +1,80 @@
 @import './base.css';
 
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+	max-width: 1280px;
+	margin: 0 auto;
+	padding: 2rem;
 }
 
-b, .text-bold {
-  font-weight: 600;
+b,
+.text-bold {
+	font-weight: 600;
 }
 
 .text-semibold {
-  font-weight: 500;
+	font-weight: 500;
 }
 
 a,
 .green {
-  text-decoration: none;
-  color: #4ccd8d;
-  transition: 0.4s;
+	text-decoration: none;
+	color: #4ccd8d;
+	transition: 0.4s;
+}
+
+.flex {
+	display: flex;
 }
 
 .flex-between {
-  display: flex;
-  justify-content: space-between;
+	display: flex;
+	justify-content: space-between;
 }
 
 .flex-center {
 	display: flex;
 	align-items: center;
 }
-  
+
 .gap-1 {
-  gap: 4px;
+	gap: 4px;
 }
+
 .gap-2 {
-  gap: 8px;
+	gap: 8px;
 }
+
 .gap-3 {
-  gap: 12px;
+	gap: 12px;
 }
+
 .gap-4 {
-  gap: 16px;
+	gap: 16px;
 }
 
 .hover-show-trigger .hover-show {
-  display: none;
+	display: none;
 }
+
 .hover-show-trigger:hover .hover-show {
-  display: block;
+	display: block;
 }
 
 @media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+	a:hover {
+		background-color: hsla(160, 100%, 37%, 0.2);
+	}
 }
 
 @media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
+	body {
+		display: flex;
+		place-items: center;
+	}
 
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
+	#app {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		padding: 0 2rem;
+	}
 }

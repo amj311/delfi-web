@@ -1,10 +1,11 @@
 import { PlannedTransaction } from "@prisma/client";
 import { PlannedTransactionService } from "../services/PlannedTransactionService";
+import { PlannedTransactionDbInput } from "../../models/types";
 
 export default (fastify, _, done) => {
 
     fastify.post('/', async function handler (request, reply) {
-        const plannedTransactionData = request.body as PlannedTransaction;
+        const plannedTransactionData = request.body as PlannedTransactionDbInput;
         const user_id = request.sessionUser.user_id;
         const data = await PlannedTransactionService.createPlannedTransaction(user_id, plannedTransactionData);
         return {
@@ -34,7 +35,7 @@ export default (fastify, _, done) => {
 
     fastify.put('/:id', async function handler (request, reply) {
         const plannedTransactionId = request.params.id;
-        const plannedTransactionData = request.body as PlannedTransaction;
+        const plannedTransactionData = request.body as PlannedTransactionDbInput;
         const user_id = request.sessionUser.user_id;
         const data = await PlannedTransactionService.updatePlannedTransaction(user_id, plannedTransactionId, plannedTransactionData);
         return {

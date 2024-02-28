@@ -39,8 +39,9 @@ export const AccountService = {
         });
     },
 
-    async updateAccount(user_id: string, accountId: string, accountData: Partial<Omit<Account, 'partitions'>>) {
-        return await prisma.account.update({
+    async updateAccount(user_id: string, accountId: string, accountData) {
+        delete accountData.partitions;
+		return await prisma.account.update({
             where: {
                 account_id: accountId,
                 user_id,

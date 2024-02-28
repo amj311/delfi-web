@@ -13,12 +13,11 @@ export const PlannedTransactionService = {
     },
 
     async getAllPlannedTransactions(user_id: string) {
-        // return await prisma.plannedTransaction.findMany({
-        //     where: {
-        //         user_id,
-        //     },
-        // });
-		return my_scheduledTransactions;
+        return (await prisma.plannedTransaction.findMany({
+            where: {
+                user_id,
+            },
+        })).concat(my_scheduledTransactions as any);
     },
 
     async getPlannedTransactionById(user_id: string, planned_transaction_id: string) {
@@ -33,12 +32,24 @@ export const PlannedTransactionService = {
     },
 
     async updatePlannedTransaction(user_id: string, planned_transaction_id: string, plannedTransactionData: Partial<PlannedTransactionDbInput>) {
-        return await prisma.plannedTransaction.update({
+		return await prisma.plannedTransaction.update({
             where: {
                 planned_transaction_id,
                 user_id,
             },
-            data: plannedTransactionData,
+            data: {
+				memo: plannedTransactionData.memo,
+				type: plannedTransactionData.type,
+				recurrence_type: plannedTransactionData.recurrence_type,
+				schedule: plannedTransactionData.schedule,
+				trigger: plannedTransactionData.trigger,
+				amount: plannedTransactionData.amount,
+				target_account_id: plannedTransactionData.target_account_id,
+				target_account_partition_id: plannedTransactionData.target_account_partition_id,
+				origin_account_id: plannedTransactionData.origin_account_id,
+				origin_account_partition_id: plannedTransactionData.origin_account_partition_id,
+				category_id: plannedTransactionData.category_id,
+			}
         });
     },
 

@@ -28,6 +28,10 @@ app.get('/firebase-config', () => {
 // Signup routes
 app.register(signupRoute, { prefix: '/signup' });
 
+app.addHook('onResponse', (request, reply) => {
+	const sign = reply.statusCode >= 200 && reply.statusCode < 300 ? '✅' : '❌';
+	console.log(`${sign} ${reply.statusCode} - ${request.method} ${request.url}`);
+});
 
 // authenticated routes
 app.register((authRoutes, _, done) => {
@@ -43,16 +47,14 @@ app.register((authRoutes, _, done) => {
 	done();
 }, { prefix: '/' });
 
-app.setErrorHandler((error: any, request) => {
-	console.error(`❌ ${request.method} ${request.url}:`)
-	console.error(error)
+app.setErrorHandler((error: any, request, reply) => {
+	console.error('\nError: ', error)
 	if (error.isApiError) {
 		throw error;
 	}
-	return {
-		statusCode: 500,
+	reply.status(500).send({
 		message: "Internal Server Error"
-	}
+	});
 });
 
 // Run the server!

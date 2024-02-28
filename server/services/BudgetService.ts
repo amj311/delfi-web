@@ -3,12 +3,26 @@ import { prisma } from "../../prisma/client";
 import { my_budgets } from "./myData";
 
 export const BudgetService = {
-    async createBudget(user_id: string, budgetData: Omit<BudgetDbInput, 'budget_id'>) {
-        return await prisma.budget.create({
+    async createBudget(user_id: string, budgetData: Omit<BudgetDbInput, 'budget_id' | 'user_id'>) {
+		return await prisma.budget.create({
             data: {
-                ...budgetData,
-                user_id,
-            },
+				name: budgetData.name,
+				description: budgetData.description,
+				schedule: budgetData.schedule,
+				amount: budgetData.amount,
+				num_months: budgetData.num_months,
+				category_id: budgetData.category_id,
+				User: {
+					connect: {
+						user_id,
+					},
+				},
+				SystemEventAccount: {
+					connect: {
+						account_id: budgetData.system_event_account_id,
+					},
+				},
+            } as any,
         });
     },
 
@@ -18,14 +32,7 @@ export const BudgetService = {
                 user_id,
             },
         });
-		// return budgets.map(a => ({
-		// 	...a,
-		// 	partitions: a.partitions.map(p => ({
-		// 		...p,
-		// 		schedule_details: p.schedule_details as object,
-		// 	}))
-		// }))
-		return Object.values(my_budgets);
+		return budgets.concat(Object.values(my_budgets) as any) as any;
     },
 
     async getBudgetById(user_id: string, budgetId: string) {

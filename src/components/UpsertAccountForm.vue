@@ -12,10 +12,10 @@ const _props = defineProps<{
 }>();
 const props = reactive(_props);
 
-const state = {
+const state = reactive({
 	isSaving: false,
 	data: <Partial<Account>>JSON.parse(JSON.stringify(props.account)), // deep copy
-}
+})
 
 const isManual = computed(() => {
 	return !state.data.external_account_id;

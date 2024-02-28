@@ -42,6 +42,7 @@ export const useDelfiStore = defineStore('delfi', {
 		},
 	
 		translatePlannedTransactions(schedules: PlannedTransaction[]): DelfiPlannedTransaction[] {
+			console.log(schedules)
 			return schedules.map(schedule => ({
 				...schedule,
 				id: schedule.planned_transaction_id,
