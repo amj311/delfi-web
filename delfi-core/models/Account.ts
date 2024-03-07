@@ -165,23 +165,5 @@ export class AccountPeriodSummary extends AccumulatorPeriod {
 			));
 		});
 	}
-
-	// getStartingBalance(partition_id?): number {
-	// 	if (partition_id) {
-	// 		return this.childMap.get(partition_id)?.startingBalance || 0;
-	// 	}
-	// 	return super.startingBalance;
-	// }
-
-	// getEndingBalance(partition_id?): number {
-	// 	if (partition_id) {
-	// 		return this.childMap.get(partition_id)?.endingBalance || 0;
-	// 	}
-	// 	return super.endingBalance;
-	// }
-
-	// getChange(partition_id?): number {
-	// 	return this.getEndingBalance(partition_id) - this.getStartingBalance(partition_id);
-	// }
 }
 
