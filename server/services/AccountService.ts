@@ -8,26 +8,24 @@ export const AccountService = {
             data: {
                 ...accountData,
 				user_id,
+				partitions: undefined,
+				savings_goal: undefined,
             },
         });
     },
 
+	// gets all parent accounts for user, with children nested
     async getAllAccounts(user_id: string): Promise<Account[]>  {
-        const accounts = await prisma.account.findMany({
+        const accounts: any[] = await prisma.account.findMany({
             where: {
                 user_id,
             },
 			include: {
 				partitions: true,
+				savings_goal: true,
 			}
         });
-		return accounts.map(a => ({
-			...a,
-			partitions: a.partitions.map(p => ({
-				...p,
-				schedule_details: p.schedule_details as any,
-			}))
-		})).concat(Object.values(my_accounts))
+		return accounts.concat(Object.values(my_accounts))
     },
 
     async getAccountById(user_id: string, accountId: string) {
@@ -40,7 +38,6 @@ export const AccountService = {
     },
 
     async updateAccount(user_id: string, accountId: string, accountData) {
-        delete accountData.partitions;
 		return await prisma.account.update({
             where: {
                 account_id: accountId,

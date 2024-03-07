@@ -81,11 +81,11 @@ export default class Accumulator {
 
 
 	// Overrides for Derived Classes
-	_postCreatePeriod(newPeriod: AccumulatorPeriod) {};
-	_postProcessTransaction(transaction: TransactionEvent, newEvent: AccumulatorEvent) {};
+	protected _postCreatePeriod(newPeriod: AccumulatorPeriod) {};
+	protected _postProcessTransaction(transaction: TransactionEvent, newEvent: AccumulatorEvent) {};
 
 	// call after all other transactions for the day have been processed.
 	// handles summary-type transactions based on period totals
 	// Implementations can use this to do triggers at the end of any interval
-	doEndOfDayTrigger(date: DelfiDate): TransactionEvent[] { return [] };
+	protected doEndOfDayTrigger(date: DelfiDate): TransactionEvent[] { return [] };
 }

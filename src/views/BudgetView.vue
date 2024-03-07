@@ -12,6 +12,7 @@ import type { Account, Budget, PlannedTransaction } from 'models/types';
 import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
 import UpsertPlannedTransactionForm from '@/components/UpsertPlannedTransactionForm.vue';
 import UpsertBudgetForm from '@/components/UpsertBudgetForm.vue';
+import type { Delfi } from 'delfi-core';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -26,7 +27,7 @@ const state = reactive({
 	upsertingAccount: <Account | {} | null>null,
 	upsertingPlannedTransaction: <PlannedTransaction | {} | null>null,
 	upsertingBudget: <Budget | {} | null>null,
-	summaryData: <any>null,
+	summaryData: <ReturnType<Delfi["getMonthSummary"]> | null>null,
 });
 
 const getSummary = (month: DelfiDate) => {
@@ -117,21 +118,22 @@ const goBack = () => {
 								<button class="hover-show" @click="() => state.upsertingAccount = accountStore.getAccountById(summary.account.account_id)">Edit</button>
 							</div>
 							<div class="flex-center">
-								<small v-if="summary.change() !== 0">
-									<Currency :amount="summary.change()" mode="net_change" hideCurrency />
+								<small v-if="summary.change !== 0">
+									<Currency :amount="summary.change" mode="net_change" hideCurrency />
 									&emsp13;
 								</small>
-								<span class="text-semibold"><Currency :amount="summary.endingBalance()" mode="balance" /></span>
+								<span class="text-semibold"><Currency :amount="summary.endingBalance" mode="balance" /></span>
 							</div>
 						</div>
 						<small v-for="partition of summary.account.partitions" class="flex-between">
 							&emsp13;- {{partition.name}}
 							<div class="flex-center">
-								<small v-if="summary.change(partition.account_partition_id) !== 0">
-									<Currency :amount="summary.change(partition.account_partition_id)" mode="net_change" hideCurrency />
+								{{ console.log(summary.partitionSummaries.get(partition.account_partition_id)) }}
+								<small v-if="summary.partitionSummaries.get(partition.account_partition_id)?.change !== 0">
+									<Currency :amount="summary.partitionSummaries.get(partition.account_partition_id)?.change" mode="net_change" hideCurrency />
 									&emsp13;
 								</small>
-								<span><Currency :amount="summary.endingBalance(partition.account_partition_id)" mode="balance" /></span>
+								<span><Currency :amount="summary.partitionSummaries.get(partition.account_partition_id)?.endingBalance" mode="balance" /></span>
 							</div>
 						</small>
 					</div>
@@ -197,7 +199,7 @@ const goBack = () => {
 								<div class="flex-center">
 									&nbsp;&nbsp;&nbsp;&nbsp;
 									{{ event.transaction.memo }}
-									<button class="hover-show" @click="() => state.upsertingPlannedTransaction = event.transaction.sourceSchedule">Edit</button>
+									<button class="hover-show" @click="() => state.upsertingPlannedTransaction = event.transaction.sourcePlannedTransaction">Edit</button>
 								</div>
 								&nbsp;......&nbsp;
 								<Currency :amount="event.transaction.amount" mode="transaction" />

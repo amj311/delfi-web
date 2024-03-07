@@ -50,20 +50,24 @@ my_accounts.afcu_savings.partitions = [
 		account_id: my_accounts.afcu_savings.account_id,
 		name: 'New Car',
 		current_balance: 100,
-		target_balance: 7000,
-		target_date: new Date(2024, MONTHS.SEP, 1),
-		schedule_details: {
-			planned_transaction_id: uuid(),
-			amount: 2100,
-			memo: "New Car Savings",
-			type: PlannedTransactionType.TRANSFER,
-			origin_account_id: my_accounts.afcu_checking.account_id,
-			target_account_id: my_accounts.afcu_savings.account_id,
-			user_id: 'myself',
-			target_account_partition_id: 'test-partition-id',
-			schedule: { rrules: [ { start: '2021-04-25', frequency: 'MONTHLY', byDayOfMonth: [25] } ] },
-			category_id: flatCategoriesMap["Transfer"].category_id,
-		},
+		savings_goal: {
+			savings_goal_id: 'test-savings-goal-id',
+			account_id: null,
+			account_partition_id: 'test-partition-id',
+			target_balance: 7000,
+			target_date: new Date(2024, MONTHS.SEP, 1),
+			schedule_details: {
+				planned_transaction_id: uuid(),
+				amount: 2100,
+				memo: "New Car Savings",
+				type: PlannedTransactionType.TRANSFER,
+				origin_account_id: my_accounts.afcu_checking.account_id,
+				target_account_id: my_accounts.afcu_savings.account_id,
+				user_id: 'myself',
+				schedule: { rrules: [ { start: '2021-04-25', frequency: 'MONTHLY', byDayOfMonth: [25] } ] },
+				category_id: flatCategoriesMap["Transfer"].category_id,
+			},	
+		}
 	}
 ];
 

@@ -37,8 +37,8 @@ type PlannedTransactionDetails = TransactionDetails & {
 
 export type PlannedTransaction = PlannedTransactionDetails & {
 	schedule?: Maybe<Schedule>,
-	amount: number,
-	trigger: Maybe<Trigger>,
+	amount?: number,
+	trigger?: Maybe<Trigger>,
 }
 
 export type TransactionSchedule = Replace<PlannedTransaction, {
@@ -61,8 +61,7 @@ export type TransactionEvent = TransactionDetails & {
 	id: string,
 	date: DelfiDate,
 	amount: number,
-	sourceSchedule?: TransactionSchedule,
-	sourceTrigger?: TransactionTrigger,
+	sourcePlannedTransaction?: PlannedTransaction,
 	triggerEvent?: TransactionEvent
 	budgetId?: string
 	flags: EventFlag[],
@@ -120,7 +119,7 @@ export default class TransactionService {
 				target_account_partition_id: schedule.origin_account_partition_id,
 				id: uuid(),
 				date,
-				sourceSchedule: schedule,
+				sourcePlannedTransaction: schedule as PlannedTransaction,
 				flags: [EventFlag.TRANSFER_COPY],
 			});
 		}
@@ -131,7 +130,7 @@ export default class TransactionService {
 			amount: TransactionService.resolveScheduleAmount(schedule, schedule.amount),
 			id: uuid(),
 			date,
-			sourceSchedule: schedule,
+			sourcePlannedTransaction: schedule,
 			flags: [],
 		});
 		return events;
@@ -151,7 +150,8 @@ export default class TransactionService {
 					target_account_partition_id: transactionTrigger.origin_account_partition_id,
 					id: uuid(),
 					date,
-					sourceTrigger: transactionTrigger,
+					sourcePlannedTransaction: transactionTrigger,
+					triggerEvent: triggerEvent,
 					flags: [EventFlag.TRANSFER_COPY],
 				});
 			}
@@ -161,7 +161,7 @@ export default class TransactionService {
 				...TransactionService.copyTransactionDetails(transactionTrigger),
 				id: uuid(),
 				date,
-				sourceTrigger: transactionTrigger,
+				sourcePlannedTransaction: transactionTrigger,
 				triggerEvent: triggerEvent,
 				amount: TransactionService.resolveScheduleAmount(transactionTrigger, trigger.computeAmount(triggerEvent.amount)),
 				flags: [],

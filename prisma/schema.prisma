@@ -28,7 +28,7 @@ model User {
 model Account {
     account_id          String  @id @default(uuid())
     external_account_id String? @unique
-    display_name        String  // nickname provided by user or default to external
+    display_name        String // nickname provided by user or default to external
     external_name       String? // "real" name provided by institution
     mask                String?
     type                String
@@ -37,17 +37,34 @@ model Account {
     available_balance   Float?
     iso_currency_code   String?
 
+    partitions   AccountPartition[]
+    savings_goal SavingsGoal?
+
     // relations
     plaid_item           PlaidItem?           @relation(fields: [plaid_item_id], references: [plaid_item_id])
     plaid_item_id        String?
     User                 User                 @relation(fields: [user_id], references: [user_id])
     user_id              String
-    partitions           AccountPartition[]
     TransactionsAsTarget PlannedTransaction[] @relation("TargetAccount")
     TransactionsAsOrigin PlannedTransaction[] @relation("OriginAccount")
     Budget               Budget[]
 
     @@map("account")
+}
+
+model AccountPartition {
+    account_partition_id String @id @default(uuid())
+    name                 String // nickname provided by user or default to external
+    current_balance      Float
+
+    account_id   String
+    Account      Account?     @relation(fields: [account_id], references: [account_id])
+    savings_goal SavingsGoal?
+
+    TransactionsAsTarget PlannedTransaction[] @relation("TargetAccountPartition")
+    TransactionsAsOrigin PlannedTransaction[] @relation("OriginAccountPartition")
+
+    @@map("account_partition")
 }
 
 model PlaidItem {
@@ -59,17 +76,15 @@ model PlaidItem {
     @@map("plaid_item")
 }
 
-model AccountPartition {
-    account_partition_id String               @id @default(uuid())
-    account              Account              @relation(fields: [account_id], references: [account_id])
-    account_id           String
-    name                 String
-    current_balance      Float
-    target_balance       Float?
+model SavingsGoal {
+    savings_goal_id      String            @id @default(uuid())
+    target_balance       Float
     target_date          DateTime?
     schedule_details     Json?
-    TransactionAsTarget  PlannedTransaction[] @relation("TargetPartition")
-    TransactionAsOrigin  PlannedTransaction[] @relation("OriginPartition")
+    Account              Account?          @relation(fields: [account_id], references: [account_id])
+    account_id           String?           @unique
+    AccountPartition     AccountPartition? @relation(fields: [account_partition_id], references: [account_partition_id])
+    account_partition_id String?           @unique
 }
 
 enum PlannedTransactionType {
@@ -99,9 +114,8 @@ model PlannedTransaction {
     OriginAccount               Account?               @relation(name: "OriginAccount", fields: [origin_account_id], references: [account_id])
     target_account_id           String
     origin_account_id           String?
-    // partitions
-    TargetPartition             AccountPartition?      @relation(name: "TargetPartition", fields: [target_account_partition_id], references: [account_partition_id])
-    OriginPartition             AccountPartition?      @relation(name: "OriginPartition", fields: [origin_account_partition_id], references: [account_partition_id])
+    TargetAccountPartition      AccountPartition?       @relation(name: "TargetAccountPartition", fields: [target_account_partition_id], references: [account_partition_id])
+    OriginAccountPartition      AccountPartition?      @relation(name: "OriginAccountPartition", fields: [origin_account_partition_id], references: [account_partition_id])
     target_account_partition_id String?
     origin_account_partition_id String?
 
@@ -110,11 +124,11 @@ model PlannedTransaction {
 }
 
 model UserDefinedCategory {
-    category_id         String               @id @default(uuid())
-    parent_category_id  String // References a system defined category
-    name                String
-    user                User                 @relation(fields: [user_id], references: [user_id])
-    user_id             String
+    category_id        String @id @default(uuid())
+    parent_category_id String // References a system defined category
+    name               String
+    user               User   @relation(fields: [user_id], references: [user_id])
+    user_id            String
 }
 
 model Tag {
@@ -134,8 +148,8 @@ model Budget {
     num_months  Int
 
     category_id             String
-    User                    User                @relation(fields: [user_id], references: [user_id])
+    User                    User    @relation(fields: [user_id], references: [user_id])
     user_id                 String
-    SystemEventAccount      Account             @relation(fields: [system_event_account_id], references: [account_id])
+    SystemEventAccount      Account @relation(fields: [system_event_account_id], references: [account_id])
     system_event_account_id String
 }

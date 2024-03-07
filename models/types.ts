@@ -1,10 +1,11 @@
 import { ImmediateMatchTrigger, type Trigger } from "../delfi-core/models/schedules/triggers";
 import {
 	type Account as AccountRaw,
-	type UserDefinedCategory,
 	type AccountPartition as AccountPartitionRaw,
+	type UserDefinedCategory,
 	type PlannedTransaction as PlannedTransactionRaw,
 	type Budget as BudgetRaw,
+	type SavingsGoal as SavingsGoalRaw,
 } from "@prisma/client";
 import type { Schedule } from "../delfi-core/models/schedules/Schedule";
 import { PlannedTransactionType, RecurrenceType } from "../delfi-core/models/Transaction";
@@ -14,14 +15,19 @@ type Maybe<T> = T | null;
 
 export type Account = Replace<AccountRaw, {
 	partitions: AccountPartition[],
-	current_balance: Maybe<number>,
+	parent_account_id?: Maybe<string>,
+	current_balance: number,
 	available_balance: Maybe<number>,
+	savings_goal?: SavingsGoal,
 }>
 
 export type AccountPartition = Replace<AccountPartitionRaw, {
-	target_balance: Maybe<number>,
-	target_date: Maybe<Date>,
-	schedule_details: Maybe<object>,
+	savings_goal?: SavingsGoal,
+}>
+
+export type SavingsGoal = Replace<SavingsGoalRaw, {
+	target_date?: Date,
+	schedule_details?: object,
 }>
 
 export type Budget = Replace<BudgetRaw, {

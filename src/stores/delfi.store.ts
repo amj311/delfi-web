@@ -29,16 +29,17 @@ export const useDelfiStore = defineStore('delfi', {
 		},
 	
 		translateAccounts(accounts: Account[]): DelfiAccount[] {
+			console.log(accounts)
 			return accounts.map((a) => ({
 				...a,
 				current_balance: a.current_balance || 0,
 				partitions: a.partitions?.map(p => ({
 					...p,
-					target_balance: p.target_balance || 0,
-					schedule_details: p.schedule_details as any,
-					target_date: date(p.target_date).toISOString(),
+					// target_balance: p.target_balance || 0,
+					// schedule_details: p.schedule_details as any,
+					// target_date: date(p.target_date).toISOString(),
 				})) || [],
-			}));
+			})) as any[];
 		},
 	
 		translatePlannedTransactions(schedules: PlannedTransaction[]): DelfiPlannedTransaction[] {

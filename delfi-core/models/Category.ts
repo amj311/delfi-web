@@ -45,7 +45,7 @@ export class CategorySummary {
 		);
 		this.budgets = budgetAccumulators.map(b => b.getSummary(start, end));
 		this.eventsBySchedule = this.allEvents.reduce((map, event) => {
-			const key = event.transaction.sourceSchedule || 'none';
+			const key = event.transaction.sourcePlannedTransaction || 'none';
 			if (map.has(key)) {
 				map.get(key)!.total += event.transaction.flags.includes(EventFlag.TRANSFER_COPY) ? 0 : event.transaction.amount;
 				map.get(key)!.events.push(event.transaction);
