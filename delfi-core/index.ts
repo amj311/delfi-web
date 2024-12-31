@@ -41,37 +41,37 @@ export class Delfi {
 
 	public async createFullForecast(start: DelfiDate, end: DelfiDate): Promise<Forecast> {
 		const accumulators: Accumulator[] = [];
-		accumulators.push(new Accumulator(
-			'total',
-			this.accounts.reduce((balance, a) => balance + a.current_balance, 0),
-			[{
-				operator: '*'
-			}]
-		));
-		for (const account of this.accounts) {
-			const acc = new AccountAccumulator(account, start);
-			accumulators.push(acc);
-		};
+		// accumulators.push(new Accumulator(
+		// 	'total',
+		// 	this.accounts.reduce((balance, a) => balance + a.current_balance, 0),
+		// 	[{
+		// 		operator: '*'
+		// 	}]
+		// ));
+		// for (const account of this.accounts) {
+		// 	const acc = new AccountAccumulator(account, start);
+		// 	accumulators.push(acc);
+		// };
 
-		// Prepare categories w/ accumulators
-		for (const category of this.flatCategories) {
-			const accumulator = new Accumulator(
-				'cat_' + category.category_id,
-				0,
-				[{
-					property: 'category_id',
-					operator: 'eq',
-					operand: category.category_id,
-				}]
-			);
-			accumulators.push(accumulator);
-		}
+		// // Prepare categories w/ accumulators
+		// for (const category of this.flatCategories) {
+		// 	const accumulator = new Accumulator(
+		// 		'cat_' + category.category_id,
+		// 		0,
+		// 		[{
+		// 			property: 'category_id',
+		// 			operator: 'eq',
+		// 			operand: category.category_id,
+		// 		}]
+		// 	);
+		// 	accumulators.push(accumulator);
+		// }
 
 		// Prepare budgets w/ categories
-		for (const budget of this.budgets) {
-			const accumulator = BudgetService.createBudgetAccumulator(budget);
-			accumulators.push(accumulator);
-		};
+		// for (const budget of this.budgets) {
+		// 	const accumulator = BudgetService.createBudgetAccumulator(budget);
+		// 	accumulators.push(accumulator);
+		// };
 
 		// Put everything in the forecast
 		this.forecast = new Forecast({
@@ -80,7 +80,9 @@ export class Delfi {
 			start,
 			end,
 		});
+		console.log('Starting forecast computation');
 		await this.forecast.computeForecast();
+		console.log('Finished forecast computation');
 		return this.forecast;
 	}
 
@@ -99,9 +101,9 @@ export class Delfi {
 		
 		const timeline = this.forecast.getTimeline(monthStart, monthEnd, 'day');
 
-		const accountSummaries = this.accounts.map(account => (
-			(this.forecast.accumulatorMap[account.account_id] as AccountAccumulator).createSummary(monthStart, monthEnd)
-		));
+		// const accountSummaries = this.accounts.map(account => (
+		// 	(this.forecast.accumulatorMap[account.account_id] as AccountAccumulator).createSummary(monthStart, monthEnd)
+		// ));
 
 		const categorySummaries = this.composedCategories.map((category: ParentCategory) => (
 			new CategorySummary(
@@ -126,7 +128,7 @@ export class Delfi {
 
 		return {
 			timeline,
-			accountSummaries,
+			accountSummaries: [],
 			categorySummaries,
 			incomeSummary,
 			transferSummary,

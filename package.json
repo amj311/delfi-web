@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "run-p type-check build-only",
-    "server:dev": "npx nodemon server/index.ts",
+    "server:dev": "npx tsx watch server/index.ts",
     "preview": "vite preview",
     "test:unit": "vitest",
     "build-only": "vite build",

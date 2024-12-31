@@ -15,6 +15,7 @@ app.use(router);
 
 (async () => {
 	const { data } = await request.get('firebase-config');
+	console.log(data.data)
 	AuthService.setupAuth(data.data);
 })()
 

@@ -1,8 +1,3 @@
-import * as dotenv from "dotenv"
-dotenv.config({
-	path: '../.env'
-})
-
 import Fastify from "fastify";
 import plaidRoute from "./routes/plaid.route";
 import accountRoute from "./routes/account.route";

@@ -108,7 +108,9 @@ class Forecast {
 		let currentDate = date(this.start);
 		let eventIdx = 0;
 
-		while (currentDate <= date(this.end)) {
+		let itr = 0;
+		while (currentDate <= date(this.end) && itr < 10000) {
+			itr++;
 			// Create forecast period
 			const dayPeriod = new ForecastPeriod(date(currentDate), date(currentDate));
 			// Create accumulator periods

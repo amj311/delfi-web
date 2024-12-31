@@ -1,3 +1,6 @@
+import * as dotenv from "dotenv"
+dotenv.config()
+
 import { UserService } from "./UserService";
 
 const admin = require('firebase-admin');

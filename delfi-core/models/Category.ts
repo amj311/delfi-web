@@ -43,7 +43,8 @@ export class CategorySummary {
 			accumulatorEvents[0]?.startingBalance || 0,
 			accumulatorEvents
 		);
-		this.budgets = budgetAccumulators.map(b => b.getSummary(start, end));
+		// this.budgets = budgetAccumulators.map(b => b.getSummary(start, end));
+		this.budgets = [];
 		this.eventsBySchedule = this.allEvents.reduce((map, event) => {
 			const key = event.transaction.sourcePlannedTransaction || 'none';
 			if (map.has(key)) {
