@@ -74,7 +74,17 @@ const canGoBack = computed(() => {
 	return state.viewingMonth.isAfter(date().startOf('month'));
 });
 
+const canGoForward = computed(() => {
+	if (!state.viewingMonth) {
+		return false;
+	}
+	return state.viewingMonth.isBefore(date().add(11, 'months').startOf('month'));
+});
+
 const goForward = () => {
+	if (!canGoForward.value) {
+		return;
+	}
 	if (!state.viewingMonth) {
 		return;
 	}
@@ -199,7 +209,7 @@ const goBack = () => {
 								<div class="flex-center">
 									&nbsp;&nbsp;&nbsp;&nbsp;
 									{{ event.transaction.memo }}
-									<button class="hover-show" @click="() => state.upsertingPlannedTransaction = event.transaction.sourcePlannedTransaction">Edit</button>
+									<button class="hover-show" @click="() => state.upsertingPlannedTransaction = event.transaction.sourcePlannedTransaction!">Edit</button>
 								</div>
 								&nbsp;......&nbsp;
 								<Currency :amount="event.transaction.amount" mode="transaction" />

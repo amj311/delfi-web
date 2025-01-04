@@ -2,7 +2,7 @@ import axios from "axios";
 import { AuthService } from "./authService";
 
 const instance = axios.create({
-	baseURL: 'http://localhost:3000',
+	baseURL: 'http://localhost:5000',
 })
 
 instance.interceptors.request.use(async (config) => {

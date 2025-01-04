@@ -55,7 +55,7 @@ app.setErrorHandler((error: any, request, reply) => {
 // Run the server!
 (async () => {
 	try {
-		const port = Number(process.env.PORT || 3000);
+		const port = Number(process.env.PORT || 5000);
 		const host = ("RENDER" in process.env) ? `0.0.0.0` : `localhost`;
 		await app.listen({ port, host });
 		console.log('Server started')

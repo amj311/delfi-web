@@ -6,6 +6,7 @@ import FilterService from "../services/FilterService";
 import type Accumulator from "delfi-core/models/Accumulator";
 import type { AccumulatorEvent, AccumulatorPeriod } from "delfi-core/models/Accumulator";
 import { peek } from "../utils/miscUtils";
+import { BinarySearchArray } from "../utils/binarySearchArray";
 
 type Interval = 'day' | 'week' | 'month' | 'year';
 
@@ -43,10 +44,10 @@ class ForecastPeriod {
 	addFromPeriod(period: ForecastPeriod) {
 		this.addEvents(period.events);
 		for (const key in period.accumulatorPeriods) {
-				if (!this.accumulatorPeriods[key]) {
-					this.accumulatorPeriods[key] = [];
-				}
-				this.accumulatorPeriods[key].push(...period.accumulatorPeriods[key]);
+			if (!this.accumulatorPeriods[key]) {
+				this.accumulatorPeriods[key] = [];
+			}
+			this.accumulatorPeriods[key].push(...period.accumulatorPeriods[key]);
 		}
 	}
 
@@ -60,6 +61,12 @@ class ForecastPeriod {
 
 	change(accumulatorKey: string) {
 		return this.endingBalance(accumulatorKey) - this.startingBalance(accumulatorKey);
+	}
+}
+
+class ForecastDayBsa extends BinarySearchArray<ForecastPeriod> {
+	protected getKey(period: ForecastPeriod) {
+		return period.start;
 	}
 }
 
@@ -88,7 +95,7 @@ class Forecast {
 	readonly transactionTriggers!: TransactionTrigger[];
 	readonly accumulatorMap: { [key: string]: Accumulator } = {};
 	events: ForecastEvent[] = [];
-	days: ForecastPeriod[] = [];
+	days: ForecastDayBsa = new ForecastDayBsa();
 
 	constructor(props: ForecastProps) {
 		Object.assign(this, props);
@@ -135,32 +142,34 @@ class Forecast {
 				eventIdx++;
 			}
 
+			// TODO handle event triggers w/o the old accumulator pattern!
+
 			// Handle endOfDay triggers before advancing date
 			// Gather triggered events from each accumulator and allow each accumulator to process them
-			for (const accumulator of this.accumulators) {
-				const triggeredEvents = accumulator.doEndOfDayTrigger(currentDate);
-				for (const event of triggeredEvents) {
-					const forecastEvent: ForecastEvent = {
-						date: currentDate,
-						transaction: event,
-						accumulatorEvents: {},
-					}
-					for (const accumulator of this.accumulators) {
-						const accumulatorEvent = accumulator.processNextTransaction(event);
-						if (accumulatorEvent) {
-							forecastEvent.accumulatorEvents[accumulator.key] = accumulatorEvent;
-						}
-					}
-					events.push(forecastEvent);
-					dayPeriod.addEvents([forecastEvent]);
-				}
-			}
+			// for (const accumulator of this.accumulators) {
+			// 	const triggeredEvents = accumulator.doEndOfDayTrigger(currentDate);
+			// 	for (const event of triggeredEvents) {
+			// 		const forecastEvent: ForecastEvent = {
+			// 			date: currentDate,
+			// 			transaction: event,
+			// 			accumulatorEvents: {},
+			// 		}
+			// 		for (const accumulator of this.accumulators) {
+			// 			const accumulatorEvent = accumulator.processNextTransaction(event);
+			// 			if (accumulatorEvent) {
+			// 				forecastEvent.accumulatorEvents[accumulator.key] = accumulatorEvent;
+			// 			}
+			// 		}
+			// 		events.push(forecastEvent);
+			// 		dayPeriod.addEvents([forecastEvent]);
+			// 	}
+			// }
 
 			// Go to next day
 			days.push(dayPeriod);
 			currentDate = date(currentDate.add(1, 'day'));
 		}
-		this.days = days;
+		this.days = new ForecastDayBsa(days);
 		this.events = events;
     }
 
@@ -217,7 +226,8 @@ class Forecast {
 		);
 		timeline.periods.push(currentPeriod);
 
-		for (const forecastDay of this.days) {
+		const daysInRange = this.days.getRange(start, end);
+		for (const forecastDay of daysInRange) {
 			// Advance period when necessary
 			if (forecastDay.start > currentPeriod.end) {
 				currentPeriod = new ForecastPeriod(

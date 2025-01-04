@@ -251,7 +251,7 @@ export const my_scheduledTransactions: PlannedTransaction[] = [
 		target_account_id: my_accounts.afcu_checking.account_id,
 		category_id: flatCategoriesMap["Tuition"].category_id,
 		recurrence_type: RecurrenceType.SCHEDULE,
-		schedule: { rrules: [ { start: '2024-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] } ] }
+		schedule: { rrules: [ { start: '2024-09-01', end: '2025-05-31', frequency: 'MONTHLY', byDayOfMonth: [1] } ] }
 	},
 
 
