@@ -1,10 +1,10 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import request from '@/services/request';
-import type { PlannedTransaction } from 'models/types';
+import type { TransactionBudget } from 'delfi-core/models/Transaction';
 
 export const usePlannedTransactionStore = defineStore('plannedTransaction', () => {
-	let plannedTransactions = ref([] as any[]);
+	let plannedTransactions = ref<TransactionBudget[]>([]);
 	let isLoadingPlannedTransactions = ref(false);
 	let isUpsertingPlannedTransaction = ref(false);
 	let isDeletingPlannedTransaction = ref(false);
@@ -20,17 +20,17 @@ export const usePlannedTransactionStore = defineStore('plannedTransaction', () =
 		}
 	}
 
-	const upsertPlannedTransaction = async (plannedTransactionData: Partial<PlannedTransaction>): Promise<PlannedTransaction> => {
-		let plannedTransactionRes: PlannedTransaction;
+	const upsertPlannedTransaction = async (plannedTransactionData: Partial<TransactionBudget>): Promise<TransactionBudget> => {
+		let plannedTransactionRes: TransactionBudget;
 		try {
 			isUpsertingPlannedTransaction.value = true;
-			let { data } = plannedTransactionData.planned_transaction_id
-				? await request.put(`/plannedTransaction/${plannedTransactionData.planned_transaction_id}`, plannedTransactionData)
+			let { data } = plannedTransactionData.budget_id
+				? await request.put(`/plannedTransaction/${plannedTransactionData.budget_id}`, plannedTransactionData)
 				: await request.post('/plannedTransaction', plannedTransactionData);
 			plannedTransactionRes = data.data;
 			console.log(data)
-			plannedTransactionData.planned_transaction_id ?
-				plannedTransactions.value = plannedTransactions.value.map(a => a.planned_transaction_id === plannedTransactionData.planned_transaction_id ? plannedTransactionRes : a)
+			plannedTransactionData.budget_id ?
+				plannedTransactions.value = plannedTransactions.value.map(a => a.budget_id === plannedTransactionData.budget_id ? plannedTransactionRes : a)
 				: plannedTransactions.value.push(plannedTransactionRes);
 		}
 		catch (e) {
@@ -47,7 +47,7 @@ export const usePlannedTransactionStore = defineStore('plannedTransaction', () =
 		try {
 			isDeletingPlannedTransaction.value = true;
 			await request.delete(`/plannedTransaction/${plannedTransactionId}`);
-			plannedTransactions.value = plannedTransactions.value.filter(a => a.planned_transaction_id !== plannedTransactionId)
+			plannedTransactions.value = plannedTransactions.value.filter(a => a.budget_id !== plannedTransactionId)
 		}
 		catch (e) {
 			console.error(e)

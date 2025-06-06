@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useAccountStore } from '@/stores/account.store';
-import type { Account } from 'models/types';
 import { computed, reactive, toRefs } from 'vue';
+import type { Account } from 'delfi-core/models/Account';
 
 const accountStore = useAccountStore();
 

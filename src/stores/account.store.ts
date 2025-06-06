@@ -1,8 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import request from '@/services/request';
-import type { Account } from 'models/types';
-import type { Account as DelfiAccount } from '../../delfi-core/models/Account';
+import type { Account, Account as DelfiAccount } from '../../delfi-core/models/Account';
 import { useDelfiStore } from './delfi.store';
 import { date } from '../../delfi-core/utils/dateUtils';
 

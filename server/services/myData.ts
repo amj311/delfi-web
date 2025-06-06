@@ -1,11 +1,9 @@
 import { MONTHS } from "../../delfi-core/utils/constants";
 import { v4 as uuid } from "uuid";
-import { ImmediateMatchTrigger, type Trigger } from "../../delfi-core/models/schedules/triggers";
 import { flatCategoriesMap } from "../../delfi-core/models/systemCategories";
-import type { Schedule } from "../../delfi-core/models/schedules/Schedule";
-import { TransactionType, RecurrenceType } from "../../delfi-core/models/Transaction";
-import { Account, Budget, PlannedTransaction, UserCategory } from "../../models/types";
+import { TransactionType, RecurrenceType, TransactionBudget } from "../../delfi-core/models/Transaction";
 import { date } from "../../delfi-core/utils/dateUtils";
+import type { Account } from "../../delfi-core/models/Account";
 
 const accountStuff = {
 	mask: "**** **** **** 0942",
@@ -53,12 +51,11 @@ my_accounts.afcu_savings.partitions = [
 		current_balance: 100,
 		savings_goal: {
 			savings_goal_id: 'test-savings-goal-id',
-			account_id: null,
 			account_partition_id: 'test-partition-id',
 			target_balance: 7000,
 			target_date: new Date(2024, MONTHS.SEP, 1),
 			// schedule_details: {
-			// 	planned_transaction_id: uuid(),
+			// 	budget_id: uuid(),
 			// 	amount: 2100,
 			// 	memo: "New Car Savings",
 			// 	type: BudgetTransactionType.TRANSFER,
@@ -71,26 +68,13 @@ my_accounts.afcu_savings.partitions = [
 	}
 ];
 
-const defaultTransaction: Partial<any> = {
-	user_id: 'myself',
-	planned_transaction_id: 'replaceMee',
-	type: TransactionType.DEBIT,
-	memo: "",
-	amount: 0,
-	target_account_id: '',
-	origin_account_id: null,
-	target_account_partition_id: null,
-	origin_account_partition_id: null,
-	category_id: flatCategoriesMap["Life Insurance"].category_id,
-}
 
-export const my_scheduledTransactions: any[] = [
+export const my_scheduledTransactions: TransactionBudget[] = [
 	/**
 	 * EVERY MONTH
 	 */
 	{ 
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		type: TransactionType.DEBIT,
 		memo: "Arthur Life Insurance",
 		target_account_id: my_accounts.afcu_checking.account_id,
@@ -102,8 +86,7 @@ export const my_scheduledTransactions: any[] = [
 		category_id: flatCategoriesMap["Life Insurance"].category_id,
 	},
 	{ 
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		type: TransactionType.DEBIT,
 		memo: "Rachel Life Insurance",
 		amount: 70,
@@ -116,8 +99,7 @@ export const my_scheduledTransactions: any[] = [
 		category_id: flatCategoriesMap["Life Insurance"].category_id
 	},
 	{ // Car Insurance
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		type: TransactionType.DEBIT,
 		memo: "Car Insurance",
 		amount: 81,
@@ -131,8 +113,7 @@ export const my_scheduledTransactions: any[] = [
 	},
 
 	{ // Clozd fulltime
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		type: TransactionType.CREDIT,
 		memo: "Clozd Salary",
 		amount: 3140,
@@ -145,8 +126,7 @@ export const my_scheduledTransactions: any[] = [
 		category_id: flatCategoriesMap["Paycheck"].category_id
 	},
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		type: TransactionType.DEBIT,
 		memo: "Tithing",
 		target_account_id: my_accounts.afcu_checking.account_id,
@@ -168,8 +148,7 @@ export const my_scheduledTransactions: any[] = [
 		}]
 	},
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		type: TransactionType.DEBIT,
 		memo: "Fast Offering",
 		amount: 100,
@@ -183,8 +162,7 @@ export const my_scheduledTransactions: any[] = [
 	},
 
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		type: TransactionType.DEBIT,
 		memo: "Mortgage",
 		amount: 2445,
@@ -197,8 +175,7 @@ export const my_scheduledTransactions: any[] = [
 		}],
 	},
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		type: TransactionType.DEBIT,
 		memo: "HOA",
 		amount: 215,
@@ -211,8 +188,7 @@ export const my_scheduledTransactions: any[] = [
 		}],
 	},
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		type: TransactionType.DEBIT,
 		memo: "Gas Bill",
 		amount: 50,
@@ -225,8 +201,7 @@ export const my_scheduledTransactions: any[] = [
 		}],
 	},
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		type: TransactionType.DEBIT,
 		memo: "Power Bill",
 		amount: 30,
@@ -239,8 +214,7 @@ export const my_scheduledTransactions: any[] = [
 		}],
 	},
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		type: TransactionType.DEBIT,
 		memo: "Internet",
 		amount: 50,
@@ -254,8 +228,7 @@ export const my_scheduledTransactions: any[] = [
 	},
 
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		type: TransactionType.DEBIT,
 		memo: "Preschool",
 		amount: 170,
@@ -272,8 +245,7 @@ export const my_scheduledTransactions: any[] = [
 	 * SAVINGS
 	 */
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		type: TransactionType.TRANSFER,
 		memo: "Emergency Savings Transfer",
 		amount: 300,
@@ -287,8 +259,7 @@ export const my_scheduledTransactions: any[] = [
 		category_id: flatCategoriesMap["Transfer"].category_id,
 	},
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		type: TransactionType.TRANSFER,
 		memo: "To Car Fund",
 		amount: 500,
@@ -306,8 +277,7 @@ export const my_scheduledTransactions: any[] = [
 
 	// BROUGHT IN FROM OLD "BUDGETS"
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		memo: 'Groceries',
 		amount: 300,
 		schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
@@ -325,8 +295,7 @@ export const my_scheduledTransactions: any[] = [
 		target_account_id: my_accounts.afcu_checking.account_id,
 	} as any,
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		memo: "Fuel",
 		category_id: flatCategoriesMap.Fuel.category_id,
 		transaction_type: TransactionType.DEBIT,
@@ -340,8 +309,7 @@ export const my_scheduledTransactions: any[] = [
 	},
 	// Fun Money
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		memo: "Fun Money",
 		category_id: flatCategoriesMap.Shopping.category_id,
 		transaction_type: TransactionType.DEBIT,
@@ -355,8 +323,7 @@ export const my_scheduledTransactions: any[] = [
 	},
 	// Baby Care
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		memo: "Baby Care",
 		category_id: flatCategoriesMap.Shopping.category_id,
 		transaction_type: TransactionType.DEBIT,
@@ -374,8 +341,7 @@ export const my_scheduledTransactions: any[] = [
 	// LARGE budgets with children
 
 	{
-		...defaultTransaction,
-		planned_transaction_id: uuid(),
+		budget_id: uuid(),
 		memo: 'Travel',
 		category_id: flatCategoriesMap.Groceries.category_id,
 		transaction_type: TransactionType.DEBIT,

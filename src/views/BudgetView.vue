@@ -6,19 +6,19 @@ import { usePlannedTransactionStore } from '@/stores/plannedTransaction.store';
 import Forecast from '../../delfi-core/models/Forecast';
 import { type DelfiDate, date} from '../../delfi-core/utils/dateUtils';
 import Currency from '@/components/Currency.vue';
-import { useBudgetStore } from '@/stores/budget.store';
+// import { useBudgetStore } from '@/stores/budget.store';
 import { useCategoryStore } from '@/stores/category.store';
-import type { Account, Budget, PlannedTransaction } from 'models/types';
 import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
 import UpsertPlannedTransactionForm from '@/components/UpsertPlannedTransactionForm.vue';
 import UpsertBudgetForm from '@/components/UpsertBudgetForm.vue';
 import type { Delfi } from 'delfi-core';
-import { EventFlag, type BudgetEvent } from '../../delfi-core/models/Transaction';
+import { EventFlag, type BudgetEvent, type TransactionBudget } from '../../delfi-core/models/Transaction';
+import type { Account } from 'delfi-core/models/Account';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
 const transactionStore = usePlannedTransactionStore();
-const budgetStore = useBudgetStore();
+// const budgetStore = useBudgetStore();
 const categoryStore = useCategoryStore();
 
 const state = reactive({
@@ -26,8 +26,7 @@ const state = reactive({
 	viewingMonth: <DelfiDate><unknown>null,
 	forecast: <Forecast><unknown>null,
 	upsertingAccount: <Account | {} | null>null,
-	upsertingPlannedTransaction: <PlannedTransaction | {} | null>null,
-	upsertingBudget: <Budget | {} | null>null,
+	upsertingPlannedTransaction: <TransactionBudget | {} | null>null,
 	summaryData: <Awaited<ReturnType<Delfi["getMonthSummary"]>> | null>null,
 });
 
@@ -66,7 +65,7 @@ const createDelfi = async () => {
 	await Promise.all([
 		await accountStore.loadAccounts(),
 		await transactionStore.loadPlannedTransactions(),
-		await budgetStore.loadBudgets(),
+		// await budgetStore.loadBudgets(),
 		await categoryStore.loadCategories(),
 	]);
 
@@ -211,8 +210,8 @@ const dailyEvents = computed(() => {
 			<UpsertPlannedTransactionForm v-if="state.upsertingPlannedTransaction" :plannedTransaction="state.upsertingPlannedTransaction || {}" :close="() => state.upsertingPlannedTransaction = null" :onSave="createDelfi" />
 			<button v-else @click="() => state.upsertingPlannedTransaction = {}">Add Transaction</button>
 			<br />
-			<UpsertBudgetForm v-if="state.upsertingBudget" :budget="state.upsertingBudget || {}" :close="() => state.upsertingBudget = null" :onSave="createDelfi" />
-			<button v-else @click="() => state.upsertingBudget = {}">Add Budget</button>
+			<!-- <UpsertBudgetForm v-if="state.upsertingBudget" :budget="state.upsertingBudget || {}" :close="() => state.upsertingBudget = null" :onSave="createDelfi" />
+			<button v-else @click="() => state.upsertingBudget = {}">Add Budget</button> -->
 
 			<div>
 				<h3>Spending</h3>

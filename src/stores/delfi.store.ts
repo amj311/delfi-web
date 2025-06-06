@@ -1,14 +1,13 @@
 import { reactive } from 'vue'
 import { defineStore } from 'pinia'
 import { Delfi, type DelfiConfig } from '../../delfi-core';
-import type { Account as DelfiAccount } from 'delfi-core/models/Account';
-import type { TransactionBudget as DelfiPlannedTransaction } from 'delfi-core/models/Transaction';
-import type { Account, Budget, PlannedTransaction } from 'models/types';
+import type { Account, Account as DelfiAccount } from 'delfi-core/models/Account';
+import type { TransactionBudget as DelfiPlannedTransaction, TransactionBudget } from 'delfi-core/models/Transaction';
 import type { ParentCategory } from 'delfi-core/models/Category';
 
 type DelfiConfigRaw = {
 	accounts: Account[],
-	planned_transactions: PlannedTransaction[],
+	planned_transactions: TransactionBudget[],
 	categories: ParentCategory[],
 };
 
@@ -39,10 +38,10 @@ export const useDelfiStore = defineStore('delfi', {
 			})) as any[];
 		},
 	
-		translatePlannedTransactions(schedules: PlannedTransaction[]): DelfiPlannedTransaction[] {
+		translatePlannedTransactions(schedules: TransactionBudget[]): DelfiPlannedTransaction[] {
 			return schedules.map(schedule => ({
 				...schedule,
-				id: schedule.planned_transaction_id,
+				id: schedule.budget_id,
 			}))
 		}
 	}

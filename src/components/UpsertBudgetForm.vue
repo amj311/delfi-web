@@ -1,24 +1,24 @@
 <script setup lang="ts">
-import { useBudgetStore } from '@/stores/budget.store';
-import type { Budget } from 'models/types';
+// import { useBudgetStore } from '@/stores/budget.store';
+// import type { Budget } from 'models/types';
 import { computed, reactive, toRefs } from 'vue';
 import { useAccountStore } from '@/stores/account.store';
 import { useDelfiStore } from '@/stores/delfi.store';
 
-const budgetStore = useBudgetStore();
+// const budgetStore = useBudgetStore();
 const accountStore = useAccountStore();
 const delfiStore = useDelfiStore();
 
 const _props = defineProps<{
-	budget: Partial<Budget>,
+	budget: Partial<any>,
 	close: () => void,
-	onSave?: (data: { budget: Budget | null, isNew: boolean }) => void,
+	onSave?: (data: { budget: any | null, isNew: boolean }) => void,
 }>();
 const props = reactive(_props);
 
 const state = reactive({
 	isSaving: false,
-	data: <Partial<Budget>>JSON.parse(JSON.stringify(props.budget)), // deep copy
+	data: <Partial<any>>JSON.parse(JSON.stringify(props.budget)), // deep copy
 	scheduleJson: JSON.stringify(props.budget.schedule || { rrules: [ { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] } ] }, null, 2),
 });
 
@@ -30,9 +30,9 @@ const finalize = async () => {
 	try {
 		state.isSaving = true;
 		state.data.schedule = state.scheduleJson ? JSON.parse(state.scheduleJson) : undefined;
-		let budget = await budgetStore.upsertBudget(state.data);
-		props.onSave && props.onSave({ budget, isNew: isNew.value });
-		props.close();
+		// let budget = await budgetStore.upsertBudget(state.data);
+		// props.onSave && props.onSave({ budget, isNew: isNew.value });
+		// props.close();
 	}
 	catch (e) {
 		console.error(e);
@@ -45,7 +45,7 @@ const deleteBudget = async () => {
 	if (!state.data.budget_id) return;
 	try {
 		state.isSaving = true;
-		await budgetStore.deleteBudget(state.data.budget_id);
+		// await budgetStore.deleteBudget(state.data.budget_id);
 		props.onSave && props.onSave({ budget: null, isNew: isNew.value });
 		props.close();
 	}
@@ -87,10 +87,10 @@ const deleteBudget = async () => {
 	
 	<div><label for="category_id">Category</label>
 		<select id="category_id" v-model="state.data.category_id">
-			<template v-for="category in delfiStore.delfi?.composedCategories" :key="category.category_id">
+			<!-- <template v-for="category in delfiStore.delfi?.composedCategories" :key="category.category_id">
 				<option value="category.category_id">{{category.name}}</option>
 				<option v-for="child in category.children" :key="child.category_id" :value="child.category_id">&nbsp;&nbsp;{{child.name}}</option>
-			</template>
+			</template> -->
 		</select>
 	</div>
 
