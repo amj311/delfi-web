@@ -65,17 +65,13 @@ export interface IRuleOptions {
 	export type ByWeekOfMonth = number;
   }
 
-export type Schedule = {
-	rrules: IRuleOptions[],
-}
+export type Schedule = IRuleOptions;
 
 export class ScheduleService {
 	static getOccurrences(schedule: Schedule, options: IOccurrencesArgs): DelfiDate[] {
-		let modifiedSchedule = JSON.parse(JSON.stringify(schedule));
-		for (let rrule of modifiedSchedule.rrules) {
-			rrule.start && (rrule.start = date(rrule.start));
-			rrule.end && (rrule.end = date(rrule.end));
-		}
-		return new rSchedule(modifiedSchedule as any).occurrences(options).toArray().map(d => date(d.date));
+		let rrule = JSON.parse(JSON.stringify(schedule)) as IRuleOptions;
+		rrule.start && (rrule.start = date(rrule.start));
+		rrule.end && (rrule.end = date(rrule.end));
+		return new rSchedule<null>({ rrules: [rrule] }).occurrences(options).toArray().map(d => date(d.date));
 	}
 }

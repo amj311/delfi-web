@@ -1,254 +1,106 @@
 import { date, type DelfiDate } from "../utils/dateUtils";
-import { type PlannedTransaction, type TransactionSchedule, type TransactionEvent, type TransactionTrigger, RecurrenceType } from "./Transaction";
+import { type TransactionBudget, type ScheduledBudget, type BudgetEvent, type TriggeredBudget, RecurrenceType, type BudgetOccurrence } from "./Transaction";
 import TransactionService from "./Transaction";
-import { ImmediateMatchTrigger } from "./schedules/triggers";
 import FilterService from "../services/FilterService";
-import type Accumulator from "delfi-core/models/Accumulator";
-import type { AccumulatorEvent, AccumulatorPeriod } from "delfi-core/models/Accumulator";
-import { peek } from "../utils/miscUtils";
-import { BinarySearchArray } from "../utils/binarySearchArray";
+import { TransactionStore } from "./TransactionStore";
 
 type Interval = 'day' | 'week' | 'month' | 'year';
 
-type ForecastEvent = {
-	date: DelfiDate,
-	transaction: TransactionEvent,
-	accumulatorEvents: {
-		[key: string]: AccumulatorEvent | null,
-	}
-}
-
-class ForecastPeriod {
-	constructor(
-		readonly start: DelfiDate,
-		readonly end: DelfiDate,
-		readonly events: ForecastEvent[] = [],
-		readonly accumulatorEvents: { [key: string]: AccumulatorEvent[] } = {},
-		readonly accumulatorPeriods: { [key: string]: AccumulatorPeriod[] } = {},
-	) {}
-
-	addEvents(events: ForecastEvent[]) {
-		this.events.push(...events);
-		for (const event of events) {
-			for (const key in event.accumulatorEvents) {
-				if (!this.accumulatorEvents[key]) {
-					this.accumulatorEvents[key] = [];
-				}
-				if (event.accumulatorEvents[key] !== null) {
-					this.accumulatorEvents[key].push(event.accumulatorEvents[key] as AccumulatorEvent);
-				}
-			}
-		}
-	}
-
-	addFromPeriod(period: ForecastPeriod) {
-		this.addEvents(period.events);
-		for (const key in period.accumulatorPeriods) {
-			if (!this.accumulatorPeriods[key]) {
-				this.accumulatorPeriods[key] = [];
-			}
-			this.accumulatorPeriods[key].push(...period.accumulatorPeriods[key]);
-		}
-	}
-
-	startingBalance(accumulatorKey: string) {
-		return this.accumulatorPeriods[accumulatorKey]?.[0]?.startingBalance || 0;
-	}
-
-	endingBalance(accumulatorKey: string) {
-		return peek(this.accumulatorPeriods[accumulatorKey])?.endingBalance || 0;
-	}
-
-	change(accumulatorKey: string) {
-		return this.endingBalance(accumulatorKey) - this.startingBalance(accumulatorKey);
-	}
-}
-
-class ForecastDayBsa extends BinarySearchArray<ForecastPeriod> {
-	protected getKey(period: ForecastPeriod) {
-		return period.start;
-	}
-}
-
-class Timeline extends ForecastPeriod {
-	constructor(
-		readonly start: DelfiDate,
-		readonly end: DelfiDate,
-		readonly interval: Interval,
-		readonly events: ForecastEvent[] = [],
-		readonly accumulatorEvents: { [key: string]: AccumulatorEvent[] } = {},
-		readonly periods: ForecastPeriod[] = [],
-	) {
-		super(start, end, events, accumulatorEvents);
-	}
+type MonthForecast = {
+	occurrences: BudgetOccurrence[],
+	events: BudgetEvent[],
 }
 
 type ForecastProps = {
-	readonly accumulators: Accumulator[],
-	readonly plannedTransactions: PlannedTransaction[],
+	// readonly accumulators: Accumulator[],
+	readonly plannedTransactions: TransactionBudget[],
 	readonly start: DelfiDate,
 	readonly end: DelfiDate
 }
 interface Forecast extends ForecastProps {};
 class Forecast {
-	readonly transactionSchedules!: TransactionSchedule[];
-	readonly transactionTriggers!: TransactionTrigger[];
-	readonly accumulatorMap: { [key: string]: Accumulator } = {};
-	events: ForecastEvent[] = [];
-	days: ForecastDayBsa = new ForecastDayBsa();
+	readonly transactionSchedules!: ScheduledBudget[];
+	readonly transactionTriggers!: TriggeredBudget[];
+	// readonly accumulatorMap: { [key: string]: Accumulator } = {};
+
+	transactionStore = new TransactionStore();
+	events: BudgetEvent[] = [];
+	occurrences: BudgetOccurrence[] = [];
+	readyMonths: Map<string, MonthForecast> = new Map(); // Months that have been computed
 
 	constructor(props: ForecastProps) {
 		Object.assign(this, props);
-		this.accumulatorMap = props.accumulators.reduce((accumulators, accumulator) => {
-			accumulators[accumulator.key] = accumulator;
-			return accumulators;
-		}, {});
-		this.transactionSchedules = this.plannedTransactions.filter(s => s.recurrence_type === RecurrenceType.SCHEDULE) as unknown as TransactionSchedule[];
-		this.transactionTriggers = this.plannedTransactions.filter(s => s.recurrence_type === RecurrenceType.TRIGGER) as unknown as TransactionTrigger[];
+		// this.accumulatorMap = props.accumulators.reduce((accumulators, accumulator) => {
+		// 	accumulators[accumulator.key] = accumulator;
+		// 	return accumulators;
+		// }, {});
+		this.transactionSchedules = this.plannedTransactions.filter(s => s.recurrence_type === RecurrenceType.SCHEDULE) as unknown as ScheduledBudget[];
+		this.transactionTriggers = this.plannedTransactions.filter(s => s.recurrence_type === RecurrenceType.TRIGGER) as unknown as TriggeredBudget[];
 	}
 
     async computeForecast() {
-        const scheduledEventDates = TransactionService.generateScheduledDates(this.transactionSchedules, this.start, this.end);
-    
-		let events: ForecastEvent[] = [];
-		let days: ForecastPeriod[] = [];
-		let currentDate = date(this.start);
-		let eventIdx = 0;
+		this.transactionStore = new TransactionStore();
+		this.events = [];
+		this.occurrences = [];
 
-		let itr = 0;
-		while (currentDate <= date(this.end) && itr < 10000) {
-			itr++;
-			// Create forecast period
-			const dayPeriod = new ForecastPeriod(date(currentDate), date(currentDate));
-			// Create accumulator periods
-			for (const accumulator of this.accumulators) {
-				dayPeriod.accumulatorPeriods[accumulator.key] = [accumulator.onDayStart(
-					date(currentDate), date(currentDate)
-				)];
-			}
-
-			// Gather events for day
-			while (
-				eventIdx < scheduledEventDates.length
-				&& scheduledEventDates[eventIdx].date.isSame(currentDate))
-			{
-				// Compute event
-				const schedule = scheduledEventDates[eventIdx].schedule;
-				const newEvents = this.computeScheduleForDate(currentDate, schedule);
-				events.push(...newEvents);
-				dayPeriod.addEvents(newEvents);
-
-				// Advance to next event for day
-				eventIdx++;
-			}
-
-			// TODO handle event triggers w/o the old accumulator pattern!
-
-			// Handle endOfDay triggers before advancing date
-			// Gather triggered events from each accumulator and allow each accumulator to process them
-			// for (const accumulator of this.accumulators) {
-			// 	const triggeredEvents = accumulator.doEndOfDayTrigger(currentDate);
-			// 	for (const event of triggeredEvents) {
-			// 		const forecastEvent: ForecastEvent = {
-			// 			date: currentDate,
-			// 			transaction: event,
-			// 			accumulatorEvents: {},
-			// 		}
-			// 		for (const accumulator of this.accumulators) {
-			// 			const accumulatorEvent = accumulator.processNextTransaction(event);
-			// 			if (accumulatorEvent) {
-			// 				forecastEvent.accumulatorEvents[accumulator.key] = accumulatorEvent;
-			// 			}
-			// 		}
-			// 		events.push(forecastEvent);
-			// 		dayPeriod.addEvents([forecastEvent]);
-			// 	}
-			// }
-
-			// Go to next day
-			days.push(dayPeriod);
-			currentDate = date(currentDate.add(1, 'day'));
+		// compute all scheduled events once first
+		const scheduledOccurrences: BudgetOccurrence[] = [];
+		for (let schedule of this.transactionSchedules) {
+			scheduledOccurrences.push(...TransactionService.createOccurrencesFromSchedule(this.start, this.end, schedule));
 		}
-		this.days = new ForecastDayBsa(days);
-		this.events = events;
+		const scheduledEvents = scheduledOccurrences.flatMap(o => o.events);
+
+		// Compute just one month at a time
+		let monthStart = this.start.startOf('month');
+		while (monthStart < this.end) {
+			await new Promise(resolve => setTimeout(resolve, 0)); // Yield to the event loop to avoid blocking the UI
+			const monthOccurrences = scheduledOccurrences.filter(o =>
+				o.start.isSameOrBefore(monthStart, 'month') &&
+				o.end.isSameOrAfter(monthStart, 'month')
+			);
+			const monthEvents = FilterService.filter(scheduledEvents, [
+				{ property: 'year', operator: 'eq', operand: monthStart.year() },
+				{ property: 'month', operator: 'eq', operand: monthStart.month() },
+			])
+		
+			// Compute immediate triggers by letting them query the store for events from the current month matching their filter
+			for (const transactionTrigger of this.transactionTriggers) {
+				const triggeredOccurrences = monthEvents.map(event =>
+					TransactionService.createOccurrenceFromTrigger(event.date, transactionTrigger, event)
+				).filter(Boolean) as BudgetOccurrence[];
+				// this.transactionStore.addTransactions(triggeredEvents);
+				monthOccurrences.push(...triggeredOccurrences);
+				monthEvents.push(...triggeredOccurrences.flatMap(o => o.events));
+			}
+
+			// TODO compute cumulative triggers
+		
+			this.readyMonths.set(date(monthStart).toString(), {
+				occurrences: monthOccurrences,
+				events: monthEvents,
+			});
+			monthStart = monthStart.add(1, 'month');
+			this.events.push(...monthEvents);
+			this.occurrences.push(...monthOccurrences);
+
+			await new Promise(resolve => setTimeout(resolve, 0)); // Yield to the event loop to avoid blocking the UI
+		}
     }
 
-	private computeScheduleForDate(date: DelfiDate, schedule: TransactionSchedule): ForecastEvent[] {
-		const events = <ForecastEvent[]><unknown>[];
-
-		const transactionEvents = this.createEventsFromSchedule(date, schedule);
-
-		// Create a ForecastEvent for each event with an accumulator event for each accumulator
-		for (const event of transactionEvents) {
-			const forecastEvent: ForecastEvent = {
-				date: date,
-				transaction: event,
-				accumulatorEvents: {},
-			}
-			for (const accumulator of this.accumulators) {
-				const accumulatorEvent = accumulator.processNextTransaction(event);
-				forecastEvent.accumulatorEvents[accumulator.key] = accumulatorEvent || null;
-			}
-			events.push(forecastEvent);
-		}
-
- 		return events;
-	}
-
-	private createEventsFromSchedule(date: DelfiDate, schedule: TransactionSchedule): TransactionEvent[] {
-		const events: TransactionEvent[] = [];
-		
-		const scheduledEvents = TransactionService.createEventsFromSchedule(date, schedule);
-
-		// Create triggered events
-		for (const event of scheduledEvents) {
-			events.push(event);
-			for (let transactionTrigger of this.transactionTriggers) {
-				const trigger = new ImmediateMatchTrigger(transactionTrigger.trigger as ImmediateMatchTrigger);
-				if (FilterService.matches(trigger.filter, event)) {
-					events.push(...TransactionService.createEventsFromTrigger(date, transactionTrigger, event))
+	pollMonthReady(month: DelfiDate) {
+		return new Promise<MonthForecast>(res => {
+			const waitTime = 500;
+			const ctx = this;
+			async function poll(){
+				const monthRecord = ctx.readyMonths.get(month.toString());
+				if (monthRecord) {
+					return res(monthRecord);
 				}
-			}	
-		}
-		return events;
-	}
-
-	
-	public getTimeline(start = this.start, end = this.end, interval: Interval = 'day') {
-		if (date(start) < this.start) throw Error('Start date is before start of forecast');
-		if (date(end) > this.end) throw Error('End date is after end of forecast');
-
-		const timeline = new Timeline(start, end, interval);
-
-		let currentPeriod = new ForecastPeriod(
-			date(start),
-			date(start.add(1, interval).subtract(1, 'day'))
-		);
-		timeline.periods.push(currentPeriod);
-
-		const daysInRange = this.days.getRange(start, end);
-		for (const forecastDay of daysInRange) {
-			// Advance period when necessary
-			if (forecastDay.start > currentPeriod.end) {
-				currentPeriod = new ForecastPeriod(
-					date(currentPeriod.end.add(1, 'day')),
-					date(currentPeriod.end.add(1, 'day')),
-				);
-				if (currentPeriod.end > date(end)) break;
-				timeline.periods.push(currentPeriod);
+				setTimeout(poll, waitTime);
 			}
-
-			// Skip date if before period
-			if (forecastDay.start < currentPeriod.start) continue;
-			
-			// Add to period
-			currentPeriod.addFromPeriod(forecastDay);
-			timeline.addFromPeriod(forecastDay);
-		}
-
-		return timeline;
+			poll();
+		})
 	}
-
 }
 
 export default Forecast;

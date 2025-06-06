@@ -1,12 +1,12 @@
 import Accumulator, { AccumulatorEvent, AccumulatorPeriod } from "./Accumulator"
-import TransactionService, { type PlannedTransaction, type TransactionEvent, type TransactionSchedule } from "./Transaction"
+import TransactionService, { type TransactionBudget, type BudgetEvent, type ScheduledBudget } from "./Transaction"
 import { date, type DelfiDate } from "../utils/dateUtils"
 import { peek } from "../../delfi-core/utils/miscUtils"
 
 type SavingsGoal  = {
 	target_balance: number,
 	target_date?: Date,
-	schedule_details?: TransactionSchedule,
+	schedule_details?: ScheduledBudget,
 }
 
 export type AccountPartition = {
@@ -48,7 +48,7 @@ export class BaseSavingsAccumulator extends Accumulator {
 		}
 	}
 
-	processSavingsOnDate(dayDate: DelfiDate): TransactionEvent[] {
+	processSavingsOnDate(dayDate: DelfiDate): BudgetEvent[] {
 		if (dayDate.toString() === '2024-03-25') {
 			console.log("processSavingsOnDate", dayDate.toString(), this.nextSavingsTransfer?.toString())
 		}
@@ -56,7 +56,7 @@ export class BaseSavingsAccumulator extends Accumulator {
 			return [];
 		}
 		else if (this.nextSavingsTransfer?.isSame(dayDate) && this.endingBalance < this.savings_goal.target_balance) {
-			const transferEvents = TransactionService.createEventsFromSchedule(dayDate, this.savings_goal.schedule_details as TransactionSchedule);
+			const transferEvents = TransactionService.createOccurrencesFromSchedule(dayDate, this.savings_goal.schedule_details as ScheduledBudget);
 			console.log(transferEvents)
 			this.nextSavingsTransfer = TransactionService.getNextOccurrence(date(dayDate.add(1, 'day')), this.savings_goal.schedule_details.schedule);
 			return transferEvents;
@@ -111,7 +111,7 @@ export class AccountAccumulator extends BaseSavingsAccumulator {
 	}
 
 	// let children process transactions
-	protected _postProcessTransaction(transaction: TransactionEvent, newEvent: AccumulatorEvent): void {
+	protected _postProcessTransaction(transaction: BudgetEvent, newEvent: AccumulatorEvent): void {
 		if (transaction.memo === "New Car Savings") {
 			console.log("from savings goal", transaction)
 			console.log(peek(this.events))
@@ -121,9 +121,9 @@ export class AccountAccumulator extends BaseSavingsAccumulator {
 		}
 	}
 
-	protected doEndOfDayTrigger(dayDate: DelfiDate): TransactionEvent[] {
+	protected doEndOfDayTrigger(dayDate: DelfiDate): BudgetEvent[] {
 		// console.log("ACCOUNT ACCUMULATOR")
-		const events = <TransactionEvent[]>[];
+		const events = <BudgetEvent[]>[];
 		events.push(...super.processSavingsOnDate(dayDate));
 		for (const partition of this.account.partitions) {
 			// console.log(this.partitionAccumulators[partition.account_partition_id])

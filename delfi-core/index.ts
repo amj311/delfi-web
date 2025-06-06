@@ -4,136 +4,162 @@
  * and handling 
  */
 
-import { AccountAccumulator, type Account } from "./models/Account";
-import { type PlannedTransaction } from "./models/Transaction";
+import { type Account } from "./models/Account";
+import { type TransactionBudget } from "./models/Transaction";
 import Forecast from "./models/Forecast";
-import Accumulator from "./models/Accumulator";
-import { CategorySummary, type Category, type UserCategory, type ParentCategory } from "./models/Category";
-import type { Budget, BudgetAccumulator } from "./models/Budget";
-import BudgetService from "./services/BudgetService";
+import { CategorySummary, type Category, type ParentCategory, type OccurrenceSummary, type BudgetSummary } from "./models/Category";
 import { date, type DelfiDate } from "./utils/dateUtils";
-import { nestedCategories } from "./models/systemCategories";
+import type { TransactionFilter } from "./services/FilterService";
+import FilterService from "./services/FilterService";
 
 export type DelfiConfig = {
 	readonly accounts: Account[],
-	readonly budgets: Budget[],
-	readonly plannedTransactions: PlannedTransaction[],
-	readonly userCategories: UserCategory[],
+	readonly plannedTransactions: TransactionBudget[],
+	readonly categories: ParentCategory[],
 }
 
 export interface Delfi extends DelfiConfig {}
 
 export class Delfi {
 	public forecast!: Forecast;
-	readonly composedCategories!: ParentCategory[];
 
 	constructor(config: DelfiConfig) {
 		// Copy config so that it is not connected to external state
 		const configCopy = JSON.parse(JSON.stringify(config));
 		Object.assign(this, configCopy);
-		this.composedCategories = JSON.parse(JSON.stringify(nestedCategories));
-		this.userCategories.forEach(c => this.composedCategories.find(p => p.category_id === c.parent_category_id)?.children?.push(c));
 	}
 
 	get flatCategories(): Category[] {
-		return this.composedCategories.flatMap(c => [c, ...c.children]);
+		return this.categories.flatMap(c => [c, ...c.children]);
 	}
 
 	public async createFullForecast(start: DelfiDate, end: DelfiDate): Promise<Forecast> {
-		const accumulators: Accumulator[] = [];
-		// accumulators.push(new Accumulator(
-		// 	'total',
-		// 	this.accounts.reduce((balance, a) => balance + a.current_balance, 0),
-		// 	[{
-		// 		operator: '*'
-		// 	}]
-		// ));
-		// for (const account of this.accounts) {
-		// 	const acc = new AccountAccumulator(account, start);
-		// 	accumulators.push(acc);
-		// };
-
-		// // Prepare categories w/ accumulators
-		// for (const category of this.flatCategories) {
-		// 	const accumulator = new Accumulator(
-		// 		'cat_' + category.category_id,
-		// 		0,
-		// 		[{
-		// 			property: 'category_id',
-		// 			operator: 'eq',
-		// 			operand: category.category_id,
-		// 		}]
-		// 	);
-		// 	accumulators.push(accumulator);
-		// }
-
-		// Prepare budgets w/ categories
-		// for (const budget of this.budgets) {
-		// 	const accumulator = BudgetService.createBudgetAccumulator(budget);
-		// 	accumulators.push(accumulator);
-		// };
-
 		// Put everything in the forecast
 		this.forecast = new Forecast({
-			accumulators,
+			// accumulators,
 			plannedTransactions: this.plannedTransactions,
 			start,
 			end,
 		});
-		console.log('Starting forecast computation');
-		await this.forecast.computeForecast();
-		console.log('Finished forecast computation');
+		await this.forecast.computeForecast().catch(err => {
+			console.error('Error computing forecast:', err);
+			throw err;
+		});
 		return this.forecast;
 	}
 
-	// async processNewAccount(account: Account) {
-	// 	console.log(account);
-	// 	const accumulator = new AccountAccumulator(account, this.forecast.start);
-	// 	await this.forecast.processNewAccumulator(accumulator);
-	// 	this.accounts.push(account);
-	// }
+
+	/**
+	 * Computes the accumulation of all transactions up to the given date BUT NOT INCLUDING, filtered by the provided filter.
+	 * @param date 
+	 * @param filter DO NOT INCLUDE DATES. These will be automatically computed.
+	 */
+	accumulateUpTo(date: DelfiDate, filter: TransactionFilter = []) {
+		const thisFilter: TransactionFilter = [
+			...filter,
+			{ property: 'date', operator: 'lt', operand: date },
+		];
+		const matchingEvents = FilterService.filter(this.forecast.events, thisFilter);
+		return matchingEvents.reduce((acc, event) => acc + event.amount, 0);
+	}
 
 
-	getMonthSummary(monthDate: DelfiDate) {
+	
+	async getMonthSummary(monthDate: DelfiDate) {
 		// make extra sure we have the start and end date
 		const monthStart = date(monthDate.startOf('month'));
 		const monthEnd = date(monthDate.endOf('month'));
-		
-		const timeline = this.forecast.getTimeline(monthStart, monthEnd, 'day');
+		const monthForecast = await this.forecast.pollMonthReady(monthStart);
+		const monthEvents = monthForecast.events;
+		const monthOccurrences = monthForecast.occurrences;
+		const monthNet = monthEvents.reduce((acc, event) => acc + event.amount, 0);
 
-		// const accountSummaries = this.accounts.map(account => (
-		// 	(this.forecast.accumulatorMap[account.account_id] as AccountAccumulator).createSummary(monthStart, monthEnd)
-		// ));
+		// compute each account's balance at the beginning and end of the month
+		const accountSummaries = await Promise.all(this.accounts.map(async (account: Account) => {
+			const monthStartBalance = account.current_balance + this.accumulateUpTo(monthStart, [
+				{ property: 'target_account_id', operator: 'eq', operand: account.account_id },
+			]);
+			const accountEvents = FilterService.filter(monthEvents, [
+				{ property: 'target_account_id', operator: 'eq', operand: account.account_id },
+				{ property: 'year', operator: 'eq', operand: monthEnd.year() },
+				{ property: 'month', operator: 'eq', operand: monthEnd.month() },
+			]);
+			const monthAccumulation = accountEvents.reduce((acc, event) => acc + event.amount, 0);
+			const monthEndBalance = monthStartBalance + monthAccumulation;
+			return {
+				account_id: account.account_id,
+				startingBalance: monthStartBalance,
+				endingBalance: monthEndBalance,
+				netChange: monthAccumulation,
+				events: accountEvents,
+				partitions: await Promise.all(account.partitions.map(async partition => {
+					const partitionStartBalance = partition.current_balance + this.accumulateUpTo(monthStart, [
+						{ property: 'target_account_partition_id', operator: 'eq', operand: partition.account_partition_id },
+					]);
+					const partitionEvents = FilterService.filter(monthEvents, [
+						{ property: 'target_account_partition_id', operator: 'eq', operand: partition.account_partition_id },
+						{ property: 'year', operator: 'eq', operand: monthEnd.year() },
+						{ property: 'month', operator: 'eq', operand: monthEnd.month() },
+					]);
+					const partitionAccumulation = partitionEvents.reduce((acc, event) => acc + event.amount, 0);
+					const partitionEndBalance = partitionStartBalance + partitionAccumulation;
+					return {
+						account_partition_id: partition.account_partition_id,
+						name: partition.name,
+						startingBalance: partitionStartBalance,
+						endingBalance: partitionEndBalance,
+						netChange: partitionAccumulation,
+						events: partitionEvents,
+					};
+				})),
+			}
+		}));
 
-		const categorySummaries = this.composedCategories.map((category: ParentCategory) => (
+		const categorySummaries = this.categories.map((category: ParentCategory) => (
 			new CategorySummary(
 				monthStart,
 				monthEnd,
 				category,
-				timeline.accumulatorEvents['cat_' + category.category_id],
-				this.budgets.filter(b => b.category_id === category.category_id).map(b => this.forecast.accumulatorMap[b.budget_id] as BudgetAccumulator),
+				monthOccurrences.filter(o => o.budget.category_id === category.category_id),
+				// this.budgets.filter(b => b.category_id === category.category_id).map(b => this.forecast.accumulatorMap[b.budget_id] as BudgetAccumulator),
 				category.children?.map(child => new CategorySummary(
 					monthStart,
 					monthEnd,
 					child,
-					timeline.accumulatorEvents['cat_' + child.category_id],
-					this.budgets.filter(b => b.category_id === child.category_id).map(b => this.forecast.accumulatorMap[b.budget_id] as BudgetAccumulator),
+					monthOccurrences.filter(e => e.budget.category_id === child.category_id),
+					// this.budgets.filter(b => b.category_id === child.category_id).map(b => this.forecast.accumulatorMap[b.budget_id] as BudgetAccumulator),
 				)),
 			)
 		));
+		const spendingCategories = categorySummaries.filter(c => c.category.type === 'EXPENSE');
 
-		const incomeSummary = categorySummaries.find(c => c.category.name === 'Income');
-		const transferSummary = categorySummaries.find(c => c.category.name === 'Transfer');
-		const spendingCategories = categorySummaries.filter(c => !['Income', 'Transfer'].includes(c.category.name));
+		const incomeCategories = categorySummaries.filter(c => c.category.type === 'INCOME');
+		const incomeSummary = {
+			allEvents: incomeCategories.flatMap(c => c.allOccurrences),
+			netChange: incomeCategories.reduce((acc, c) => acc + c.allNetChange, 0),
+			categories: incomeCategories,
+			occurrences: incomeCategories.reduce((acc, c) => acc.concat(c.allOccurrences), <OccurrenceSummary[]>[]),
+			allBudgetOccurrences: incomeCategories.reduce((acc, c) => acc.concat(c.allBudgetOccurrences), <BudgetSummary[]>[]),
+		};
+
+		const transferCategories = categorySummaries.filter(c => c.category.type === 'TRANSFER');
+		const transferSummary = {
+			allEvents: transferCategories.flatMap(c => c.allOccurrences),
+			allNetChange: transferCategories.reduce((acc, c) => acc + c.allNetChange, 0),
+			categories: transferCategories,
+			occurrences: transferCategories.reduce((acc, c) => acc.concat(c.allOccurrences), <OccurrenceSummary[]>[]),
+		};
 
 		return {
-			timeline,
-			accountSummaries: [],
+			netGrowth: monthNet,
+			events: monthEvents,
+			occurrences: monthOccurrences,
+			accountSummaries,
 			categorySummaries,
 			incomeSummary,
 			transferSummary,
 			spendingCategories,
-			spendingTotal: spendingCategories.reduce((acc, c) => acc + c.netChange, 0),
+			spendingTotal: spendingCategories.reduce((acc, c) => acc + c.allNetChange, 0),
 		};
 	}
 }

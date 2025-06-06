@@ -5,7 +5,7 @@ import { createPinia } from 'pinia'
 import request from './services/request'
 
 import App from './App.vue'
-import router from './router'
+import router from './router/router'
 import { AuthService } from './services/authService'
 
 const app = createApp(App)
@@ -15,7 +15,6 @@ app.use(router);
 
 (async () => {
 	const { data } = await request.get('firebase-config');
-	console.log(data.data)
 	AuthService.setupAuth(data.data);
 })()
 

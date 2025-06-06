@@ -2,7 +2,7 @@ import Forecast from "../models/Forecast";
 import { beforeEach, describe, expect, test } from 'vitest'
 import { ImmediateMatchTrigger } from "../models/schedules/triggers";
 import { MONTHS } from "../utils/constants";
-import { PlannedTransactionType, type PlannedTransaction, type TransactionTrigger, RecurrenceType } from "../models/Transaction";
+import { TransactionType, type TransactionBudget, type TriggeredBudget, RecurrenceType } from "../models/Transaction";
 import { date } from "../utils/dateUtils";
 import Accumulator from "../models/Accumulator";
 import BudgetService from "../services/BudgetService";
@@ -15,10 +15,10 @@ const accounts = {
 		balance: 500,
 	},
 };
-const plannedTransactions: PlannedTransaction[] = [
+const plannedTransactions: TransactionBudget[] = [
 	{
-		id: "clozdincome",
-		type: PlannedTransactionType.CREDIT,
+		budget_id: "clozdincome",
+		type: TransactionType.CREDIT,
 		memo: "Clozd Income",
 		amount: 2500,
 		target_account_id: accounts.afcu_checking.id,
@@ -27,8 +27,8 @@ const plannedTransactions: PlannedTransaction[] = [
 		category_id: 'test-category',
 	},
 	{
-		id: "tithing",
-		type: PlannedTransactionType.DEBIT,
+		budget_id: "tithing",
+		type: TransactionType.DEBIT,
 		memo: "Tithing",
 		target_account_id: accounts.afcu_checking.id,
 		recurrence_type: RecurrenceType.TRIGGER,
@@ -36,7 +36,7 @@ const plannedTransactions: PlannedTransaction[] = [
 			filter: [{
 				property: 'type',
 				operator: 'eq',
-				operand: PlannedTransactionType.CREDIT,
+				operand: TransactionType.CREDIT,
 			}],
 			computation: {
 				operator: 'percent',
@@ -44,7 +44,7 @@ const plannedTransactions: PlannedTransaction[] = [
 			}
 		}),
 		category_id: "",
-	} as TransactionTrigger
+	} as TriggeredBudget
 ]
 
 describe('Forecast', () => {
@@ -139,7 +139,7 @@ describe('Forecast', () => {
 		})
 
 		test('triggers and accumulates endOfMonth budget depletion', () => {
-			const budget: Budget = {
+			const budget: TransactionBudget = {
 				name: 'test-budget',
 				budget_id: '',
 				amount: 50,

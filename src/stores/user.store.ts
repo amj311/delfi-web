@@ -8,7 +8,7 @@ export const useUserStore = defineStore('user', () => {
 	let isLoadingSessionData = ref(true);
 	const hasLoadedSessionData = ref(false);
 	const loginError = ref<String>('');
-	const isLoggedIn = ref(false);
+	const isAuthenticated = ref(false);
 	const currentUser = ref<any>();
 	const newUserData = ref<any>(null);
 	const session = ref<any>();
@@ -17,7 +17,7 @@ export const useUserStore = defineStore('user', () => {
 	const loadSessionData = async () => {
 		const authUser = AuthService.authUser;
 		if (!authUser) {
-			isLoggedIn.value = false;
+			isAuthenticated.value = false;
 			currentUser.value = null;
 			hasLoadedSessionData.value = true;
 			isLoading.value = false;
@@ -25,8 +25,8 @@ export const useUserStore = defineStore('user', () => {
 		}
 		try {
 			isLoading.value = true;
-			isLoggedIn.value = Boolean(authUser);
-			if (!isLoggedIn.value) {
+			isAuthenticated.value = Boolean(authUser);
+			if (!isAuthenticated.value) {
 				currentUser.value = null;
 				return;
 			}
@@ -60,13 +60,13 @@ export const useUserStore = defineStore('user', () => {
 	};
 	
 	const createUser = async (newUser) => {
-		if (!isLoggedIn.value) {
+		if (!isAuthenticated.value) {
 			throw Error("There is no active session");
 		}
 		if (currentUser.value) {
 			throw Error("There is already a user for this session");
 		}
-		const { data } = await request.post('user/create-account', {
+		const { data } = await request.post('signup/create-account', {
 			...newUser,
 			auth_id: AuthService.authUser?.uid,
 			email: AuthService.authUser?.email
@@ -78,7 +78,7 @@ export const useUserStore = defineStore('user', () => {
 	return {
 		isLoadingSessionData,
 		hasLoadedSessionData,
-		isLoggedIn,
+		isLoggedIn: isAuthenticated,
 		loginError,
 		currentUser,
 		session,

@@ -1,6 +1,7 @@
 import { prisma } from "../../prisma/client";
 import { UserCategory } from "../../models/types";
-import { customCategories } from "./myData";
+import { nestedCategories } from "../../delfi-core/models/systemCategories";
+
 
 export const CategoryService = {
     async createUserCategory(categoryData: Omit<UserCategory, 'category_id'>) {
@@ -15,7 +16,7 @@ export const CategoryService = {
 		// 		user_id,
 		// 	},
 		// });
-		return customCategories;
+		return nestedCategories;
     },
 
     async getCategoryById(user_id: string, category_id: string) {

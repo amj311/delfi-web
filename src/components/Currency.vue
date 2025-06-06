@@ -10,7 +10,7 @@ const props = reactive(_props);
 
 const formatted = computed(() => {
 
-	let signDisplay: any = 'auto';
+	let signDisplay: any = 'never';
 	if (props.mode === 'balance') {
 		signDisplay = props.amount < 0 ? 'always' : 'never';
 	}

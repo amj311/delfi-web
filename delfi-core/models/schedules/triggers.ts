@@ -1,52 +1,44 @@
 import type { TransactionFilter } from "../../services/FilterService"
 
-
-export interface Trigger {
-	type: string,
-}
-
 type Computation = {
 	operator: 'exactly' | 'add' | 'sub' | 'mult' | 'div' | 'percent'
 	operand: number
 }
 
-type Props = {
+export function computeTriggeredAmount(
+	triggerAmount: number,
+	computation: Computation
+): number {
+	switch (computation.operator) {
+		case 'exactly':
+			return computation.operand;
+		case 'add':
+			return triggerAmount + computation.operand;
+		case 'sub':
+			return triggerAmount - computation.operand;
+		case 'mult':
+			return triggerAmount * computation.operand;
+		case 'div':
+			return triggerAmount / computation.operand;
+		case 'percent':
+			return triggerAmount * (computation.operand / 100);
+		default:
+			throw Error('Unknown operator: ' + computation.operator);
+	};
+}
+
+export type ImmediateMatchTrigger = {
+	type: 'immediateMatch';
 	filter: TransactionFilter;
 	computation: Computation;
 }
 
-export class ImmediateMatchTrigger implements Trigger {
-	type = 'immediateMatch';
-	filter!: TransactionFilter;
-	computation!: Computation;
-	
-	constructor(props: Props) {
-		Object.assign(this, props);
-	}
-
-	public computeAmount(triggerAmount: number): number {
-		switch (this.computation.operator) {
-			case 'exactly':
-				return this.computation.operand;
-			case 'add':
-				return triggerAmount + this.computation.operand;
-			case 'sub':
-				return triggerAmount - this.computation.operand;
-			case 'mult':
-				return triggerAmount * this.computation.operand;
-			case 'div':
-				return triggerAmount / this.computation.operand;
-			case 'percent':
-				return triggerAmount * (this.computation.operand / 100);
-			default:
-				throw Error('Unknown operator: ' + this.computation.operator);
-		};
-	}
+export type PeriodTotalTrigger = {
+	type: 'periodTotal',
+	// interval: number;
+	period: 'day' | 'week' | 'month' | 'year',
+	filter: TransactionFilter;
+	computation: Computation;
 }
 
-// export type PeriodTotalTrigger = Trigger & {
-// 	type: 'periodTotal',
-// 	period: 'day' | 'week' | 'month' | 'year',
-// 	interval: number,
-// 	createEventFromPeriod: (periodEvents: TransactionEvent[]) => TransactionEvent
-// }
+export type Trigger = ImmediateMatchTrigger | PeriodTotalTrigger;

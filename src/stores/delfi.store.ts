@@ -2,15 +2,14 @@ import { reactive } from 'vue'
 import { defineStore } from 'pinia'
 import { Delfi, type DelfiConfig } from '../../delfi-core';
 import type { Account as DelfiAccount } from 'delfi-core/models/Account';
-import type { PlannedTransaction as DelfiPlannedTransaction } from 'delfi-core/models/Transaction';
-import type { Account, Budget, PlannedTransaction, UserCategory } from 'models/types';
-import { date } from '../../delfi-core/utils/dateUtils';
+import type { TransactionBudget as DelfiPlannedTransaction } from 'delfi-core/models/Transaction';
+import type { Account, Budget, PlannedTransaction } from 'models/types';
+import type { ParentCategory } from 'delfi-core/models/Category';
 
 type DelfiConfigRaw = {
 	accounts: Account[],
 	planned_transactions: PlannedTransaction[],
-	budgets: Budget[],
-	user_categories: UserCategory[],
+	categories: ParentCategory[],
 };
 
 export const useDelfiStore = defineStore('delfi', {
@@ -23,13 +22,11 @@ export const useDelfiStore = defineStore('delfi', {
 			this.delfi = reactive(new Delfi({
 				accounts: this.translateAccounts(config.accounts),
 				plannedTransactions: this.translatePlannedTransactions(config.planned_transactions),
-				budgets: config.budgets,
-				userCategories: config.user_categories,
+				categories: config.categories,
 			}));
 		},
 	
 		translateAccounts(accounts: Account[]): DelfiAccount[] {
-			console.log(accounts)
 			return accounts.map((a) => ({
 				...a,
 				current_balance: a.current_balance || 0,
@@ -43,7 +40,6 @@ export const useDelfiStore = defineStore('delfi', {
 		},
 	
 		translatePlannedTransactions(schedules: PlannedTransaction[]): DelfiPlannedTransaction[] {
-			console.log(schedules)
 			return schedules.map(schedule => ({
 				...schedule,
 				id: schedule.planned_transaction_id,

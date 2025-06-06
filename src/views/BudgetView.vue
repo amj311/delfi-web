@@ -13,6 +13,7 @@ import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
 import UpsertPlannedTransactionForm from '@/components/UpsertPlannedTransactionForm.vue';
 import UpsertBudgetForm from '@/components/UpsertBudgetForm.vue';
 import type { Delfi } from 'delfi-core';
+import { EventFlag, type BudgetEvent } from '../../delfi-core/models/Transaction';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -27,14 +28,16 @@ const state = reactive({
 	upsertingAccount: <Account | {} | null>null,
 	upsertingPlannedTransaction: <PlannedTransaction | {} | null>null,
 	upsertingBudget: <Budget | {} | null>null,
-	summaryData: <ReturnType<Delfi["getMonthSummary"]> | null>null,
+	summaryData: <Awaited<ReturnType<Delfi["getMonthSummary"]>> | null>null,
 });
 
-const getSummary = (month: DelfiDate) => {
+async function getSummary(month: DelfiDate) {
+	state.loading = true;
 	if (!state.viewingMonth || !delfiStore.delfi?.forecast) {
 		return null;
 	}
-	let summary = delfiStore.delfi.getMonthSummary(month);
+	let summary = await delfiStore.delfi.getMonthSummary(month);
+	state.loading = false;	
 	return summary;
 };
 
@@ -44,11 +47,15 @@ const createDelfi = async () => {
 	await delfiStore.initDelfi({
 		accounts: accountStore.accounts,
 		planned_transactions: transactionStore.plannedTransactions,
-		budgets: budgetStore.budgets,
-		user_categories: categoryStore.categories,
+		categories: categoryStore.categories,
 	})
-	state.forecast = await delfiStore.delfi.createFullForecast(state.viewingMonth, date(state.viewingMonth.add(1, 'year')));
-	state.summaryData = getSummary(state.viewingMonth);
+
+	// don't wait for this just kick it off!
+	delfiStore.delfi.createFullForecast(state.viewingMonth, date(state.viewingMonth.add(5, 'year')))
+		.then(() => console.log("forecast complete!!!"))
+		.catch(() => console.error("error with forecast!!!"));
+	
+	state.summaryData = await getSummary(state.viewingMonth);
 	state.loading = false;
 };
 
@@ -78,10 +85,10 @@ const canGoForward = computed(() => {
 	if (!state.viewingMonth) {
 		return false;
 	}
-	return state.viewingMonth.isBefore(date().add(11, 'months').startOf('month'));
+	return state.viewingMonth.isBefore(date().add(5, 'years').subtract(1, 'month').startOf('month'));
 });
 
-const goForward = () => {
+const goForward = async () => {
 	if (!canGoForward.value) {
 		return;
 	}
@@ -89,10 +96,10 @@ const goForward = () => {
 		return;
 	}
 	state.viewingMonth = date(state.viewingMonth.add(1, 'month'));
-	state.summaryData = getSummary(state.viewingMonth);
+	state.summaryData = await getSummary(state.viewingMonth);
 };
 
-const goBack = () => {
+const goBack = async () => {
 	if (!canGoBack.value) {
 		return;
 	}
@@ -100,8 +107,24 @@ const goBack = () => {
 		return;
 	}
 	state.viewingMonth = date(state.viewingMonth.subtract(1, 'month'));
-	state.summaryData = getSummary(state.viewingMonth);
+	state.summaryData = await getSummary(state.viewingMonth);
 };
+
+// Get the events in order of days WITHOUT sorting because that is too slow
+const dailyEvents = computed(() => {
+	if (!state.summaryData || !state.summaryData.events) {
+		return [];
+	}
+	const eventsByDay: Record<number, Array<BudgetEvent>> = Object.fromEntries(Array.from({ length: 31 }, (_, i) => [i + 1, []]));
+	for (const event of state.summaryData.events) {
+		const dayKey = event.date.date();
+		if (!eventsByDay[dayKey]) {
+			eventsByDay[dayKey] = [];
+		}
+		eventsByDay[dayKey].push(event);
+	}
+	return Object.entries(eventsByDay).flatMap(([, events]) => events);
+})
 
 </script>
 
@@ -116,34 +139,33 @@ const goBack = () => {
 		<br />
 		<div v-if="state.loading">Loading...</div>
 
-		<div v-if="state.summaryData">
+		<div v-else-if="state.summaryData">
 			<div>
 				<h3>Accounts</h3>
-				<div>Net Growth ...... <Currency :amount="state.summaryData.timeline.change('total')" mode="net_change" /></div>
+				<div>Net Growth ...... <Currency :amount="state.summaryData.netGrowth" mode="net_change" /></div>
 				<div class="list">
 					<div v-for="summary of state.summaryData.accountSummaries" class="list-row">
 						<div class="flex-between hover-show-trigger">
 							<div class="flex-center gap-2">
-								<div class="text-semibold">{{ accountStore.getAccountById(summary.account.account_id)?.display_name }}</div>
-								<button class="hover-show" @click="() => state.upsertingAccount = accountStore.getAccountById(summary.account.account_id)">Edit</button>
+								<div class="text-semibold">{{ accountStore.getAccountById(summary.account_id)?.display_name }}</div>
+								<button class="hover-show" @click="() => state.upsertingAccount = accountStore.getAccountById(summary.account_id)">Edit</button>
 							</div>
 							<div class="flex-center">
-								<small v-if="summary.change !== 0">
-									<Currency :amount="summary.change" mode="net_change" hideCurrency />
+								<small v-if="summary.netChange !== 0">
+									<Currency :amount="summary.netChange" mode="net_change" hideCurrency />
 									&emsp13;
 								</small>
 								<span class="text-semibold"><Currency :amount="summary.endingBalance" mode="balance" /></span>
 							</div>
 						</div>
-						<small v-for="partition of summary.account.partitions" class="flex-between">
+						<small v-for="partition of summary.partitions" class="flex-between">
 							&emsp13;- {{partition.name}}
 							<div class="flex-center">
-								{{ console.log(summary.partitionSummaries.get(partition.account_partition_id)) }}
-								<small v-if="summary.partitionSummaries.get(partition.account_partition_id)?.change !== 0">
-									<Currency :amount="summary.partitionSummaries.get(partition.account_partition_id)?.change" mode="net_change" hideCurrency />
+								<small v-if="partition.netChange !== 0">
+									<Currency :amount="partition.netChange" mode="net_change" hideCurrency />
 									&emsp13;
 								</small>
-								<span><Currency :amount="summary.partitionSummaries.get(partition.account_partition_id)?.endingBalance" mode="balance" /></span>
+								<span><Currency :amount="partition.endingBalance" mode="balance" /></span>
 							</div>
 						</small>
 					</div>
@@ -158,15 +180,14 @@ const goBack = () => {
 				<h3>Income</h3>
 				<div>Total ...... <Currency :amount="state.summaryData.incomeSummary?.netChange || 0" mode="net_change" /></div>
 				<div class="list">
-					<div v-for="[schedule, {total, events}] of state.summaryData.incomeSummary?.eventsBySchedule.entries()" class="list-row">
-						<template v-if="schedule !== 'none'" >
-							<div class="transaction-main-line">
-								{{ schedule.memo }}
-								<Currency :amount="total" mode="transaction" />
-							</div>
-							{{ events.map(e => e.date.format('MMM D')).join(', ') }}
-							&emsp;{{ accountStore.getAccountById(schedule.target_account_id)?.display_name }}
-						</template>
+					<div v-for="{ budget, occurrences } of state.summaryData.incomeSummary?.allBudgetOccurrences" class="list-row">
+						<div class="transaction-main-line">
+							{{ budget.memo }}
+							<Currency :amount="occurrences.reduce((acc, o) => acc + o.eventsInRange.reduce((acc, e) => acc + e.amount, 0), 0)" mode="transaction" />	
+						</div>
+						<small>
+							{{ accountStore.getAccountById(budget.target_account_id)?.display_name }}
+						</small>
 					</div>
 				</div>
 			</div>
@@ -175,15 +196,12 @@ const goBack = () => {
 			<div>
 				<h3>Savings and Transfers</h3>
 				<div class="list">
-					<div v-for="[schedule, {total, events}] of state.summaryData.transferSummary?.eventsBySchedule.entries()" class="list-row">
-						<template v-if="schedule !== 'none'" >
-							<div class="transaction-main-line">
-								{{ schedule.memo }}
-								<Currency :amount="total" />
-							</div>
-							{{ events.map(e => e.date.format('MMM D')).join(', ') }}
-							&emsp;{{ accountStore.getAccountById(schedule.origin_account_id)?.display_name }} → {{ accountStore.getAccountById(schedule.target_account_id)?.display_name }}
-						</template>
+					<div v-for="{ budget, eventsInRange } of state.summaryData.transferSummary?.occurrences" class="list-row">
+						<div class="transaction-main-line">
+							{{ budget.memo }}
+							<Currency :amount="eventsInRange.filter(e => !e.flags.includes(EventFlag.TRANSFER_COPY)).reduce((acc, e) => acc + e.amount, 0)" /> <!-- counting both events cancels out -->
+						</div>
+						<small>{{ accountStore.getAccountById(budget.origin_account_id!)?.display_name }} → {{ accountStore.getAccountById(budget.target_account_id)?.display_name }}</small>
 					</div>
 				</div>
 			</div>
@@ -204,26 +222,15 @@ const goBack = () => {
 				<template v-for="category of state.summaryData.spendingCategories">
 					<div v-if="category.hasInfo">
 						<b>{{ category.category.name }}</b>
-						<template v-for="event of category.nonBudgetEvents">
+						<template v-for="budgetOccurrences of category.allBudgetOccurrences">
 							<div class="flex hover-show-trigger">
 								<div class="flex-center">
 									&nbsp;&nbsp;&nbsp;&nbsp;
-									{{ event.transaction.memo }}
-									<button class="hover-show" @click="() => state.upsertingPlannedTransaction = event.transaction.sourcePlannedTransaction!">Edit</button>
+									{{ budgetOccurrences.budget.memo }}
+									<button class="hover-show" @click="() => state.upsertingPlannedTransaction = budgetOccurrences.budget!">Edit</button>
 								</div>
 								&nbsp;......&nbsp;
-								<Currency :amount="event.transaction.amount" mode="transaction" />
-							</div>
-						</template>
-						<template v-for="budget of category.allBudgets">
-							<div class="flex hover-show-trigger">
-								<div class="flex-center">
-									&nbsp;&nbsp;&nbsp;&nbsp;
-									{{ budget.budget.name }}
-									<button class="hover-show" @click="() => state.upsertingBudget = budget.budget">Edit</button>
-								</div>
-								&nbsp;......&nbsp;
-								<Currency :amount="budget.budget.amount" mode="transaction" />
+								<Currency :amount="budgetOccurrences.occurrences.reduce((acc, e) => acc + e.eventsInRange.reduce((acc, e) => acc + e.amount, 0), 0)" mode="transaction" />
 							</div>
 						</template>
 					</div>
@@ -234,20 +241,33 @@ const goBack = () => {
 			
 			<div>
 				<h3>Transactions</h3>
-				<div v-for="day of state.summaryData.timeline.periods">
-					<template v-if="day.events.length > 0">
-						<div :style="{ padding: '5px 8px', marginTop: '8px'}">{{ day.start }}</div>
-						<div class="list">
-							<div v-for="event of day.events" class="list-row">
-								<div class="transaction-main-line">
-									{{ event.transaction.memo }}
-									<Currency :amount="event.transaction.amount" mode="transaction" />
+				<template v-for="(event, i) of dailyEvents">
+					<div
+						v-if="i === 0 || !dailyEvents[i - 1]?.date.isSame(event.date)"
+						:style="{ padding: '5px 8px', marginTop: '8px'}"
+					>
+						{{ event.date }}
+					</div>
+					<div class="list">
+						<div class="list-row" v-if="!event.flags.includes(EventFlag.TRANSFER_COPY)"> <!-- Don't show transfers twice! -->
+							<div class="transaction-main-line">
+								{{ event.memo }}
+								<div style="flex-grow: 1"></div>
+								<div style="display: flex; align-items: center; gap: 4px;">
+									<span v-if="event.sourceBudget.type === 'TRANSFER'">⇥</span>
+									<Currency :amount="event.sourceBudget.type === 'TRANSFER' ? Math.abs(event.amount) : event.amount" :mode="event.sourceBudget.type === 'TRANSFER' ? undefined : 'transaction'"/>	
 								</div>
-								<!-- {{ accountStore.getAccountById(event.transaction.target_account_id).display_name }} -->
 							</div>
+							<small>
+								<span v-if="event.sourceBudget.origin_account_id">
+									{{ accountStore.getAccountById(event.sourceBudget.origin_account_id).display_name }}
+									→
+								</span>
+								{{ accountStore.getAccountById(event.target_account_id).display_name }}
+							</small>
 						</div>
-					</template>
-				</div>
+					</div>
+				</template>
 			</div>
 		</div>
 
@@ -359,7 +379,7 @@ const goBack = () => {
 			<div style="padding: 20px; background: #1F2528" />
 			<div style="padding: 20px; background: #101516" />
 			<br />
-			<div style="color: #fff; padding: 10px; background: #FFB9AA">red3</div>
+			<div style="color: #fff; padding: 10px; background: #ff886e">red3</div>
 			<div style="color: #fff; padding: 10px; background: #F14035">red4</div>
 			<div style="color: #fff; padding: 10px; background: #AF0015">red6</div>
 			<div style="color: #fff; padding: 10px; background: #FEAD62">orange3</div>
@@ -394,7 +414,7 @@ const goBack = () => {
 }
 
 .list-row {
-	padding: 12px 16px;
+	padding: 5px 16px;
 	background: #fff;
 }
 
