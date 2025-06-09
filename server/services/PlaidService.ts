@@ -1,22 +1,36 @@
 // SETUP PLAID
 import { Configuration, CountryCode, PlaidApi, PlaidEnvironments, Products } from 'plaid';
 import { prisma } from '../../prisma/client';
-var dayjs = require('dayjs')
+import dayjs from 'dayjs';
 
 const {
 	PLAID_CLIENT_ID,
-	PLAID_SECRET
+	PLAID_SECRET,
+	PLAID_ENV = 'sandbox', // Default to sandbox if not specified
+	PLAID_WEBHOOK_URL
 } = process.env;
 
-var PLAID_ENV = 'sandbox';
+const PLAID_ITEMID = 'wjQPEwk33XtGQellX9y8FDDV6aN86vCrpWxPa';
+
+// Define available products
 const PLAID_PRODUCTS = [
 	Products.Transactions,
-	Products.Investments,
-	Products.Liabilities
+	// Products.Investments,
+	// Products.Liabilities,
+	// Add other products as needed:
+	Products.Auth,
+	// Products.Identity,
 ];
 
+// Define the environment
+const environmentMap = {
+	'sandbox': PlaidEnvironments.sandbox,
+	'development': PlaidEnvironments.development,
+	'production': PlaidEnvironments.production
+};
+
 const configuration = new Configuration({
-  basePath: PlaidEnvironments.sandbox,
+  basePath: environmentMap[PLAID_ENV] || PlaidEnvironments.sandbox,
   baseOptions: {
     headers: {
       'PLAID-CLIENT-ID': PLAID_CLIENT_ID,
@@ -28,7 +42,8 @@ const configuration = new Configuration({
 const plaid = new PlaidApi(configuration);
 
 export const PlaidService = {
-	async getLinkToken()  {
+	async getLinkToken(userId = 'user-id', redirect_uri = null)  {
+		// Create a link token with more configurations
 		const { data } = await plaid.linkTokenCreate({
 			client_id: PLAID_CLIENT_ID,
 			secret: PLAID_SECRET,
@@ -37,13 +52,59 @@ export const PlaidService = {
 			language: 'en',
 			country_codes: [CountryCode.Us],
 			user: {
-				client_user_id: 'user-id',
-			}
+				client_user_id: userId,
+			},
+			// Add webhook support if configured
+			...(PLAID_WEBHOOK_URL ? { webhook: PLAID_WEBHOOK_URL } : {}),
+			// Add redirect URI for OAuth authentication flows
+			...(redirect_uri ? { redirect_uri } : {}),
+			// Add link customization options
+			link_customization_name: 'default',
+			// Optional: For re-authenticating when needed
+			// update_mode: 'DEFAULT', // Uncomment for Link update mode
 		});
 		return data;
 	},
 
-	async saveNewConnection(public_token)  {
+	async getLinkTokenForItemUpdate(itemId) {
+		// Create a link token specifically for updating an existing item
+		try {
+			// First, check if we have the item in our database
+			const plaidItem = await prisma.plaidItem.findFirst({
+				where: { plaid_item_id: itemId }
+			});
+
+			if (!plaidItem) {
+				throw new Error(`Item with ID ${itemId} not found in database`);
+			}
+
+			// Create a link token with update mode enabled
+			const { data } = await plaid.linkTokenCreate({
+				client_id: PLAID_CLIENT_ID,
+				secret: PLAID_SECRET,
+				// No products array needed in update mode
+				client_name: 'Delfi',
+				language: 'en',
+				country_codes: [CountryCode.Us],
+				user: {
+					client_user_id: 'user-id', // You may want to use a real user ID here
+				},
+				...(PLAID_WEBHOOK_URL ? { webhook: PLAID_WEBHOOK_URL } : {}),
+				link_customization_name: 'default',
+				access_token: plaidItem.access_token, // This is important for update mode
+				update: {
+					account_selection_enabled: true // Allow selecting accounts again if needed
+				}
+			});
+
+			return data;
+		} catch (error) {
+			console.error('Error creating link token for item update:', error);
+			throw error;
+		}
+	},
+
+	async saveNewConnection(user_id, public_token)  {
 		const { data } = await plaid.itemPublicTokenExchange({
 			client_id: PLAID_CLIENT_ID,
 			secret: PLAID_SECRET,
@@ -60,7 +121,7 @@ export const PlaidService = {
 					institution_id: item.institution_id,
 					accounts: {
 						create: accounts.map(a => ({
-							display_name: null,
+							display_name: "",
 							external_name: a.name,
 							external_account_id: a.account_id,
 							mask: a.mask,
@@ -69,7 +130,9 @@ export const PlaidService = {
 							current_balance: a.balances.current,
 							available_balance: a.balances.available,
 							iso_currency_code: a.balances.iso_currency_code,
-							user_id: 'user-id',
+							User: { connect: {
+								user_id, // Replace with actual user ID if available
+							} }
 						}))
 					}
 				}
@@ -81,5 +144,108 @@ export const PlaidService = {
 		}
 		
 		return data;
-	}
+	},
+
+	/**
+	 * Create a link token to re-authenticate an item when access token is not available
+	 * This can be used when the access token is no longer saved in the database
+	 * The user will need to go through the Plaid authentication flow again
+	 */
+	async createLinkTokenForReauthentication(itemId) {
+		try {
+			// Create a link token specifically for re-authenticating an existing item
+			const { data } = await plaid.linkTokenCreate({
+				client_id: PLAID_CLIENT_ID,
+				secret: PLAID_SECRET,
+				client_name: 'Delfi',
+				language: 'en',
+				country_codes: [CountryCode.Us],
+				user: {
+					client_user_id: 'user-id', // You may want to use a real user ID here
+				},
+				...(PLAID_WEBHOOK_URL ? { webhook: PLAID_WEBHOOK_URL } : {}),
+				link_customization_name: 'default',
+				// When re-authenticating without an access token, we use the item_id 
+				// to help Plaid identify the correct financial institution
+				institution_id: '', // Optional: Add institution ID if you know it
+				// For update mode with item id
+				update: {
+					// This field enables account selection in update mode
+					account_selection_enabled: true
+				}
+			});
+
+			return data;
+		} catch (error) {
+			console.error('Error creating link token for re-authentication:', error);
+			throw error;
+		}
+	},
+
+	/**
+	 * After re-authentication using the link token, save the new access token
+	 * This function should be called once the user completes the re-authentication flow
+	 * and you receive a new public_token
+	 */
+	async saveReauthenticatedItem(itemId, publicToken) {
+		try {
+			// Exchange the public token for an access token
+			const { data } = await plaid.itemPublicTokenExchange({
+				client_id: PLAID_CLIENT_ID,
+				secret: PLAID_SECRET,
+				public_token: publicToken
+			});
+			
+			const { access_token, item_id } = data;
+			
+			// Update the item in the database with the new access token
+			await prisma.plaidItem.update({
+				where: { plaid_item_id: itemId },
+				data: { access_token }
+			});
+			
+			// Verify the access token works by getting account information
+			const accountsResponse = await plaid.accountsGet({ access_token });
+			
+			return {
+				success: true,
+				item_id,
+				accounts: accountsResponse.data.accounts
+			};
+		} catch (error) {
+			console.error('Error saving re-authenticated item:', error);
+			throw error;
+		}
+	},
+	
+	/**
+	 * Get transactions using the transactions/sync endpoint
+	 * This requires a valid access token
+	 */
+	async syncTransactions(itemId) {
+		try {
+			// First get the access token for the item
+			const plaidItem = await prisma.plaidItem.findFirst({
+				where: { plaid_item_id: itemId }
+			});
+
+			if (!plaidItem || !plaidItem.access_token) {
+				throw new Error(`Access token for item ${itemId} not found. Item needs re-authentication.`);
+			}
+
+			// Call the transactions/sync endpoint with an empty cursor for initial sync
+			const response = await plaid.transactionsSync({
+				access_token: plaidItem.access_token,
+				// Use empty string for initial sync instead of null to avoid type errors
+				cursor: '',
+				count: 500 // Adjust as needed
+			});
+
+			return response.data;
+		} catch (error) {
+			console.error('Error syncing transactions:', error);
+			throw error;
+		}
+	},
+	// No duplicate functions here
 };
