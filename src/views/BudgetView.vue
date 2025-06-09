@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useDelfiStore } from '@/stores/delfi.store';
 import { useAccountStore } from '@/stores/account.store';
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive, ref, onMounted, watch } from 'vue';
 import { usePlannedTransactionStore } from '@/stores/plannedTransaction.store';
 import Forecast from '../../delfi-core/models/Forecast';
 import { type DelfiDate, date} from '../../delfi-core/utils/dateUtils';
@@ -14,12 +14,15 @@ import UpsertBudgetForm from '@/components/UpsertBudgetForm.vue';
 import type { Delfi } from 'delfi-core';
 import { EventFlag, type BudgetEvent, type TransactionBudget } from '../../delfi-core/models/Budget';
 import type { Account } from 'delfi-core/models/Account';
+import { useRoute, useRouter } from 'vue-router';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
 const transactionStore = usePlannedTransactionStore();
 // const budgetStore = useBudgetStore();
 const categoryStore = useCategoryStore();
+const route = useRoute();
+const router = useRouter();
 
 const state = reactive({
 	loading: true,
@@ -32,7 +35,7 @@ const state = reactive({
 
 async function getSummary(month: DelfiDate) {
 	state.loading = true;
-	if (!state.viewingMonth || !delfiStore.delfi) {
+	if (!month || !delfiStore.delfi) {
 		return null;
 	}
 	let summary = await delfiStore.delfi.getMonthSummary(month);
@@ -40,10 +43,44 @@ async function getSummary(month: DelfiDate) {
 	return summary;
 };
 
-(async () => {
+// Helper to format the month for URL
+function formatMonthForUrl(monthDate: DelfiDate): string {
+	return monthDate.format('YYYY-MM');
+}
+
+// Helper to parse month from URL
+function parseMonthFromUrl(monthStr: string | null | undefined): DelfiDate {
+	if (!monthStr) {
+		return date().startOf('month');
+	}
+	
+	const parsedDate = date(monthStr);
+	return parsedDate.isValid() ? parsedDate.startOf('month') : date().startOf('month');
+}
+
+// Initialize the view based on route params
+onMounted(async () => {
+	const monthParam = route.params.month as string | undefined;
+	state.viewingMonth = parseMonthFromUrl(monthParam);
 	state.summaryData = await getSummary(state.viewingMonth);
 	state.loading = false;
-})();
+	
+	// Update URL if it doesn't match the current month (happens when no month parameter was provided)
+	if (!monthParam || monthParam !== formatMonthForUrl(state.viewingMonth)) {
+		router.replace({
+			name: 'Budget',
+			params: { month: formatMonthForUrl(state.viewingMonth) }
+		});
+	}
+});
+
+// Watch for route changes to update the view
+watch(() => route.params.month, async (newMonth) => {
+	if (newMonth && newMonth !== formatMonthForUrl(state.viewingMonth)) {
+		state.viewingMonth = parseMonthFromUrl(newMonth as string);
+		state.summaryData = await getSummary(state.viewingMonth);
+	}
+}, { immediate: true });
 
 const canGoBack = computed(() => {
 	if (!state.viewingMonth) {
@@ -66,8 +103,11 @@ const goForward = async () => {
 	if (!state.viewingMonth) {
 		return;
 	}
-	state.viewingMonth = date(state.viewingMonth.add(1, 'month'));
-	state.summaryData = await getSummary(state.viewingMonth);
+	const newMonth = date(state.viewingMonth.add(1, 'month'));
+	router.push({
+		name: 'Budget',
+		params: { month: formatMonthForUrl(newMonth) }
+	});
 };
 
 const goBack = async () => {
@@ -77,8 +117,11 @@ const goBack = async () => {
 	if (!state.viewingMonth) {
 		return;
 	}
-	state.viewingMonth = date(state.viewingMonth.subtract(1, 'month'));
-	state.summaryData = await getSummary(state.viewingMonth);
+	const newMonth = date(state.viewingMonth.subtract(1, 'month'));
+	router.push({
+		name: 'Budget',
+		params: { month: formatMonthForUrl(newMonth) }
+	});
 };
 
 // Get the events in order of days WITHOUT sorting because that is too slow

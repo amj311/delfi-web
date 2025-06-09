@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PlaidLink from '@/components/plaid/PlaidLink.vue';
 import { useAccountStore } from '@/stores/account.store';
 import { useCategoryStore } from '@/stores/category.store';
 import { useDelfiStore } from '@/stores/delfi.store';
@@ -38,7 +39,7 @@ onBeforeMount(() => {
 </script>
 
 <template>
-	<div v-if="delfiStore.isGeneratingForecast">Generating forecast...</div>
+	<PlaidLink />
 	<RouterView v-if="!delfiStore.isInitializing" />
 </template>
 
