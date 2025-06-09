@@ -72,6 +72,6 @@ export class ScheduleService {
 		let rrule = JSON.parse(JSON.stringify(schedule)) as IRuleOptions;
 		rrule.start && (rrule.start = date(rrule.start));
 		rrule.end && (rrule.end = date(rrule.end));
-		return new rSchedule<null>({ rrules: [rrule] }).occurrences(options).toArray().map(d => date(d.date));
+		return new rSchedule<null>({ rrules: [rrule as any] }).occurrences(options).toArray().map(d => date(d.date));
 	}
 }

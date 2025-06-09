@@ -1,7 +1,8 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import request from '@/services/request';
-import type { TransactionBudget } from 'delfi-core/models/Transaction';
+import type { TransactionBudget } from 'delfi-core/models/Budget';
+import { instantiateDates } from 'delfi-core/utils/dateUtils';
 
 export const usePlannedTransactionStore = defineStore('plannedTransaction', () => {
 	let plannedTransactions = ref<TransactionBudget[]>([]);
@@ -13,6 +14,7 @@ export const usePlannedTransactionStore = defineStore('plannedTransaction', () =
 		try {
 			isLoadingPlannedTransactions.value = true;
 			const { data } = await request.get('/plannedTransaction');
+			instantiateDates(data.data);
 			plannedTransactions.value = data.data;
 		}
 		catch (e) {

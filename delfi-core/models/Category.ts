@@ -1,5 +1,5 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils";
-import { type BudgetEvent, type BudgetOccurrence, type TransactionBudget, EventFlag } from "./Transaction";
+import { type BudgetEvent, type BudgetOccurrence, type TransactionBudget, EventFlag } from "./Budget";
 
 type CategoryType = 'INCOME' | 'TRANSFER' | 'EXPENSE';
 

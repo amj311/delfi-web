@@ -1,6 +1,6 @@
 import { date, type DelfiDate } from "../utils/dateUtils";
-import { type TransactionBudget, type ScheduledBudget, type BudgetEvent, type TriggeredBudget, RecurrenceType, type BudgetOccurrence } from "./Transaction";
-import TransactionService from "./Transaction";
+import { type TransactionBudget, type ScheduledBudget, type BudgetEvent, type TriggeredBudget, RecurrenceType, type BudgetOccurrence } from "./Budget";
+import TransactionService from "./Budget";
 import FilterService from "../services/FilterService";
 import { TransactionStore } from "./TransactionStore";
 
@@ -53,9 +53,10 @@ class Forecast {
 		// Compute just one month at a time
 		let monthStart = this.start.startOf('month');
 		while (monthStart < this.end) {
+			const monthEnd = monthStart.endOf('month');
 			await new Promise(resolve => setTimeout(resolve, 0)); // Yield to the event loop to avoid blocking the UI
 			const monthOccurrences = scheduledOccurrences.filter(o =>
-				o.start.isSameOrBefore(monthStart, 'month') &&
+				o.start.isSameOrBefore(monthEnd, 'month') &&
 				o.end.isSameOrAfter(monthStart, 'month')
 			);
 			const monthEvents = FilterService.filter(scheduledEvents, [

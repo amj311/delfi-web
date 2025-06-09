@@ -1,5 +1,5 @@
 import { type MatchingRule, type TransactionFilter } from "../services/FilterService";
-import type { BudgetEvent } from "./Transaction";
+import type { BudgetEvent } from "./Budget";
 
 type IndexKey = string | number | 'undefined';
 export const indexableProperties = [

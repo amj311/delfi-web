@@ -1,5 +1,5 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils"
-import { type TransactionDetails, type BudgetEvent, type ScheduledBudget } from "../models/Transaction"
+import { type TransactionDetails, type BudgetEvent, type ScheduledBudget } from "../models/Budget"
 
 export type MatchingRule = {
 	property: 'date' | 'year' | 'month' | 'day' | 'budgetId' | 'amount' | 'memo' | 'type' | 'target_account_id' | 'target_account_partition_id' | 'category_id'

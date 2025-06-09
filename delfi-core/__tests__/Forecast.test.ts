@@ -2,7 +2,7 @@ import Forecast from "../models/Forecast";
 import { beforeEach, describe, expect, test } from 'vitest'
 import { ImmediateMatchTrigger } from "../models/schedules/triggers";
 import { MONTHS } from "../utils/constants";
-import { TransactionType, type TransactionBudget, type TriggeredBudget, RecurrenceType } from "../models/Transaction";
+import { TransactionType, type TransactionBudget, type TriggeredBudget, RecurrenceType } from "../models/Budget";
 import { date } from "../utils/dateUtils";
 import Accumulator from "../models/Accumulator";
 import BudgetService from "../services/BudgetService";

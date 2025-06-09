@@ -78,7 +78,7 @@ export const useUserStore = defineStore('user', () => {
 	return {
 		isLoadingSessionData,
 		hasLoadedSessionData,
-		isLoggedIn: isAuthenticated,
+		hasAuth: isAuthenticated,
 		loginError,
 		currentUser,
 		session,

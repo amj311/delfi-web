@@ -5,9 +5,6 @@ import { computeTriggeredAmount, type Trigger } from "./schedules/triggers"
 import { date, toDelfiInterval, type DelfiDate } from "../utils/dateUtils";
 import FilterService from "../services/FilterService";
 
-type Replace<T1, T2> = Omit<T1, keyof T2> & T2;
-type Maybe<T> = T | null;
-
 export enum TransactionType {
 	CREDIT = "CREDIT",
 	DEBIT = "DEBIT",
@@ -21,7 +18,7 @@ export enum RecurrenceType {
 
 export type TransactionDetails = {
 	memo: string,
-	type: TransactionType,
+	transactionType: TransactionType,
 	target_account_id: string,
 	target_account_partition_id: string | null,
 	category_id: string,
@@ -142,7 +139,7 @@ export default class TransactionService {
 	static copyTransactionDetails(source: TransactionDetails): TransactionDetails {
 		return {
 			memo: source.memo,
-			type: source.type,
+			transactionType: source.transactionType,
 			target_account_id: source.target_account_id,
 			target_account_partition_id: source.target_account_partition_id,
 			category_id: source.category_id,
@@ -160,11 +157,10 @@ export default class TransactionService {
 
 	static createOccurrencesFromSchedule(start: DelfiDate, end: DelfiDate, schedule: ScheduledBudget): BudgetOccurrence[] {
 		const occurrences: BudgetOccurrence[] = [];
-		
 		for (const variant of schedule.scheduleVariants) {
 			const recurrenceDates = ScheduleService.getOccurrences(variant.schedule, { start, end });
 
-			function computeProjectionEvents(windowStart: DelfiDate, windowEnd: DelfiDate): PartialBudgetEvent[] {
+			const computeProjectionEvents = function(windowStart: DelfiDate, windowEnd: DelfiDate): PartialBudgetEvent[] {
 				const intervalQty = variant.projectionInterval!.quantity;
 				const interval = variant.projectionInterval!.interval;
 				const projectionEvents: PartialBudgetEvent[] = [];
@@ -251,7 +247,7 @@ export default class TransactionService {
 	}
 
 	private static getBudgetOccurrenceEndDate(variant: ScheduledBudget['scheduleVariants'][number], occurrenceStart: DelfiDate): DelfiDate {
-		return date(occurrenceStart.add(variant.schedule.interval || 1, toDelfiInterval(variant.schedule.frequency)));
+		return occurrenceStart.add(variant.schedule.interval || 1, toDelfiInterval(variant.schedule.frequency)).subtract(1, 'day'); // Subtract one day to get the end of the occurrence, not the start of the next one
 	}
 
 	// TODO support triggering budgets based on REAL transactions?
@@ -292,7 +288,7 @@ export default class TransactionService {
 		}
 		const events: BaseBudgetEvent[] = [];
 		// Origin transaction for Transfer
-		if (budget.type === TransactionType.TRANSFER && budget.origin_account_id) {
+		if (budget.transactionType === TransactionType.TRANSFER && budget.origin_account_id) {
 			// TODO don't allow transfers without origin account
 			events.push({
 				...base,
@@ -314,7 +310,7 @@ export default class TransactionService {
 	}
 
 	static resolveScheduleAmount(schedule: BudgetTransactionDetails, amount: number): number {
-		if (schedule.type === TransactionType.DEBIT) {
+		if (schedule.transactionType === TransactionType.DEBIT) {
 			return -amount;
 		}
 		return amount;

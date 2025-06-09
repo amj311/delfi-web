@@ -1,48 +1,41 @@
-import { reactive } from 'vue'
+import { computed, reactive, ref, type Reactive, type Ref } from 'vue'
 import { defineStore } from 'pinia'
 import { Delfi, type DelfiConfig } from '../../delfi-core';
-import type { Account, Account as DelfiAccount } from 'delfi-core/models/Account';
-import type { TransactionBudget as DelfiPlannedTransaction, TransactionBudget } from 'delfi-core/models/Transaction';
-import type { ParentCategory } from 'delfi-core/models/Category';
+import { date } from 'delfi-core/utils/dateUtils';
 
-type DelfiConfigRaw = {
-	accounts: Account[],
-	planned_transactions: TransactionBudget[],
-	categories: ParentCategory[],
-};
+export const useDelfiStore = defineStore('delfi', () => {
+	const delfi = new Delfi();
+	const isInitializing: Ref<boolean> = ref(true);
+	const isGeneratingForecast: Ref<boolean> = ref(false);
 
-export const useDelfiStore = defineStore('delfi', {
-	state: () => ({
-		delfi: <Delfi><unknown>null,
-	}),
+	const projectionStart = computed(() => date().startOf('month'));
+	const projectionEnd = computed(() => date(projectionStart.value).add(5, 'year'));
 
-	actions: {
-		async initDelfi(config: DelfiConfigRaw) {
-			this.delfi = reactive(new Delfi({
-				accounts: this.translateAccounts(config.accounts),
-				plannedTransactions: this.translatePlannedTransactions(config.planned_transactions),
-				categories: config.categories,
-			}));
-		},
-	
-		translateAccounts(accounts: Account[]): DelfiAccount[] {
-			return accounts.map((a) => ({
-				...a,
-				current_balance: a.current_balance || 0,
-				partitions: a.partitions?.map(p => ({
-					...p,
-					// target_balance: p.target_balance || 0,
-					// schedule_details: p.schedule_details as any,
-					// target_date: date(p.target_date).toISOString(),
-				})) || [],
-			})) as any[];
-		},
-	
-		translatePlannedTransactions(schedules: TransactionBudget[]): DelfiPlannedTransaction[] {
-			return schedules.map(schedule => ({
-				...schedule,
-				id: schedule.budget_id,
-			}))
-		}
+	async function initDelfi({
+		accounts = [] as DelfiConfig['accounts'],
+		plannedTransactions = [] as DelfiConfig['plannedTransactions'],
+		categories = [] as DelfiConfig['categories'],
+	}) {
+		isInitializing.value = true;
+		delfi.init({
+			accounts,
+			plannedTransactions,
+			categories,
+			start: projectionStart.value,
+			end: projectionEnd.value,
+		});
+		isInitializing.value = false;
+		isGeneratingForecast.value = true;
+		await delfi.computeForecast();
+		isGeneratingForecast.value = false;
+	}
+
+	return {
+		delfi,
+		initDelfi,
+		isInitializing,
+		isGeneratingForecast,
+		projectionStart,
+		projectionEnd,
 	}
 })

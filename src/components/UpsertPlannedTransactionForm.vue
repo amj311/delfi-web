@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePlannedTransactionStore } from '@/stores/plannedTransaction.store';
-import { TransactionType, RecurrenceType } from '../../delfi-core/models/Transaction';
+import { TransactionType, RecurrenceType } from '../../delfi-core/models/Budget';
 import type { PlannedTransaction } from 'models/types';
 import { computed, reactive, toRefs } from 'vue';
 import { useAccountStore } from '@/stores/account.store';

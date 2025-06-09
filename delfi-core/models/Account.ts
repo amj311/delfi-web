@@ -1,4 +1,4 @@
-import { type ScheduledBudget } from "./Transaction"
+import { type ScheduledBudget } from "./Budget"
 
 type SavingsGoal  = {
 	savings_goal_id: string,

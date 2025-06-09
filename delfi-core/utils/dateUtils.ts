@@ -6,13 +6,23 @@ dayjs.extend(UTC);
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter"
 dayjs.extend(isSameOrAfter);
 import isBetween from "dayjs/plugin/isBetween"
+import type { Replace } from "./typeUtils";
 dayjs.extend(isBetween);
 
 type DelfiDateConfig = dayjs.ConfigType;
-export type DelfiDate = dayjs.Dayjs & {
-	isDelfiDate: true;
-	isBetweenInclusive: (start: DelfiDate, end: DelfiDate) => boolean;
-};
+export type DelfiDate =
+	{
+		isDelfiDate: true;
+		isBetweenInclusive: (start: DelfiDate, end: DelfiDate) => boolean;
+	}
+	& Replace<dayjs.Dayjs, {
+		toString: () => string;
+		add(...args: Parameters<dayjs.Dayjs['add']>): DelfiDate;
+		subtract(...args: Parameters<dayjs.Dayjs['subtract']>): DelfiDate;
+		startOf(unit: dayjs.ManipulateType): DelfiDate;
+		endOf(unit: dayjs.ManipulateType): DelfiDate;
+	}>
+;
 
 /**
  * Truncates all dates to start of day and always
@@ -26,19 +36,41 @@ export const date = (input: DelfiDateConfig = new Date()) => {
 	d.toString = () => d.format('YYYY-MM-DD');
 	d.toJSON = () => d.format('YYYY-MM-DD');
 	d.isBetweenInclusive = (start: DelfiDate, end: DelfiDate) => d.isBetween(start, end, 'day', '[]');
+	const proxyMethods = [ 'add', 'subtract', 'startOf', 'endOf' ] as const;
+	for (const method of proxyMethods) {
+		// @ts-ignore
+		d[method] = (...args) => date(dayjs(d)[method](...args));
+	}
 	return d;
 }
 
 export function toDelfiInterval(frequency: string): dayjs.ManipulateType {
-		const rruleFrequencyDict = {
-			DAILY: 'day',
-			WEEKLY: 'week',
-			MONTHLY: 'month',
-			YEARLY: 'year',
-		};
-		if (frequency in rruleFrequencyDict) {
-			return rruleFrequencyDict[frequency as keyof typeof rruleFrequencyDict] as dayjs.ManipulateType;
-		} else {
-			throw new Error(`Unsupported frequency: ${frequency}`);
+	const rruleFrequencyDict = {
+		DAILY: 'day',
+		WEEKLY: 'week',
+		MONTHLY: 'month',
+		YEARLY: 'year',
+	};
+	if (frequency in rruleFrequencyDict) {
+		return rruleFrequencyDict[frequency as keyof typeof rruleFrequencyDict] as dayjs.ManipulateType;
+	} else {
+		throw new Error(`Unsupported frequency: ${frequency}`);
+	}
+}
+
+
+/**
+ * Recursively checks for date string (YYYY-MM-DD) and converts it to a DelfiDate.
+ * @param input 
+ */
+export function instantiateDates(input: Record<string, any>) {
+	for (const key in input) {
+		const value = input[key];
+		if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+			input[key] = date(value);
+		} else if (typeof value === 'object' && value !== null) {
+			instantiateDates(value);
 		}
 	}
+	return input;
+}

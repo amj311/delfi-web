@@ -5,10 +5,10 @@
  */
 
 import { type Account } from "./models/Account";
-import { type TransactionBudget } from "./models/Transaction";
+import { type TransactionBudget } from "./models/Budget";
 import Forecast from "./models/Forecast";
 import { CategorySummary, type Category, type ParentCategory, type OccurrenceSummary, type BudgetSummary } from "./models/Category";
-import { date, type DelfiDate } from "./utils/dateUtils";
+import { date, type DelfiDate, instantiateDates } from "./utils/dateUtils";
 import type { TransactionFilter } from "./services/FilterService";
 import FilterService from "./services/FilterService";
 
@@ -16,6 +16,8 @@ export type DelfiConfig = {
 	readonly accounts: Account[],
 	readonly plannedTransactions: TransactionBudget[],
 	readonly categories: ParentCategory[],
+	readonly start: DelfiDate,
+	readonly end: DelfiDate,
 }
 
 export interface Delfi extends DelfiConfig {}
@@ -23,28 +25,35 @@ export interface Delfi extends DelfiConfig {}
 export class Delfi {
 	public forecast!: Forecast;
 
-	constructor(config: DelfiConfig) {
+	constructor(config?: DelfiConfig) {
+		if (config) {
+			this.init(config);
+		}
+	}
+
+	public init(config: DelfiConfig) {
 		// Copy config so that it is not connected to external state
-		const configCopy = JSON.parse(JSON.stringify(config));
+		const configCopy = instantiateDates(JSON.parse(JSON.stringify(config)));
 		Object.assign(this, configCopy);
+		// Put everything in the forecast
+		this.forecast = new Forecast({
+			// accumulators,
+			plannedTransactions: this.plannedTransactions,
+			start: this.start,
+			end: this.end,
+		});
 	}
 
 	get flatCategories(): Category[] {
 		return this.categories.flatMap(c => [c, ...c.children]);
 	}
 
-	public async createFullForecast(start: DelfiDate, end: DelfiDate): Promise<Forecast> {
-		// Put everything in the forecast
-		this.forecast = new Forecast({
-			// accumulators,
-			plannedTransactions: this.plannedTransactions,
-			start,
-			end,
-		});
+	public async computeForecast(): Promise<Forecast> {
 		await this.forecast.computeForecast().catch(err => {
 			console.error('Error computing forecast:', err);
 			throw err;
 		});
+		console.log('Forecast computed successfully');
 		return this.forecast;
 	}
 

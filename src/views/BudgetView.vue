@@ -12,7 +12,7 @@ import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
 import UpsertPlannedTransactionForm from '@/components/UpsertPlannedTransactionForm.vue';
 import UpsertBudgetForm from '@/components/UpsertBudgetForm.vue';
 import type { Delfi } from 'delfi-core';
-import { EventFlag, type BudgetEvent, type TransactionBudget } from '../../delfi-core/models/Transaction';
+import { EventFlag, type BudgetEvent, type TransactionBudget } from '../../delfi-core/models/Budget';
 import type { Account } from 'delfi-core/models/Account';
 
 const delfiStore = useDelfiStore();
@@ -22,8 +22,8 @@ const transactionStore = usePlannedTransactionStore();
 const categoryStore = useCategoryStore();
 
 const state = reactive({
-	loading: false,
-	viewingMonth: <DelfiDate><unknown>null,
+	loading: true,
+	viewingMonth: date().startOf('month'),
 	forecast: <Forecast><unknown>null,
 	upsertingAccount: <Account | {} | null>null,
 	upsertingPlannedTransaction: <TransactionBudget | {} | null>null,
@@ -32,7 +32,7 @@ const state = reactive({
 
 async function getSummary(month: DelfiDate) {
 	state.loading = true;
-	if (!state.viewingMonth || !delfiStore.delfi?.forecast) {
+	if (!state.viewingMonth || !delfiStore.delfi) {
 		return null;
 	}
 	let summary = await delfiStore.delfi.getMonthSummary(month);
@@ -40,36 +40,8 @@ async function getSummary(month: DelfiDate) {
 	return summary;
 };
 
-const createDelfi = async () => {
-	state.loading = true;
-	
-	await delfiStore.initDelfi({
-		accounts: accountStore.accounts,
-		planned_transactions: transactionStore.plannedTransactions,
-		categories: categoryStore.categories,
-	})
-
-	// don't wait for this just kick it off!
-	delfiStore.delfi.createFullForecast(state.viewingMonth, date(state.viewingMonth.add(5, 'year')))
-		.then(() => console.log("forecast complete!!!"))
-		.catch(() => console.error("error with forecast!!!"));
-	
-	state.summaryData = await getSummary(state.viewingMonth);
-	state.loading = false;
-};
-
 (async () => {
-	state.loading = true;
-	state.viewingMonth = date(date().startOf('month'));
-	
-	await Promise.all([
-		await accountStore.loadAccounts(),
-		await transactionStore.loadPlannedTransactions(),
-		// await budgetStore.loadBudgets(),
-		await categoryStore.loadCategories(),
-	]);
-
-	await createDelfi();
+	state.summaryData = await getSummary(state.viewingMonth);
 	state.loading = false;
 })();
 
@@ -169,7 +141,7 @@ const dailyEvents = computed(() => {
 						</small>
 					</div>
 				</div>
-				<UpsertAccountForm v-if="state.upsertingAccount" :account="state.upsertingAccount || {}" :close="() => state.upsertingAccount = null" :onSave="createDelfi" />
+				<UpsertAccountForm v-if="state.upsertingAccount" :account="state.upsertingAccount || {}" :close="() => state.upsertingAccount = null" />
 				<button v-else @click="() => state.upsertingAccount = {}">Add Account</button>
 			</div>
 			<br />
@@ -207,7 +179,7 @@ const dailyEvents = computed(() => {
 			<br />
 
 
-			<UpsertPlannedTransactionForm v-if="state.upsertingPlannedTransaction" :plannedTransaction="state.upsertingPlannedTransaction || {}" :close="() => state.upsertingPlannedTransaction = null" :onSave="createDelfi" />
+			<UpsertPlannedTransactionForm v-if="state.upsertingPlannedTransaction" :plannedTransaction="state.upsertingPlannedTransaction || {}" :close="() => state.upsertingPlannedTransaction = null" />
 			<button v-else @click="() => state.upsertingPlannedTransaction = {}">Add Transaction</button>
 			<br />
 			<!-- <UpsertBudgetForm v-if="state.upsertingBudget" :budget="state.upsertingBudget || {}" :close="() => state.upsertingBudget = null" :onSave="createDelfi" />
@@ -253,8 +225,8 @@ const dailyEvents = computed(() => {
 								{{ event.memo }}
 								<div style="flex-grow: 1"></div>
 								<div style="display: flex; align-items: center; gap: 4px;">
-									<span v-if="event.sourceBudget.type === 'TRANSFER'">⇥</span>
-									<Currency :amount="event.sourceBudget.type === 'TRANSFER' ? Math.abs(event.amount) : event.amount" :mode="event.sourceBudget.type === 'TRANSFER' ? undefined : 'transaction'"/>	
+									<span v-if="event.sourceBudget.transactionType === 'TRANSFER'">⇥</span>
+									<Currency :amount="event.sourceBudget.transactionType === 'TRANSFER' ? Math.abs(event.amount) : event.amount" :mode="event.sourceBudget.transactionType === 'TRANSFER' ? undefined : 'transaction'"/>	
 								</div>
 							</div>
 							<small>

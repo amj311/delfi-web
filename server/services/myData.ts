@@ -1,7 +1,7 @@
 import { MONTHS } from "../../delfi-core/utils/constants";
 import { v4 as uuid } from "uuid";
 import { flatCategoriesMap } from "../../delfi-core/models/systemCategories";
-import { TransactionType, RecurrenceType, TransactionBudget } from "../../delfi-core/models/Transaction";
+import { TransactionType, RecurrenceType, TransactionBudget } from "../../delfi-core/models/Budget";
 import { date } from "../../delfi-core/utils/dateUtils";
 import type { Account } from "../../delfi-core/models/Account";
 
@@ -75,7 +75,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 	 */
 	{ 
 		budget_id: uuid(),
-		type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		memo: "Arthur Life Insurance",
 		target_account_id: my_accounts.afcu_checking.account_id,
 		recurrence_type: RecurrenceType.SCHEDULE,
@@ -87,7 +87,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 	},
 	{ 
 		budget_id: uuid(),
-		type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		memo: "Rachel Life Insurance",
 		amount: 70,
 		target_account_id: my_accounts.afcu_checking.account_id,
@@ -100,7 +100,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 	},
 	{ // Car Insurance
 		budget_id: uuid(),
-		type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		memo: "Car Insurance",
 		amount: 81,
 		target_account_id: my_accounts.afcu_checking.account_id,
@@ -114,7 +114,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 
 	{ // Clozd fulltime
 		budget_id: uuid(),
-		type: TransactionType.CREDIT,
+		transactionType: TransactionType.CREDIT,
 		memo: "Clozd Salary",
 		amount: 3140,
 		target_account_id:  my_accounts.afcu_checking.account_id,
@@ -127,7 +127,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 	},
 	{
 		budget_id: uuid(),
-		type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		memo: "Tithing",
 		target_account_id: my_accounts.afcu_checking.account_id,
 		category_id: flatCategoriesMap["Tithing"].category_id,
@@ -136,7 +136,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 			trigger: {
 				type: 'immediateMatch',
 				filter: [{
-					property: 'type',
+					property: 'transactionType',
 					operator: 'eq',
 					operand: TransactionType.CREDIT,
 				}],
@@ -149,7 +149,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 	},
 	{
 		budget_id: uuid(),
-		type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		memo: "Fast Offering",
 		amount: 100,
 		target_account_id: my_accounts.afcu_checking.account_id,
@@ -163,7 +163,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 
 	{
 		budget_id: uuid(),
-		type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		memo: "Mortgage",
 		amount: 2445,
 		target_account_id: my_accounts.afcu_checking.account_id,
@@ -176,7 +176,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 	},
 	{
 		budget_id: uuid(),
-		type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		memo: "HOA",
 		amount: 215,
 		target_account_id: my_accounts.afcu_checking.account_id,
@@ -189,7 +189,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 	},
 	{
 		budget_id: uuid(),
-		type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		memo: "Gas Bill",
 		amount: 50,
 		target_account_id: my_accounts.afcu_checking.account_id,
@@ -202,7 +202,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 	},
 	{
 		budget_id: uuid(),
-		type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		memo: "Power Bill",
 		amount: 30,
 		target_account_id: my_accounts.afcu_checking.account_id,
@@ -215,7 +215,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 	},
 	{
 		budget_id: uuid(),
-		type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		memo: "Internet",
 		amount: 50,
 		target_account_id: my_accounts.afcu_checking.account_id,
@@ -229,7 +229,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 
 	{
 		budget_id: uuid(),
-		type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		memo: "Preschool",
 		amount: 170,
 		target_account_id: my_accounts.afcu_checking.account_id,
@@ -246,7 +246,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 	 */
 	{
 		budget_id: uuid(),
-		type: TransactionType.TRANSFER,
+		transactionType: TransactionType.TRANSFER,
 		memo: "Emergency Savings Transfer",
 		amount: 300,
 		target_account_id: my_accounts.afcu_savings.account_id,
@@ -260,7 +260,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 	},
 	{
 		budget_id: uuid(),
-		type: TransactionType.TRANSFER,
+		transactionType: TransactionType.TRANSFER,
 		memo: "To Car Fund",
 		amount: 500,
 		target_account_id: my_accounts.afcu_savings.account_id,
@@ -282,7 +282,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 		amount: 300,
 		schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
 		category_id: flatCategoriesMap.Groceries.category_id,
-		transaction_type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		recurrence_type: RecurrenceType.SCHEDULE,
 		scheduleVariants: [{
 			schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
@@ -298,7 +298,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 		budget_id: uuid(),
 		memo: "Fuel",
 		category_id: flatCategoriesMap.Fuel.category_id,
-		transaction_type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		recurrence_type: RecurrenceType.SCHEDULE,
 		scheduleVariants: [{
 			schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
@@ -312,7 +312,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 		budget_id: uuid(),
 		memo: "Fun Money",
 		category_id: flatCategoriesMap.Shopping.category_id,
-		transaction_type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		recurrence_type: RecurrenceType.SCHEDULE,
 		scheduleVariants: [{
 		schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
@@ -326,7 +326,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 		budget_id: uuid(),
 		memo: "Baby Care",
 		category_id: flatCategoriesMap.Shopping.category_id,
-		transaction_type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		recurrence_type: RecurrenceType.SCHEDULE,
 		scheduleVariants: [{
 			schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
@@ -344,7 +344,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 		budget_id: uuid(),
 		memo: 'Travel',
 		category_id: flatCategoriesMap.Groceries.category_id,
-		transaction_type: TransactionType.DEBIT,
+		transactionType: TransactionType.DEBIT,
 		recurrence_type: RecurrenceType.SCHEDULE,
 		target_account_id: my_accounts.afcu_checking.account_id,
 		scheduleVariants: [{
@@ -363,7 +363,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 				notes: 'Family summer trip',
 				amount: 1200,
 				date: date('2025-06-15'), // June 15, 2025
-				type: TransactionType.DEBIT,
+				transactionType: TransactionType.DEBIT,
 				target_account_id: my_accounts.afcu_savings.account_id,
 				target_account_partition_id: null,
 			},
@@ -374,7 +374,7 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 				notes: '5 nights in Manhattan',
 				amount: 1500,
 				date: date('2025-06-16'), // June 16, 2025
-				type: TransactionType.DEBIT,
+				transactionType: TransactionType.DEBIT,
 				target_account_id: my_accounts.afcu_savings.account_id,
 				target_account_partition_id: null,
 			},
@@ -385,10 +385,10 @@ export const my_scheduledTransactions: TransactionBudget[] = [
 				notes: 'Show for family',
 				amount: 400,
 				date: date('2025-06-18'), // June 18, 2025
-				type: TransactionType.DEBIT,
+				transactionType: TransactionType.DEBIT,
 				target_account_id: my_accounts.afcu_savings.account_id,
 				target_account_partition_id: null,
 			},
 		]
-	} as any,
+	},
 ];
