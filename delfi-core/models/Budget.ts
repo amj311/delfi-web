@@ -165,7 +165,7 @@ export default class TransactionService {
 				const interval = variant.projectionInterval!.interval;
 				const projectionEvents: PartialBudgetEvent[] = [];
 				// Get child items within this window
-				const childItems = schedule.childItems?.filter(item => date(item.date).isBetween(windowStart, windowEnd)) || [];
+				const childItems = schedule.childItems?.filter(item => date(item.date).isBetweenInclusive(windowStart, windowEnd)) || [];
 
 				let budgetSoFar = 0;
 				// Process child items into events
@@ -182,7 +182,8 @@ export default class TransactionService {
 
 				// If children exceed or equal the budget, do not create projection events
 				// Calculate how many intervals fit between windowStart and windowEnd
-				const totalIntervals = Math.floor(windowEnd.diff(windowStart, interval, true) / intervalQty);
+				// add 1 day to windowEnd to include the last day in the projection
+				const totalIntervals = Math.floor(windowEnd.add(1, 'day').diff(windowStart, interval, true) / intervalQty);
 
 				if (budgetSoFar < variant.amount && totalIntervals > 0) {
 					// Remaining amount for projections
