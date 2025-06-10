@@ -42,6 +42,16 @@ app.register((authRoutes, _, done) => {
 	done();
 }, { prefix: '/' });
 
+
+// Serving the static app in PROD
+app.register(require('@fastify/static'), {
+	root: path.join(__dirname, '../dist'),
+});
+app.setNotFoundHandler((req, reply) => {
+	const stream = createReadStream(path.join(__dirname, '../dist') + '/index.html'); // for app sub-routing
+	reply.type('text/html').send(stream)
+})
+
 app.setErrorHandler((error: any, request, reply) => {
 	console.error('\nError: ', error)
 	if (error.isApiError) {
