@@ -11,6 +11,7 @@ import categoryRoute from "./routes/category.route";
 import userRoute from "./routes/user.route";
 import firebaseAuthMiddleware, { firebaseConfig } from "./services/FirebaseService";
 import signupRoute from "./routes/signup.route";
+import { testScrape } from './scraper/simpleScraper';
 
 // HTTPS support for development
 const isDevelopment = !("RENDER" in process.env);
@@ -82,6 +83,14 @@ app.setErrorHandler((error: any, request, reply) => {
 		const host = ("RENDER" in process.env) ? `0.0.0.0` : `localhost`;
 		await app.listen({ port, host });
 		console.log('Server started')
+
+		setTimeout(() => {
+			testScrape().then(() => {
+				console.log('Scraping test completed successfully');
+			}).catch(err => {
+				console.error('Error during scraping test:', err);
+			});
+		}, 1000);
 	} catch (err) {
 		console.error(err)
 		process.exit(1)

@@ -17,17 +17,20 @@ export type AccountPartition = {
 	savings_goal?: SavingsGoal,
 }
 
-export type Account = {
-	account_id: string,
-	external_account_id?: string,
-	display_name: string,
-	external_name?: string,
+export type AccountDetails = {
+	external_name: string,
+	external_account_id: string,
 	mask: string,
 	type: string,
 	subtype: string,
 	iso_currency_code: string,
 	current_balance: number,
 	available_balance: number,
+}
+
+export type Account = AccountDetails & {
+	account_id: string,
+	display_name: string,
 	partitions: AccountPartition[],
 	savings_goal?: SavingsGoal,
 }

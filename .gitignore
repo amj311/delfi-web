@@ -31,3 +31,6 @@ coverage
 
 # Vitest
 __snapshots__
+
+# Scraper
+chrome-data
