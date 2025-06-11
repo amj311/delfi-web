@@ -8,7 +8,7 @@ import { date } from '../../delfi-core/utils/dateUtils';
 export const useAccountStore = defineStore('account', () => {
 	const delfiStore = useDelfiStore();
 
-	let accounts = ref([] as any[]);
+	let accounts = ref([] as Account[]);
 	let isLoadingAccounts = ref(false);
 	let isUpsertingAccount = ref(false);
 	let isDeletingAccount = ref(false);
@@ -28,8 +28,13 @@ export const useAccountStore = defineStore('account', () => {
 
 	}
 
-	const getAccountById = (id?: string) => {
+	function getAccountById (id?: string) {
 		return accounts.value.find(a => a.account_id === id);
+	}
+
+	function getAccountName(id?: string): string {
+		const account = getAccountById(id);
+		return account?.display_name || account?.external_name || 'Unknown Account';
 	}
 
 	const upsertAccount = async (accountData: Partial<Account>): Promise<Account> => {
@@ -74,6 +79,7 @@ export const useAccountStore = defineStore('account', () => {
 		isLoadingAccounts,
 		loadAccounts,
 		getAccountById,
+		getAccountName,
 		upsertAccount,
 		deleteAccount
 	};

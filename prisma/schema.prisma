@@ -11,18 +11,26 @@ datasource db {
 }
 
 model User {
-    user_id             String                @id @default(uuid())
-    auth_id             String                @unique
-    email               String                @unique
-    given_name          String
-    family_name         String
-    accounts            Account[]
-    plannedTransactions PlannedTransaction[]
-    categories          UserDefinedCategory[]
-    tags                Tag[]
-    budgets             Budget[]
+    user_id     String        @id @default(uuid())
+    auth_id     String        @unique
+    email       String        @unique
+    given_name  String
+    family_name String
+    accounts    Account[]
+    Budgets     Budget[]
+    categories  Category[]
+    tags        Tag[]
+    Transaction Transaction[]
+    PlaidItem   PlaidItem[]
+}
 
-    @@map("user")
+model PlaidItem {
+    plaid_item_id  String    @id
+    access_token   String
+    accounts       Account[]
+    institution_id String?
+    User           User?     @relation(fields: [user_id], references: [user_id])
+    user_id        String?
 }
 
 model Account {
@@ -33,7 +41,7 @@ model Account {
     mask                String?
     type                String
     subtype             String
-    current_balance     Float?
+    current_balance     Float
     available_balance   Float?
     iso_currency_code   String?
 
@@ -41,15 +49,34 @@ model Account {
     savings_goal SavingsGoal?
 
     // relations
-    plaid_item           PlaidItem?           @relation(fields: [plaid_item_id], references: [plaid_item_id])
-    plaid_item_id        String?
-    User                 User                 @relation(fields: [user_id], references: [user_id])
-    user_id              String
-    TransactionsAsTarget PlannedTransaction[] @relation("TargetAccount")
-    TransactionsAsOrigin PlannedTransaction[] @relation("OriginAccount")
-    Budget               Budget[]
+    source            String // e.g. "plaid", "manual", "imported"
+    source_id         String? // e.g. plaid account id, manual account id, imported account id
+    source_data       Json? // e.g. plaid account data, manual account data, imported account data
+    plaid_item        PlaidItem?          @relation(fields: [plaid_item_id], references: [plaid_item_id])
+    plaid_item_id     String?
+    User              User                @relation(fields: [user_id], references: [user_id])
+    user_id           String
+    BudgetsAsTarget   Budget[]            @relation("TargetAccount")
+    BudgetsAsOrigin   Budget[]            @relation("OriginAccount")
+    Transaction       Transaction[]
+    BalanceAdjustment BalanceAdjustment[]
+}
 
-    @@map("account")
+// Especially for Partitions, which the user can control the balance of a will
+// Allows the balance to be specified for different points in time, so past balances still exist
+model BalanceAdjustment {
+    // TODO is this ever needed for accounts?
+    // maybe only for manual accounts?
+    // If they are synced externally, do we save periodic balances as sanity checks?
+
+    balance_adjustment_id String            @id @default(uuid())
+    date                  DateTime
+    amount                Float
+    balance               Float // balance after this adjustment
+    Account               Account?          @relation(fields: [account_id], references: [account_id])
+    account_id            String?
+    AccountPartition      AccountPartition? @relation(fields: [account_partition_id], references: [account_partition_id])
+    account_partition_id  String?
 }
 
 model AccountPartition {
@@ -61,19 +88,10 @@ model AccountPartition {
     Account      Account?     @relation(fields: [account_id], references: [account_id])
     savings_goal SavingsGoal?
 
-    TransactionsAsTarget PlannedTransaction[] @relation("TargetAccountPartition")
-    TransactionsAsOrigin PlannedTransaction[] @relation("OriginAccountPartition")
-
-    @@map("account_partition")
-}
-
-model PlaidItem {
-    plaid_item_id  String    @id
-    access_token   String
-    accounts       Account[]
-    institution_id String?
-
-    @@map("plaid_item")
+    BudgetsAsTarget        Budget[]                 @relation("TargetAccountPartition")
+    BudgetsAsOrigin        Budget[]                 @relation("OriginAccountPartition")
+    BalanceAdjustment      BalanceAdjustment[]
+    TransactionAttribution TransactionAttribution[]
 }
 
 model SavingsGoal {
@@ -87,9 +105,8 @@ model SavingsGoal {
     account_partition_id String?           @unique
 }
 
-enum PlannedTransactionType {
-    CREDIT
-    DEBIT
+enum BudgetTransactionType {
+    TRANSACTION
     TRANSFER
 }
 
@@ -98,58 +115,142 @@ enum RecurrenceType {
     TRIGGER
 }
 
-model PlannedTransaction {
-    planned_transaction_id      String                 @id @default(uuid())
-    memo                        String
-    type                        PlannedTransactionType
-    amount                      Float
-    schedule                    Json?
-    trigger                     Json?
-    recurrence_type             RecurrenceType
+model Budget {
+    budget_id       String                @id @default(uuid())
+    type            BudgetTransactionType
+    memo            String
+    recurrence_type RecurrenceType
+
+    BudgetVariant BudgetVariant[]
+
     // user
-    User                        User                   @relation(fields: [user_id], references: [user_id])
+    User                        User              @relation(fields: [user_id], references: [user_id])
     user_id                     String
     // accounts
-    TargetAccount               Account                @relation(name: "TargetAccount", fields: [target_account_id], references: [account_id])
-    OriginAccount               Account?               @relation(name: "OriginAccount", fields: [origin_account_id], references: [account_id])
+    TargetAccount               Account           @relation(name: "TargetAccount", fields: [target_account_id], references: [account_id])
+    OriginAccount               Account?          @relation(name: "OriginAccount", fields: [origin_account_id], references: [account_id])
     target_account_id           String
     origin_account_id           String?
-    TargetAccountPartition      AccountPartition?       @relation(name: "TargetAccountPartition", fields: [target_account_partition_id], references: [account_partition_id])
-    OriginAccountPartition      AccountPartition?      @relation(name: "OriginAccountPartition", fields: [origin_account_partition_id], references: [account_partition_id])
+    TargetAccountPartition      AccountPartition? @relation(name: "TargetAccountPartition", fields: [target_account_partition_id], references: [account_partition_id])
+    OriginAccountPartition      AccountPartition? @relation(name: "OriginAccountPartition", fields: [origin_account_partition_id], references: [account_partition_id])
     target_account_partition_id String?
     origin_account_partition_id String?
 
-    category_id String
-    tags        Tag[]
+    Category                Category?                @relation(fields: [category_id], references: [category_id])
+    category_id             String?
+    Tags                    Tag[]                    @relation("BudgetTags")
+    TransactionAttributions TransactionAttribution[]
 }
 
-model UserDefinedCategory {
-    category_id        String @id @default(uuid())
-    parent_category_id String // References a system defined category
-    name               String
-    user               User   @relation(fields: [user_id], references: [user_id])
-    user_id            String
+model BudgetVariant {
+    budget_variant_id String @id @default(uuid())
+    Budget            Budget @relation(fields: [budget_id], references: [budget_id])
+    budget_id         String
+
+    // SCHEDULED ATTRIBUTES
+    // TODO CHECK THESE AT SAVE
+    amount              Float? // e.g.
+    schedule            Json? // e.g. cron expression, interval, etc.
+    window_interval     Int?
+    window_quantity     Int?
+    projection_interval Int?
+    projection_quantity Int?
+
+    // TRIGGERED ATTRIBUTES
+    // TODO CHECK THESE AT SAVE
+    start            DateTime?
+    end              DateTime?
+    trigger_filter   Json? // e.g. filter to apply to transactions, like category, amount, etc.
+    trigger_operator String? // e.g. add, subtract, multiply, divide
+    trigger_operand  Float?
+}
+
+enum CategoryType {
+    EXPENSE
+    INCOME
+    TRANSFER
+}
+
+model Category {
+    category_id String       @id @default(uuid())
+    name        String
+    type        CategoryType
+
+    ParentCategory     Category?  @relation("CategoryHierarchy", fields: [parent_category_id], references: [category_id])
+    child_categories   Category[] @relation("CategoryHierarchy")
+    parent_category_id String?
+
+    user    User   @relation(fields: [user_id], references: [user_id])
+    user_id String
+
+    Budgets                 Budget[]
+    TransactionAttributions TransactionAttribution[]
 }
 
 model Tag {
-    tag_id              String               @id @default(uuid())
-    name                String
-    user                User                 @relation(fields: [user_id], references: [user_id])
-    user_id             String
-    PlannedTransactions PlannedTransaction[]
+    tag_id                  String                   @id @default(uuid())
+    name                    String
+    user                    User                     @relation(fields: [user_id], references: [user_id])
+    user_id                 String
+    Budgets                 Budget[]                 @relation("BudgetTags")
+    TransactionAttributions TransactionAttribution[] @relation("TransactionTags")
 }
 
-model Budget {
-    budget_id   String  @id @default(uuid())
-    name        String
-    description String?
-    schedule    Json
-    amount      Float
-    num_months  Int
+// Real transaction, created manually or imported from source (plaid)
+model Transaction {
+    transaction_id    String    @id @default(uuid())
+    amount            Float
+    date              DateTime
+    authorized_date   DateTime? // e.g. for credit card transactions, the date the transaction was authorized
+    iso_currency_code String?
+    notes             String?
 
-    category_id             String
-    User                    User    @relation(fields: [user_id], references: [user_id])
-    user_id                 String
-    SystemEventAccount      Account @relation(fields: [system_event_account_id], references: [account_id])
-    system_event_account_id String
+    location_address String? // e.g. "123 Main St, Anytown, USA"
+    location_lat     Float? // e.g. 37.7749
+    location_lon     Float? // e.g. -122.4194
+    location_city    String? // e.g. "San Francisco"
+	location_region  String? // e.g. "CA"
+	location_postal  String? // e.g. "94103"
+
+    source      String // e.g. "plaid", "manual", "imported"
+    source_id   String? // e.g. plaid transaction id, manual transaction id, imported transaction id
+    source_data Json? // e.g. plaid transaction data, imported transaction data
+
+    // A single transaction cannot be split between accounts
+    Account                Account                  @relation(fields: [account_id], references: [account_id])
+    account_id             String
+    Merchant               Merchant?                @relation(fields: [merchant_id], references: [merchant_id])
+    merchant_id            String?
+    TransactionAttribution TransactionAttribution[]
+
+    User    User   @relation(fields: [user_id], references: [user_id])
+    user_id String
+}
+
+// To keep like data all in one place, this table holds data for ALL transactions, even without splits
+// Data w/o splits just have a single entry, and splits have multiple
+model TransactionAttribution {
+    transaction_attribution_id String  @id @default(uuid())
+    amount                     Float // TODO ADD MANY CHECKS THAT THESE ALWAYS ADD UP TO THE TRANSACTION AMOUNT
+    memo                       String?
+
+    Transaction    Transaction @relation(fields: [transaction_id], references: [transaction_id])
+    transaction_id String
+
+    AccountPartition     AccountPartition? @relation(fields: [account_partition_id], references: [account_partition_id])
+    account_partition_id String?
+    Category             Category?         @relation(fields: [category_id], references: [category_id])
+    category_id          String?
+    Tags                 Tag[]             @relation("TransactionTags")
+    Budget               Budget?           @relation(fields: [budget_id], references: [budget_id])
+    budget_id            String?
+}
+
+model Merchant {
+    merchant_id String        @id @default(uuid())
+    name        String
+    logo        String?
+    source      String // e.g. "plaid", "manual", "imported"
+    source_id   String? // e.g. plaid merchant id, manual merchant id, imported merchant id
+    Transaction Transaction[]
 }

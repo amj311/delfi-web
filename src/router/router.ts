@@ -12,10 +12,24 @@ const router = createRouter({
 		{
 			name: 'Budget',
 			path: 'month/:month?',
-			component: () => import('../views/BudgetView.vue'),
+			component: () => import('../views/MonthBudget.vue'),
 			props: true
 		}
 	  ]
+    },
+    {
+      path: '/accounts',
+      name: 'accounts',
+      // route level code-splitting
+      // this generates a separate chunk (Accounts.[hash].js) for this route
+      // which is lazy-loaded when the route is visited.
+      component: () => import('../views/AccountsView.vue')
+    },
+    {
+      path: '/accounts/:accountId',
+      name: 'accountDetails',
+      component: () => import('../views/AccountDetailsView.vue'),
+      props: true
     },
     // {
     //   path: '/about',

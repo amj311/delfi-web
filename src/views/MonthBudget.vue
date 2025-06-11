@@ -28,7 +28,7 @@ const state = reactive({
 	loading: true,
 	viewingMonth: date().startOf('month'),
 	forecast: <Forecast><unknown>null,
-	upsertingAccount: <Account | {} | null>null,
+	upsertingAccount: <Partial<Account> | {} | null>null,
 	upsertingPlannedTransaction: <TransactionBudget | {} | null>null,
 	summaryData: <Awaited<ReturnType<Delfi["getMonthSummary"]>> | null>null,
 });
@@ -161,8 +161,8 @@ const dailyEvents = computed(() => {
 					<div v-for="summary of state.summaryData.accountSummaries" class="list-row">
 						<div class="flex-between hover-show-trigger">
 							<div class="flex-center gap-2">
-								<div class="text-semibold">{{ accountStore.getAccountById(summary.account_id)?.display_name }}</div>
-								<button class="hover-show" @click="() => state.upsertingAccount = accountStore.getAccountById(summary.account_id)">Edit</button>
+								<div class="text-semibold">{{ accountStore.getAccountName(summary.account_id) }}</div>
+								<button class="hover-show" @click="() => state.upsertingAccount = accountStore.getAccountById(summary.account_id)!">Edit</button>
 							</div>
 							<div class="flex-center">
 								<small v-if="summary.netChange !== 0">
@@ -200,7 +200,7 @@ const dailyEvents = computed(() => {
 							<Currency :amount="occurrences.reduce((acc, o) => acc + o.eventsInRange.reduce((acc, e) => acc + e.amount, 0), 0)" mode="transaction" />	
 						</div>
 						<small>
-							{{ accountStore.getAccountById(budget.target_account_id)?.display_name }}
+							{{ accountStore.getAccountName(budget.target_account_id) }}
 						</small>
 					</div>
 				</div>
@@ -215,7 +215,7 @@ const dailyEvents = computed(() => {
 							{{ budget.memo }}
 							<Currency :amount="eventsInRange.filter(e => !e.flags.includes(EventFlag.TRANSFER_COPY)).reduce((acc, e) => acc + e.amount, 0)" /> <!-- counting both events cancels out -->
 						</div>
-						<small>{{ accountStore.getAccountById(budget.origin_account_id!)?.display_name }} → {{ accountStore.getAccountById(budget.target_account_id)?.display_name }}</small>
+						<small>{{ accountStore.getAccountName(budget.origin_account_id!) }} → {{ accountStore.getAccountName(budget.target_account_id) }}</small>
 					</div>
 				</div>
 			</div>
@@ -274,10 +274,10 @@ const dailyEvents = computed(() => {
 							</div>
 							<small>
 								<span v-if="event.sourceBudget.origin_account_id">
-									{{ accountStore.getAccountById(event.sourceBudget.origin_account_id).display_name }}
+									{{ accountStore.getAccountName(event.sourceBudget.origin_account_id) }}
 									→
 								</span>
-								{{ accountStore.getAccountById(event.target_account_id).display_name }}
+								{{ accountStore.getAccountName(event.target_account_id) }}
 							</small>
 						</div>
 					</div>

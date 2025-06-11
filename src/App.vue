@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useUserStore } from './stores/user.store';
 import { AuthService } from './services/authService';
-import AccountSetup from './views/AccountSetup.vue';
+import Registration from './views/Registration.vue';
 import { onBeforeUnmount, ref } from 'vue';
 import LoggedIn from './views/LoggedIn.vue';
 
@@ -22,7 +22,7 @@ onBeforeUnmount(() => {
 <template>
 	<div v-if="!userStore.hasLoadedSessionData">Loading...</div>
 	<LoggedIn v-else-if="userStore.hasAuth && userStore.currentUser" />
-	<AccountSetup v-else-if="userStore.hasAuth && !userStore.currentUser" />
+	<Registration v-else-if="userStore.hasAuth && !userStore.currentUser" />
 	<div v-else>
 		<a @click="AuthService.signInWithGoogle()">Sign in with Google</a>
 	</div>

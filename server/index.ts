@@ -1,6 +1,8 @@
+import 'dotenv/config';
+
 import Fastify from "fastify";
 import path from "path";
-import { createReadStream } from "fs";
+import { createReadStream, readFileSync } from "fs";
 import plaidRoute from "./routes/plaid.route";
 import accountRoute from "./routes/account.route";
 import plannedTransactionRoute from "./routes/plannedTransaction.route";
@@ -10,9 +12,18 @@ import userRoute from "./routes/user.route";
 import firebaseAuthMiddleware, { firebaseConfig } from "./services/FirebaseService";
 import signupRoute from "./routes/signup.route";
 
+// HTTPS support for development
+const isDevelopment = !("RENDER" in process.env);
+const httpsOptions = isDevelopment ? {
+  https: {
+    key: readFileSync(path.join(__dirname, 'certs/localhost+2-key.pem')),
+    cert: readFileSync(path.join(__dirname, 'certs/localhost+2.pem'))
+  }
+} : {};
 
 const app = Fastify({
-	logger: false
+	logger: false,
+  ...httpsOptions
 });
 app.register(require('@fastify/cors'));
 

@@ -43,11 +43,13 @@ class Forecast {
 		this.events = [];
 		this.occurrences = [];
 
+		console.log(this.transactionSchedules, this.transactionTriggers);
 		// compute all scheduled events once first
 		const scheduledOccurrences: BudgetOccurrence[] = [];
 		for (let schedule of this.transactionSchedules) {
 			scheduledOccurrences.push(...TransactionService.createOccurrencesFromSchedule(this.start, this.end, schedule));
 		}
+		console.log(scheduledOccurrences)
 		const scheduledEvents = scheduledOccurrences.flatMap(o => o.events);
 
 		// Compute just one month at a time

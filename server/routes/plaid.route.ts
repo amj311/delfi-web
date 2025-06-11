@@ -82,5 +82,33 @@ export default (fastify, _, done) => {
 		}
 	});
 	
+	// Get transactions for a specific account
+	fastify.get('/account/:accountId/transactions', async function handler (request, reply) {
+		console.log('Fetching transactions for account:', request.params.accountId);
+		try {
+			const accountId = request.params.accountId;
+			
+			if (!accountId) {
+				return reply.status(400).send({
+					success: false,
+					error: 'Missing required parameter: accountId'
+				});
+			}
+			
+			const transactionData = await PlaidService.getAccountTransactions(accountId);
+			
+			return {
+				success: true,
+				data: transactionData
+			};
+		} catch (error) {
+			console.error('Error fetching account transactions:', error);
+			reply.status(500).send({
+				success: false,
+				error: error.message || 'Failed to fetch transactions'
+			});
+		}
+	});
+	
 	done();
 }

@@ -1,10 +1,9 @@
-import { PlannedTransaction, PlannedTransactionDbInput } from "../../models/types";
 import { prisma } from "../../prisma/client";
 import { my_scheduledTransactions } from "./myData";
 
 export const PlannedTransactionService = {
-    async createPlannedTransaction(user_id: string, plannedTransactionData: Omit<PlannedTransactionDbInput, 'planned_transaction_id' | 'user_id'>) {
-        return await prisma.plannedTransaction.create({
+    async createPlannedTransaction(user_id: string, plannedTransactionData: Omit<PlannedTransactionDbInput, 'budget_id' | 'user_id'>) {
+        return await prisma.budget.create({
             data: {
                 ...plannedTransactionData,
                 user_id,
@@ -13,17 +12,17 @@ export const PlannedTransactionService = {
     },
 
     async getAllPlannedTransactions(user_id: string) {
-        return (await prisma.plannedTransaction.findMany({
+        return (await prisma.budget.findMany({
             where: {
                 user_id,
             },
         })).concat(my_scheduledTransactions as any);
     },
 
-    async getPlannedTransactionById(user_id: string, planned_transaction_id: string) {
-        const transaction = await prisma.plannedTransaction.findUnique({
+    async getPlannedTransactionById(user_id: string, budget_id: string) {
+        const transaction = await prisma.budget.findUnique({
             where: {
-                planned_transaction_id,
+                budget_id,
                 user_id,
             },
         });
@@ -31,10 +30,10 @@ export const PlannedTransactionService = {
 		return transaction;
     },
 
-    async updatePlannedTransaction(user_id: string, planned_transaction_id: string, plannedTransactionData: Partial<PlannedTransactionDbInput>) {
-		return await prisma.plannedTransaction.update({
+    async updatePlannedTransaction(user_id: string, budget_id: string, plannedTransactionData: Partial<PlannedTransactionDbInput>) {
+		return await prisma.budget.update({
             where: {
-                planned_transaction_id,
+                budget_id,
                 user_id,
             },
             data: {
@@ -53,10 +52,10 @@ export const PlannedTransactionService = {
         });
     },
 
-    async deletePlannedTransaction(user_id: string, planned_transaction_id: string) {
-        await prisma.plannedTransaction.delete({
+    async deletePlannedTransaction(user_id: string, budget_id: string) {
+        await prisma.budget.delete({
             where: {
-                planned_transaction_id,
+                budget_id,
                 user_id,
             },
         });

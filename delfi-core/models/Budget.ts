@@ -6,9 +6,9 @@ import { date, toDelfiInterval, type DelfiDate } from "../utils/dateUtils";
 import FilterService from "../services/FilterService";
 
 export enum TransactionType {
-	CREDIT = "CREDIT",
-	DEBIT = "DEBIT",
+	TRANSACTION = "TRANSACTION",
 	TRANSFER = "TRANSFER",
+	BALANCE_ADJUSTMENT = "BALANCE_ADJUSTMENT"
 }
 
 export enum RecurrenceType {
@@ -185,7 +185,7 @@ export default class TransactionService {
 				// add 1 day to windowEnd to include the last day in the projection
 				const totalIntervals = Math.floor(windowEnd.add(1, 'day').diff(windowStart, interval, true) / intervalQty);
 
-				if (budgetSoFar < variant.amount && totalIntervals > 0) {
+				if (budgetSoFar > variant.amount && totalIntervals > 0) {
 					// Remaining amount for projections
 					const remainingAmount = variant.amount - budgetSoFar;
 					const eventAmount = remainingAmount / totalIntervals;
@@ -277,7 +277,6 @@ export default class TransactionService {
 	}
 
 	private static createDateEventsFromBudgetDetails(eventDate: DelfiDate, budget: BudgetTransactionDetails, amount: number): BaseBudgetEvent[] {
-		const resolvedAmount = TransactionService.resolveScheduleAmount(budget, amount);
 		const base = {
 			...TransactionService.copyTransactionDetails(budget),
 			id: uuid(),
@@ -293,7 +292,7 @@ export default class TransactionService {
 			// TODO don't allow transfers without origin account
 			events.push({
 				...base,
-				amount: -resolvedAmount,
+				amount: -amount,
 				target_account_id: budget.origin_account_id,
 				target_account_partition_id: budget.origin_account_partition_id,
 				flags: [EventFlag.TRANSFER_COPY],
@@ -303,17 +302,10 @@ export default class TransactionService {
 		// Standard 1:1 schedule, or target for transfer
 		events.push({
 			...base,
-			amount: resolvedAmount,
+			amount: amount,
 			id: uuid(),
 			flags: [],
 		});
 		return events;
-	}
-
-	static resolveScheduleAmount(schedule: BudgetTransactionDetails, amount: number): number {
-		if (schedule.transactionType === TransactionType.DEBIT) {
-			return -amount;
-		}
-		return amount;
 	}
 }

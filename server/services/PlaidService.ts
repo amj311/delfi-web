@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 const {
 	PLAID_CLIENT_ID,
 	PLAID_SECRET,
-	PLAID_ENV = 'sandbox', // Default to sandbox if not specified
+	PLAID_ENV = 'sandbox', // Default to sandbox if not set
 	PLAID_WEBHOOK_URL
 } = process.env;
 
@@ -19,7 +19,6 @@ const PLAID_PRODUCTS = [
 	// Products.Liabilities,
 	// Add other products as needed:
 	Products.Auth,
-	// Products.Identity,
 ];
 
 // Define the environment
@@ -60,6 +59,9 @@ export const PlaidService = {
 			...(redirect_uri ? { redirect_uri } : {}),
 			// Add link customization options
 			link_customization_name: 'default',
+			// If in production, add auth configuration to control phone verification
+			// ...(PLAID_ENV === 'production' ? {
+
 			// Optional: For re-authenticating when needed
 			// update_mode: 'DEFAULT', // Uncomment for Link update mode
 		});
@@ -238,12 +240,89 @@ export const PlaidService = {
 				access_token: plaidItem.access_token,
 				// Use empty string for initial sync instead of null to avoid type errors
 				cursor: '',
-				count: 500 // Adjust as needed
 			});
 
 			return response.data;
 		} catch (error) {
 			console.error('Error syncing transactions:', error);
+			throw error;
+		}
+	},
+
+	/**
+	 * Get transactions for a specific account
+	 * This fetches all transactions for the account using the access token for the item
+	 */
+	async getAccountTransactions(accountId) {
+		try {
+			// First find the account to get its external ID and plaid_item_id
+			const account = await prisma.account.findUnique({
+				where: { account_id: accountId }
+			});
+
+			if (!account || !account.external_account_id) {
+				throw new Error(`Account ${accountId} not found or not properly connected to Plaid.`);
+			}
+
+			if (!account.plaid_item_id) {
+				throw new Error(`Plaid Item ID for account ${accountId} not available.`);
+			}
+			
+			// Get the plaid item to get the access token
+			const plaidItem = await prisma.plaidItem.findUnique({
+				where: { plaid_item_id: account.plaid_item_id }
+			});
+			
+			if (!plaidItem || !plaidItem.access_token) {
+				throw new Error(`Access token for account ${accountId} not available. Item needs re-authentication.`);
+			}
+
+			// Call the transactions/sync endpoint and collect all batches
+			let cursor = '';
+			let hasMore = true;
+			let allAdded = [] as Array<Awaited<ReturnType<typeof plaid.transactionsSync>>['data']['added'][number]>;
+			let allModified = [] as Array<Awaited<ReturnType<typeof plaid.transactionsSync>>['data']['modified'][number]>;
+			let allRemoved = [] as Array<Awaited<ReturnType<typeof plaid.transactionsSync>>['data']['removed'][number]>;
+
+			while (hasMore) {
+				const {data: batchResponse} = await plaid.transactionsGet({
+					access_token: plaidItem.access_token,
+					start_date: dayjs().subtract(1, 'year').format('YYYY-MM-DD'), // Fetch last year of transactions
+					end_date: dayjs().format('YYYY-MM-DD'),
+				});
+				
+				// Accumulate transactions
+				allAdded = [...allAdded, ...batchResponse.transactions];
+				// allModified = [...allModified, ...batchResponse.data.modified];
+				// allRemoved = [...allRemoved, ...batchResponse.data.removed];
+				
+				// Update cursor and hasMore for next iteration
+				hasMore = false;
+				// cursor = batchResponse.data.next_cursor;
+			}
+
+			// Create a consolidated response object
+			const response = {
+				data: {
+					added: allAdded,
+					modified: allModified,
+					removed: allRemoved,
+				}
+			};
+
+			console.log('Fetched transactions:', response.data.added.length);
+
+			// Filter transactions for just this account
+			const accountTransactions = response.data.added.filter(
+				transaction => transaction.account_id === account.external_account_id
+			)
+
+			return {
+				success: true,
+				transactions: accountTransactions
+			};
+		} catch (error) {
+			console.error('Error fetching account transactions:', error);
 			throw error;
 		}
 	},
