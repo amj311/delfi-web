@@ -1,4 +1,6 @@
 import Fastify from "fastify";
+import path from "path";
+import { createReadStream } from "fs";
 import plaidRoute from "./routes/plaid.route";
 import accountRoute from "./routes/account.route";
 import plannedTransactionRoute from "./routes/plannedTransaction.route";
