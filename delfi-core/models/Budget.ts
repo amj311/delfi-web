@@ -4,27 +4,12 @@ import { ScheduleService, type Schedule } from "./schedules/Schedule"
 import { computeTriggeredAmount, type Trigger } from "./schedules/triggers"
 import { date, toDelfiInterval, type DelfiDate } from "../utils/dateUtils";
 import FilterService from "../services/FilterService";
-
-export enum TransactionType {
-	TRANSACTION = "TRANSACTION",
-	TRANSFER = "TRANSFER",
-	BALANCE_ADJUSTMENT = "BALANCE_ADJUSTMENT"
-}
+import { TransactionType, type BaseTransactionDetails } from "./Transaction";
 
 export enum RecurrenceType {
 	SCHEDULE = "SCHEDULE",
 	TRIGGER = "TRIGGER",
 }
-
-export type TransactionDetails = {
-	memo: string,
-	transactionType: TransactionType,
-	target_account_id: string,
-	target_account_partition_id: string | null,
-	category_id: string,
-	tagIds?: string[],
-}
-
 
 // PROBLEM: Projected budgets to deplete from a savings account, but real transactions to be made from a checking account.
 // X SOLUTION 1: Don't make budgets account-specific. Let go of projecting the exact balance of each account, and only project the total balance.
@@ -40,7 +25,7 @@ export type TransactionDetails = {
 // 				- The UI will need to be very intuitive and make it easy to adjust the current and future budget definitions, but give a warning before editing past definitions. Past definitions may also be collapsed or hidden.
 // 				What is a better name for these definitions? Budget periods? Budget windows? Budget variations?
 
-type BudgetTransactionDetails = TransactionDetails & {
+type BudgetTransactionDetails = BaseTransactionDetails & {
 	budget_id: string,
 	origin_account_id: string | null,
 	origin_account_partition_id: string | null,
@@ -109,7 +94,7 @@ export enum EventFlag {
 	SYSTEM_GENERATED,
 }
 
-type BaseBudgetEvent = TransactionDetails & {
+type BaseBudgetEvent = BaseTransactionDetails & {
 	id: string,
 	date: DelfiDate,
 	year: number;
@@ -136,7 +121,7 @@ export type BudgetEvent = ScheduledBudgetEvent | TriggeredBudgetEvent;
 
 
 export default class TransactionService {
-	static copyTransactionDetails(source: TransactionDetails): TransactionDetails {
+	static copyTransactionDetails(source: BaseTransactionDetails): BaseTransactionDetails {
 		return {
 			memo: source.memo,
 			transactionType: source.transactionType,

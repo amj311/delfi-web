@@ -84,13 +84,13 @@ app.setErrorHandler((error: any, request, reply) => {
 		await app.listen({ port, host });
 		console.log(`Server started and listening on ${host}:${port}`)
 
-		setTimeout(() => {
-			testScrape().then(() => {
-				console.log('Scraping test completed successfully');
-			}).catch(err => {
-				console.error('Error during scraping test:', err);
-			});
-		}, 1000);
+		// setTimeout(() => {
+		// 	testScrape().then(() => {
+		// 		console.log('Scraping test completed successfully');
+		// 	}).catch(err => {
+		// 		console.error('Error during scraping test:', err);
+		// 	});
+		// }, 1000);
 	} catch (err) {
 		console.error(err)
 		process.exit(1)

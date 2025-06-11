@@ -1,9 +1,10 @@
 import { MONTHS } from "../../delfi-core/utils/constants";
 import { v4 as uuid } from "uuid";
 import { flatCategoriesMap } from "../../delfi-core/models/systemCategories";
-import { TransactionType, RecurrenceType, TransactionBudget } from "../../delfi-core/models/Budget";
+import { RecurrenceType, type TransactionBudget } from "../../delfi-core/models/Budget";
 import { date } from "../../delfi-core/utils/dateUtils";
 import type { Account } from "../../delfi-core/models/Account";
+import { TransactionType } from "../../delfi-core/models/Transaction";
 
 const accountStuff = {
 	mask: "0942",

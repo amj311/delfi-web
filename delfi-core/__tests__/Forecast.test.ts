@@ -2,7 +2,7 @@ import Forecast from "../models/Forecast";
 import { beforeEach, describe, expect, test } from 'vitest'
 import { ImmediateMatchTrigger } from "../models/schedules/triggers";
 import { MONTHS } from "../utils/constants";
-import { TransactionType, type TransactionBudget, type TriggeredBudget, RecurrenceType } from "../models/Budget";
+import { BudgetTransactionType, type TransactionBudget, type TriggeredBudget, RecurrenceType } from "../models/Budget";
 import { date } from "../utils/dateUtils";
 import Accumulator from "../models/Accumulator";
 import BudgetService from "../services/BudgetService";
@@ -18,7 +18,7 @@ const accounts = {
 const plannedTransactions: TransactionBudget[] = [
 	{
 		budget_id: "clozdincome",
-		type: TransactionType.CREDIT,
+		type: BudgetTransactionType.CREDIT,
 		memo: "Clozd Income",
 		amount: 2500,
 		target_account_id: accounts.afcu_checking.id,
@@ -28,7 +28,7 @@ const plannedTransactions: TransactionBudget[] = [
 	},
 	{
 		budget_id: "tithing",
-		type: TransactionType.DEBIT,
+		type: BudgetTransactionType.DEBIT,
 		memo: "Tithing",
 		target_account_id: accounts.afcu_checking.id,
 		recurrence_type: RecurrenceType.TRIGGER,
@@ -36,7 +36,7 @@ const plannedTransactions: TransactionBudget[] = [
 			filter: [{
 				property: 'type',
 				operator: 'eq',
-				operand: TransactionType.CREDIT,
+				operand: BudgetTransactionType.CREDIT,
 			}],
 			computation: {
 				operator: 'percent',

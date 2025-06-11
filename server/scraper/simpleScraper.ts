@@ -1,6 +1,8 @@
 // Simple Playwright scraper to navigate to American First Credit Union login page
 import { chromium, type Page, type ElementHandle, type BrowserContext } from 'playwright';
-import type { AccountDetails } from 'delfi-core/models/Account';
+import type { Account, AccountDetails } from 'delfi-core/models/Account';
+import { date, type DelfiDate } from 'delfi-core/utils/dateUtils';
+import { TransactionType, type TransactionEventDetails } from 'delfi-core/models/Transaction';
 
 // Interface for point coordinates
 interface Point {
@@ -172,7 +174,7 @@ async function simulateTextInput(page: Page, element: ElementHandle<SVGElement |
 }
 
 // Main scraping function
-async function useBrowser(operation: (context: BrowserContext, page: Page) => Promise<void>): Promise<void> {
+async function useBrowser(operation: (page: Page, context: BrowserContext) => Promise<void>): Promise<void> {
 	// Launch a browser with verbose logging and disable web security to avoid strict CORS
 	const context = await chromium.launchPersistentContext('/Users/Arthur/code/delfi-web/chrome-data', {
 		headless: false,           // Set to true to run in headless mode
@@ -208,7 +210,7 @@ async function useBrowser(operation: (context: BrowserContext, page: Page) => Pr
 	try {
 		// Create a new page
 		const page = await context.pages()[0] || await context.newPage();
-		await operation(context, page);
+		await operation(page, context);
 	} catch (error) {
 		// Log any errors that occur
 		console.error('Scraping error:', error);
@@ -222,46 +224,56 @@ async function useBrowser(operation: (context: BrowserContext, page: Page) => Pr
 
 // Run the scraper
 export async function testScrape() {
-	await useBrowser(async (context, page) => {
+	await useBrowser(async (page, context) => {
 		// Set timeout for navigation
 		page.setDefaultTimeout(10000);
 
+		const institution = InstitutionScrapers['AmericaFirstCreditUnion'];
+
 		// Navigate to the target website
 		console.log('Navigating to America First Credit Union login page...');
-		await page.goto('https://secure.americafirst.com/#/login');
+		await page.goto(institution.loginUrl);
 		console.log('Page loaded, waiting for login elements...');
 
-		// Wait for element to be visible
-		const accountInput = await page.waitForSelector('input#name-callback-1');
-		await simulateTextInput(page, accountInput, '26739094'); // Replace with your test username
-		console.log('Username input filled, waiting for next button...');
-		const next = await page.waitForSelector('button#btn-next');
-		await simulateElClick(page, next);
-		console.log('Next button clicked, waiting for password input...');
+		// First check to see if we are already logged in
+		const loggedInElement = await page.waitForSelector(institution.hasLoggedInElement, { timeout: 5000 }).catch(() => null);
+		if (!loggedInElement) {
+			// check for login element
+			await page.waitForSelector(institution.isAtLoginElement, { timeout: 5000 });
+			console.log('At login page, proceeding with login sequence...');
+			// Perform the login sequence
+			await doPageActions(page, institution.getLoginSequence('26739094', 'be13strong51'));
 
-		// Wait to see the page
-		await page.waitForTimeout(2000);
+			// check for logged in element again
+			const loggedInElement = await page.waitForSelector(institution.hasLoggedInElement, { timeout: 5000 }).catch(() => null);
+			if (!loggedInElement) {
+				console.error('Login failed, did not find logged in element');
+				return;
+			}
+			console.log('Login successful, found logged in element');
+		}
 
-		// Wait for element to be visible
-		const pwdInput = await page.waitForSelector('input#password-callback-1');
-		await simulateTextInput(page, pwdInput, 'be13strong51'); // Replace with your test password
-		const submit = await page.waitForSelector('button#btn-next');
-		await simulateElClick(page, submit);
+		console.log(await institution.getAccountDetails(page, {
+			account_id: 'test-account-id',
+			external_account_id: 'test-external-account-id',
+			scraper_navigation_id: '2',
+		}));
 
-		console.log('Login sequence completed');
-
-		// Wait to see the page
-		await page.waitForTimeout(10000);
 	});
 };
 
-
-
-type PageAction = {
-	action: 'type' | 'click';
+type TextInputAction = {
+	action: 'type';
 	selector: string;
-	value?: string;
+	text: string;
 }
+
+type ClickAction = {
+	action: 'click';
+	selector: string;
+}
+
+type PageAction = TextInputAction | ClickAction;
 
 async function doPageActions(page: Page, actions: PageAction[]): Promise<void> {
 	for (const action of actions) {
@@ -273,39 +285,45 @@ async function doPageActions(page: Page, actions: PageAction[]): Promise<void> {
 
 		switch (action.action) {
 			case 'type':
-				await simulateTextInput(page, element, action.value || '');
+				await simulateTextInput(page, element, action.text || '');
 				break;
 			case 'click':
 				await simulateElClick(page, element);
 				break;
 			default:
-				console.warn(`Unknown action: ${action.action}`);
+				console.warn(`Unknown action`, action);
 		}
 	}
 }
 
+
+type AccountIdentifiers = {
+	account_id: string;
+	external_account_id: string;
+	scraper_navigation_id?: string;
+}
 
 type InstitutionScraper = {
 	loginUrl: string;
 	hasLoggedInElement: string;
 	isAtLoginElement: string;
 	isLoggedOutElement: string;
-	loginSequence: PageAction[];
-	getAccountDetails?: (page: Page, external_account_id: string) => Promise<Partial<AccountDetails>>;
-	getAccountTransactions?: (page: Page, external_account_id: string) => Promise<Partial<any[]>>;
+	getLoginSequence: (username: string, password: string) => PageAction[];
+	getAccountDetails: (page: Page, account: AccountIdentifiers) => Promise<Partial<AccountDetails>>;
+	getAccountTransactions: (page: Page, account: AccountIdentifiers) => Promise<Array<TransactionEventDetails>>;
 }
 
-const InstitutionScrapers = {
+const InstitutionScrapers: Record<string, InstitutionScraper> = {
 	'AmericaFirstCreditUnion': {
 		loginUrl: 'https://secure.americafirst.com/#/login',
 		hasLoggedInElement: 'div.welcome-message',
 		isAtLoginElement: 'input#name-callback-1',
 		isLoggedOutElement: 'a[data-aa-tracking="login"]',
-		loginSequence: [
+		getLoginSequence: (username, password) => [
 			{
 				action: 'type',
 				selector: 'input#name-callback-1',
-				value: '26739094', // Replace with your test username
+				text: username,
 			},
 			{
 				action: 'click',
@@ -314,12 +332,133 @@ const InstitutionScrapers = {
 			{
 				action: 'type',
 				selector: 'input#password-callback-1',
-				value: 'be13strong51', // Replace with your test password
+				text: password,
 			},
 			{
 				action: 'click',
 				selector: 'button#btn-next',
 			}
-		]
+		],
+		async getAccountTransactions(page, account: AccountIdentifiers): Promise<Array<TransactionEventDetails>> {
+			// Implement the logic to get account details
+			const accountPageUrl = `https://webaccess45.americafirst.com/banking/Accounts/Details/Index/${account.scraper_navigation_id}`;
+			await page.goto(accountPageUrl);
+
+			const transactions: Array<TransactionEventDetails> = [];
+			await page.waitForSelector('#PastTransactionsGrid');
+
+			let pendingRows = await page.locator('#UpcomingTransactionsGrid tbody tr').all();
+			for (const row of pendingRows) {
+				const date = await row.locator('.column-date').innerText();
+				const description = await row.locator('.column-description').innerText();
+				const amountCols = await row.locator('.column-amount').all();
+				const amount = (await amountCols[amountCols.length - 1].innerText()).replaceAll(/[$,]/g, '');
+				transactions.push({
+					date: stringToDate(date),
+					original_description: description,
+					memo: description,
+					amount: -dollarsToNumber(amount), // AFCU shows pending debits with absolute value 
+					target_account_id: account.account_id,
+					transactionType: TransactionType.TRANSACTION,
+					pending: true, // Mark as pending
+				});
+			};
+
+			let rows = await page.locator('#PastTransactionsGrid tbody tr').all();
+			for (const row of rows) {
+				const date = await row.locator('.column-date').innerText();
+				const description = await row.locator('.column-description').innerText();
+				const amountCols = await row.locator('.column-amount').all();
+				const amount = (await amountCols[amountCols.length - 1].innerText()).replaceAll(/[$,]/g, '');
+				transactions.push({
+					date: stringToDate(date),
+					original_description: description,
+					memo: description,
+					amount: dollarsToNumber(amount),
+					target_account_id: account.account_id,
+					transactionType: TransactionType.TRANSACTION,
+				});
+			};
+
+			return transactions;
+		},
+
+		async getAccountDetails(page, account: AccountIdentifiers) {
+			// Implement the logic to get account details
+			const accountPageUrl = `https://webaccess45.americafirst.com/banking/Accounts/Details/Index/${account.scraper_navigation_id}`;
+			await page.goto(accountPageUrl);
+
+			const mask = (await page.locator('.account-number').innerText()).replaceAll('*', '');
+			console.log('Account mask:', mask);
+
+			async function getMatchingRowValue(searchText: string): Promise<string | null> {
+				const row = await page.locator('.account-details .row', { hasText: searchText }).first();
+				const text = await row?.locator('.detail-item').innerText();
+				return text ? text.trim() : null;
+			}
+			const afcuType = await getMatchingRowValue('Type:');
+			const afcuName = await getMatchingRowValue('Nickname:');
+			const currentBalance = await getMatchingRowValue('Current Balance:');
+			const availableBalance = await getMatchingRowValue('Available Balance:');
+
+			return {
+				mask: mask || undefined,
+				current_balance: currentBalance ? dollarsToNumber(currentBalance) : undefined,
+				available_balance: availableBalance ? dollarsToNumber(availableBalance) : undefined,
+				external_name: afcuName || undefined,
+			}
+		}
 	}
 }
+
+
+
+
+const DateRegex: Record<string, RegExp> = {
+	MMDDYYYY: /^(?<month>\d{1,2})\/(?<day>\d{1,2})\/(?<year>\d{4})$/,
+	YYYYMMDD: /^(?<year>\d{4})\/(?<month>\d{1,2})\/(?<day>\d{1,2})$/,
+}
+
+const stringToDate = (dateStr: string, regex?: RegExp): DelfiDate => {
+	if (!dateStr) {
+		throw new Error("stringToDate requires date. Got " + JSON.stringify({date: dateStr, regex}));
+	}
+
+	if (regex) {
+		const match = regex.exec(dateStr);
+		if (!match?.groups) {
+			throw new Error("stringToDate could not parse date. Got " + dateStr);
+		}
+		return date(new Date(Number(match.groups.year!), Number(match.groups.month!) - 1, Number(match.groups.day!)));
+	}
+	return date(dateStr);
+}
+
+const formatDate = (date) => {
+	if (!(date instanceof Date)) {
+		date = stringToDate(date);
+	}
+	return date.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+}
+
+const dollarsToNumber = (dollars) => {
+	if (!dollars) {
+		return 0;
+	}
+	if (typeof dollars !== "string") {
+		throw new Error("dollars must be a string. Got " + dollars);
+	}
+	return Number(dollars.replaceAll(/[$,]/g, ''));
+}
+
+const numberToDollars = (number) => {
+	if (!number) {
+		return 0;
+	}
+	if (typeof number !== "number") {
+		throw new Error("number must be a number. Got " + number);
+	}
+	return number.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+}
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

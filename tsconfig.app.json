@@ -5,10 +5,8 @@
   "compilerOptions": {
     "composite": true,
     "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-	"noImplicitAny": false,
-	"esModuleInterop": true
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
   }
 }

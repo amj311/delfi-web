@@ -20,9 +20,11 @@ export type AccountPartition = {
 export type AccountDetails = {
 	external_name: string,
 	external_account_id: string,
+	scraper_navigation_id?: string,
 	mask: string,
 	type: string,
 	subtype: string,
+	apy?: number | null,
 	iso_currency_code: string,
 	current_balance: number,
 	available_balance: number,
