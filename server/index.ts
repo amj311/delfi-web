@@ -14,17 +14,17 @@ import signupRoute from "./routes/signup.route";
 import { testScrape } from './scraper/simpleScraper';
 
 // HTTPS support for development
-const isDevelopment = !("RENDER" in process.env);
-const httpsOptions = isDevelopment ? {
-  https: {
-    key: readFileSync(path.join(__dirname, 'certs/localhost+2-key.pem')),
-    cert: readFileSync(path.join(__dirname, 'certs/localhost+2.pem'))
-  }
-} : {};
+// const isDevelopment = !("RENDER" in process.env);
+// const httpsOptions = isDevelopment ? {
+//   https: {
+//     key: readFileSync(path.join(__dirname, 'certs/localhost+2-key.pem')),
+//     cert: readFileSync(path.join(__dirname, 'certs/localhost+2.pem'))
+//   }
+// } : {};
 
 const app = Fastify({
 	logger: false,
-  ...httpsOptions
+//   ...httpsOptions
 });
 app.register(require('@fastify/cors'));
 
@@ -80,9 +80,9 @@ app.setErrorHandler((error: any, request, reply) => {
 (async () => {
 	try {
 		const port = Number(process.env.PORT || 5000);
-		const host = ("RENDER" in process.env) ? `0.0.0.0` : `localhost`;
+		const host = `0.0.0.0`; // Listen on all interfaces to allow external connections
 		await app.listen({ port, host });
-		console.log('Server started')
+		console.log(`Server started and listening on ${host}:${port}`)
 
 		setTimeout(() => {
 			testScrape().then(() => {

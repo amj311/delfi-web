@@ -2,7 +2,7 @@ import axios from "axios";
 import { AuthService } from "./authService";
 
 const instance = axios.create({
-	baseURL: 'https://localhost:5000',
+	baseURL: 'http://localhost:5000',
 })
 
 instance.interceptors.request.use(async (config) => {
@@ -19,6 +19,7 @@ instance.interceptors.response.use(null, (error) => {
 		console.log("Received unauthorized response. Logging out");
 		AuthService.signOut();
 	}
+	throw error;
 })
 
 export default instance;

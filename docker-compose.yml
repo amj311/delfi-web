@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  db:
+    image: delfi-db:latest
+    container_name: delfi-db
+    build:
+      context: .
+      dockerfile: ./Dockerfile.db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=delfi
+    ports:
+      - 3002:5432

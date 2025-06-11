@@ -1,12 +1,14 @@
 import dayjs from "dayjs"
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore"
-dayjs.extend(isSameOrBefore);
-import UTC from "dayjs/plugin/UTC"
-dayjs.extend(UTC);
+import UTC from "dayjs/plugin/utc" // Fixed casing to match actual package name
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter"
-dayjs.extend(isSameOrAfter);
 import isBetween from "dayjs/plugin/isBetween"
 import type { Replace } from "./typeUtils";
+
+// Register all plugins at once to avoid ordering issues
+dayjs.extend(isSameOrBefore);
+dayjs.extend(UTC);
+dayjs.extend(isSameOrAfter);
 dayjs.extend(isBetween);
 
 type DelfiDateConfig = dayjs.ConfigType;

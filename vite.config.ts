@@ -16,10 +16,18 @@ export default defineConfig({
 			'@': fileURLToPath(new URL('./src', import.meta.url))
 		}
 	},
-	server: {
-		https: {
-			key: fileURLToPath(new URL('./server/certs/localhost+2-key.pem', import.meta.url)),
-			cert: fileURLToPath(new URL('./server/certs/localhost+2.pem', import.meta.url)),
+	// server: {
+	// 	https: {
+	// 		key: fileURLToPath(new URL('./server/certs/localhost+2-key.pem', import.meta.url)),
+	// 		cert: fileURLToPath(new URL('./server/certs/localhost+2.pem', import.meta.url)),
+	// 	}
+	// },
+	build: {
+		rollupOptions: {
+			external: [
+				// Do not externalize imports from delfi-core, but rather include them in the bundle
+				// 'delfi-core'
+			],
 		}
-	}
+	},
 })

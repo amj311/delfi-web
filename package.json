@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite",
     "build": "run-p type-check build-only",
-    "server:dev": "npx tsx watch server/index.ts",
+    "server:dev": "tsx watch server/index.ts",
+    "server": "tsx server/index.ts",
     "preview": "vite preview",
     "test:unit": "vitest",
     "build-only": "vite build",
@@ -28,8 +29,8 @@
     "plaid": "^15.5.0",
     "playwright": "^1.53.0",
     "prisma": "^5.2.0",
-    "uuid": "^9.0.0",
-    "vue3-apexcharts": "^1.4.4"
+    "tsx": "^4.20.1",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@tsconfig/node18": "^18.2.0",
@@ -47,6 +48,7 @@
     "vitest": "^0.34.2",
     "vue": "^3.3.4",
     "vue-router": "^4.2.4",
-    "vue-tsc": "^1.8.8"
+    "vue-tsc": "^1.8.8",
+    "vue3-apexcharts": "^1.4.4"
   }
 }
