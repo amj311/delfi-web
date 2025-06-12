@@ -2,7 +2,7 @@ import Forecast from "../models/Forecast";
 import { beforeEach, describe, expect, test } from 'vitest'
 import { ImmediateMatchTrigger } from "../models/schedules/triggers";
 import { MONTHS } from "../utils/constants";
-import { BudgetTransactionType, type TransactionBudget, type TriggeredBudget, RecurrenceType } from "../models/Budget";
+import { BudgetTransactionType, type Budget, type TriggeredBudget, RecurrenceType } from "../models/Budget";
 import { date } from "../utils/dateUtils";
 import Accumulator from "../models/Accumulator";
 import BudgetService from "../services/BudgetService";
@@ -15,7 +15,7 @@ const accounts = {
 		balance: 500,
 	},
 };
-const plannedTransactions: TransactionBudget[] = [
+const plannedTransactions: Budget[] = [
 	{
 		budget_id: "clozdincome",
 		type: BudgetTransactionType.CREDIT,
@@ -139,7 +139,7 @@ describe('Forecast', () => {
 		})
 
 		test('triggers and accumulates endOfMonth budget depletion', () => {
-			const budget: TransactionBudget = {
+			const budget: Budget = {
 				name: 'test-budget',
 				budget_id: '',
 				amount: 50,

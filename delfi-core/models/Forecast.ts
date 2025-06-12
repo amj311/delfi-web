@@ -1,6 +1,6 @@
 import { date, type DelfiDate } from "../utils/dateUtils";
-import { type TransactionBudget, type ScheduledBudget, type BudgetEvent, type TriggeredBudget, RecurrenceType, type BudgetOccurrence } from "./Budget";
-import TransactionService from "./Budget";
+import { type Budget, type ScheduledBudget, type BudgetEvent, type TriggeredBudget, RecurrenceType, type BudgetOccurrence } from "./Budget";
+import BudgetService from "./Budget";
 import FilterService from "../services/FilterService";
 import { TransactionStore } from "./TransactionStore";
 
@@ -13,7 +13,7 @@ type MonthForecast = {
 
 type ForecastProps = {
 	// readonly accumulators: Accumulator[],
-	readonly plannedTransactions: TransactionBudget[],
+	readonly plannedTransactions: Budget[],
 	readonly start: DelfiDate,
 	readonly end: DelfiDate
 }
@@ -47,7 +47,7 @@ class Forecast {
 		// compute all scheduled events once first
 		const scheduledOccurrences: BudgetOccurrence[] = [];
 		for (let schedule of this.transactionSchedules) {
-			scheduledOccurrences.push(...TransactionService.createOccurrencesFromSchedule(this.start, this.end, schedule));
+			scheduledOccurrences.push(...BudgetService.createOccurrencesFromSchedule(this.start, this.end, schedule));
 		}
 		console.log(scheduledOccurrences)
 		const scheduledEvents = scheduledOccurrences.flatMap(o => o.events);
@@ -68,8 +68,9 @@ class Forecast {
 		
 			// Compute immediate triggers by letting them query the store for events from the current month matching their filter
 			for (const transactionTrigger of this.transactionTriggers) {
+				console.log('Processing transaction trigger:', transactionTrigger);
 				const triggeredOccurrences = monthEvents.map(event =>
-					TransactionService.createOccurrenceFromTrigger(event.date, transactionTrigger, event)
+					BudgetService.createOccurrenceFromTrigger(event.date, transactionTrigger, event)
 				).filter(Boolean) as BudgetOccurrence[];
 				// this.transactionStore.addTransactions(triggeredEvents);
 				monthOccurrences.push(...triggeredOccurrences);

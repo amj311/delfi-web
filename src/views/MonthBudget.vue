@@ -12,7 +12,7 @@ import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
 import UpsertPlannedTransactionForm from '@/components/UpsertPlannedTransactionForm.vue';
 import UpsertBudgetForm from '@/components/UpsertBudgetForm.vue';
 import type { Delfi } from 'delfi-core';
-import { EventFlag, type BudgetEvent, type TransactionBudget } from '../../delfi-core/models/Budget';
+import { EventFlag, type BudgetEvent, type Budget } from '../../delfi-core/models/Budget';
 import type { Account } from 'delfi-core/models/Account';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -29,7 +29,7 @@ const state = reactive({
 	viewingMonth: date().startOf('month'),
 	forecast: <Forecast><unknown>null,
 	upsertingAccount: <Partial<Account> | {} | null>null,
-	upsertingPlannedTransaction: <TransactionBudget | {} | null>null,
+	upsertingPlannedTransaction: <Budget | {} | null>null,
 	summaryData: <Awaited<ReturnType<Delfi["getMonthSummary"]>> | null>null,
 });
 
@@ -268,16 +268,16 @@ const dailyEvents = computed(() => {
 								{{ event.memo }}
 								<div style="flex-grow: 1"></div>
 								<div style="display: flex; align-items: center; gap: 4px;">
-									<span v-if="event.sourceBudget.transactionType === 'TRANSFER'">⇥</span>
-									<Currency :amount="event.sourceBudget.transactionType === 'TRANSFER' ? Math.abs(event.amount) : event.amount" :mode="event.sourceBudget.transactionType === 'TRANSFER' ? undefined : 'transaction'"/>	
+									<span v-if="event.sourceBudget.budgetType === 'TRANSFER'">⇥</span>
+									<Currency :amount="event.sourceBudget.budgetType === 'TRANSFER' ? Math.abs(event.amount) : event.amount" :mode="event.sourceBudget.budgetType === 'TRANSFER' ? undefined : 'transaction'"/>	
 								</div>
 							</div>
 							<small>
-								<span v-if="event.sourceBudget.origin_account_id">
+								<span v-if="event.sourceBudget.budgetType === 'TRANSFER'">
 									{{ accountStore.getAccountName(event.sourceBudget.origin_account_id) }}
 									→
 								</span>
-								{{ accountStore.getAccountName(event.target_account_id) }}
+								{{ accountStore.getAccountName(event.sourceBudget.target_account_id) }}
 							</small>
 						</div>
 					</div>

@@ -2,7 +2,7 @@
 import { chromium, type Page, type ElementHandle, type BrowserContext } from 'playwright';
 import type { Account, AccountDetails } from 'delfi-core/models/Account';
 import { date, type DelfiDate } from 'delfi-core/utils/dateUtils';
-import { TransactionType, type TransactionEventDetails } from 'delfi-core/models/Transaction';
+import { type TransactionEventDetails } from 'delfi-core/models/Transaction';
 
 // Interface for point coordinates
 interface Point {
@@ -359,7 +359,6 @@ const InstitutionScrapers: Record<string, InstitutionScraper> = {
 					memo: description,
 					amount: -dollarsToNumber(amount), // AFCU shows pending debits with absolute value 
 					target_account_id: account.account_id,
-					transactionType: TransactionType.TRANSACTION,
 					pending: true, // Mark as pending
 				});
 			};
@@ -376,7 +375,6 @@ const InstitutionScrapers: Record<string, InstitutionScraper> = {
 					memo: description,
 					amount: dollarsToNumber(amount),
 					target_account_id: account.account_id,
-					transactionType: TransactionType.TRANSACTION,
 				});
 			};
 
@@ -400,6 +398,7 @@ const InstitutionScrapers: Record<string, InstitutionScraper> = {
 			const afcuName = await getMatchingRowValue('Nickname:');
 			const currentBalance = await getMatchingRowValue('Current Balance:');
 			const availableBalance = await getMatchingRowValue('Available Balance:');
+
 
 			return {
 				mask: mask || undefined,

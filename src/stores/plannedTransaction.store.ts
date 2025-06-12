@@ -1,11 +1,11 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import request from '@/services/request';
-import type { TransactionBudget } from 'delfi-core/models/Budget';
+import type { Budget } from 'delfi-core/models/Budget';
 import { instantiateDates } from 'delfi-core/utils/dateUtils';
 
 export const usePlannedTransactionStore = defineStore('plannedTransaction', () => {
-	let plannedTransactions = ref<TransactionBudget[]>([]);
+	let plannedTransactions = ref<Budget[]>([]);
 	let isLoadingPlannedTransactions = ref(false);
 	let isUpsertingPlannedTransaction = ref(false);
 	let isDeletingPlannedTransaction = ref(false);
@@ -22,8 +22,8 @@ export const usePlannedTransactionStore = defineStore('plannedTransaction', () =
 		}
 	}
 
-	const upsertPlannedTransaction = async (plannedTransactionData: Partial<TransactionBudget>): Promise<TransactionBudget> => {
-		let plannedTransactionRes: TransactionBudget;
+	const upsertPlannedTransaction = async (plannedTransactionData: Partial<Budget>): Promise<Budget> => {
+		let plannedTransactionRes: Budget;
 		try {
 			isUpsertingPlannedTransaction.value = true;
 			let { data } = plannedTransactionData.budget_id

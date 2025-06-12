@@ -105,7 +105,7 @@ model SavingsGoal {
     account_partition_id String?           @unique
 }
 
-enum BudgetTransactionType {
+enum BudgetType {
     TRANSACTION
     TRANSFER
 }
@@ -117,7 +117,7 @@ enum RecurrenceType {
 
 model Budget {
     budget_id       String                @id @default(uuid())
-    type            BudgetTransactionType
+    type            BudgetType
     memo            String
     recurrence_type RecurrenceType
 
@@ -198,30 +198,32 @@ model Tag {
 
 // Real transaction, created manually or imported from source (plaid)
 model Transaction {
-    transaction_id    String    @id @default(uuid())
-    amount            Float
-    date              DateTime
-    authorized_date   DateTime? // e.g. for credit card transactions, the date the transaction was authorized
-    iso_currency_code String?
-    notes             String?
+    transaction_id       String    @id @default(uuid())
+    amount               Float
+    date                 DateTime
+    authorized_date      DateTime? // e.g. for credit card transactions, the date the transaction was authorized
+    iso_currency_code    String?
+    notes                String?
+    original_description String // e.g. "Starbucks 1234"
+    pending              Boolean   @default(false)
 
     location_address String? // e.g. "123 Main St, Anytown, USA"
     location_lat     Float? // e.g. 37.7749
     location_lon     Float? // e.g. -122.4194
     location_city    String? // e.g. "San Francisco"
-	location_region  String? // e.g. "CA"
-	location_postal  String? // e.g. "94103"
+    location_region  String? // e.g. "CA"
+    location_postal  String? // e.g. "94103"
 
     source      String // e.g. "plaid", "manual", "imported"
     source_id   String? // e.g. plaid transaction id, manual transaction id, imported transaction id
     source_data Json? // e.g. plaid transaction data, imported transaction data
 
     // A single transaction cannot be split between accounts
-    Account                Account                  @relation(fields: [account_id], references: [account_id])
-    account_id             String
-    Merchant               Merchant?                @relation(fields: [merchant_id], references: [merchant_id])
-    merchant_id            String?
-    TransactionAttribution TransactionAttribution[]
+    Account      Account                  @relation(fields: [account_id], references: [account_id])
+    account_id   String
+    Merchant     Merchant?                @relation(fields: [merchant_id], references: [merchant_id])
+    merchant_id  String?
+    Attributions TransactionAttribution[]
 
     User    User   @relation(fields: [user_id], references: [user_id])
     user_id String

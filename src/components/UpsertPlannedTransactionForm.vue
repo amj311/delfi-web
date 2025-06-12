@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePlannedTransactionStore } from '@/stores/plannedTransaction.store';
-import { BudgetTransactionType, RecurrenceType } from '../../delfi-core/models/Budget';
+import { BudgetType, RecurrenceType } from '../../delfi-core/models/Budget';
 import type { PlannedTransaction } from 'models/types';
 import { computed, reactive, toRefs } from 'vue';
 import { useAccountStore } from '@/stores/account.store';
@@ -67,16 +67,16 @@ const deletePlannedTransaction = async () => {
 	<div><label for="memo">Memo</label><input id="memo" v-model="state.data.memo" /></div>
 	<div><label for="type">Type</label>
 		<select id="type" v-model="state.data.type">
-			<option v-for="ptype in BudgetTransactionType" :key="ptype">{{ptype}}</option>
+			<option v-for="ptype in BudgetType" :key="ptype">{{ptype}}</option>
 		</select>
 	</div>
-	<div><label for="target_account">{{ state.data.type === BudgetTransactionType.TRANSFER ? 'From ' : '' }}Account</label>
+	<div><label for="target_account">{{ state.data.type === BudgetType.TRANSFER ? 'From ' : '' }}Account</label>
 		<select id="type" v-model="state.data.target_account_id">
 			<option v-for="account in accountStore.accounts" :key="account.account_id" :value="account.account_id">{{account.display_name}}</option>
 		</select>
 	</div>
 
-	<div v-if="state.data.type === BudgetTransactionType.TRANSFER">
+	<div v-if="state.data.type === BudgetType.TRANSFER">
 		<label for="origin_account">To Account</label>
 		<select id="origin_account" v-model="state.data.origin_account_id">
 			<option v-for="account in accountStore.accounts" :key="account.account_id" :value="account.account_id">{{account.display_name}}</option>

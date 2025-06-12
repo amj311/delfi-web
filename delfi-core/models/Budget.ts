@@ -4,12 +4,38 @@ import { ScheduleService, type Schedule } from "./schedules/Schedule"
 import { computeTriggeredAmount, type Trigger } from "./schedules/triggers"
 import { date, toDelfiInterval, type DelfiDate } from "../utils/dateUtils";
 import FilterService from "../services/FilterService";
-import { TransactionType, type BaseTransactionDetails } from "./Transaction";
+import { type BudgetableTransactionDetails } from "./Transaction";
 
 export enum RecurrenceType {
 	SCHEDULE = "SCHEDULE",
 	TRIGGER = "TRIGGER",
 }
+
+export enum BudgetType {
+	TRANSACTION = "TRANSACTION",
+	TRANSFER = "TRANSFER",
+}
+
+export type BudgetedTransactionDetails = BudgetableTransactionDetails & Required<{
+	memo: string,
+}> & {
+	budgetType: BudgetType,
+	notes?: string | null,
+	origin_account_id?: string, // The account from which the transaction is made (for transfers)
+	origin_account_partition_id?: string, // The partition from which the transaction is made (for transfers)
+}
+
+// type TransactionBudgetDetails = Omit<BaseBudgetedTransactionDetails, 'origin_account_id' | 'origin_account_partition_id'> & {
+// 	budgetType: BudgetType.TRANSACTION,
+// }
+
+// type TransferBudgetDetails = BaseBudgetedTransactionDetails & Required<{
+// 	budgetType: BudgetType.TRANSFER,
+// 	origin_account_id: string, // The account from which the transfer is made
+// 	origin_account_partition_id: string, // The partition from which the transfer is made
+// }>
+
+// export type BudgetedTransactionDetails = TransactionBudgetDetails | TransferBudgetDetails;
 
 // PROBLEM: Projected budgets to deplete from a savings account, but real transactions to be made from a checking account.
 // X SOLUTION 1: Don't make budgets account-specific. Let go of projecting the exact balance of each account, and only project the total balance.
@@ -25,19 +51,16 @@ export enum RecurrenceType {
 // 				- The UI will need to be very intuitive and make it easy to adjust the current and future budget definitions, but give a warning before editing past definitions. Past definitions may also be collapsed or hidden.
 // 				What is a better name for these definitions? Budget periods? Budget windows? Budget variations?
 
-type BudgetTransactionDetails = BaseTransactionDetails & {
+type BaseBudget = BudgetedTransactionDetails & {
 	budget_id: string,
-	origin_account_id: string | null,
-	origin_account_partition_id: string | null,
-	notes?: string | null,
 }
 
-type ChildBudgetItem = BudgetTransactionDetails & {
+type ChildBudgetItem = BudgetedTransactionDetails & {
 	amount: number,
 	date: DelfiDate,
 }
 
-export type ScheduledBudget = BudgetTransactionDetails & {
+export type ScheduledBudget = BaseBudget & {
 	recurrence_type: RecurrenceType.SCHEDULE,
 	// ABOUT SCHEDULING
 	// One-off transactions have schedules that start and end on the same date.
@@ -62,7 +85,7 @@ export type ScheduledBudget = BudgetTransactionDetails & {
 	childItems?: Array<ChildBudgetItem>,
 }
 
-export type TriggeredBudget = BudgetTransactionDetails & {
+export type TriggeredBudget = BaseBudget & {
 	recurrence_type: RecurrenceType.TRIGGER,
 	triggerVariants: Array<{
 		start?: DelfiDate, // The date when this variant is active
@@ -71,7 +94,9 @@ export type TriggeredBudget = BudgetTransactionDetails & {
 	}>
 }
 
-export type TransactionBudget = ScheduledBudget | TriggeredBudget;
+
+
+export type Budget = ScheduledBudget | TriggeredBudget;
 
 
 
@@ -83,7 +108,7 @@ export type TransactionBudget = ScheduledBudget | TriggeredBudget;
 // 		Problem: Do parent budgets get assigned categories? Are children budgets limited to the parent's category?
 
 export type BudgetOccurrence = {
-	budget: TransactionBudget,
+	budget: Budget,
 	start: DelfiDate,
 	end: DelfiDate,
 	events: BudgetEvent[],
@@ -94,14 +119,14 @@ export enum EventFlag {
 	SYSTEM_GENERATED,
 }
 
-type BaseBudgetEvent = BaseTransactionDetails & {
+type BaseBudgetEvent = BudgetedTransactionDetails & {
 	id: string,
 	date: DelfiDate,
 	year: number;
 	month: number;
 	day: number;
 	amount: number,
-	sourceBudget: TransactionBudget,
+	sourceBudget: Budget,
 	flags: EventFlag[],
 }
 
@@ -120,18 +145,7 @@ type TriggeredBudgetEvent = BaseBudgetEvent & {
 export type BudgetEvent = ScheduledBudgetEvent | TriggeredBudgetEvent;
 
 
-export default class TransactionService {
-	static copyTransactionDetails(source: BaseTransactionDetails): BaseTransactionDetails {
-		return {
-			memo: source.memo,
-			transactionType: source.transactionType,
-			target_account_id: source.target_account_id,
-			target_account_partition_id: source.target_account_partition_id,
-			category_id: source.category_id,
-			tagIds: source.tagIds,
-		}
-	}
-
+export default class BudgetService {
 	static getNextOccurrence(asOfDate: DelfiDate, schedule: Schedule): DelfiDate | undefined {
 		return ScheduleService.getOccurrences(schedule, { start: asOfDate, take: 1 })[0];
 	}
@@ -155,7 +169,7 @@ export default class TransactionService {
 				let budgetSoFar = 0;
 				// Process child items into events
 				for (const child of childItems) {
-					const childEvents = TransactionService.createDateEventsFromBudgetDetails(date(child.date), child, child.amount) as PartialBudgetEvent[];
+					const childEvents = BudgetService.createDateEventsFromBudgetDetails(date(child.date), child, child.amount) as PartialBudgetEvent[];
 					childEvents.forEach(event => {
 						event.isPartial = true;
 						event.budgetCap = variant.amount;
@@ -178,7 +192,7 @@ export default class TransactionService {
 					for (let i = 0; i < totalIntervals; i++) {
 						const intervalDate = date(windowStart.add(i * intervalQty, interval));
 						budgetSoFar += eventAmount;
-						projectionEvents.push(...TransactionService.createDateEventsFromBudgetDetails(intervalDate, schedule, eventAmount).map(event => ({
+						projectionEvents.push(...BudgetService.createDateEventsFromBudgetDetails(intervalDate, schedule, eventAmount).map(event => ({
 							...event,
 							isPartial: true as true,
 							budgetCap: variant.amount,
@@ -192,10 +206,10 @@ export default class TransactionService {
 
 			if (variant.projectionInterval) {
 				// Handle the possibility that the requested start date is in the middle of an ongoing window.
-				const currentOccurrence = TransactionService.getPreviousOccurrence(start, variant.schedule);
+				const currentOccurrence = BudgetService.getPreviousOccurrence(start, variant.schedule);
 				if (currentOccurrence && !currentOccurrence.isSame(recurrenceDates[0], 'day')) {
 					// Generate events that haven't happened yet
-					const occurrenceEnd = TransactionService.getBudgetOccurrenceEndDate(variant, currentOccurrence);
+					const occurrenceEnd = BudgetService.getBudgetOccurrenceEndDate(variant, currentOccurrence);
 					const currentOccurrenceEvents = computeProjectionEvents(currentOccurrence, occurrenceEnd);
 					const futureEvents = currentOccurrenceEvents.filter(event => event.date.isAfter(start));
 					occurrences.push({
@@ -211,13 +225,13 @@ export default class TransactionService {
 				const occurrence: BudgetOccurrence = {
 					budget: schedule,
 					start: startDate,
-					end: TransactionService.getBudgetOccurrenceEndDate(variant, startDate),
+					end: BudgetService.getBudgetOccurrenceEndDate(variant, startDate),
 					events: [],
 				}
 
 				if (!variant.projectionInterval) {
 					// handle non-windowed schedules right off the bat, just use the cap amount
-					const hereEvents = TransactionService.createDateEventsFromBudgetDetails(startDate, schedule, variant.amount) as BaseBudgetEvent[];
+					const hereEvents = BudgetService.createDateEventsFromBudgetDetails(startDate, schedule, variant.amount) as BaseBudgetEvent[];
 					occurrence.events.push(...hereEvents);
 				}
 				else {
@@ -248,7 +262,7 @@ export default class TransactionService {
 				continue;
 			}
 			const amount = computeTriggeredAmount(triggerEvent.amount, variant.trigger.computation);
-			const events = TransactionService.createDateEventsFromBudgetDetails(transactionDate, budget, amount) as TriggeredBudgetEvent[];
+			const events = BudgetService.createDateEventsFromBudgetDetails(transactionDate, budget, amount) as TriggeredBudgetEvent[];
 			events.forEach(event => {
 				event.triggerEvent = triggerEvent;
 			});
@@ -261,19 +275,19 @@ export default class TransactionService {
 		}
 	}
 
-	private static createDateEventsFromBudgetDetails(eventDate: DelfiDate, budget: BudgetTransactionDetails, amount: number): BaseBudgetEvent[] {
+	private static createDateEventsFromBudgetDetails(eventDate: DelfiDate, budget: BudgetedTransactionDetails, amount: number): BaseBudgetEvent[] {
 		const base = {
-			...TransactionService.copyTransactionDetails(budget),
+			...BudgetService.copyTransactionDetails(budget),
 			id: uuid(),
 			date: eventDate,
 			year: eventDate.year(),
 			month: eventDate.month(),
 			day: eventDate.day(),
-			sourceBudget: budget as TransactionBudget,
+			sourceBudget: budget as Budget,
 		}
 		const events: BaseBudgetEvent[] = [];
 		// Origin transaction for Transfer
-		if (budget.transactionType === TransactionType.TRANSFER && budget.origin_account_id) {
+		if (budget.budgetType === BudgetType.TRANSFER && budget.origin_account_id) {
 			// TODO don't allow transfers without origin account
 			events.push({
 				...base,
@@ -292,5 +306,17 @@ export default class TransactionService {
 			flags: [],
 		});
 		return events;
+	}
+
+	static copyTransactionDetails(source: BudgetedTransactionDetails): BudgetedTransactionDetails {
+		return {
+			memo: source.memo,
+			budgetType: source.budgetType,
+			target_account_id: source.target_account_id,
+			target_account_partition_id: source.target_account_partition_id,
+			category_id: source.category_id,
+			Category: source.Category,
+			tagIds: source.tagIds,
+		}
 	}
 }

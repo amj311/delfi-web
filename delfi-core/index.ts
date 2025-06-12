@@ -5,7 +5,7 @@
  */
 
 import { type Account } from "./models/Account";
-import { type TransactionBudget } from "./models/Budget";
+import { type Budget } from "./models/Budget";
 import Forecast from "./models/Forecast";
 import { CategorySummary, type Category, type ParentCategory, type OccurrenceSummary, type BudgetSummary } from "./models/Category";
 import { date, type DelfiDate, instantiateDates } from "./utils/dateUtils";
@@ -14,7 +14,7 @@ import FilterService from "./services/FilterService";
 
 export type DelfiConfig = {
 	readonly accounts: Account[],
-	readonly plannedTransactions: TransactionBudget[],
+	readonly plannedTransactions: Budget[],
 	readonly categories: ParentCategory[],
 	readonly start: DelfiDate,
 	readonly end: DelfiDate,

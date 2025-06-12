@@ -1,5 +1,5 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils";
-import { type BudgetEvent, type BudgetOccurrence, type TransactionBudget, EventFlag } from "./Budget";
+import { type BudgetEvent, type BudgetOccurrence, type Budget, EventFlag } from "./Budget";
 
 type CategoryType = 'INCOME' | 'TRANSFER' | 'EXPENSE';
 
@@ -20,7 +20,7 @@ export type ChildCategory = CategorySharedProps & {
 export type Category = ParentCategory | ChildCategory;
 
 export type BudgetSummary = {
-	budget: TransactionBudget,
+	budget: Budget,
 	occurrences: OccurrenceSummary[],
 }
 
@@ -57,7 +57,7 @@ export class CategorySummary {
 
 
 	get budgetOccurrences() {
-		const budgets = new Map<TransactionBudget, OccurrenceSummary[]>();
+		const budgets = new Map<Budget, OccurrenceSummary[]>();
 		this.occurrences.forEach(o => {
 			if (!budgets.has(o.budget)) {
 				budgets.set(o.budget, []);
