@@ -1,6 +1,6 @@
 import { Budget, BudgetDbInput } from "../../models/types";
 import { prisma } from "../../prisma/client";
-import { my_budgets } from "./myData";
+import { my_budgets } from "./TestDataService";
 
 export const BudgetService = {
     async createBudget(user_id: string, budgetData: Omit<BudgetDbInput, 'budget_id' | 'user_id'>) {

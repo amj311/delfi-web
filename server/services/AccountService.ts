@@ -1,5 +1,5 @@
 import type { Account } from "delfi-core/models/Account";
-import { my_accounts } from "./myData";
+import { TestDataService } from "./TestDataService";
 import { AccountDao } from "server/data/AccountDao";
 
 export type CreateAccountData = Omit<Account, 'account_id' | 'partitions'>;
@@ -22,7 +22,7 @@ export class AccountService {
 
 	// gets all parent accounts for user, with children nested
     public static async getAllAccounts(user_id: string): Promise<Account[]>  {
-        return await AccountDao.getAllAccounts(user_id);
+        return await TestDataService.getAccounts(await AccountDao.getAllAccounts(user_id));
     }
 
     public static async getAccountById(user_id: string, accountId: string) {

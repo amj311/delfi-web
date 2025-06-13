@@ -1,10 +1,12 @@
 import type { Institution } from "delfi-core/models/Account";
 import { prisma } from "../../prisma/client";
-import { my_institutions } from "../services/myData";
+import { TestDataService } from "server/services/TestDataService";
 
 export const InstitutionDao = {
     async getAllInstitutions(): Promise<Institution[]> {
 		// First make sure custom data is upserted
+		const my_institutions = TestDataService.my_institutions;
+		
 		for (const institution of my_institutions) {
 			await prisma.institution.upsert({
 				where: { institution_id: institution.institution_id },

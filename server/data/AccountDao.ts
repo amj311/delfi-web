@@ -1,6 +1,5 @@
 import type { Account } from "delfi-core/models/Account";
 import { prisma } from "../../prisma/client";
-import { my_accounts } from "../services/myData";
 import type { CreateAccountData } from "server/services/AccountService";
 
 export const AccountDao = {

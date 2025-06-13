@@ -1,5 +1,5 @@
 import { prisma } from "../../prisma/client";
-import { my_scheduledTransactions } from "./myData";
+import { TestDataService } from "./TestDataService";
 
 export const PlannedTransactionService = {
     async createPlannedTransaction(user_id: string, plannedTransactionData: Omit<PlannedTransactionDbInput, 'budget_id' | 'user_id'>) {
@@ -16,7 +16,7 @@ export const PlannedTransactionService = {
             where: {
                 user_id,
             },
-        })).concat(my_scheduledTransactions as any);
+        })).concat(await TestDataService.getScheduledTransactions() as any);
     },
 
     async getPlannedTransactionById(user_id: string, budget_id: string) {
