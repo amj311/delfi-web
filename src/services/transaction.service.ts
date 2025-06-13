@@ -8,7 +8,7 @@ export const TransactionService = {
    */
   async getAccountTransactions(accountId: string) {
     try {
-      const response = await request.get(`/plaid/account/${accountId}/transactions`);
+      const response = await request.get(`/account/${accountId}/transactions`);
       return response.data;
     } catch (error) {
       console.error('Error fetching account transactions:', error);

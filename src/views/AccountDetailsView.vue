@@ -52,11 +52,13 @@ async function loadTransactions() {
   
   try {
     const response = await TransactionService.getAccountTransactions(accountId.value);
-    if (response.success && response.data && response.data.transactions) {
-      transactions.value = response.data.transactions;
-    } else {
-      throw new Error('Failed to load transactions');
-    }
+	console.log('Transactions response:', response);
+	transactions.value = response.data || [];
+	
+	// If no transactions found, set error message
+	if (transactions.value.length === 0) {
+	  transactionError.value = 'No transactions found for this account.';
+	}
   } catch (error) {
     console.error('Error loading transactions:', error);
     transactionError.value = 'Failed to load transactions. Please try again later.';
@@ -200,10 +202,10 @@ function handleAccountSaved({ account, isNew }) {
             <tbody>
               <tr v-for="(transaction, index) in transactions" :key="index">
                 <td>{{ formatDate(transaction.date) }}</td>
-                <td>{{ transaction.name }}</td>
+                <td>{{ transaction.memo || transaction.original_description }}</td>
                 <td>{{ transaction.category ? transaction.category.join(', ') : 'Uncategorized' }}</td>
                 <td class="amount-column">
-                  <Currency :amount="-transaction.amount" :currency="account.iso_currency_code" :mode="'transaction'" />
+                  <Currency :amount="transaction.amount" :currency="account.iso_currency_code" :mode="'transaction'" />
                 </td>
               </tr>
             </tbody>

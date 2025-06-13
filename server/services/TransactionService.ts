@@ -102,4 +102,8 @@ export class TransactionService {
 			}
 		}
 	}
+
+	public static async getTransactionsForAccount(user_id: string, account_id: string): Promise<Transaction[]> {
+		return await TransactionDao.getTransactionsForAccount(user_id, account_id);
+	}
 };

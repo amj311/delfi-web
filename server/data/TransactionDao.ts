@@ -28,6 +28,7 @@ export const TransactionDao = {
 			target_account_id: dbTransaction.account_id,
 
 			merchant_id: dbTransaction.merchant_id || null,
+			// Merchant: dbTransaction.Merchant || null,
 
 			Attributions: dbTransaction.Attributions?.map(attr => ({
 				transaction_attribution_id: attr.transaction_attribution_id,
@@ -55,6 +56,21 @@ export const TransactionDao = {
 			},
 		});
 		return found ? this.dbToTransaction(found) : null;
+	},
+
+	async getTransactionsForAccount(user_id: string, account_id: string): Promise<Transaction[]> {
+		const transactions = await prisma.transaction.findMany({
+			where: {
+				user_id,
+				account_id,
+			},
+			// include: {
+			// 	Attributions: true,
+			// 	Merchant: true,
+			// },
+		});
+		console.log(user_id, account_id, transactions.length)
+		return transactions.map(this.dbToTransaction);
 	},
 
 	async getPendingForAccount(user_id: string, account_id: string): Promise<Transaction[]> {

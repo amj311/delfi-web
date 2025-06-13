@@ -3,8 +3,7 @@ import { prisma } from "../../prisma/client";
 import type { CreateAccountData } from "server/services/AccountService";
 
 export const AccountDao = {
-	dbToAccount(dbAccount: any): Account | undefined {
-		if (!dbAccount) return undefined;
+	dbToAccount(dbAccount: any): Account {
 		return {
 			...dbAccount,
 		}
