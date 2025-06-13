@@ -42,29 +42,45 @@ type TransactionAttribution = AttributionBudgetableDetails & AttributionEventDet
 // The details that are available for events from true transactions but NOT Budgetable
 type TrueEventDetails = {
 	date: DelfiDate,
+	authorized_date?: DelfiDate | null, // The date the transaction was authorized, if different from the date
 	amount: number,
 	original_description: string,
 	pending?: boolean,
 	iso_currency_code?: string | null,
 	notes?: string | null,
-	location: {
+	location?: {
 		address?: string | null,
 		city?: string | null,
 		region?: string | null,
 		postal?: string | null,
 		lat?: number | null,
 		lon?: number | null,
-	}
-}
-
-type TrueTransaction = TrueBudgetableDetails & TrueEventDetails & {
-	transaction_id: string,
+	} | null,
 
     source:      string, // e.g. "plaid", "manual", "imported"
     source_id?:   string | null, // e.g. plaid transaction id, manual transaction id, imported transaction id
     source_data?: any // e.g. plaid transaction data, imported transaction data
+}
 
+// TODO: POTENTIAL FALSE POSITIVES. I think it is technically possible to have two transactions with the same description and amount on the same day
+// Plaid might provide different source_ids which would, but only if available
+export type TransactionUniqueFields = {
+	target_account_id: string,
+	original_description: string,
+	amount: number,
+	date: DelfiDate,
+	source_id?: string | null,
+}
+
+export type TransactionDetails = TrueBudgetableDetails & TrueEventDetails;
+
+export type Transaction = TrueBudgetableDetails & TrueEventDetails & {
+	transaction_id: string,
 	Attributions: TransactionAttribution[],
+}
+
+export type CreateTransaction = Omit<Transaction, 'transaction_id' | 'Attributions'> & {
+	Attributions?: Array<Omit<TransactionAttribution, 'transaction_attribution_id' | 'transaction_id'>>,
 }
 
 /**

@@ -24,38 +24,55 @@ model User {
     PlaidItem   PlaidItem[]
 }
 
+model Institution {
+    institution_id       String    @id @default(uuid())
+    name                 String
+    logo                 String?
+    plaid_institution_id String?   @unique // e.g. plaid institution id
+    Account              Account[]
+}
+
 model PlaidItem {
-    plaid_item_id  String    @id
-    access_token   String
-    accounts       Account[]
-    institution_id String?
-    User           User?     @relation(fields: [user_id], references: [user_id])
-    user_id        String?
+    plaid_item_id String    @id
+    access_token  String
+    accounts      Account[]
+    User          User?     @relation(fields: [user_id], references: [user_id])
+    user_id       String?
 }
 
 model Account {
     account_id          String  @id @default(uuid())
-    external_account_id String? @unique
-    display_name        String // nickname provided by user or default to external
-    external_name       String? // "real" name provided by institution
+    external_account_id String?
+    display_name        String? // nickname provided by user or default to external
+    external_name       String // "real" name provided by institution
     mask                String?
     type                String
     subtype             String
     current_balance     Float
     available_balance   Float?
+    limit               Float? // e.g. credit card limit
+    apy                 Float? // e.g. savings account APY
     iso_currency_code   String?
 
     partitions   AccountPartition[]
     savings_goal SavingsGoal?
 
+    source      String // e.g. "plaid", "manual", "imported"
+    source_id   String? // e.g. plaid account id, manual account id, imported account id
+    source_data Json? // e.g. plaid account data, manual account data, imported account data
+
+	created_at           DateTime @default(now())
+    last_successful_sync DateTime? // e.g. last time the account was synced with plaid or other source
+    last_failed_sync     DateTime? // e.g. last time the account sync failed
+    sync_error           String? // e.g. error message from last failed sync
+
     // relations
-    source            String // e.g. "plaid", "manual", "imported"
-    source_id         String? // e.g. plaid account id, manual account id, imported account id
-    source_data       Json? // e.g. plaid account data, manual account data, imported account data
-    plaid_item        PlaidItem?          @relation(fields: [plaid_item_id], references: [plaid_item_id])
-    plaid_item_id     String?
     User              User                @relation(fields: [user_id], references: [user_id])
     user_id           String
+    Institution       Institution?        @relation(fields: [institution_id], references: [institution_id])
+    institution_id    String?
+    plaid_item        PlaidItem?          @relation(fields: [plaid_item_id], references: [plaid_item_id])
+    plaid_item_id     String?
     BudgetsAsTarget   Budget[]            @relation("TargetAccount")
     BudgetsAsOrigin   Budget[]            @relation("OriginAccount")
     Transaction       Transaction[]
@@ -116,7 +133,7 @@ enum RecurrenceType {
 }
 
 model Budget {
-    budget_id       String                @id @default(uuid())
+    budget_id       String         @id @default(uuid())
     type            BudgetType
     memo            String
     recurrence_type RecurrenceType

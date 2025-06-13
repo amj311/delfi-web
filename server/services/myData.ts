@@ -3,7 +3,14 @@ import { v4 as uuid } from "uuid";
 import { flatCategoriesMap } from "../../delfi-core/models/systemCategories";
 import { BudgetType, RecurrenceType, type Budget } from "../../delfi-core/models/Budget";
 import { date } from "../../delfi-core/utils/dateUtils";
-import type { Account } from "../../delfi-core/models/Account";
+import { AccountSubtype, AccountType, type Account, type Institution } from "../../delfi-core/models/Account";
+
+export const my_institutions: Array<Institution> = [{
+	institution_id: 'test-afcu-id',
+	name: "American First Credit Union",
+	logo: "https://www.abc4.com/wp-content/uploads/sites/4/2022/07/AFCU_Logo.jpg?resize=258",
+	plaid_institution_id: null,
+}];
 
 const accountStuff = {
 	mask: "0942",
@@ -12,8 +19,11 @@ const accountStuff = {
 	user_id: "myself",
 	external_account_id: uuid(),
 	external_name: "asdfgtrf",
-	type: "depository",
-	subtype: "checking",
+	type: AccountType.depository,
+	subtype: AccountSubtype.checking,
+	institution_id: my_institutions[0].institution_id,
+	source: 'manual',
+	created_at: new Date('2021-04-01T00:00:00Z'),
 }
 
 export const my_accounts: { [key: string]: Account } = {

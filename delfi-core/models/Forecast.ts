@@ -68,7 +68,6 @@ class Forecast {
 		
 			// Compute immediate triggers by letting them query the store for events from the current month matching their filter
 			for (const transactionTrigger of this.transactionTriggers) {
-				console.log('Processing transaction trigger:', transactionTrigger);
 				const triggeredOccurrences = monthEvents.map(event =>
 					BudgetService.createOccurrenceFromTrigger(event.date, transactionTrigger, event)
 				).filter(Boolean) as BudgetOccurrence[];

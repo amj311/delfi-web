@@ -18,7 +18,9 @@
     "paths": {
       "@/*": ["./src/*"],
       "delfi-core": ["./delfi-core"],
-      "delfi-core/*": ["./delfi-core/*"]
+      "delfi-core/*": ["./delfi-core/*"],
+      "server/*": ["./server/*"],
+      "server": ["./server"]
     },
   }
 }
