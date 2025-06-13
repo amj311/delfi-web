@@ -318,7 +318,7 @@ async function typeHumanLike(page: Page, element: ElementHandle<SVGElement | HTM
 
 async function simulateTextInput(page: Page, element: ElementHandle<SVGElement | HTMLElement>, text: string): Promise<void> {
 	// first do some mouse movement
-	await simulateNaturalMouseMovement(page);
+	// await simulateNaturalMouseMovement(page);
 
 	// then click on the element
 	await simulateElClick(page, element);

@@ -1,6 +1,6 @@
 import { v4 as uuid } from "uuid";
 
-import { ScheduleService, type Schedule } from "./schedules/Schedule"
+import { ScheduleService, type SingleSchedule } from "./schedules/Schedule"
 import { computeTriggeredAmount, type Trigger } from "./schedules/triggers"
 import { date, toDelfiInterval, type DelfiDate } from "../utils/dateUtils";
 import FilterService from "../services/FilterService";
@@ -68,7 +68,7 @@ export type ScheduledBudget = BaseBudget & {
 	// The window is defined by the a number of intervals of a certain length, i.e. 3 months or 4 weeks.
 	// A repeating schedule determines the beginning of each new window.
 	scheduleVariants: Array<{
-		schedule: Schedule, // Schedule start and end dates define the variant's boundaries. Variants may not overlap.
+		schedule: SingleSchedule, // Schedule start and end dates define the variant's boundaries. Variants may not overlap.
 		// Defines how long each budget occurrence is open for after it opens
 		window?: {
 			quantity: number,
@@ -146,18 +146,10 @@ export type BudgetEvent = ScheduledBudgetEvent | TriggeredBudgetEvent;
 
 
 export default class BudgetService {
-	static getNextOccurrence(asOfDate: DelfiDate, schedule: Schedule): DelfiDate | undefined {
-		return ScheduleService.getOccurrences(schedule, { start: asOfDate, take: 1 })[0];
-	}
-
-	static getPreviousOccurrence(asOfDate: DelfiDate, schedule: Schedule) {
-		return ScheduleService.getOccurrences(schedule, { end: asOfDate, take: 1, reverse: true })[0];
-	}
-
 	static createOccurrencesFromSchedule(start: DelfiDate, end: DelfiDate, schedule: ScheduledBudget): BudgetOccurrence[] {
 		const occurrences: BudgetOccurrence[] = [];
 		for (const variant of schedule.scheduleVariants) {
-			const recurrenceDates = ScheduleService.getOccurrences(variant.schedule, { start, end });
+			const recurrenceDates = ScheduleService.delfi.getOccurrences(variant.schedule, { start, end });
 
 			const computeProjectionEvents = function(windowStart: DelfiDate, windowEnd: DelfiDate): PartialBudgetEvent[] {
 				const intervalQty = variant.projectionInterval!.quantity;
@@ -206,7 +198,7 @@ export default class BudgetService {
 
 			if (variant.projectionInterval) {
 				// Handle the possibility that the requested start date is in the middle of an ongoing window.
-				const currentOccurrence = BudgetService.getPreviousOccurrence(start, variant.schedule);
+				const currentOccurrence = ScheduleService.delfi.getPreviousOccurrence(variant.schedule, start);
 				if (currentOccurrence && !currentOccurrence.isSame(recurrenceDates[0], 'day')) {
 					// Generate events that haven't happened yet
 					const occurrenceEnd = BudgetService.getBudgetOccurrenceEndDate(variant, currentOccurrence);

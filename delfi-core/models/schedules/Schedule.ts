@@ -1,9 +1,11 @@
+import type { Dayjs } from "dayjs";
 import { date, type DelfiDate } from "../../utils/dateUtils";
 import { Schedule as rSchedule, type IOccurrencesArgs } from "./rSchedule";
+import dayjs from "dayjs";
 
 export interface IRuleOptions {
-	start: RuleOption.Start;
-	end?: RuleOption.End;
+	start: Dayjs;
+	end?: Dayjs;
 	duration?: RuleOption.Duration;
 	frequency: RuleOption.Frequency;
 	interval?: RuleOption.Interval;
@@ -65,13 +67,39 @@ export interface IRuleOptions {
 	export type ByWeekOfMonth = number;
   }
 
-export type Schedule = IRuleOptions;
+export type SingleSchedule = IRuleOptions;
+export type Schedule = SingleSchedule | Array<SingleSchedule>;
 
 export class ScheduleService {
-	static getOccurrences(schedule: Schedule, options: IOccurrencesArgs): DelfiDate[] {
-		let rrule = JSON.parse(JSON.stringify(schedule)) as IRuleOptions;
-		rrule.start && (rrule.start = date(rrule.start));
-		rrule.end && (rrule.end = date(rrule.end));
-		return new rSchedule<null>({ rrules: [rrule as any] }).occurrences(options).toArray().map(d => date(d.date));
+	static getOccurrences(schedule: Schedule, options: IOccurrencesArgs): Array<Dayjs> {
+		const arraySchedule = Array.isArray(schedule) ? schedule : [schedule];
+		let rrules = JSON.parse(JSON.stringify(arraySchedule)) as IRuleOptions[];
+		for (const rule of rrules) {
+			rule.start && (rule.start = dayjs(rule.start));
+			rule.end && (rule.end = dayjs(rule.end));
+		}
+		return new rSchedule<null>({ rrules }).occurrences(options).toArray().map(d => dayjs(d));
+	}
+
+	static getNextOccurrence(schedule: Schedule, asOfDate: Dayjs = dayjs()): Dayjs | undefined {
+		return this.getOccurrences(schedule, { start: asOfDate, take: 1 })[0];
+	}
+
+	static getPreviousOccurrence(schedule: Schedule, asOfDate: Dayjs = dayjs()): Dayjs | undefined {
+		return this.getOccurrences(schedule, { end: asOfDate, take: 1, reverse: true })[0];
+	}
+
+	static delfi = {
+		getOccurrences(schedule: Schedule, options: IOccurrencesArgs): DelfiDate[] {
+			return ScheduleService.getOccurrences(schedule, options).map(d => date(d));
+		},
+		getNextOccurrence(schedule: Schedule, asOfDate: DelfiDate = date()): DelfiDate | undefined {
+			const nextOccurrence = ScheduleService.getNextOccurrence(schedule, asOfDate);
+			return nextOccurrence ? date(nextOccurrence) : undefined;
+		},
+		getPreviousOccurrence(schedule: Schedule, asOfDate: DelfiDate = date()): DelfiDate | undefined {
+			const previousOccurrence = ScheduleService.getPreviousOccurrence(schedule, asOfDate);
+			return previousOccurrence ? date(previousOccurrence) : undefined;
+		}
 	}
 }

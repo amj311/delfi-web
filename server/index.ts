@@ -11,7 +11,7 @@ import categoryRoute from "./routes/category.route";
 import userRoute from "./routes/user.route";
 import firebaseAuthMiddleware, { firebaseConfig } from "./services/FirebaseService";
 import signupRoute from "./routes/signup.route";
-import { SyncService } from './services/SyncService';
+import './services/SyncService';
 
 // HTTPS support for development
 // const isDevelopment = !("RENDER" in process.env);
@@ -83,14 +83,6 @@ app.setErrorHandler((error: any, request, reply) => {
 		const host = `0.0.0.0`; // Listen on all interfaces to allow external connections
 		await app.listen({ port, host });
 		console.log(`Server started and listening on ${host}:${port}`)
-
-		setTimeout(() => {
-			SyncService.syncAllUsersAccounts().then(() => {
-				console.log('Scraping test completed successfully');
-			}).catch(err => {
-				console.error('Error during scraping test:', err);
-			});
-		}, 1000);
 	} catch (err) {
 		console.error(err)
 		process.exit(1)

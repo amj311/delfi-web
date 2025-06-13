@@ -1,4 +1,6 @@
+import dayjs from "dayjs";
 import { AccountService } from "./AccountService";
+import { JobService } from "./JobService";
 import { ScraperService } from "./scraper/ScraperService";
 import { TransactionService } from "./TransactionService";
 import { UserService } from "./UserService";
@@ -44,3 +46,24 @@ export class SyncService {
 		console.log('Finished syncing all users\' accounts');
 	}
 }
+
+
+// QUEUE UP SYNC JOBS!
+JobService.addJob({
+	type: 'sync_accounts',
+	schedule: {
+		start: dayjs().startOf('day'),
+		frequency: 'HOURLY',
+		interval: 6,
+	},
+	handler: async () => {
+		console.log(`Starting sync job for all users`);
+		try {
+			await SyncService.syncAllUsersAccounts();
+			console.log(`Successfully synced accounts for all users`);
+		} catch (error) {
+			console.error(`Error syncing accounts for all users:`, error);
+			throw error; // Re-throw to mark job as failed
+		}
+	}
+})
