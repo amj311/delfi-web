@@ -32,6 +32,7 @@ model Workspace {
     PlaidItem                PlaidItem[]
     CategoryGroup            CategoryGroup[]
     CategoryDetectionMapping CategoryDetectionMapping[]
+    Group                    Group[]
 }
 
 model Institution {
@@ -171,12 +172,14 @@ model Budget {
     category_id             String?
     Tags                    Tag[]                    @relation("BudgetTags")
     TransactionAttributions TransactionAttribution[]
+    Group                   Group?                   @relation(fields: [group_id], references: [group_id])
+    group_id                String?
 }
 
-model BudgetScheduleVariant {`
+model BudgetScheduleVariant {
     schedule_variant_id String @id @default(uuid())
-    Budget            Budget @relation(fields: [budget_id], references: [budget_id])
-    budget_id         String
+    Budget              Budget @relation(fields: [budget_id], references: [budget_id])
+    budget_id           String
 
     // TODO CHECK THESE AT SAVE
     amount              Float // e.g.
@@ -189,8 +192,8 @@ model BudgetScheduleVariant {`
 
 model BudgetTriggerVariant {
     trigger_variant_id String @id @default(uuid())
-    Budget            Budget @relation(fields: [budget_id], references: [budget_id])
-    budget_id         String
+    Budget             Budget @relation(fields: [budget_id], references: [budget_id])
+    budget_id          String
 
     // TODO CHECK THESE AT SAVE
     start            String? // date only e.g. "2023-10-01"
@@ -249,6 +252,15 @@ model Tag {
     TransactionAttributions TransactionAttribution[] @relation("TransactionTags")
 }
 
+model Group {
+    group_id                String                   @id @default(uuid())
+    name                    String
+    Workspace               Workspace?               @relation(fields: [workspace_id], references: [workspace_id])
+    workspace_id            String
+    Budgets                 Budget[]
+    TransactionAttributions TransactionAttribution[]
+}
+
 // Real transaction, created manually or imported from source (plaid)
 model Transaction {
     transaction_id       String  @id @default(uuid())
@@ -304,6 +316,8 @@ model TransactionAttribution {
     Tags                 Tag[]             @relation("TransactionTags")
     Budget               Budget?           @relation(fields: [budget_id], references: [budget_id])
     budget_id            String?
+    Group                Group?            @relation(fields: [group_id], references: [group_id])
+    group_id             String?
 }
 
 model Merchant {

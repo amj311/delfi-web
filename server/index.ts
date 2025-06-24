@@ -9,6 +9,7 @@ import budgetRoute from "./routes/budget.route";
 import categoryRoute from "./routes/category.route";
 import userRoute from "./routes/user.route";
 import tagRoute from "./routes/tag.route";
+import groupRoute from "./routes/group.route";
 import firebaseAuthMiddleware, { firebaseConfig } from "./services/FirebaseService";
 import signupRoute from "./routes/signup.route";
 import './services/SyncService';
@@ -60,6 +61,7 @@ app.register((authRoutes, _, done) => {
 	authRoutes.register(budgetRoute, { prefix: '/budget' });
 	authRoutes.register(categoryRoute, { prefix: '/category' });
 	authRoutes.register(tagRoute, { prefix: '/tag' });
+	authRoutes.register(groupRoute, { prefix: '/group' });
 
 	done();
 }, { prefix: '/' });

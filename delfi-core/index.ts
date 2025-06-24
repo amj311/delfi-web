@@ -151,17 +151,14 @@ export class Delfi {
 			occurrences: transferCategories.reduce((acc, c) => acc.concat(c.allOccurrences), <OccurrenceSummary[]>[]),
 		};
 
-		const tagEvents = new Map<string, Array<BudgetEvent>>();
+		const groupEvents = new Map<string, Array<BudgetEvent>>();
 		monthEvents.forEach(event => {
-			event.tag_ids?.forEach(tagId => {
-				if (!tagEvents.has(tagId)) {
-					tagEvents.set(tagId, []);
-				}
-				tagEvents.get(tagId)!.push(event);
-			});
+			if (!event.group_id) return; // Skip events without a group
+			if (!groupEvents.has(event.group_id)) {
+				groupEvents.set(event.group_id, []);
+			}
+			groupEvents.get(event.group_id)!.push(event);
 		});
-
-		console.log("month tags", tagEvents);
 
 		return {
 			netGrowth: monthNet,
@@ -173,8 +170,8 @@ export class Delfi {
 			transferSummary,
 			spendingCategories,
 			spendingTotal: spendingCategories.reduce((acc, c) => acc + c.allNetChange, 0),
-			tagsEvents: Array.from(tagEvents.entries()).map(([tagId, events]) => ({
-				tagId,
+			groupsEvents: Array.from(groupEvents.entries()).map(([groupId, events]) => ({
+				groupId,
 				events
 			})),
 		};

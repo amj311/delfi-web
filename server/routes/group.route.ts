@@ -1,11 +1,11 @@
-import type { Tag } from "delfi-core/models/Transaction";
-import { TagDao } from "../data/TagDao";
+import type { Group } from "delfi-core/models/Transaction";
+import { GroupDao } from "../data/GroupDao";
 
 export default (app, _, done) => {
 
     app.post('/', async function handler (request, reply) {
-        const tagData = request.body as Tag;
-        const data = await TagDao.createTag(tagData);
+        const groupData = request.body as Group;
+        const data = await GroupDao.createGroup(groupData);
         return {
             success: true,
             data,
@@ -13,7 +13,7 @@ export default (app, _, done) => {
     });
 
     app.get('/', async function handler (request, reply) {
-        const data = await TagDao.getAllTags();
+        const data = await GroupDao.getAllGroups();
         return {
             success: true,
             data,
@@ -21,8 +21,8 @@ export default (app, _, done) => {
     });
 
     app.get('/:id', async function handler (request, reply) {
-        const tagId = request.params.id;
-        const data = await TagDao.getTagById(tagId);
+        const groupId = request.params.id;
+        const data = await GroupDao.getGroupById(groupId);
         return {
             success: true,
             data,
@@ -30,9 +30,9 @@ export default (app, _, done) => {
     });
 
     app.put('/:id', async function handler (request, reply) {
-        const tagId = request.params.id;
-        const tagData = request.body as Tag;
-        const data = await TagDao.updateTag(tagId, tagData);
+        const groupId = request.params.id;
+        const groupData = request.body as Group;
+        const data = await GroupDao.updateGroup(groupId, groupData);
         return {
             success: true,
             data,
@@ -40,8 +40,8 @@ export default (app, _, done) => {
     });
 
     app.delete('/:id', async function handler (request, reply) {
-        const tagId = request.params.id;
-        await TagDao.deleteTag(tagId);
+        const groupId = request.params.id;
+        await GroupDao.deleteGroup(groupId);
         return {
             success: true,
         };

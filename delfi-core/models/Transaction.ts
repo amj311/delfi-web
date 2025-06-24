@@ -1,11 +1,37 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils"
 import type { CategoryDetails } from "./Category"
 
+
+/**
+ * GROUPS AND TAGS
+ * These are VERY similar, but they need to be separate because they have different purposes.
+ * Groups highlight and track a subset group of transaction, usually in a fixed period of time, like a particular vacation.
+ * A transaction might only ever need one group.
+ * 
+ * Tags are more generally applied to any transaction at any time. They don't have any particular use for the system, but users can filter by them.
+ * 
+ * These need to be different, because I wouldn't want to show a whole "group" on a budget view just because a single transaction ad a vague tag on it.
+ */
+
+//
 export type Tag = {
-	tag_id?: string,
-	workspace_id?: string,
+	// details
 	name: string,
 	color: string,
+
+	// DB
+	tag_id?: string,
+	workspace_id?: string,
+}
+
+export type Group = {
+	// details
+	name: string,
+	color: string,
+
+	// DB
+	group_id?: string,
+	workspace_id?: string,
 }
 
 // PROBLEM Transactions can be shown in a list as the parent with their splits, but the splits also need to be handled individually for attributing
@@ -28,6 +54,8 @@ type AttributionBudgetableDetails = {
 	Category?: CategoryDetails | null,
 	tag_ids?: string[],
 	Tags?: Array<Tag>,
+	group_id?: string,
+	Group?: Group,
 	memo?: string | null,
 	budget_id?: string | null,
 }

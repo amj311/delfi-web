@@ -147,7 +147,7 @@ type TriggeredBudgetEvent = BaseBudgetEvent & {
 export type BudgetEvent = ScheduledBudgetEvent | TriggeredBudgetEvent;
 
 
-export default class BudgetService {
+export default class BudgetUtils {
 	static createOccurrencesFromSchedule(start: DelfiDate, end: DelfiDate, schedule: ScheduledBudget): BudgetOccurrence[] {
 		const occurrences: BudgetOccurrence[] = [];
 		for (const variant of schedule.scheduleVariants) {
@@ -163,7 +163,7 @@ export default class BudgetService {
 				let budgetSoFar = 0;
 				// Process child items into events
 				for (const child of childItems) {
-					const childEvents = BudgetService.createDateEventsFromBudgetDetails(date(child.date), child, child.amount) as PartialBudgetEvent[];
+					const childEvents = BudgetUtils.createDateEventsFromBudgetDetails(date(child.date), child, child.amount) as PartialBudgetEvent[];
 					childEvents.forEach(event => {
 						event.isPartial = true;
 						event.budgetCap = variant.amount;
@@ -186,7 +186,7 @@ export default class BudgetService {
 					for (let i = 0; i < totalIntervals; i++) {
 						const intervalDate = date(windowStart.add(i * intervalQty, interval));
 						budgetSoFar += eventAmount;
-						projectionEvents.push(...BudgetService.createDateEventsFromBudgetDetails(intervalDate, schedule, eventAmount).map(event => ({
+						projectionEvents.push(...BudgetUtils.createDateEventsFromBudgetDetails(intervalDate, schedule, eventAmount).map(event => ({
 							...event,
 							isPartial: true as true,
 							budgetCap: variant.amount,
@@ -203,7 +203,7 @@ export default class BudgetService {
 				const currentOccurrence = ScheduleService.delfi.getPreviousOccurrence(variant.schedule, start);
 				if (currentOccurrence && !currentOccurrence.isSame(recurrenceDates[0], 'day')) {
 					// Generate events that haven't happened yet
-					const occurrenceEnd = BudgetService.getBudgetOccurrenceEndDate(variant, currentOccurrence);
+					const occurrenceEnd = BudgetUtils.getBudgetOccurrenceEndDate(variant, currentOccurrence);
 					const currentOccurrenceEvents = computeProjectionEvents(currentOccurrence, occurrenceEnd);
 					const futureEvents = currentOccurrenceEvents.filter(event => event.date.isAfter(start));
 					occurrences.push({
@@ -219,13 +219,13 @@ export default class BudgetService {
 				const occurrence: BudgetOccurrence = {
 					budget: schedule,
 					start: startDate,
-					end: BudgetService.getBudgetOccurrenceEndDate(variant, startDate),
+					end: BudgetUtils.getBudgetOccurrenceEndDate(variant, startDate),
 					events: [],
 				}
 
 				if (!variant.projectionInterval) {
 					// handle non-windowed schedules right off the bat, just use the cap amount
-					const hereEvents = BudgetService.createDateEventsFromBudgetDetails(startDate, schedule, variant.amount) as BaseBudgetEvent[];
+					const hereEvents = BudgetUtils.createDateEventsFromBudgetDetails(startDate, schedule, variant.amount) as BaseBudgetEvent[];
 					occurrence.events.push(...hereEvents);
 				}
 				else {
@@ -256,7 +256,7 @@ export default class BudgetService {
 				continue;
 			}
 			const amount = computeTriggeredAmount(triggerEvent.amount, variant.trigger.computation);
-			const events = BudgetService.createDateEventsFromBudgetDetails(transactionDate, budget, amount) as TriggeredBudgetEvent[];
+			const events = BudgetUtils.createDateEventsFromBudgetDetails(transactionDate, budget, amount) as TriggeredBudgetEvent[];
 			events.forEach(event => {
 				event.triggerEvent = triggerEvent;
 			});
@@ -271,7 +271,7 @@ export default class BudgetService {
 
 	private static createDateEventsFromBudgetDetails(eventDate: DelfiDate, budget: BudgetedTransactionDetails, amount: number): BaseBudgetEvent[] {
 		const base = {
-			...BudgetService.copyTransactionDetails(budget),
+			...BudgetUtils.copyTransactionDetails(budget),
 			id: uuid(),
 			date: eventDate,
 			year: eventDate.year(),
@@ -311,6 +311,7 @@ export default class BudgetService {
 			category_id: source.category_id,
 			Category: source.Category,
 			tag_ids: source.tag_ids,
+			group_id: source.group_id,
 		}
 	}
 }

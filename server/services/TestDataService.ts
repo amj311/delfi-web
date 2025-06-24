@@ -8,7 +8,7 @@ import { AccountService } from "./AccountService";
 import { type Workspace } from "./WorkspaceService";
 import { WorkspaceDao } from "server/data/WorkspaceDao";
 import type { User } from "./UserService";
-import type { Tag } from "delfi-core/models/Transaction";
+import type { Group, Tag } from "delfi-core/models/Transaction";
 
 export class TestDataService {
 	public static get userId(): string {
@@ -115,17 +115,24 @@ export class TestDataService {
 	}
 
 
-	public static tags: Array<Tag> = [
+	public static tags: Array<Tag> = []
+
+	public static tagId(name: string): string | undefined {
+		return this.tags.find(tag => tag.name === name)?.tag_id;
+	}
+
+
+	public static groups: Array<Group> = [
 		{
-			tag_id: 'test-montreal-2025',
+			group_id: 'test-montreal-2025',
 			name: 'Montreal 2025',
 			workspace_id: this.workspaceId,
 			color: colors.tag_yellow4,
 		}
 	]
 
-	public static tagId(name: string): string | undefined {
-		return this.tags.find(tag => tag.name === name)?.tag_id;
+	public static groupId(name: string): string | undefined {
+		return this.groups.find(group => group.name === name)?.group_id;
 	}
 
 
@@ -442,7 +449,7 @@ export class TestDataService {
 					{
 						memo: 'Round-trip flights to Montreal',
 						amount: -500,
-						tag_ids: [this.tagId('Montreal 2025')!],
+						group_id: this.groupId('Montreal 2025')!,
 						category_id: flatCategoriesMap["Flights"].category_id,
 						Category: flatCategoriesMap["Flights"],
 						date: date('2025-06-15'), // June 15, 2025
@@ -452,7 +459,7 @@ export class TestDataService {
 						budget_id: 'yearly-travel-budget',
 					},
 					{
-						tag_ids: [this.tagId('Montreal 2025')!],
+						group_id: this.groupId('Montreal 2025')!,
 						budget_id: 'yearly-travel-budget',
 						category_id: flatCategoriesMap["Hotel & Lodging"].category_id,
 						Category: flatCategoriesMap["Hotel & Lodging"],
@@ -464,7 +471,7 @@ export class TestDataService {
 						target_account_partition_id: null,
 					},
 					{
-						tag_ids: [this.tagId('Montreal 2025')!],
+						group_id: this.groupId('Montreal 2025')!,
 						budget_id: 'yearly-travel-budget',
 						category_id: flatCategoriesMap["Activities"].category_id,
 						Category: flatCategoriesMap["Activities"],

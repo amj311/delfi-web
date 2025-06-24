@@ -1,6 +1,6 @@
 import { date, type DelfiDate } from "../utils/dateUtils";
 import { type Budget, type ScheduledBudget, type BudgetEvent, type TriggeredBudget, RecurrenceType, type BudgetOccurrence } from "./Budget";
-import BudgetService from "./Budget";
+import BudgetUtils from "./Budget";
 import FilterService from "../services/FilterService";
 import { TransactionStore } from "./TransactionStore";
 
@@ -40,7 +40,7 @@ class Forecast {
 		// compute all scheduled events once first
 		const scheduledOccurrences: BudgetOccurrence[] = [];
 		for (let schedule of this.transactionSchedules) {
-			scheduledOccurrences.push(...BudgetService.createOccurrencesFromSchedule(this.start, this.end, schedule));
+			scheduledOccurrences.push(...BudgetUtils.createOccurrencesFromSchedule(this.start, this.end, schedule));
 		}
 		const scheduledEvents = scheduledOccurrences.flatMap(o => o.events);
 
@@ -61,7 +61,7 @@ class Forecast {
 			// Compute immediate triggers by letting them query the store for events from the current month matching their filter
 			for (const transactionTrigger of this.transactionTriggers) {
 				const triggeredOccurrences = monthEvents.map(event =>
-					BudgetService.createOccurrenceFromTrigger(event.date, transactionTrigger, event)
+					BudgetUtils.createOccurrenceFromTrigger(event.date, transactionTrigger, event)
 				).filter(Boolean) as BudgetOccurrence[];
 				// this.transactionStore.addTransactions(triggeredEvents);
 				monthOccurrences.push(...triggeredOccurrences);

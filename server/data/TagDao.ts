@@ -2,7 +2,7 @@ import type { Tag } from "delfi-core/models/Transaction";
 import { prisma } from "../../prisma/client";
 import { TestDataService } from "server/services/TestDataService";
 
-export const TagService = {
+export const TagDao = {
 	async createTag(data: Omit<Tag, 'tag_id'>) {
 		return await prisma.tag.create({
 			data,

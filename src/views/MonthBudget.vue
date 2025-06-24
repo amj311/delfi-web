@@ -14,11 +14,11 @@ import type { Delfi } from 'delfi-core';
 import { EventFlag, type BudgetEvent, type Budget } from '../../delfi-core/models/Budget';
 import type { Account } from 'delfi-core/models/Account';
 import { useRoute, useRouter } from 'vue-router';
-import { useTagStore } from '@/stores/tag.store';
+import { useGroupStore } from '@/stores/group.store';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
-const tagStore = useTagStore();
+const groupStore = useGroupStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -298,12 +298,19 @@ const dailyEvents = computed(() => {
 
 			<br />
 			<div>
-				<div v-for="{ tagId, events } of state.summaryData.tagsEvents" class="tag-summary ">
+				<div v-for="{ groupId, events } of state.summaryData.groupsEvents" class="group-summary ">
 					<div class="title flex align-items-center gap-2">
-						<span class="material-symbols-rounded" :style="{ color: tagStore.getTagById(tagId)!.color }">
+						<span class="material-symbols-rounded" :style="{ color: groupStore.getGroupById(groupId)!.color }">
 							sell
 						</span>
-						{{ tagStore.getTagById(tagId)!.name }}
+						{{ groupStore.getGroupById(groupId)!.name }}
+						<div class="flex-grow-1"></div>
+						<Currency
+							:amount="
+								events.reduce((acc, e) => acc + e.amount, 0)
+							"
+							mode="transaction"
+						/>
 					</div>
 					<div>
 						<div v-for="event of events" class="list-row">
@@ -570,7 +577,7 @@ const dailyEvents = computed(() => {
 	font-weight: 500;
 }
 
-.tag-summary {
+.group-summary {
 	background: #fff;
 	box-shadow: 0 0 3px #0002;
 	border-radius: 1rem;
