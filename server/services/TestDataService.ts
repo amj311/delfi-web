@@ -400,21 +400,7 @@ export class TestDataService {
 			// Fun Money
 			{
 				budget_id: uuid(),
-				memo: "Fun Money",
-				budgetType: BudgetType.TRANSACTION,
-				recurrence_type: RecurrenceType.SCHEDULE,
-				scheduleVariants: [{
-					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
-					amount: -150,
-				}],
-				account_id: getAccountByName('Checking').account_id,
-				num_months: 1,
-			},
-			// Baby Care
-			{
-				budget_id: uuid(),
-				memo: "Baby Care",
-				category_id: flatCategoriesMap["Baby Supplies"].category_id,
+				memo: "Arthur $",
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
@@ -424,6 +410,44 @@ export class TestDataService {
 				account_id: getAccountByName('Checking').account_id,
 				num_months: 1,
 			},
+			{
+				budget_id: uuid(),
+				memo: "Rachel $",
+				budgetType: BudgetType.TRANSACTION,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					amount: -50,
+				}],
+				account_id: getAccountByName('Checking').account_id,
+				num_months: 1,
+			},
+			{
+				budget_id: uuid(),
+				memo: "Family Fun",
+				budgetType: BudgetType.TRANSACTION,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					amount: -50,
+				}],
+				account_id: getAccountByName('Checking').account_id,
+				num_months: 1,
+			},
+			// // Baby Care
+			// {
+			// 	budget_id: uuid(),
+			// 	memo: "Baby Care",
+			// 	category_id: flatCategoriesMap["Baby Supplies"].category_id,
+			// 	budgetType: BudgetType.TRANSACTION,
+			// 	recurrence_type: RecurrenceType.SCHEDULE,
+			// 	scheduleVariants: [{
+			// 		schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+			// 		amount: -50,
+			// 	}],
+			// 	account_id: getAccountByName('Checking').account_id,
+			// 	num_months: 1,
+			// },
 
 
 
