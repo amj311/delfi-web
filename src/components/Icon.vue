@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import { Icons, type IconName } from 'delfi-core/utils/constants';
+import { Icons, type IconName, colors } from 'delfi-core/utils/constants';
+import { computed } from 'vue';
 
 const props = defineProps<{
 	name: IconName;
+	fill?: boolean;
+	color?: string;
 }>();
 
-const icon = Icons[props.name];
+const icon = computed(() => Icons[props.name]);
+const color = computed(() => colors[props.color || ''] || props.color || 'inherit');
 </script>
 
 <template>
-	<span class="icon-wrapper">
+	<span class="icon-wrapper" :style="{ color: color }">
 		<template v-if="icon.source === 'material-symbols'">
-			<span class="icon material-symbols-rounded">{{ icon.source_id }}</span>
+			<span class="icon material-symbols-rounded" :class="{ fill }">{{ icon.source_id }}</span>
 		</template>
 	</span>
 </template>
@@ -20,12 +24,18 @@ const icon = Icons[props.name];
 .icon-wrapper {
 	display: contents;
 	font-size: inherit;
+	user-select: none;;
 }
 .icon {
 	color: inherit;
 }
 .material-symbols-rounded {
+	padding-top: 0.08em;
 	font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' -25, 'opsz' 12;
 	font-size: 1.3em;
+
+	&.fill {
+		font-variation-settings: 'FILL' 1, 'wght' 300, 'GRAD' -25, 'opsz' 12;
+	}
 }
 </style>

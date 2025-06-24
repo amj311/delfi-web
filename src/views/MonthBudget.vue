@@ -15,6 +15,7 @@ import { EventFlag, type BudgetEvent, type Budget } from '../../delfi-core/model
 import type { Account } from 'delfi-core/models/Account';
 import { useRoute, useRouter } from 'vue-router';
 import { useGroupStore } from '@/stores/group.store';
+import Icon from '@/components/Icon.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -299,10 +300,8 @@ const dailyEvents = computed(() => {
 			<br />
 			<div>
 				<div v-for="{ groupId, events } of state.summaryData.groupsEvents" class="group-summary ">
-					<div class="title flex align-items-center gap-2">
-						<span class="material-symbols-rounded" :style="{ color: groupStore.getGroupById(groupId)!.color }">
-							sell
-						</span>
+					<div class="title flex align-items-center gap-1">
+						<Icon name="tag" fill :color="groupStore.getGroupById(groupId)!.color" />
 						{{ groupStore.getGroupById(groupId)!.name }}
 						<div class="flex-grow-1"></div>
 						<Currency

@@ -1,5 +1,6 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils"
 import type { Category } from "./Category"
+import type { TagColor } from "delfi-core/utils/constants"
 
 
 /**
@@ -17,7 +18,7 @@ import type { Category } from "./Category"
 export type Tag = {
 	// details
 	name: string,
-	color: string,
+	color: TagColor,
 
 	// DB
 	tag_id?: string,
@@ -27,7 +28,7 @@ export type Tag = {
 export type Group = {
 	// details
 	name: string,
-	color: string,
+	color: TagColor,
 
 	// DB
 	group_id?: string,

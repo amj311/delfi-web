@@ -1,4 +1,4 @@
-import { colors, MONTHS } from "../../delfi-core/utils/constants";
+import { colors, MONTHS, TagColor } from "../../delfi-core/utils/constants";
 import { v4 as uuid } from "uuid";
 import { categoryByName, flatCategoriesMap } from "../../delfi-core/models/systemCategories";
 import { BudgetType, RecurrenceType, type Budget } from "../../delfi-core/models/Budget";
@@ -128,7 +128,7 @@ export class TestDataService {
 			group_id: 'test-montreal-2025',
 			name: 'Montreal 2025',
 			workspace_id: this.workspaceId,
-			color: colors.tag_yellow4,
+			color: TagColor.tag_yellow4,
 		}
 	]
 
