@@ -75,6 +75,7 @@ export class TestDataService {
 		// 	};
 
 		const savingsAccount = existingAccounts.find(account => account.external_name === 'Expense Savings');
+		console.log('Savings Account:', savingsAccount);
 		if (savingsAccount) {
 			savingsAccount.partitions = [
 				{

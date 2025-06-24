@@ -25,7 +25,7 @@ export class AccountService {
 
 	// gets all parent accounts for workspace, with children nested
     public static async getAllAccounts(workspace_id: string): Promise<Account[]>  {
-        return await TestDataService.getAccounts(await AccountDao.getAllAccounts(workspace_id));
+		return await AccountDao.getAllAccounts(workspace_id)
     }
 
     public static async getAccountById(workspace_id: string, accountId: string) {

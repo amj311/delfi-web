@@ -1,6 +1,7 @@
 import type { Account } from "delfi-core/models/Account";
 import { prisma } from "../../prisma/client";
 import type { CreateAccountData } from "server/services/AccountService";
+import { TestDataService } from "server/services/TestDataService";
 
 export const AccountDao = {
 	dbToAccount(dbAccount: NonNullable<{ [key: string]: any }>): Account {
@@ -61,8 +62,7 @@ export const AccountDao = {
 				Institution: true,
 			}
         });
-		// return accounts.concat(Object.values(my_accounts))
-		return accounts;
+        return await TestDataService.getAccounts(accounts);
     },
 
     async getAccountById(workspace_id: string, accountId: string) {
