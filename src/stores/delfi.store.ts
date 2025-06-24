@@ -13,13 +13,13 @@ export const useDelfiStore = defineStore('delfi', () => {
 
 	async function initDelfi({
 		accounts = [] as DelfiConfig['accounts'],
-		plannedTransactions = [] as DelfiConfig['plannedTransactions'],
+		budgets = [] as DelfiConfig['budgets'],
 		categories = [] as DelfiConfig['categories'],
 	}) {
 		isInitializing.value = true;
 		delfi.init({
 			accounts,
-			plannedTransactions,
+			budgets,
 			categories,
 			start: projectionStart.value,
 			end: projectionEnd.value,

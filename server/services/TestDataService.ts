@@ -3,9 +3,9 @@ import { v4 as uuid } from "uuid";
 import { flatCategoriesMap } from "../../delfi-core/models/systemCategories";
 import { BudgetType, RecurrenceType, type Budget } from "../../delfi-core/models/Budget";
 import { date } from "../../delfi-core/utils/dateUtils";
-import { AccountSubtype, AccountType, type Account, type Institution } from "../../delfi-core/models/Account";
+import { type Account, type Institution } from "../../delfi-core/models/Account";
 import { AccountService } from "./AccountService";
-import { WorkspaceService, type Workspace } from "./WorkspaceService";
+import { type Workspace } from "./WorkspaceService";
 import { WorkspaceDao } from "server/data/WorkspaceDao";
 import type { User } from "./UserService";
 
@@ -108,7 +108,7 @@ export class TestDataService {
 	}
 
 
-	public static async getScheduledTransactions(): Promise<Budget[]> {
+	public static async getBudgets(): Promise<Budget[]> {
 		const workspace = (await WorkspaceDao.getAllWorkspaces())[0];
 		if (!workspace) {
 			return [];

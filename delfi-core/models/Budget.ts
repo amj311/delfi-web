@@ -68,6 +68,7 @@ export type ScheduledBudget = BaseBudget & {
 	// The window is defined by the a number of intervals of a certain length, i.e. 3 months or 4 weeks.
 	// A repeating schedule determines the beginning of each new window.
 	scheduleVariants: Array<{
+		schedule_variant_id?: string, // Unique ID for the variant
 		schedule: SingleSchedule, // Schedule start and end dates define the variant's boundaries. Variants may not overlap.
 		// Defines how long each budget occurrence is open for after it opens
 		window?: {
@@ -88,6 +89,7 @@ export type ScheduledBudget = BaseBudget & {
 export type TriggeredBudget = BaseBudget & {
 	recurrence_type: RecurrenceType.TRIGGER,
 	triggerVariants: Array<{
+		trigger_variant_id?: string, // Unique ID for the variant
 		start?: DelfiDate, // The date when this variant is active
 		end?: DelfiDate, // The date when this variant is no longer active
 		trigger: Trigger,
@@ -308,7 +310,7 @@ export default class BudgetService {
 			target_account_partition_id: source.target_account_partition_id,
 			category_id: source.category_id,
 			Category: source.Category,
-			tagIds: source.tagIds,
+			tag_ids: source.tag_ids,
 		}
 	}
 }

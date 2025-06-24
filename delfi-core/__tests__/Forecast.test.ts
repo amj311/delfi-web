@@ -15,7 +15,7 @@ const accounts = {
 		balance: 500,
 	},
 };
-const plannedTransactions: Budget[] = [
+const budgets: Budget[] = [
 	{
 		budget_id: "clozdincome",
 		type: BudgetTransactionType.CREDIT,
@@ -65,7 +65,7 @@ describe('Forecast', () => {
 						}]
 					)
 				],
-				plannedTransactions: [plannedTransactions[0]],
+				budgets: [budgets[0]],
 				start: date('2023-01-01'),
 				end: date('2023-01-31')
 			});
@@ -88,7 +88,7 @@ describe('Forecast', () => {
 				transaction: expect.objectContaining({
 					account_id: 'afcu_checking',
 					amount: 2500,
-					sourceSchedule: plannedTransactions[0],
+					sourceSchedule: budgets[0],
 				}),
 				accumulatorEvents: {
 					total: expect.objectContaining({
@@ -109,7 +109,7 @@ describe('Forecast', () => {
 						}]
 					)
 				],
-				plannedTransactions,
+				budgets,
 				start: date('2023-01-01'),
 				end: date('2023-01-31')
 			});
@@ -127,7 +127,7 @@ describe('Forecast', () => {
 				transaction: expect.objectContaining({
 					account_id: 'afcu_checking',
 					amount: -250,
-					sourceTrigger: plannedTransactions[1],
+					sourceTrigger: budgets[1],
 				}),
 				accumulatorEvents: {
 					total: expect.objectContaining({
@@ -163,7 +163,7 @@ describe('Forecast', () => {
 					budgetAccumulator,
 					accountAccumulator,
 				],
-				plannedTransactions: [],
+				budgets: [],
 				start: date('2023-01-01'),
 				end: date('2023-01-31')
 			});
@@ -189,7 +189,7 @@ describe('Forecast', () => {
 						}]
 					)
 				],
-				plannedTransactions,
+				budgets,
 				start: date('2023-01-01'),
 				end: date('2023-01-31')
 			});
@@ -212,7 +212,7 @@ describe('Forecast', () => {
 						}]
 					)
 				],
-				plannedTransactions,
+				budgets,
 				start: date('2023-01-01'),
 				end: date('2023-01-31')
 			});
@@ -238,7 +238,7 @@ describe('Forecast', () => {
 						}]
 					)
 				],
-				plannedTransactions,
+				budgets,
 				start: date('2023-01-01'),
 				end: date('2023-03-31')
 			});

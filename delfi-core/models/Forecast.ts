@@ -13,7 +13,7 @@ type MonthForecast = {
 
 type ForecastProps = {
 	// readonly accumulators: Accumulator[],
-	readonly plannedTransactions: Budget[],
+	readonly budgets: Budget[],
 	readonly start: DelfiDate,
 	readonly end: DelfiDate
 }
@@ -30,12 +30,8 @@ class Forecast {
 
 	constructor(props: ForecastProps) {
 		Object.assign(this, props);
-		// this.accumulatorMap = props.accumulators.reduce((accumulators, accumulator) => {
-		// 	accumulators[accumulator.key] = accumulator;
-		// 	return accumulators;
-		// }, {});
-		this.transactionSchedules = this.plannedTransactions.filter(s => s.recurrence_type === RecurrenceType.SCHEDULE) as unknown as ScheduledBudget[];
-		this.transactionTriggers = this.plannedTransactions.filter(s => s.recurrence_type === RecurrenceType.TRIGGER) as unknown as TriggeredBudget[];
+		this.transactionSchedules = this.budgets.filter(s => s.recurrence_type === RecurrenceType.SCHEDULE) as unknown as ScheduledBudget[];
+		this.transactionTriggers = this.budgets.filter(s => s.recurrence_type === RecurrenceType.TRIGGER) as unknown as TriggeredBudget[];
 	}
 
     async computeForecast() {
@@ -43,13 +39,11 @@ class Forecast {
 		this.events = [];
 		this.occurrences = [];
 
-		console.log(this.transactionSchedules, this.transactionTriggers);
 		// compute all scheduled events once first
 		const scheduledOccurrences: BudgetOccurrence[] = [];
 		for (let schedule of this.transactionSchedules) {
 			scheduledOccurrences.push(...BudgetService.createOccurrencesFromSchedule(this.start, this.end, schedule));
 		}
-		console.log(scheduledOccurrences)
 		const scheduledEvents = scheduledOccurrences.flatMap(o => o.events);
 
 		// Compute just one month at a time

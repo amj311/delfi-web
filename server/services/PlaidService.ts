@@ -494,8 +494,6 @@ export const PlaidService = {
 	},
 };
 
-PlaidService.searchForPlaidTransactionData(TestDataService.workspaces[0].workspace_id);
-
 export enum PlaidCategory {
 	INCOME_DIVIDENDS = 'INCOME_DIVIDENDS',
 	INCOME_INTEREST_EARNED = 'INCOME_INTEREST_EARNED',

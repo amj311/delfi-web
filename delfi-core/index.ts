@@ -14,7 +14,7 @@ import FilterService from "./services/FilterService";
 
 export type DelfiConfig = {
 	readonly accounts: Account[],
-	readonly plannedTransactions: Budget[],
+	readonly budgets: Budget[],
 	readonly categories: CategoryDetails[],
 	readonly start: DelfiDate,
 	readonly end: DelfiDate,
@@ -38,7 +38,7 @@ export class Delfi {
 		// Put everything in the forecast
 		this.forecast = new Forecast({
 			// accumulators,
-			plannedTransactions: this.plannedTransactions,
+			budgets: this.budgets,
 			start: this.start,
 			end: this.end,
 		});

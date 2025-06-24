@@ -134,7 +134,7 @@ model SavingsGoal {
     account_partition_id String?           @unique
 }
 
-enum BudgetType {
+enum BudgetTransactionType {
     TRANSACTION
     TRANSFER
 }
@@ -145,16 +145,18 @@ enum RecurrenceType {
 }
 
 model Budget {
-    budget_id       String         @id @default(uuid())
-    type            BudgetType
-    memo            String
-    recurrence_type RecurrenceType
+    budget_id        String                @id @default(uuid())
+    memo             String
+    transaction_type BudgetTransactionType
+    recurrence_type  RecurrenceType
 
-    BudgetVariant BudgetVariant[]
+    scheduleVariants BudgetScheduleVariant[]
+    triggerVariants  BudgetTriggerVariant[]
 
-    // user
-    Workspace                   Workspace?        @relation(fields: [workspace_id], references: [workspace_id])
-    workspace_id                String
+    // workspace
+    Workspace    Workspace? @relation(fields: [workspace_id], references: [workspace_id])
+    workspace_id String
+
     // accounts
     TargetAccount               Account           @relation(name: "TargetAccount", fields: [account_id], references: [account_id])
     OriginAccount               Account?          @relation(name: "OriginAccount", fields: [origin_account_id], references: [account_id])
@@ -171,27 +173,31 @@ model Budget {
     TransactionAttributions TransactionAttribution[]
 }
 
-model BudgetVariant {
-    budget_variant_id String @id @default(uuid())
+model BudgetScheduleVariant {`
+    schedule_variant_id String @id @default(uuid())
     Budget            Budget @relation(fields: [budget_id], references: [budget_id])
     budget_id         String
 
-    // SCHEDULED ATTRIBUTES
     // TODO CHECK THESE AT SAVE
-    amount              Float? // e.g.
-    schedule            Json? // e.g. cron expression, interval, etc.
-    window_interval     Int?
+    amount              Float // e.g.
+    schedule            Json // e.g. cron expression, interval, etc.
+    window_interval     String?
     window_quantity     Int?
-    projection_interval Int?
+    projection_interval String?
     projection_quantity Int?
+}
 
-    // TRIGGERED ATTRIBUTES
+model BudgetTriggerVariant {
+    trigger_variant_id String @id @default(uuid())
+    Budget            Budget @relation(fields: [budget_id], references: [budget_id])
+    budget_id         String
+
     // TODO CHECK THESE AT SAVE
-    start            DateTime?
-    end              DateTime?
-    trigger_filter   Json? // e.g. filter to apply to transactions, like category, amount, etc.
-    trigger_operator String? // e.g. add, subtract, multiply, divide
-    trigger_operand  Float?
+    start            String? // date only e.g. "2023-10-01"
+    end              String? // date only e.g. "2023-12-31"
+    trigger_filter   Json // e.g. filter to apply to transactions, like category, amount, etc.
+    trigger_operator String // e.g. add, subtract, multiply, divide
+    trigger_operand  Float
 }
 
 enum CategoryType {
