@@ -7,7 +7,7 @@
 import { type Account } from "./models/Account";
 import { type Budget } from "./models/Budget";
 import Forecast from "./models/Forecast";
-import { CategorySummary, type Category, type ParentCategory, type OccurrenceSummary, type BudgetSummary } from "./models/Category";
+import { CategorySummary, type CategoryDetails, type OccurrenceSummary, type BudgetSummary } from "./models/Category";
 import { date, type DelfiDate, instantiateDates } from "./utils/dateUtils";
 import type { TransactionFilter } from "./services/FilterService";
 import FilterService from "./services/FilterService";
@@ -15,7 +15,7 @@ import FilterService from "./services/FilterService";
 export type DelfiConfig = {
 	readonly accounts: Account[],
 	readonly plannedTransactions: Budget[],
-	readonly categories: ParentCategory[],
+	readonly categories: CategoryDetails[],
 	readonly start: DelfiDate,
 	readonly end: DelfiDate,
 }
@@ -44,8 +44,8 @@ export class Delfi {
 		});
 	}
 
-	get flatCategories(): Category[] {
-		return this.categories.flatMap(c => [c, ...c.children]);
+	get flatCategories(): CategoryDetails[] {
+		return this.categories;
 	}
 
 	public async computeForecast(): Promise<Forecast> {
@@ -86,10 +86,10 @@ export class Delfi {
 		// compute each account's balance at the beginning and end of the month
 		const accountSummaries = await Promise.all(this.accounts.map(async (account: Account) => {
 			const monthStartBalance = account.current_balance + this.accumulateUpTo(monthStart, [
-				{ property: 'target_account_id', operator: 'eq', operand: account.account_id },
+				{ property: 'account_id', operator: 'eq', operand: account.account_id },
 			]);
 			const accountEvents = FilterService.filter(monthEvents, [
-				{ property: 'target_account_id', operator: 'eq', operand: account.account_id },
+				{ property: 'account_id', operator: 'eq', operand: account.account_id },
 				{ property: 'year', operator: 'eq', operand: monthEnd.year() },
 				{ property: 'month', operator: 'eq', operand: monthEnd.month() },
 			]);
@@ -124,20 +124,12 @@ export class Delfi {
 			}
 		}));
 
-		const categorySummaries = this.categories.map((category: ParentCategory) => (
+		const categorySummaries = this.categories.map((category: CategoryDetails) => (
 			new CategorySummary(
 				monthStart,
 				monthEnd,
 				category,
 				monthOccurrences.filter(o => o.budget.category_id === category.category_id),
-				// this.budgets.filter(b => b.category_id === category.category_id).map(b => this.forecast.accumulatorMap[b.budget_id] as BudgetAccumulator),
-				category.children?.map(child => new CategorySummary(
-					monthStart,
-					monthEnd,
-					child,
-					monthOccurrences.filter(e => e.budget.category_id === child.category_id),
-					// this.budgets.filter(b => b.category_id === child.category_id).map(b => this.forecast.accumulatorMap[b.budget_id] as BudgetAccumulator),
-				)),
 			)
 		));
 		const spendingCategories = categorySummaries.filter(c => c.category.type === 'EXPENSE');

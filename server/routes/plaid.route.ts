@@ -16,7 +16,7 @@ export default (fastify, _, done) => {
 				success: true,
 				data: tokenData,
 			};
-		} catch (error) {
+		} catch (error: any) {
 			console.error('Error creating link token:', error);
 			reply.status(500).send({
 				success: false,
@@ -37,13 +37,13 @@ export default (fastify, _, done) => {
 				});
 			}
 			
-			const accessTokenData = await PlaidService.saveNewConnection(request.sessionUser.user_id, public_token);
+			await PlaidService.saveNewConnection(request.sessionUser.workspace_id, public_token, metadata);
 			
 			return {
 				success: true,
 				message: 'Account connected successfully'
 			};
-		} catch (error) {
+		} catch (error: any) {
 			console.error('Error in token exchange:', error);
 			reply.status(500).send({
 				success: false,
@@ -76,39 +76,39 @@ export default (fastify, _, done) => {
 			}
 			
 			return { received: true };
-		} catch (error) {
+		} catch (error: any) {
 			console.error('Error processing webhook:', error);
 			return { received: true }; // Always return 200 OK for webhooks
 		}
 	});
 	
-	// Get transactions for a specific account
-	fastify.get('/account/:accountId/transactions', async function handler (request, reply) {
-		console.log('Fetching transactions for account:', request.params.accountId);
-		try {
-			const accountId = request.params.accountId;
+	// // Get transactions for a specific account
+	// fastify.get('/account/:accountId/transactions', async function handler (request, reply) {
+	// 	console.log('Fetching transactions for account:', request.params.accountId);
+	// 	try {
+	// 		const accountId = request.params.accountId;
 			
-			if (!accountId) {
-				return reply.status(400).send({
-					success: false,
-					error: 'Missing required parameter: accountId'
-				});
-			}
+	// 		if (!accountId) {
+	// 			return reply.status(400).send({
+	// 				success: false,
+	// 				error: 'Missing required parameter: accountId'
+	// 			});
+	// 		}
 			
-			const transactionData = await PlaidService.getAccountTransactions(accountId);
+	// 		const transactionData = await PlaidService.getAccountTransactions(request.sessionUser.workspace_id, accountId);
 			
-			return {
-				success: true,
-				data: transactionData
-			};
-		} catch (error) {
-			console.error('Error fetching account transactions:', error);
-			reply.status(500).send({
-				success: false,
-				error: error.message || 'Failed to fetch transactions'
-			});
-		}
-	});
+	// 		return {
+	// 			success: true,
+	// 			data: transactionData
+	// 		};
+	// 	} catch (error: any) {
+	// 		console.error('Error fetching account transactions:', error);
+	// 		reply.status(500).send({
+	// 			success: false,
+	// 			error: error.message || 'Failed to fetch transactions'
+	// 		});
+	// 	}
+	// });
 	
 	done();
 }

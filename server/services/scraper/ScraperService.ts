@@ -5,8 +5,9 @@ import type { Page } from "playwright";
 import { InstitutionService } from "../InstitutionService";
 import { InstitutionScrapers } from "./InstitutionScrapers";
 import type { Account, AccountDetails } from "delfi-core/models/Account";
+import { TestDataService } from "../TestDataService";
 
-export type ScrapedTransaction = Omit<TransactionDetails, 'target_account_id'>;
+export type ScrapedTransaction = Omit<TransactionDetails, 'account_id'>;
 export type ScrapedAccount = Omit<AccountDetails, 'institution_id' | 'source'>;
 
 export type InstitutionScraper = {
@@ -17,7 +18,7 @@ export type InstitutionScraper = {
 	getLoginSequence: (username: string, password: string) => PageAction[];
 	listAccounts: (page: Page) => Promise<Array<ScrapedAccount>>;
 	getAccountDetails: (page: Page, external_account_id: string) => Promise<ScrapedAccount>;
-	getAccountTransactions: (page: Page, external_account_id: string) => Promise<Array<ScrapedTransaction>>;
+	getAccountTransactions: (page: Page, account: AccountDetails) => Promise<Array<ScrapedTransaction>>;
 }
 
 type AccountSyncFailed = {
@@ -32,17 +33,58 @@ type AccountSyncSuccess = {
 type AccountSyncResult = AccountSyncFailed | AccountSyncSuccess;
 
 export class ScraperService {
+
+	/**
+	 * Scrapes the institution to get details for all accounts
+	*/
+	public static async findAccountsByInstitution(workspace_id: string, institution_id: string): Promise<Array<AccountDetails>> {
+		const scraper = InstitutionScrapers[institution_id];
+		if (!scraper) {
+			throw new Error(`No scraper found for institution ${institution_id}`);
+		}
+
+		const accounts: Array<AccountDetails> = [];
+
+		await useBrowser(async (usePage) => {
+			await this.logInToInstitution(usePage, institution_id, workspace_id);
+
+			await usePage(async (page) => {
+			const scrapedAccounts = await scraper.listAccounts(page);
+				for (const scrapedAccount of scrapedAccounts) {
+					const accountData: AccountDetails = {
+						institution_id,
+						external_account_id: scrapedAccount.external_account_id,
+						external_name: scrapedAccount.external_name,
+						current_balance: scrapedAccount.current_balance,
+						available_balance: scrapedAccount.available_balance,
+						limit: scrapedAccount.limit,
+						type: scrapedAccount.type,
+						subtype: scrapedAccount.subtype,
+						iso_currency_code: scrapedAccount.iso_currency_code || 'USD',
+						source: 'scraper',
+						mask: scrapedAccount.mask,
+						source_data: scrapedAccount,
+					};
+					accounts.push(accountData);
+				}
+			});
+		});
+		return accounts;
+	}
+
+
+
 	/**
 	 * Efficiently scrapes the provided accounts by using the same browser instance and logging in once per institution.
-	 * @param user_id 
+	 * @param workspace_id 
 	 * @param accounts 
 	 * @returns 
 	 */
-	public static async scrapeUserAccounts(user_id: string, accounts: Array<Account>) {
+	public static async scrapeWorkspaceAccounts(workspace_id: string, accounts: Array<Account>) {
 		const accountResults: Record<string, AccountSyncResult> = {};
 
 		// Just to be safe, make sure all accounts belong to the same user
-		if (accounts.some((account) => account.user_id !== user_id)) {
+		if (accounts.some((account) => account.workspace_id !== workspace_id)) {
 			throw new Error('All accounts must belong to the same user');
 		}
 
@@ -52,7 +94,7 @@ export class ScraperService {
 			const failedLogins = new Map<string, string>();
 			await Promise.all(institutionIds.map(async (institutionId) => {
 				try {
-					const success = await this.logInToInstitution(usePage, institutionId);
+					const success = await this.logInToInstitution(usePage, institutionId, workspace_id);
 					if (success) {
 					} else {
 						throw new Error('Login failed');
@@ -93,7 +135,7 @@ export class ScraperService {
 	}
 
 
-	private static async scrapeAccount(account: any, usePage: UsePage) {
+	private static async scrapeAccount(account: Account, usePage: UsePage) {
 		let accountDetails!: AccountDetails;
 		let transactions!: Array<TransactionDetails>;
 
@@ -104,10 +146,10 @@ export class ScraperService {
 				institution_id: account.institution_id,
 				source: 'scraper',
 			};
-			const scrapedTransactions = await scraper.getAccountTransactions(page, account.external_account_id);
+			const scrapedTransactions = await scraper.getAccountTransactions(page, account);
 			transactions = scrapedTransactions.map((transaction) => ({
 				...transaction,
-				target_account_id: account.account_id,
+				account_id: account.account_id,
 				iso_currency_code: account.iso_currency_code || 'USD',
 				source: 'scraper',
 			}));
@@ -120,12 +162,12 @@ export class ScraperService {
 	}
 
 
-	private static async logInToInstitution(usePage: UsePage, institutionId: string) {
+	private static async logInToInstitution(usePage: UsePage, institutionId: string, workspaceId: string) {
 		let success = false;
 		try {
 			await InstitutionService.getAllInstitutions(); // Ensure institutions are loaded
 			const scraper = InstitutionScrapers[institutionId];
-			const creds = InstitutionService.getInstitutionCreds(institutionId);
+			const creds = InstitutionService.getInstitutionCreds(institutionId, workspaceId);
 
 			await usePage(async (page) => {
 				await page.goto(scraper.loginUrl);

@@ -3,7 +3,7 @@ import { date, type DelfiDate } from "delfi-core/utils/dateUtils";
 import { TransactionDao } from "server/data/TransactionDao";
 
 export class TransactionService {
-	private static async createTransaction(user_id: string, transactionData: CreateTransaction) {
+	private static async createTransaction(workspace_id: string, transactionData: CreateTransaction) {
 		// New transaction MUST have attributions totalling the whole amount
 		if (!transactionData.Attributions || transactionData.Attributions.length === 0) {
 			transactionData.Attributions = [{
@@ -20,53 +20,72 @@ export class TransactionService {
 			transactionData.authorized_date = determinedAuthorizedDate;
 		}
 
-		return await TransactionDao.createTransaction(user_id, transactionData);
-    }
+		return await TransactionDao.createTransaction(workspace_id, transactionData);
+	}
 
-	public static upsertTransaction = async (user_id: string, transactionData: CreateTransaction) => {
-		const existingTransaction = await TransactionDao.getMatchingTransaction(user_id, transactionData);
+	public static upsertTransaction = async (workspace_id: string, transactionData: CreateTransaction) => {
+		const existingTransaction = await TransactionDao.getMatchingTransaction(workspace_id, transactionData);
 		if (existingTransaction) {
 			// Update existing transaction
-			return await TransactionDao.updateTransaction(user_id, existingTransaction.transaction_id, transactionData);
+			return await TransactionDao.updateTransaction(workspace_id, existingTransaction.transaction_id, transactionData);
 		} else {
 			// Create new transaction
-			return await this.createTransaction(user_id, transactionData);
+			return await this.createTransaction(workspace_id, transactionData);
 		}
 	}
 
-	public static async syncNewTransactionsForAccount(user_id: string, account_id: string, transactions: CreateTransaction[]) {
-		const oldPendingTransactions = await TransactionDao.getPendingForAccount(user_id, account_id);
+	/**
+	 * determines if two pending transactions are the same
+	 */
+	public static comparePendingTransactions(tx1: CreateTransaction, tx2: CreateTransaction): boolean {
+		return tx1.amount === tx2.amount &&
+			tx1.date.isSame(tx2.date) &&
+			tx1.original_description === tx2.original_description;
+	}
+
+	/**
+	 * Match a completed transaction to the most likely finished-pending transaction.
+	 */
+	public static transactionMatchesOldPending(
+		completedTransaction: CreateTransaction,
+		pendingTransactions: CreateTransaction
+	): boolean {
+		return false; // We need better criteria for this
+		// return pendingTransactions.find(pendingTransaction =>
+		// 	this.comparePendingTransactions(completedTransaction, pendingTransaction)
+		// );
+	}
+
+	public static async syncNewTransactionsForAccount(workspace_id: string, account_id: string, transactions: CreateTransaction[]) {
+		const oldPendingTransactions = await TransactionDao.getPendingForAccount(workspace_id, account_id);
 
 		// FIRST UPDATE PENDING TRANSACTIONS!
 		const newPendingTransactions = transactions.filter(t => t.pending);
-		const noLongerPendingTransactions = oldPendingTransactions.filter(oldTransaction => !newPendingTransactions.some(t => 
-				t.amount === oldTransaction.amount &&
-				t.date === oldTransaction.date &&
-				t.original_description === oldTransaction.original_description // match same description for still-pending
+		const noLongerPendingTransactions = oldPendingTransactions.filter(oldTransaction => !newPendingTransactions.some(t =>
+			TransactionService.comparePendingTransactions(t, oldTransaction)
 		));
+
+		// Update all no-longer-pending transactions
+		for (const oldTransaction of noLongerPendingTransactions) {
+			TransactionDao.updateTransaction(workspace_id, oldTransaction.transaction_id, {
+				pending: true,
+				done_pending: true,
+			});
+		}
 
 		// THEN UPSERT NEW TRANSACTIONS
 		const results: Transaction[] = [];
 		for (const transaction of transactions) {
-			transaction.target_account_id = account_id;
+			transaction.account_id = account_id;
 
 			// Only look through no-longer-pending transactions for matches
 			const matchingOldPendingTransaction = noLongerPendingTransactions.find(t =>
-				t.amount === transaction.amount &&
-				t.date === transaction.date
-				// descriptions may change when no longer pending
+				TransactionService.transactionMatchesOldPending(transaction, t)
 			);
 			if (matchingOldPendingTransaction) {
-				// Reuse the old transaction, remove it from the noLongerPendingTransactions list so it doesn't get deleted
-				noLongerPendingTransactions.splice(noLongerPendingTransactions.indexOf(matchingOldPendingTransaction), 1);
-				results.push(await TransactionDao.updateTransaction(user_id, matchingOldPendingTransaction.transaction_id, {
-					pending: false,
-					original_description: transaction.original_description,
-				}));
+				// TODO copy attributions from pending
 			}
-			else {
-				results.push(await this.upsertTransaction(user_id, transaction));
-			}
+			results.push(await this.upsertTransaction(workspace_id, transaction));
 		}
 		return results;
 	}
@@ -103,7 +122,7 @@ export class TransactionService {
 		}
 	}
 
-	public static async getTransactionsForAccount(user_id: string, account_id: string): Promise<Transaction[]> {
-		return await TransactionDao.getTransactionsForAccount(user_id, account_id);
+	public static async getTransactionsForAccount(workspace_id: string, account_id: string): Promise<Transaction[]> {
+		return await TransactionDao.getTransactionsForAccount(workspace_id, account_id);
 	}
 };

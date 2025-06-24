@@ -1,23 +1,27 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils";
 import { type BudgetEvent, type BudgetOccurrence, type Budget, EventFlag } from "./Budget";
+import type { PlaidCategory } from "server/services/PlaidService";
 
 type CategoryType = 'INCOME' | 'TRANSFER' | 'EXPENSE';
 
-type CategorySharedProps = {
+export type CategoryGroup = {
+	group_id: string,
+	name: string,
+	color?: string,
+	icon?: string,
+}
+
+export type CategoryDetails = {
 	category_id: string,
 	name: string,
 	type: CategoryType,
+	group_id: string,
+	detection_keys?: [PlaidCategory]
 }
 
-export type ParentCategory = CategorySharedProps & {
-	children: Category[];
+export type Category = CategoryDetails & {
+	group?: CategoryGroup,
 }
-
-export type ChildCategory = CategorySharedProps & {
-	parent_category_id: string,
-}
-
-export type Category = ParentCategory | ChildCategory;
 
 export type BudgetSummary = {
 	budget: Budget,
@@ -32,9 +36,8 @@ export class CategorySummary {
 	constructor(
 		readonly start: DelfiDate,
 		readonly end: DelfiDate,
-		readonly category: Category,
+		readonly category: CategoryDetails,
 		private readonly _occurrences: BudgetOccurrence[] = [],
-		readonly children: CategorySummary[] = [],
 	) {}
 
 	get hasInfo(): boolean {
@@ -49,10 +52,7 @@ export class CategorySummary {
 	}
 
 	get allOccurrences(): OccurrenceSummary[] {
-		return [
-			...this.occurrences,
-			...this.children.reduce((acc, c) => acc.concat(c.allOccurrences), <OccurrenceSummary[]>[]),
-		];
+		return this.occurrences;
 	}
 
 
@@ -71,10 +71,7 @@ export class CategorySummary {
 	}
 
 	get allBudgetOccurrences() {
-		return [
-			...this.budgetOccurrences,
-			...this.children.reduce((acc, c) => acc.concat(c.allBudgetOccurrences), <{ budget_id: string, occurrences: OccurrenceSummary[] }[]>[]),
-		];
+		return this.budgetOccurrences;
 	}
 
 	/** Occurrences hold events for their entire window, which can be more than this summary */
@@ -83,10 +80,7 @@ export class CategorySummary {
 	}
 
 	get allEvents(): BudgetEvent[] {
-		return [
-			...this.events,
-			...this.children.reduce((acc, c) => acc.concat(c.allEvents), <BudgetEvent[]>[]),
-		];
+		return this.events;
 	}
 
 	get netChange(): number {

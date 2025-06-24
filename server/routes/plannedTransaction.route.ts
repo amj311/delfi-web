@@ -1,13 +1,12 @@
-import { PlannedTransaction } from "@prisma/client";
+import type { Budget } from "delfi-core/models/Budget";
 import { PlannedTransactionService } from "../services/PlannedTransactionService";
-import { PlannedTransactionDbInput } from "../../models/types";
 
 export default (fastify, _, done) => {
 
     fastify.post('/', async function handler (request, reply) {
-        const plannedTransactionData = request.body as PlannedTransactionDbInput;
-        const user_id = request.sessionUser.user_id;
-        const data = await PlannedTransactionService.createPlannedTransaction(user_id, plannedTransactionData);
+        const plannedTransactionData = request.body as Budget;
+        const workspace_id = request.sessionUser.workspace_id;
+        const data = await PlannedTransactionService.createPlannedTransaction(workspace_id, plannedTransactionData);
         return {
             success: true,
             data,
@@ -15,8 +14,8 @@ export default (fastify, _, done) => {
     });
 
     fastify.get('/', async function handler (request, reply) {
-        const user_id = request.sessionUser.user_id;
-        const data = await PlannedTransactionService.getAllPlannedTransactions(user_id);
+        const workspace_id = request.sessionUser.workspace_id;
+        const data = await PlannedTransactionService.getAllPlannedTransactions(workspace_id);
         return {
             success: true,
             data,
@@ -25,8 +24,8 @@ export default (fastify, _, done) => {
 
     fastify.get('/:id', async function handler (request, reply) {
         const plannedTransactionId = request.params.id;
-        const user_id = request.sessionUser.user_id;
-        const data = await PlannedTransactionService.getPlannedTransactionById(user_id, plannedTransactionId);
+        const workspace_id = request.sessionUser.workspace_id;
+        const data = await PlannedTransactionService.getPlannedTransactionById(workspace_id, plannedTransactionId);
         return {
             success: true,
             data,
@@ -35,9 +34,9 @@ export default (fastify, _, done) => {
 
     fastify.put('/:id', async function handler (request, reply) {
         const plannedTransactionId = request.params.id;
-        const plannedTransactionData = request.body as PlannedTransactionDbInput;
-        const user_id = request.sessionUser.user_id;
-        const data = await PlannedTransactionService.updatePlannedTransaction(user_id, plannedTransactionId, plannedTransactionData);
+        const plannedTransactionData = request.body as Budget;
+        const workspace_id = request.sessionUser.workspace_id;
+        const data = await PlannedTransactionService.updatePlannedTransaction(workspace_id, plannedTransactionId, plannedTransactionData);
         return {
             success: true,
             data,
@@ -46,8 +45,8 @@ export default (fastify, _, done) => {
 
     fastify.delete('/:id', async function handler (request, reply) {
         const plannedTransactionId = request.params.id;
-        const user_id = request.sessionUser.user_id;
-        await PlannedTransactionService.deletePlannedTransaction(user_id, plannedTransactionId);
+        const workspace_id = request.sessionUser.workspace_id;
+        await PlannedTransactionService.deletePlannedTransaction(workspace_id, plannedTransactionId);
         return {
             success: true,
         };

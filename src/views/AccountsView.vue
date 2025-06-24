@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { useAccountStore } from '@/stores/account.store';
-import { ref, onMounted } from 'vue';
-import PlaidLink from '@/components/plaid/PlaidLink.vue';
-import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
-import type { Account } from 'delfi-core/models/Account';
-import Currency from '@/components/Currency.vue';
+import { useAccountStore } from "@/stores/account.store";
+import { ref, onMounted } from "vue";
+import PlaidLink from "@/components/plaid/PlaidLink.vue";
+import UpsertAccountForm from "@/components/UpsertAccountForm.vue";
+import type { Account } from "delfi-core/models/Account";
+import Currency from "@/components/Currency.vue";
+import Button from "primevue/button";
+import DropdownMenu from "@/components/utils/DropdownMenu.vue";
 
 const accountStore = useAccountStore();
 const showAddAccountModal = ref(false);
 const selectedAccount = ref<Partial<Account> | null>(null);
+
+const plaidLinkRef = ref<any>(null);
 
 onMounted(() => {
   // Ensure accounts are loaded
@@ -38,39 +42,55 @@ function handleAccountSaved({ account, isNew }) {
   selectedAccount.value = null;
 }
 
-function formatCurrency(amount: number, currencyCode = 'USD') {
-  return new Intl.NumberFormat('en-US', { 
-    style: 'currency', 
-    currency: currencyCode 
-  }).format(amount);
+const syncing = ref(false);
+
+async function syncAccounts() {
+  try {
+    syncing.value = true;
+    await accountStore.syncAccounts();
+    // Optionally show a success message or handle post-sync logic
+  } catch (error) {
+    console.error("Error syncing accounts:", error);
+    // Optionally show an error message
+  } finally {
+    syncing.value = false;
+  }
 }
+
+const connectAccountsMenu = [
+	{
+		label: 'Connect with Plaid',
+		icon: 'pi pi-link',
+		command: () => {
+			plaidLinkRef.value?.beginLink();
+		}
+	}
+]
+
 </script>
 
 <template>
   <div class="accounts-view">
     <h1>Your Accounts</h1>
-    
+
     <div v-if="accountStore.isLoadingAccounts" class="loading">
       Loading accounts...
     </div>
-    
-    <div v-else-if="accountStore.accounts.length === 0" class="no-accounts">
-      <p>You don't have any accounts yet. Get started by adding your first account!</p>
-      <div class="actions">
-        <button @click="openAddAccountModal" class="btn primary">Add Account Manually</button>
-        <PlaidLink />
-      </div>
-    </div>
-    
+
     <div v-else class="accounts-container">
       <div class="header-actions">
         <h2>Account List</h2>
         <div class="actions">
-          <button @click="openAddAccountModal" class="btn primary">Add Account Manually</button>
-          <PlaidLink />
+           <button v-if="!syncing" @click="syncAccounts" class="btn primary">Sync Accounts</button>
+			<div v-else>Syncing accounts...</div>
+			<DropdownMenu
+				:model="connectAccountsMenu"
+			>
+				<Button label="Add Account" icon="pi pi-plus" />
+			</DropdownMenu>
         </div>
       </div>
-      
+
       <table class="accounts-table">
         <thead>
           <tr>
@@ -81,32 +101,51 @@ function formatCurrency(amount: number, currencyCode = 'USD') {
           </tr>
         </thead>
         <tbody>
-          <tr 
-            v-for="account in accountStore.accounts" 
+          <tr
+            v-for="account in accountStore.accounts"
             :key="account.account_id"
             @click="$router.push(`/accounts/${account.account_id}`)"
             class="account-row"
           >
             <td>{{ account.display_name || account.external_name }}</td>
-            <td>{{ account.type }} {{ account.subtype ? `(${account.subtype})` : '' }}</td>
-            <td><Currency :amount="account.current_balance" :currency="account.iso_currency_code" /></td>
             <td>
-              <router-link :to="`/accounts/${account.account_id}`" class="btn small">View</router-link>
+              {{ account.type }}
+              {{ account.subtype ? `(${account.subtype})` : "" }}
+            </td>
+            <td>
+              <Currency
+                :amount="account.current_balance"
+                :currency="account.iso_currency_code"
+              />
+            </td>
+            <td>
+              <router-link
+                :to="`/accounts/${account.account_id}`"
+                class="btn small"
+                >View</router-link
+              >
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-    
+
     <!-- Modal for adding/editing accounts -->
-    <dialog v-if="showAddAccountModal && selectedAccount" open class="account-modal">
-      <UpsertAccountForm 
+    <dialog
+      v-if="showAddAccountModal && selectedAccount"
+      open
+      class="account-modal"
+    >
+      <UpsertAccountForm
         :account="selectedAccount"
         :close="closeModal"
         :onSave="handleAccountSaved"
       />
     </dialog>
   </div>
+
+  <PlaidLink ref="plaidLinkRef" />
+
 </template>
 
 <style scoped>
@@ -114,7 +153,8 @@ function formatCurrency(amount: number, currencyCode = 'USD') {
   padding: 20px;
 }
 
-.loading, .no-accounts {
+.loading,
+.no-accounts {
   text-align: center;
   margin: 40px 0;
 }
@@ -171,7 +211,7 @@ function formatCurrency(amount: number, currencyCode = 'USD') {
 }
 
 .btn.primary {
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
 }
 

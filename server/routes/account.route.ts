@@ -2,14 +2,25 @@ import type { CreateAccountData } from "server/services/AccountService";
 import { AccountDao } from "../data/AccountDao";
 import type { Account } from "delfi-core/models/Account";
 import { TransactionService } from "server/services/TransactionService";
+import { SyncService } from "server/services/SyncService";
 
 export default (fastify, _, done) => {
 
+	fastify.post('/sync', async function handler (request, reply) {
+		const workspace_id = request.sessionUser.workspace_id;
+		await SyncService.syncWorkspaceAccounts(workspace_id);
+		const data = await AccountDao.getAllAccounts(workspace_id);
+		return {
+			success: true,
+			data,
+		};
+	});
+
     fastify.post('/', async function handler (request, reply) {
         const accountData = request.body as CreateAccountData;
-        const user_id = request.sessionUser.user_id;
-        const newAccount = await AccountDao.createAccount(user_id, accountData);
-		const data = await AccountDao.getAccountById(user_id, newAccount.account_id);
+        const workspace_id = request.sessionUser.workspace_id;
+        const newAccount = await AccountDao.createAccount(workspace_id, accountData);
+		const data = await AccountDao.getAccountById(workspace_id, newAccount.account_id);
         return {
             success: true,
             data,
@@ -17,8 +28,8 @@ export default (fastify, _, done) => {
     });
 
     fastify.get('/', async function handler (request, reply) {
-        const user_id = request.sessionUser.user_id;
-        const data = await AccountDao.getAllAccounts(user_id);
+        const workspace_id = request.sessionUser.workspace_id;
+        const data = await AccountDao.getAllAccounts(workspace_id);
         return {
             success: true,
             data,
@@ -27,8 +38,8 @@ export default (fastify, _, done) => {
 
     fastify.get('/:id', async function handler (request, reply) {
         const accountId = request.params.id;
-        const user_id = request.sessionUser.user_id;
-        const data = await AccountDao.getAccountById(user_id, accountId);
+        const workspace_id = request.sessionUser.workspace_id;
+        const data = await AccountDao.getAccountById(workspace_id, accountId);
         return {
             success: true,
             data,
@@ -38,19 +49,28 @@ export default (fastify, _, done) => {
 
     fastify.get('/:id/transactions', async function handler (request, reply) {
         const accountId = request.params.id;
-        const user_id = request.sessionUser.user_id;
-        const data = await TransactionService.getTransactionsForAccount(user_id, accountId);
+        const workspace_id = request.sessionUser.workspace_id;
+        const data = await TransactionService.getTransactionsForAccount(workspace_id, accountId);
         return {
             success: true,
             data,
         };
     });
 
+    fastify.post('/:id/sync', async function handler (request, reply) {
+        const accountId = request.params.id;
+        const workspace_id = request.sessionUser.workspace_id;
+        await SyncService.syncWorkspaceAccounts(workspace_id, [accountId]);
+        return {
+            success: true,
+        };
+    });
+
     fastify.put('/:id', async function handler (request, reply) {
         const accountId = request.params.id;
         const accountData = request.body as Account;
-        const user_id = request.sessionUser.user_id;
-        const data = await AccountDao.updateAccount(user_id, accountId, accountData);
+        const workspace_id = request.sessionUser.workspace_id;
+        const data = await AccountDao.updateAccount(workspace_id, accountId, accountData);
         return {
             success: true,
             data,
@@ -59,8 +79,8 @@ export default (fastify, _, done) => {
 
     fastify.delete('/:id', async function handler (request, reply) {
         const accountId = request.params.id;
-        const user_id = request.sessionUser.user_id;
-        await AccountDao.deleteAccount(user_id, accountId);
+        const workspace_id = request.sessionUser.workspace_id;
+        await AccountDao.deleteAccount(workspace_id, accountId);
         return {
             success: true,
         };

@@ -1,49 +1,50 @@
+import { categoriesArray } from "delfi-core/models/systemCategories";
 import { prisma } from "../../prisma/client";
-import { UserCategory } from "../../models/types";
-import { nestedCategories } from "../../delfi-core/models/systemCategories";
+import type { CategoryDetails } from "delfi-core/models/Category";
+import { CategoryDao } from "server/data/CategoryDao";
 
 
 export const CategoryService = {
-    async createUserCategory(categoryData: Omit<UserCategory, 'category_id'>) {
-        return await prisma.userDefinedCategory.create({
-            data: categoryData,
-        });
+    async createWorkspaceCategory(categoryData: Omit<CategoryDetails, 'category_id'>) {
+        // return await prisma.category.create({
+        //     data: categoryData,
+        // });
     },
 
-    async getUserCategories(user_id: string) {
-        // return await prisma.userDefinedCategory.findMany({
+    async getWorkspaceCategories(workspace_id: string) {
+        // return await prisma.workspaceDefinedCategory.findMany({
 		// 	where: {
-		// 		user_id,
+		// 		workspace_id,
 		// 	},
 		// });
-		return nestedCategories;
+		return await CategoryDao.getWorkspaceCategories(workspace_id);
     },
 
-    async getCategoryById(user_id: string, category_id: string) {
-        return await prisma.userDefinedCategory.findUnique({
-            where: {
-                category_id,
-				user_id,
-            },
-        });
+    async getCategoryById(workspace_id: string, category_id: string) {
+        // return await prisma.workspaceDefinedCategory.findUnique({
+        //     where: {
+        //         category_id,
+		// 		workspace_id,
+        //     },
+        // });
     },
 
-    async updateCategory(user_id: string, category_id: string, categoryData: Partial<UserCategory>) {
-        return await prisma.userDefinedCategory.update({
-            where: {
-                category_id,
-				user_id,
-            },
-            data: categoryData,
-        });
+    async updateCategory(workspace_id: string, category_id: string, categoryData: Partial<CategoryDetails>) {
+        // return await prisma.workspaceDefinedCategory.update({
+        //     where: {
+        //         category_id,
+		// 		workspace_id,
+        //     },
+        //     data: categoryData,
+        // });
     },
 
-    async deleteCategory(user_id, category_id: string) {
-        await prisma.userDefinedCategory.delete({
-            where: {
-                category_id,
-				user_id,
-            },
-        });
+    async deleteCategory(workspace_id, category_id: string) {
+        // await prisma.workspaceDefinedCategory.delete({
+        //     where: {
+        //         category_id,
+		// 		workspace_id,
+        //     },
+        // });
     },
 };

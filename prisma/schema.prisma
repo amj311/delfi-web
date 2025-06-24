@@ -11,17 +11,27 @@ datasource db {
 }
 
 model User {
-    user_id     String        @id @default(uuid())
-    auth_id     String        @unique
-    email       String        @unique
+    user_id     String      @id @default(uuid())
+    auth_id     String      @unique
+    email       String      @unique
     given_name  String
     family_name String
-    accounts    Account[]
-    Budgets     Budget[]
-    categories  Category[]
-    tags        Tag[]
-    Transaction Transaction[]
-    PlaidItem   PlaidItem[]
+    Workspaces  Workspace[]
+}
+
+model Workspace {
+    workspace_id String @id @default(uuid())
+    name         String
+    Users        User[]
+
+    accounts                 Account[]
+    Budgets                  Budget[]
+    categories               Category[]
+    tags                     Tag[]
+    Transaction              Transaction[]
+    PlaidItem                PlaidItem[]
+    CategoryGroup            CategoryGroup[]
+    CategoryDetectionMapping CategoryDetectionMapping[]
 }
 
 model Institution {
@@ -33,11 +43,12 @@ model Institution {
 }
 
 model PlaidItem {
-    plaid_item_id String    @id
-    access_token  String
-    accounts      Account[]
-    User          User?     @relation(fields: [user_id], references: [user_id])
-    user_id       String?
+    plaid_item_id        String     @id
+    plaid_institution_id String
+    access_token         String
+    accounts             Account[]
+    Workspace            Workspace? @relation(fields: [workspace_id], references: [workspace_id])
+    workspace_id         String?
 }
 
 model Account {
@@ -61,18 +72,19 @@ model Account {
     source_id   String? // e.g. plaid account id, manual account id, imported account id
     source_data Json? // e.g. plaid account data, manual account data, imported account data
 
-	created_at           DateTime @default(now())
+    created_at           DateTime  @default(now())
     last_successful_sync DateTime? // e.g. last time the account was synced with plaid or other source
     last_failed_sync     DateTime? // e.g. last time the account sync failed
     sync_error           String? // e.g. error message from last failed sync
 
     // relations
-    User              User                @relation(fields: [user_id], references: [user_id])
-    user_id           String
+    Workspace         Workspace?          @relation(fields: [workspace_id], references: [workspace_id])
+    workspace_id      String
     Institution       Institution?        @relation(fields: [institution_id], references: [institution_id])
     institution_id    String?
-    plaid_item        PlaidItem?          @relation(fields: [plaid_item_id], references: [plaid_item_id])
+    PlaidItem         PlaidItem?          @relation(fields: [plaid_item_id], references: [plaid_item_id])
     plaid_item_id     String?
+    plaid_account_id  String?
     BudgetsAsTarget   Budget[]            @relation("TargetAccount")
     BudgetsAsOrigin   Budget[]            @relation("OriginAccount")
     Transaction       Transaction[]
@@ -141,12 +153,12 @@ model Budget {
     BudgetVariant BudgetVariant[]
 
     // user
-    User                        User              @relation(fields: [user_id], references: [user_id])
-    user_id                     String
+    Workspace                   Workspace?        @relation(fields: [workspace_id], references: [workspace_id])
+    workspace_id                String
     // accounts
-    TargetAccount               Account           @relation(name: "TargetAccount", fields: [target_account_id], references: [account_id])
+    TargetAccount               Account           @relation(name: "TargetAccount", fields: [account_id], references: [account_id])
     OriginAccount               Account?          @relation(name: "OriginAccount", fields: [origin_account_id], references: [account_id])
-    target_account_id           String
+    account_id                  String
     origin_account_id           String?
     TargetAccountPartition      AccountPartition? @relation(name: "TargetAccountPartition", fields: [target_account_partition_id], references: [account_partition_id])
     OriginAccountPartition      AccountPartition? @relation(name: "OriginAccountPartition", fields: [origin_account_partition_id], references: [account_partition_id])
@@ -193,36 +205,55 @@ model Category {
     name        String
     type        CategoryType
 
-    ParentCategory     Category?  @relation("CategoryHierarchy", fields: [parent_category_id], references: [category_id])
-    child_categories   Category[] @relation("CategoryHierarchy")
-    parent_category_id String?
+    Workspace    Workspace? @relation(fields: [workspace_id], references: [workspace_id])
+    workspace_id String
 
-    user    User   @relation(fields: [user_id], references: [user_id])
-    user_id String
+    Budgets                  Budget[]
+    TransactionAttributions  TransactionAttribution[]
+    Group                    CategoryGroup              @relation(fields: [group_id], references: [group_id])
+    group_id                 String
+    CategoryDetectionMapping CategoryDetectionMapping[]
+}
 
-    Budgets                 Budget[]
-    TransactionAttributions TransactionAttribution[]
+model CategoryGroup {
+    group_id     String     @id @default(uuid())
+    name         String
+    Workspace    Workspace? @relation(fields: [workspace_id], references: [workspace_id])
+    workspace_id String
+    Categories   Category[]
+}
+
+model CategoryDetectionMapping {
+    Workspace    Workspace? @relation(fields: [workspace_id], references: [workspace_id])
+    workspace_id String
+
+    detection_key String // plaid category names
+    Category      Category @relation(fields: [category_id], references: [category_id])
+    category_id   String
+
+    @@id([workspace_id, detection_key])
 }
 
 model Tag {
     tag_id                  String                   @id @default(uuid())
     name                    String
-    user                    User                     @relation(fields: [user_id], references: [user_id])
-    user_id                 String
+    Workspace               Workspace?               @relation(fields: [workspace_id], references: [workspace_id])
+    workspace_id            String
     Budgets                 Budget[]                 @relation("BudgetTags")
     TransactionAttributions TransactionAttribution[] @relation("TransactionTags")
 }
 
 // Real transaction, created manually or imported from source (plaid)
 model Transaction {
-    transaction_id       String    @id @default(uuid())
+    transaction_id       String  @id @default(uuid())
     amount               Float
-    date                 DateTime
-    authorized_date      DateTime? // e.g. for credit card transactions, the date the transaction was authorized
+    date                 String // DATE ONLY  e.g. "2023-10-01"
+    authorized_date      String? // e.g. for credit card transactions, the date the transaction was authorized
     iso_currency_code    String?
     notes                String?
     original_description String // e.g. "Starbucks 1234"
-    pending              Boolean   @default(false)
+    pending              Boolean @default(false)
+    done_pending         Boolean @default(false) // e.g. if the transaction was pending, but has been processed. Pending should also be true
 
     location_address String? // e.g. "123 Main St, Anytown, USA"
     location_lat     Float? // e.g. 37.7749
@@ -242,8 +273,12 @@ model Transaction {
     merchant_id  String?
     Attributions TransactionAttribution[]
 
-    User    User   @relation(fields: [user_id], references: [user_id])
-    user_id String
+    ParentCategory         Transaction?  @relation("PendingTransaction", fields: [pending_transaction_id], references: [transaction_id])
+    child_categories       Transaction[] @relation("PendingTransaction")
+    pending_transaction_id String?
+
+    Workspace    Workspace @relation(fields: [workspace_id], references: [workspace_id])
+    workspace_id String
 }
 
 // To keep like data all in one place, this table holds data for ALL transactions, even without splits
@@ -266,10 +301,9 @@ model TransactionAttribution {
 }
 
 model Merchant {
-    merchant_id String        @id @default(uuid())
-    name        String
-    logo        String?
-    source      String // e.g. "plaid", "manual", "imported"
-    source_id   String? // e.g. plaid merchant id, manual merchant id, imported merchant id
-    Transaction Transaction[]
+    merchant_id       String        @id @default(uuid())
+    name              String
+    logo              String?
+    plaid_merchant_id String? // e.g. plaid merchant id, manual merchant id, imported merchant id
+    Transaction       Transaction[]
 }

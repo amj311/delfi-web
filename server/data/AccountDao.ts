@@ -3,10 +3,10 @@ import { prisma } from "../../prisma/client";
 import type { CreateAccountData } from "server/services/AccountService";
 
 export const AccountDao = {
-	dbToAccount(dbAccount: any): Account {
+	dbToAccount(dbAccount: NonNullable<{ [key: string]: any }>): Account {
 		return {
 			...dbAccount,
-		}
+		} as Account;
 	},
 
 	commonAccountToDb(account: CreateAccountData) {
@@ -33,13 +33,13 @@ export const AccountDao = {
 		}
 	},
 	
-    async createAccount(user_id: string, accountData: CreateAccountData) {
+    async createAccount(workspace_id: string, accountData: CreateAccountData) {
         const created = await prisma.account.create({
             data: {
 				...this.commonAccountToDb(accountData),
 
-				User: {
-					connect: { user_id },
+				Workspace: {
+					connect: { workspace_id },
 				},
 				Institution: {
 					connect: { institution_id: accountData.institution_id },
@@ -49,55 +49,67 @@ export const AccountDao = {
 		return this.dbToAccount(created);
     },
 
-	// gets all parent accounts for user, with children nested
-    async getAllAccounts(user_id: string): Promise<Account[]>  {
+	// gets all parent accounts for workspace, with children nested
+    async getAllAccounts(workspace_id: string): Promise<Account[]>  {
         const accounts: any[] = await prisma.account.findMany({
             where: {
-                user_id,
+                workspace_id,
             },
 			include: {
 				partitions: true,
 				savings_goal: true,
+				Institution: true,
 			}
         });
 		// return accounts.concat(Object.values(my_accounts))
 		return accounts;
     },
 
-    async getAccountById(user_id: string, accountId: string) {
+    async getAccountById(workspace_id: string, accountId: string) {
         return await prisma.account.findUnique({
             where: {
                 account_id: accountId,
-                user_id,
+                workspace_id,
             },
         });
     },
 
-	async getMatchingAccount(user_id: string, institutionId: string, externalId: string) {
-		return this.dbToAccount(await prisma.account.findFirst({
+
+	async matchAll(search: Partial<Account>): Promise<Account | null> {
+		const found = await prisma.account.findFirst({
 			where: {
-				external_account_id: externalId,
-				user_id,
-				institution_id: institutionId,
+				AND: Object.entries(search).map(([key, value]) => ({ [key]: value })),
 			},
-		}));
+		});
+		return found ? this.dbToAccount(found) : null;
 	},
 
-    async updateAccount(user_id: string, accountId: string, accountData) {
+	async getMatchingAccount(workspace_id: string, institutionId: string, externalId: string) {
+		const found = await prisma.account.findFirst({
+			where: {
+				external_account_id: externalId,
+				workspace_id,
+				institution_id: institutionId,
+			},
+		});
+		return found ? this.dbToAccount(found) : null;
+	},
+
+    async updateAccount(workspace_id: string, accountId: string, accountData) {
 		return this.dbToAccount(await prisma.account.update({
             where: {
                 account_id: accountId,
-                user_id,
+                workspace_id,
             },
             data: accountData,
         }));
     },
 
-    async deleteAccount(user_id: string, accountId: string) {
+    async deleteAccount(workspace_id: string, accountId: string) {
         await prisma.account.delete({
             where: {
                 account_id: accountId,
-                user_id,
+                workspace_id,
             },
         });
     },

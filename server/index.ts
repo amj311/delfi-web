@@ -6,7 +6,6 @@ import { createReadStream, readFileSync } from "fs";
 import plaidRoute from "./routes/plaid.route";
 import accountRoute from "./routes/account.route";
 import plannedTransactionRoute from "./routes/plannedTransaction.route";
-import budgetRoute from "./routes/budget.route";
 import categoryRoute from "./routes/category.route";
 import userRoute from "./routes/user.route";
 import firebaseAuthMiddleware, { firebaseConfig } from "./services/FirebaseService";
@@ -14,17 +13,17 @@ import signupRoute from "./routes/signup.route";
 import './services/SyncService';
 
 // HTTPS support for development
-// const isDevelopment = !("RENDER" in process.env);
-// const httpsOptions = isDevelopment ? {
-//   https: {
-//     key: readFileSync(path.join(__dirname, 'certs/localhost+2-key.pem')),
-//     cert: readFileSync(path.join(__dirname, 'certs/localhost+2.pem'))
-//   }
-// } : {};
+const isDevelopment = !("RENDER" in process.env);
+const httpsOptions = isDevelopment ? {
+  https: {
+    key: readFileSync(path.join(__dirname, 'certs/localhost+2-key.pem')),
+    cert: readFileSync(path.join(__dirname, 'certs/localhost+2.pem'))
+  }
+} : {};
 
 const app = Fastify({
 	logger: false,
-//   ...httpsOptions
+  ...httpsOptions
 });
 app.register(require('@fastify/cors'));
 
@@ -50,7 +49,6 @@ app.register((authRoutes, _, done) => {
 	authRoutes.register(plaidRoute, { prefix: '/plaid' });
 	authRoutes.register(accountRoute, { prefix: '/account' });
 	authRoutes.register(plannedTransactionRoute, { prefix: '/plannedTransaction' });
-	authRoutes.register(budgetRoute, { prefix: '/budget' });
 	authRoutes.register(categoryRoute, { prefix: '/category' });
 
 	done();

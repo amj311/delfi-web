@@ -8,7 +8,7 @@ export const indexableProperties = [
 	'day',
 	'category_id',
 	'type',
-	'target_account_id',
+	'account_id',
 	'target_account_partition_id',
 ] as const;
 export type IndexableProperty = typeof indexableProperties[number];
@@ -30,7 +30,7 @@ const indices: IndexConfig[] = [
 	// DAY
 	{ queryProp: 'day' },
 	{ queryProp: 'category_id' },
-	{ queryProp: 'target_account_id' },
+	{ queryProp: 'account_id' },
 	{ queryProp: 'target_account_partition_id' },
 	{ queryProp: 'type' },
 ] as const;

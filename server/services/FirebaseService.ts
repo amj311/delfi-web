@@ -2,6 +2,7 @@ import * as dotenv from "dotenv"
 dotenv.config()
 
 import { UserService } from "./UserService";
+import { WorkspaceDao } from "server/data/WorkspaceDao";
 
 const admin = require('firebase-admin');
 
@@ -37,8 +38,13 @@ export const firebaseAuthMiddleware = async (request, reply) => {
 		if (!user) {
 			// Send 403 for auth but no account
 			reply.status(403).send();
+			return;
 		}
         request.sessionUser = user;
+
+		// TODO include all applicable scope in session to verify access
+		// for now include the user's workspace on session
+		request.sessionUser.workspace_id = (await WorkspaceDao.getUserWorkspaces(user.user_id))[0]!.workspace_id;
     }
 	catch (error) {
         // Return an error response if the Firebase user session is not valid

@@ -37,6 +37,30 @@ export const useAccountStore = defineStore('account', () => {
 		return account?.display_name || account?.external_name || 'Unknown Account';
 	}
 
+	async function syncAccounts() {
+		try {
+			const { data } = await request.post('/account/sync');
+			accounts.value = data.data;
+		}
+		catch (e) {
+			console.error("Could not sync accounts!")
+		}
+	}
+
+	async function syncAccount(accountId: string) {
+		try {
+			const { data } = await request.post(`/account/${accountId}/sync`);
+			const account = data.data;
+			// Update the account in the store
+			accounts.value = accounts.value.map(a => a.account_id === accountId ? account : a);
+			// Also update the delfi store
+			// delfiStore.updateAccount(account);
+		}
+		catch (e) {
+			console.error("Could not sync account!")
+		}
+	}
+
 	const upsertAccount = async (accountData: Partial<Account>): Promise<Account> => {
 		let accountRes: Account;
 		try {
@@ -78,6 +102,8 @@ export const useAccountStore = defineStore('account', () => {
 		accounts,
 		isLoadingAccounts,
 		loadAccounts,
+		syncAccounts,
+		syncAccount,
 		getAccountById,
 		getAccountName,
 		upsertAccount,

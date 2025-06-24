@@ -25,3 +25,7 @@ export const getPropertyByPath = (obj: Record<string, any>, path: string): any =
 }
 
 export const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export const asAny = <T>(value: T): any => {
+	return value as any;
+}

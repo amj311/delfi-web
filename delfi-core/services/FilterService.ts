@@ -3,7 +3,7 @@ import { type BudgetedTransactionDetails, type BudgetEvent, type ScheduledBudget
 import { getPropertyByPath } from "delfi-core/utils/miscUtils"
 
 export type MatchingRule = {
-	property: 'date' | 'year' | 'month' | 'day' | 'budgetId' | 'amount' | 'memo' | 'type' | 'target_account_id' | 'target_account_partition_id' | 'category_id' | 'Category.type'
+	property: 'date' | 'year' | 'month' | 'day' | 'budgetId' | 'amount' | 'memo' | 'type' | 'account_id' | 'target_account_partition_id' | 'category_id' | 'Category.type'
 	operator: '*' | 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'inc'
 	not?: boolean // If true, the rule is inverted
 	operand?: number | string | string[] | DelfiDate

@@ -3,24 +3,39 @@ import { AccountService } from "./AccountService";
 import { JobService } from "./JobService";
 import { ScraperService } from "./scraper/ScraperService";
 import { TransactionService } from "./TransactionService";
-import { UserService } from "./UserService";
+import { WorkspaceService } from "./WorkspaceService";
+import { PlaidService } from "./PlaidService";
+import { WorkspaceDao } from "server/data/WorkspaceDao";
+import { TestDataService } from "./TestDataService";
 
 export class SyncService {
-	public static async syncUserAccounts(user_id: string): Promise<void> {
-		console.log(`\n\nSyncing accounts for user: ${user_id}`);
-		const userAccounts = await AccountService.getAllAccounts(user_id);
+	public static async addAccountsFromInstitution(workspace_id: string, institution_id: string): Promise<void> {
+		const accounts = await ScraperService.findAccountsByInstitution(workspace_id, institution_id);
+		for (const account of accounts) {
+			await AccountService.upsertAccount(workspace_id, {
+				...account,
+				created_at: new Date(),
+			});
+			console.log(`Added account: ${account.external_name} (${account.external_account_id})`);
+		}
+		await this.syncWorkspaceAccounts(workspace_id, accounts.map(account => account.external_account_id));
+	}
 
-		const scrapeResults = await ScraperService.scrapeUserAccounts(user_id, userAccounts);
+	public static async syncWorkspaceAccounts(workspace_id: string, ids?: string[]): Promise<void> {
+		console.log(`\n\nSyncing accounts for workspace: ${workspace_id}`);
+		const workspaceAccounts = (await AccountService.getAllAccounts(workspace_id)).filter(account => !ids || ids.includes(account.account_id));
 
-		await Promise.all(userAccounts.map(async account => {
+		const scrapeResults = await ScraperService.scrapeWorkspaceAccounts(workspace_id, workspaceAccounts);
+
+		await Promise.all(workspaceAccounts.map(async account => {
 			const result = scrapeResults[account.account_id];
 			if (!result.success) {
-				return await AccountService.updateAccount(user_id, account.account_id, {
+				return await AccountService.updateAccount(workspace_id, account.account_id, {
 					last_failed_sync: new Date(),
 					sync_error: result.error || 'Unknown error',
 				});
 			}
-			await AccountService.updateAccount(user_id, account.account_id, {
+			await AccountService.updateAccount(workspace_id, account.account_id, {
 				current_balance: result.accountDetails.current_balance,
 				available_balance: result.accountDetails.available_balance,
 				limit: result.accountDetails.limit,
@@ -29,21 +44,24 @@ export class SyncService {
 				last_successful_sync: new Date(),
 			});
 			console.log('Updated account:', account.account_id, result.accountDetails.external_name);
-			await TransactionService.syncNewTransactionsForAccount(user_id, account.account_id, result.transactions);
+			await TransactionService.syncNewTransactionsForAccount(workspace_id, account.account_id, result.transactions);
 			console.log('Synced transactions for account', account.account_id, result.transactions.length);
+
 		}));
+
+		await PlaidService.searchForPlaidTransactionData(workspace_id);
 	}
 
-	public static async syncAllUsersAccounts(): Promise<void> {
-		const allUsers = await UserService.getAllUsers();
-		for (const user of allUsers) {
+	public static async syncAllWorkspacesAccounts(): Promise<void> {
+		const allWorkspaces = await WorkspaceDao.getAllWorkspaces();
+		for (const workspace of allWorkspaces) {
 			try {
-				await this.syncUserAccounts(user.user_id);
+				await this.syncWorkspaceAccounts(workspace.workspace_id);
 			} catch (error) {
-				console.error(`Failed to sync accounts for user ${user.user_id}:`, error);
+				console.error(`Failed to sync accounts for workspace ${workspace.workspace_id}:`, error);
 			}
 		}
-		console.log('Finished syncing all users\' accounts');
+		console.log('Finished syncing all workspaces\' accounts');
 	}
 }
 
@@ -57,13 +75,16 @@ JobService.addJob({
 		interval: 6,
 	},
 	handler: async () => {
-		console.log(`Starting sync job for all users`);
+		console.log(`Starting sync job for all workspaces`);
 		try {
-			await SyncService.syncAllUsersAccounts();
-			console.log(`Successfully synced accounts for all users`);
+			await SyncService.syncAllWorkspacesAccounts();
+			console.log(`Successfully synced accounts for all workspaces`);
 		} catch (error) {
-			console.error(`Error syncing accounts for all users:`, error);
+			console.error(`Error syncing accounts for all workspaces:`, error);
 			throw error; // Re-throw to mark job as failed
 		}
 	}
 })
+
+
+// SyncService.addAccountsFromInstitution(TestDataService.workspaces[0].workspace_id, 'test-afcu-id')

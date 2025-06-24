@@ -1,3 +1,4 @@
+import 'primeflex/primeflex.css'
 import './assets/main.css'
 
 import { createApp } from 'vue'
@@ -8,9 +9,34 @@ import App from './App.vue'
 import router from './router/router'
 import { AuthService } from './services/authService'
 
+import 'primeflex/primeflex.css'
+import 'primeicons/primeicons.css'
+
+import PrimeVue from 'primevue/config';
+import Aura from '@primeuix/themes/aura';
+
+import ConfirmationService from 'primevue/confirmationservice';
+import ToastService from 'primevue/toastservice';
+
 const app = createApp(App)
 
-app.use(createPinia())
+app.use(PrimeVue, {
+	// Default theme configuration
+	theme: {
+		preset: Aura,
+		options: {
+			prefix: 'p',
+			darkModeSelector: '.nothing-ever', // always dark mode
+			cssLayer: false,
+			ripple: true,
+		}
+	}
+});
+
+app.use(ConfirmationService);
+app.use(ToastService);
+
+app.use(createPinia());
 app.use(router);
 
 (async () => {

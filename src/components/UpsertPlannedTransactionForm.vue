@@ -71,7 +71,7 @@ const deletePlannedTransaction = async () => {
 		</select>
 	</div>
 	<div><label for="target_account">{{ state.data.type === BudgetType.TRANSFER ? 'From ' : '' }}Account</label>
-		<select id="type" v-model="state.data.target_account_id">
+		<select id="type" v-model="state.data.account_id">
 			<option v-for="account in accountStore.accounts" :key="account.account_id" :value="account.account_id">{{account.display_name}}</option>
 		</select>
 	</div>

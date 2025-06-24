@@ -5,13 +5,29 @@ import { BudgetType, RecurrenceType, type Budget } from "../../delfi-core/models
 import { date } from "../../delfi-core/utils/dateUtils";
 import { AccountSubtype, AccountType, type Account, type Institution } from "../../delfi-core/models/Account";
 import { AccountService } from "./AccountService";
-import { UserService } from "./UserService";
+import { WorkspaceService, type Workspace } from "./WorkspaceService";
+import { WorkspaceDao } from "server/data/WorkspaceDao";
+import type { User } from "./UserService";
 
 export class TestDataService {
 
+	public static users: Array<User> = [{
+		user_id: "a911cba0-3f61-4bc7-86a6-0d1c407baf18",
+		auth_id: "5etpEgtKBCdDWG7XrmxOrlKFTI92",
+		email: "amjudd315@gmail.com",
+		given_name: "Arthur",
+		family_name: "Judd"
+	}]
+
+	public static workspaces: Array<Workspace> = [{
+		name: "SimplyOlives",
+		workspace_id: "f2b1c2d3-4e5f-6789-abcd-ef0123456789",
+	}];
+
+
 	public static my_institutions: Array<Institution> = [{
 		institution_id: 'test-afcu-id',
-		name: "American First Credit Union",
+		name: "America First Credit Union",
 		logo: "https://www.abc4.com/wp-content/uploads/sites/4/2022/07/AFCU_Logo.jpg?resize=258",
 		plaid_institution_id: null,
 	}];
@@ -21,7 +37,7 @@ export class TestDataService {
 		// 		mask: "0942",
 		// 		iso_currency_code: "USD",
 		// 		plaid_item_id: "afcu_checking",
-		// 		user_id: "myself",
+		// 		workspace_id: "myself",
 		// 		external_account_id: uuid(),
 		// 		external_name: "asdfgtrf",
 		// 		type: AccountType.depository,
@@ -77,7 +93,7 @@ export class TestDataService {
 						// 	memo: "New Car Savings",
 						// 	type: BudgetBudgetType.TRANSFER,
 						// 	origin_account_id: getAccountByName('Checking').account_id,
-						// 	user_id: 'myself',
+						// 	workspace_id: 'myself',
 						// 	schedule: { start: '2021-04-25', frequency: 'MONTHLY', byDayOfMonth: [25] },
 						// 	category_id: flatCategoriesMap["Transfer"].category_id,
 						// 	Category: flatCategoriesMap["Transfer"],
@@ -93,12 +109,12 @@ export class TestDataService {
 
 
 	public static async getScheduledTransactions(): Promise<Budget[]> {
-		const user = (await UserService.getAllUsers())[0];
-		if (!user) {
+		const workspace = (await WorkspaceDao.getAllWorkspaces())[0];
+		if (!workspace) {
 			return [];
 		}
 
-		const my_accounts = await AccountService.getAllAccounts(user.user_id);
+		const my_accounts = await AccountService.getAllAccounts(workspace.workspace_id);
 
 		function getAccountByName(name: string): Account {
 			return Object.values(my_accounts).find(account => account.external_name === name)!;
@@ -112,7 +128,7 @@ export class TestDataService {
 				budget_id: uuid(),
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Arthur Life Insurance",
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-05', frequency: 'MONTHLY', byDayOfMonth: [5] },
@@ -126,7 +142,7 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Rachel Life Insurance",
 				amount: -70,
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-05', frequency: 'MONTHLY', byDayOfMonth: [5] },
@@ -140,7 +156,7 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Car Insurance",
 				amount: -81,
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-08', frequency: 'MONTHLY', byDayOfMonth: [8] },
@@ -155,7 +171,7 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Clozd Salary",
 				amount: -3140,
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-08', frequency: 'MONTHLY', byDayOfMonth: [14, 27] },
@@ -168,7 +184,7 @@ export class TestDataService {
 				budget_id: uuid(),
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Tithing",
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				category_id: flatCategoriesMap["Tithing"].category_id,
 				Category: flatCategoriesMap["Tithing"],
 				recurrence_type: RecurrenceType.TRIGGER,
@@ -192,7 +208,7 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Fast Offering",
 				amount: -100,
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				category_id: flatCategoriesMap["Fast Offering"].category_id,
 				Category: flatCategoriesMap["Fast Offering"],
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -207,7 +223,7 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Mortgage",
 				amount: -2445,
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				category_id: flatCategoriesMap["Mortgage & Rent"].category_id,
 				Category: flatCategoriesMap["Mortgage & Rent"],
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -221,7 +237,7 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				memo: "HOA",
 				amount: -215,
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				category_id: flatCategoriesMap["Home Services"].category_id,
 				Category: flatCategoriesMap["Home Services"],
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -235,7 +251,7 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Gas Bill",
 				amount: -50,
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				category_id: flatCategoriesMap["Utilities"].category_id,
 				Category: flatCategoriesMap["Utilities"],
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -249,7 +265,7 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Power Bill",
 				amount: -30,
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				category_id: flatCategoriesMap["Utilities"].category_id,
 				Category: flatCategoriesMap["Utilities"],
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -263,7 +279,7 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Internet",
 				amount: -50,
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				category_id: flatCategoriesMap["Utilities"].category_id,
 				Category: flatCategoriesMap["Utilities"],
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -278,7 +294,7 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Preschool",
 				amount: -170,
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				category_id: flatCategoriesMap["Tuition"].category_id,
 				Category: flatCategoriesMap["Tuition"],
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -295,7 +311,7 @@ export class TestDataService {
 				budget_id: uuid(),
 				budgetType: BudgetType.TRANSFER,
 				memo: "Emergency Savings Transfer",
-				target_account_id: getAccountByName('Expense Savings').account_id,
+				account_id: getAccountByName('Expense Savings').account_id,
 				origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
@@ -309,7 +325,7 @@ export class TestDataService {
 				budget_id: uuid(),
 				budgetType: BudgetType.TRANSFER,
 				memo: "To Car Fund",
-				target_account_id: getAccountByName('Expense Savings').account_id,
+				account_id: getAccountByName('Expense Savings').account_id,
 				target_account_partition_id: getAccountByName('Expense Savings').partitions[0].account_partition_id, // New Car
 				origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -338,7 +354,7 @@ export class TestDataService {
 						quantity: 2,
 					},
 				}],
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 			} as any,
 			{
 				budget_id: uuid(),
@@ -350,35 +366,34 @@ export class TestDataService {
 					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
 					amount: -50,
 				}],
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				num_months: 1,
 			},
 			// Fun Money
 			{
 				budget_id: uuid(),
 				memo: "Fun Money",
-				category_id: flatCategoriesMap.Shopping.category_id,
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
 					amount: -150,
 				}],
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				num_months: 1,
 			},
 			// Baby Care
 			{
 				budget_id: uuid(),
 				memo: "Baby Care",
-				category_id: flatCategoriesMap.Shopping.category_id,
+				category_id: flatCategoriesMap["Baby Supplies"].category_id,
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
 					amount: -50,
 				}],
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				num_months: 1,
 			},
 
@@ -392,7 +407,7 @@ export class TestDataService {
 				category_id: flatCategoriesMap.Groceries.category_id,
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
-				target_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
 				scheduleVariants: [{
 					schedule: { start: '2022-01-01', frequency: 'YEARLY' },
 					amount: -2000,
@@ -404,38 +419,38 @@ export class TestDataService {
 				childItems: [
 					{
 						budget_id: 'travel-budget-2025',
-						category_id: flatCategoriesMap["Travel"].category_id,
-						Category: flatCategoriesMap["Travel"],
+						category_id: flatCategoriesMap["Flights"].category_id,
+						Category: flatCategoriesMap["Flights"],
 						memo: 'Delta Flight to NYC',
 						notes: 'Family summer trip',
 						amount: -1200,
 						date: date('2025-06-15'), // June 15, 2025
 						budgetType: BudgetType.TRANSACTION,
-						target_account_id: getAccountByName('Expense Savings').account_id,
+						account_id: getAccountByName('Expense Savings').account_id,
 						target_account_partition_id: null,
 					},
 					{
 						budget_id: 'travel-budget-2025',
-						category_id: flatCategoriesMap["Travel"].category_id,
-						Category: flatCategoriesMap["Travel"],
+						category_id: flatCategoriesMap["Hotel & Lodging"].category_id,
+						Category: flatCategoriesMap["Hotel & Lodging"],
 						memo: 'Hotel NYC',
 						notes: '5 nights in Manhattan',
 						amount: -1500,
 						date: date('2025-06-16'), // June 16, 2025
 						budgetType: BudgetType.TRANSACTION,
-						target_account_id: getAccountByName('Expense Savings').account_id,
+						account_id: getAccountByName('Expense Savings').account_id,
 						target_account_partition_id: null,
 					},
 					{
 						budget_id: 'travel-budget-2025',
-						category_id: flatCategoriesMap["Travel"].category_id,
-						Category: flatCategoriesMap["Travel"],
+						category_id: flatCategoriesMap["Activities"].category_id,
+						Category: flatCategoriesMap["Activities"],
 						memo: 'Broadway Tickets',
 						notes: 'Show for family',
 						amount: -400,
 						date: date('2025-06-18'), // June 18, 2025
 						budgetType: BudgetType.TRANSACTION,
-						target_account_id: getAccountByName('Expense Savings').account_id,
+						account_id: getAccountByName('Expense Savings').account_id,
 						target_account_partition_id: null,
 					},
 				]

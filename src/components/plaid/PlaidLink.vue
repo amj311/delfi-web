@@ -122,6 +122,12 @@ const beginLink = async (isOAuthRedirect = false) => {
   }
 };
 
+defineExpose({
+  beginLink,
+  loading,
+  linkSuccess,
+});
+
 const onLinkSuccess = async (
   public_token: string,
   metadata: PlaidLinkSuccessMetadata
@@ -158,7 +164,7 @@ const onEvent = (eventName: string, metadata: PlaidLinkOnEventMetadata) => {
 </script>
 
 <template>
-  <div class="plaid-link-container">
+  <!-- <div class="plaid-link-container">
     <div v-if="loading" class="loading-indicator">
       Connecting to your bank...
     </div>
@@ -180,7 +186,7 @@ const onEvent = (eventName: string, metadata: PlaidLinkOnEventMetadata) => {
         {{ error }}
       </div>
     </div>
-  </div>
+  </div> -->
 </template>
 
 <style>

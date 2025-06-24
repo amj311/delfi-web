@@ -1,5 +1,5 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils"
-import type { Category } from "./Category"
+import type { CategoryDetails } from "./Category"
 
 
 // PROBLEM Transactions can be shown in a list as the parent with their splits, but the splits also need to be handled individually for attributing
@@ -9,7 +9,7 @@ import type { Category } from "./Category"
 
 // The Budgetable details that come from a true transaction
 type TrueBudgetableDetails = {
-	target_account_id: string,
+	account_id: string,
 	merchant_id?: string | null,
 }
 
@@ -19,7 +19,7 @@ type AttributionBudgetableDetails = {
 	category_id?: string | null,
 	// ABOUT INCLUDING CATEGORIES: it may be expensive to include categories over API calls
 	// If so, we'll need to define different type that joins entities like this in the client
-	Category?: Category | null,
+	Category?: CategoryDetails | null,
 	tagIds?: string[],
 	memo?: string | null,
 	budget_id?: string | null,
@@ -45,7 +45,11 @@ type TrueEventDetails = {
 	authorized_date?: DelfiDate | null, // The date the transaction was authorized, if different from the date
 	amount: number,
 	original_description: string,
+	
 	pending?: boolean,
+	done_pending?: boolean, // If the transaction was pending, but is no longer
+	pending_transaction_id?: string | null, // If this transaction was created from a pending transaction, the ID of that pending transaction
+	
 	iso_currency_code?: string | null,
 	notes?: string | null,
 	location?: {
@@ -65,7 +69,7 @@ type TrueEventDetails = {
 // TODO: POTENTIAL FALSE POSITIVES. I think it is technically possible to have two transactions with the same description and amount on the same day
 // Plaid might provide different source_ids which would, but only if available
 export type TransactionUniqueFields = {
-	target_account_id: string,
+	account_id: string,
 	original_description: string,
 	amount: number,
 	date: DelfiDate,
@@ -74,18 +78,51 @@ export type TransactionUniqueFields = {
 
 export type TransactionDetails = TrueBudgetableDetails & TrueEventDetails;
 
+/**
+ * A realio-trulio bank transaction
+ */
 export type Transaction = TrueBudgetableDetails & TrueEventDetails & {
 	transaction_id: string,
+	workspace_id: string,
 	Attributions: TransactionAttribution[],
+	Merchant?: Merchant | null,
 }
 
-export type CreateTransaction = Omit<Transaction, 'transaction_id' | 'Attributions'> & {
+export type CreateTransaction = Omit<Transaction, 'transaction_id' | 'Attributions' | 'workspace_id'> & {
 	Attributions?: Array<Omit<TransactionAttribution, 'transaction_attribution_id' | 'transaction_id'>>,
 }
 
 /**
  * A compiled event that represents a single attribution as if it were a standalone transaction.
  */
-type AttributedEvent = TrueEventDetails & TransactionAttribution & {
+type AttributedEvent = Transaction & TransactionAttribution & {
 	trueTotal: number, // The total amount of the transaction, including all splits
+}
+
+export type Merchant = {
+	merchant_id: string,
+	name: string,
+	logo?: string | null,
+	plaid_merchant_id?: string | null, // The Plaid merchant ID, if available
+}
+
+
+export class TransactionUtils {
+	public static processAttributedEvents(transactions: Array<Transaction>) {
+		const attributedEvents: Array<AttributedEvent> = [];
+
+		for (const transaction of transactions) {
+			const trueTotal = transaction.Attributions.reduce((sum, attr) => sum + attr.amount, 0);
+
+			for (const attribution of transaction.Attributions) {
+				attributedEvents.push({
+					...transaction,
+					...attribution,
+					trueTotal,
+				});
+			}
+		}
+
+		return attributedEvents;
+	}
 }

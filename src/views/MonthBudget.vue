@@ -200,7 +200,7 @@ const dailyEvents = computed(() => {
 							<Currency :amount="occurrences.reduce((acc, o) => acc + o.eventsInRange.reduce((acc, e) => acc + e.amount, 0), 0)" mode="transaction" />	
 						</div>
 						<small>
-							{{ accountStore.getAccountName(budget.target_account_id) }}
+							{{ accountStore.getAccountName(budget.account_id) }}
 						</small>
 					</div>
 				</div>
@@ -215,7 +215,7 @@ const dailyEvents = computed(() => {
 							{{ budget.memo }}
 							<Currency :amount="eventsInRange.filter(e => !e.flags.includes(EventFlag.TRANSFER_COPY)).reduce((acc, e) => acc + e.amount, 0)" /> <!-- counting both events cancels out -->
 						</div>
-						<small>{{ accountStore.getAccountName(budget.origin_account_id!) }} → {{ accountStore.getAccountName(budget.target_account_id) }}</small>
+						<small>{{ accountStore.getAccountName(budget.origin_account_id!) }} → {{ accountStore.getAccountName(budget.account_id) }}</small>
 					</div>
 				</div>
 			</div>
@@ -277,7 +277,7 @@ const dailyEvents = computed(() => {
 									{{ accountStore.getAccountName(event.sourceBudget.origin_account_id) }}
 									→
 								</span>
-								{{ accountStore.getAccountName(event.sourceBudget.target_account_id) }}
+								{{ accountStore.getAccountName(event.sourceBudget.account_id) }}
 							</small>
 						</div>
 					</div>

@@ -284,7 +284,7 @@ export default class BudgetService {
 			events.push({
 				...base,
 				amount: -amount,
-				target_account_id: budget.origin_account_id,
+				account_id: budget.origin_account_id,
 				target_account_partition_id: budget.origin_account_partition_id,
 				flags: [EventFlag.TRANSFER_COPY],
 			});
@@ -304,7 +304,7 @@ export default class BudgetService {
 		return {
 			memo: source.memo,
 			budgetType: source.budgetType,
-			target_account_id: source.target_account_id,
+			account_id: source.account_id,
 			target_account_partition_id: source.target_account_partition_id,
 			category_id: source.category_id,
 			Category: source.Category,

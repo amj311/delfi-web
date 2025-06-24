@@ -1,6 +1,6 @@
 import type { Page } from "playwright";
 import type { InstitutionScraper, ScrapedAccount, ScrapedTransaction } from "./ScraperService";
-import { AccountSubtype, AccountType } from "delfi-core/models/Account";
+import { AccountSubtype, AccountType, type AccountDetails } from "delfi-core/models/Account";
 import { dollarsToNumber, stringToDate } from "./ScraperUtils";
 
 export const InstitutionScrapers: Record<string, InstitutionScraper> = {
@@ -97,8 +97,8 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 			}
 		},
 
-		async getAccountTransactions(page, external_account_id): Promise<Array<ScrapedTransaction>> {
-			const accountPageUrl = `https://webaccess45.americafirst.com/banking/Accounts/Details/Index/${external_account_id}`;
+		async getAccountTransactions(page, account: AccountDetails): Promise<Array<ScrapedTransaction>> {
+			const accountPageUrl = `https://webaccess45.americafirst.com/banking/Accounts/Details/Index/${account.external_account_id}`;
 			await page.goto(accountPageUrl);
 
 			const transactions: Array<ScrapedTransaction> = [];
@@ -106,6 +106,7 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 
 			async function scrapeTable(tableId: string, pending: boolean) {
 				let rows = await page.locator(`#${tableId} tbody tr`).all();
+				console.log(`Found ${rows.length} rows in ${account.external_name} ${tableId}`);
 				for (const row of rows) {
 					const exists = await row.locator('.column-date').count();
 					if (!exists) {
@@ -115,10 +116,11 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 					const description = await row.locator('.column-description').innerText();
 					const amountCols = await row.locator('.column-amount').all();
 					const amount = (await amountCols[amountCols.length - 1].innerText()).replaceAll(/[$,]/g, '');
+					const useInverseAmount = pending || account.type === AccountType.credit;
 					transactions.push({
 						date: stringToDate(date),
 						original_description: description,
-						amount: dollarsToNumber(amount),
+						amount: useInverseAmount ? -dollarsToNumber(amount) : dollarsToNumber(amount),
 						source: 'scraper',
 						pending,
 					});

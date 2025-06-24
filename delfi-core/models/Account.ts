@@ -86,6 +86,8 @@ export type AccountDetails = {
 	source: string, // e.g. "plaid", "manual", "imported"
 	source_id?: string | null, // e.g. plaid account id, manual account id, imported account id
 	source_data?: any, // e.g. plaid account data, imported account data
+	plaid_item_id?: string | null, // If the account is linked to a Plaid item, the Plaid item ID
+	plaid_account_id?: string | null, // If the account is linked to Plaid, Plaid's ID for the account
 }
 
 export type Account = AccountDetails & {
@@ -93,9 +95,10 @@ export type Account = AccountDetails & {
 	display_name?: string | null,
 	partitions: AccountPartition[],
 	savings_goal?: SavingsGoal,
-	user_id: string,
+	workspace_id: string,
 	last_successful_sync?: Date | null,
 	last_failed_sync?: Date | null,
 	sync_error?: string | null,
 	created_at: Date,
+	Institution: Institution,
 }

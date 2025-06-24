@@ -21,7 +21,7 @@ const plannedTransactions: Budget[] = [
 		type: BudgetTransactionType.CREDIT,
 		memo: "Clozd Income",
 		amount: 2500,
-		target_account_id: accounts.afcu_checking.id,
+		account_id: accounts.afcu_checking.id,
 		recurrence_type: RecurrenceType.SCHEDULE,
 		schedule: { rrules: [ { start: '2021-04-25', frequency: 'MONTHLY', byDayOfMonth: [25] } ] },
 		category_id: 'test-category',
@@ -30,7 +30,7 @@ const plannedTransactions: Budget[] = [
 		budget_id: "tithing",
 		type: BudgetTransactionType.DEBIT,
 		memo: "Tithing",
-		target_account_id: accounts.afcu_checking.id,
+		account_id: accounts.afcu_checking.id,
 		recurrence_type: RecurrenceType.TRIGGER,
 		trigger: new ImmediateMatchTrigger({
 			filter: [{
@@ -86,7 +86,7 @@ describe('Forecast', () => {
 			expect(forecast.events[0].date.toString()).toBe('2023-01-25');
 			expect(forecast.events[0]).toMatchObject(expect.objectContaining({
 				transaction: expect.objectContaining({
-					target_account_id: 'afcu_checking',
+					account_id: 'afcu_checking',
 					amount: 2500,
 					sourceSchedule: plannedTransactions[0],
 				}),
@@ -125,7 +125,7 @@ describe('Forecast', () => {
 			expect(forecast.events[1].date.toString()).toBe('2023-01-25');
 			expect(forecast.events[1]).toMatchObject(expect.objectContaining({
 				transaction: expect.objectContaining({
-					target_account_id: 'afcu_checking',
+					account_id: 'afcu_checking',
 					amount: -250,
 					sourceTrigger: plannedTransactions[1],
 				}),
@@ -153,7 +153,7 @@ describe('Forecast', () => {
 				'account_test-account',
 				-25,
 				[{
-					property: 'target_account_id',
+					property: 'account_id',
 					operator: 'eq',
 					operand: 'test-account',
 				}]
