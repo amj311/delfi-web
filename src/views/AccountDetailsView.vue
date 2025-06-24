@@ -280,19 +280,9 @@ const attributedEvents = computed(() => {
 											v-if="event.Merchant?.logo"
 											:src="event.Merchant.logo"
 										/>
-										<template v-else-if="event.Category?.icon">
-											<Icon :name="event.Category.icon" />
+										<template v-else>
+											<Icon :name="event.Category?.icon || event.Category?.Group?.icon || 'question-circle'" />
 										</template>
-										<template v-else-if="event.Category?.Group?.icon">
-											<Icon :name="event.Category?.Group?.icon" />
-										</template>
-										<span v-else class="avatar-placeholder">
-											{{
-												event.original_description
-													.charAt(0)
-													.toUpperCase()
-											}}
-										</span>
 									</div>
 								</td>
 								<td>{{ formatDate(event.date) }}</td>

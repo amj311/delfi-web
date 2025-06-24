@@ -25,7 +25,7 @@ const icon = Icons[props.name];
 	color: inherit;
 }
 .material-symbols-rounded {
-	font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 12;
+	font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' -25, 'opsz' 12;
 	font-size: 1.3em;
 }
 </style>

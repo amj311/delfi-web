@@ -178,6 +178,11 @@ export const Icons = {
 		source: "material-symbols",
 		source_id: "pets",
 	},
+	"question-circle": {
+		name: "question-circle",
+		source: "material-symbols",
+		source_id: "help",
+	},
 	"shopping-cart": {
 		name: "shopping-cart",
 		source: "material-symbols",
