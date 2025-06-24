@@ -5,83 +5,103 @@ import type { CategoryDetails, CategoryGroup } from "./Category";
 export const categoryGroups: CategoryGroup[] = [
 	{
 		group_id: "7d2babb7-1065-4a7c-8552-67ba2f185f75",
-		name: "Auto & Transport",
+		name: "Transportation",
+		icon: "commute",
 	},
 	{
 		group_id: "ba16a566-cf88-4a3f-8b7c-877d3357d123",
 		name: "Bills & Utilities",
+		icon: "faucet",
 	},
 	{
 		group_id: "e8ddbfdf-7b34-41dd-90cb-134ef3c737f5",
 		name: "Business Services",
+		icon: "briefcase",
 	},
 	{
 		group_id: "f3c1b0d2-4a5e-4b8c-9f6d-7c8e1b2f3a4c",
 		name: "Education",
+		icon: "graduation-cap",
 	},
 	{
 		group_id: "c1b2a2ca-c82b-4efd-9bbe-31928173eb9b",
 		name: "Entertainment",
+		icon: "smiley",
 	},
 	{
 		group_id: "f549c254-cd52-4668-bd24-b3f131eb1559",
-		name: "Fees & Charges",
+		name: "Banking",
+		icon: "bank",
 	},
 	{
 		group_id: "a1b2c3d4-e5f6-4a5b-9c8d-7e6f5d4c3b2a",
 		name: "Financial",
+		icon: "dollar-bills",
 	},
 	{
 		group_id: "b2c3d4e5-f6a7-4b6c-9d1e-8f9a0b1c2d3e",
 		name: "Food & Dining",
+		icon: "utensils",
 	},
 	{
 		group_id: "c3d4e5f6-a7b8-4c7d-ae2f-9a0b1c2d3e4f",
 		name: "Gifts & Donations",
+		icon: "gift",
 	},
 	{
 		group_id: "d4e5f6a7-b8c9-4d8e-bf3a-0b1c2d3e4f5a",
 		name: "Health & Fitness",
+		icon: "heartbeat",
 	},
 	{
 		group_id: "e5f6a7b8-c9d0-4e9f-ca4b-1c2d3e4f5a6b",
 		name: "Home",
+		icon: "home",
 	},
 	{
 		group_id: "f6a7b8c9-d0e1-4f0a-db5c-2d3e4f5a6b7c",
 		name: "Income",
+		icon: "money-bag",
 	},
 	{
 		group_id: "a7b8c9d0-e1f2-4a1b-ec6d-3e4f5a6b7c8d",
 		name: "Investments",
+		icon: "chart-line",
 	},
 	{
 		group_id: "b8c9d0e1-f2a3-4b2c-fd7e-4f5a6b7c8d9e",
 		name: "Kids",
+		icon: "child",
 	},
 	{
 		group_id: "c9d0e1f2-a3b4-4c3d-ae8f-5a6b7c8d9e0f",
 		name: "Personal Care",
+		icon: "tooth",
 	},
 	{
 		group_id: "d0e1f2a3-b4c5-4d4e-bf9a-6b7c8d9e0f1a",
 		name: "Pets",
+		icon: "paw",
 	},
 	{
 		group_id: "e1f2a3b4-c5d6-4e5f-ca0b-7c8d9e0f1a2b",
 		name: "Shopping",
+		icon: "shopping-cart",
 	},
 	{
 		group_id: "f2a3b4c5-d6e7-4f6a-db1c-8d9e0f1a2b3c",
 		name: "Taxes",
+		icon: "gavel",
 	},
 	{
 		group_id: "a3b4c5d6-e7f8-4a7b-ec2d-9e0f1a2b3c4d",
 		name: "Transfer",
+		icon: "transfer",
 	},
 	{
 		group_id: "b4c5d6e7-f8a9-4b8c-fd3e-0f1a2b3c4d5e",
 		name: "Travel",
+		icon: "compass",
 	},
 ];
 
@@ -94,54 +114,60 @@ export const categoryGroupNamesMap = Object.fromEntries(
 );
 
 const categories = {
-	// Auto & Transport
-	"Registration": {
-		name: "Registration",
+	// Transportation
+	"Vehicle Registration": {
+		name: "Vehicle Registration",
 		category_id: "62ce18c1-8dc2-44a4-9ec7-cc355f59018b",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Auto & Transport"].group_id
+		group_id: categoryGroupNamesMap["Transportation"].group_id
 	},
-	"Auto Insurance": {
+	"Vehicle Purchase": {
+		name: "Vehicle Purchase",
+		category_id: "53ce18c1-8dc2-44a4-9ec7-cc355f59019a",
+		type: "EXPENSE",
+		group_id: categoryGroupNamesMap["Transportation"].group_id
+	},
+	"Auto Insurance": { // consider moving to financial?
 		name: "Auto Insurance",
 		category_id: "a9701bf6-4ad9-4ef2-8b3f-acddd562e6e6",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Auto & Transport"].group_id
+		group_id: categoryGroupNamesMap["Transportation"].group_id
 	},
-	"Auto Payment": {
+	"Auto Payment": { // consider moving to debt payoff
 		name: "Auto Payment",
 		category_id: "8adb79fa-2857-41a5-af14-73e6a3b471aa",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Auto & Transport"].group_id
+		group_id: categoryGroupNamesMap["Transportation"].group_id
 	},
 	"Fuel": {
 		name: "Fuel",
 		category_id: "ab0bb7ab-0367-4d7a-adbb-30846f5ec897",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Auto & Transport"].group_id
+		group_id: categoryGroupNamesMap["Transportation"].group_id
 	},
 	"Parking": {
 		name: "Parking",
 		category_id: "92d6b0df-8fcc-40a2-9591-cf03af9dc723",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Auto & Transport"].group_id
+		group_id: categoryGroupNamesMap["Transportation"].group_id
 	},
 	"Public Transportation": {
 		name: "Public Transportation",
 		category_id: "4acd8f6c-a108-41f7-bb74-44f342008f5e",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Auto & Transport"].group_id
+		group_id: categoryGroupNamesMap["Transportation"].group_id
 	},
 	"Service & Parts": {
 		name: "Service & Parts",
 		category_id: "68a5922f-88cb-4f93-abac-194ab7c5193a",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Auto & Transport"].group_id
+		group_id: categoryGroupNamesMap["Transportation"].group_id
 	},
 
 
 	// Bills & Utilities
-	"Home Phone": {
-		name: "Home Phone",
+	"Phone Plan": {
+		name: "Phone Plan",
 		category_id: "8ce8b6b3-3308-4b84-9d12-ce386b829d75",
 		type: "EXPENSE",
 		group_id: categoryGroupNamesMap["Bills & Utilities"].group_id
@@ -149,12 +175,6 @@ const categories = {
 	"Internet": {
 		name: "Internet",
 		category_id: "f1ac1ce7-b6b2-4fd1-abbc-0f624c7f7223",
-		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Bills & Utilities"].group_id
-	},
-	"Mobile Phone": {
-		name: "Mobile Phone",
-		category_id: "2815a130-ebff-4aa1-94b9-1a350d1e8465",
 		type: "EXPENSE",
 		group_id: categoryGroupNamesMap["Bills & Utilities"].group_id
 	},
@@ -218,7 +238,7 @@ const categories = {
 		type: "EXPENSE",
 		group_id: categoryGroupNamesMap["Education"].group_id
 	},
-	"Student Loan": {
+	"Student Loan": { // consider moving to debt payoff?
 		name: "Student Loan",
 		category_id: "b2d285a2-59a7-469d-9bbc-7d3e1095c193",
 		type: "EXPENSE",
@@ -257,6 +277,12 @@ const categories = {
 		type: "EXPENSE",
 		group_id: categoryGroupNamesMap["Entertainment"].group_id
 	},
+	"Books": {
+		name: "Books",
+		category_id: "bd4c5e34-27ca-4652-a422-ec7673d90cc7",
+		type: "EXPENSE",
+		group_id: categoryGroupNamesMap["Entertainment"].group_id
+	},
 	"Newspapers & Magazines": {
 		name: "Newspapers & Magazines",
 		category_id: "bd4c5e34-27ca-4652-a422-ec7673d90cc7",
@@ -265,42 +291,42 @@ const categories = {
 	},
 
 
-	// Fees & Charges
+	// Banking
 	"ATM Fee": {
 		name: "ATM Fee",
 		category_id: "5d0b38c6-cd30-446b-824a-a5e1c137663a",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Fees & Charges"].group_id
+		group_id: categoryGroupNamesMap["Banking"].group_id
 	},
 	"Banking Fee": {
 		name: "Banking Fee",
 		category_id: "6e20d2ed-f8f0-4562-ae37-7881e6560a62",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Fees & Charges"].group_id
+		group_id: categoryGroupNamesMap["Banking"].group_id
 	},
 	"Finance Charge": {
 		name: "Finance Charge",
 		category_id: "40676754-e08b-4928-826f-a23961a2a042",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Fees & Charges"].group_id
+		group_id: categoryGroupNamesMap["Banking"].group_id
 	},
 	"Late Fee": {
 		name: "Late Fee",
 		category_id: "5461213e-ffd5-464b-b3c4-bc2f6fc957cb",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Fees & Charges"].group_id
+		group_id: categoryGroupNamesMap["Banking"].group_id
 	},
 	"Service Fee": {
 		name: "Service Fee",
 		category_id: "b4e435b8-d774-407f-afeb-5d79e4288f5f",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Fees & Charges"].group_id
+		group_id: categoryGroupNamesMap["Banking"].group_id
 	},
 	"Trade Commissions": {
 		name: "Trade Commissions",
 		category_id: "b6b62d72-1cbc-4087-b928-6163abcff64a",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Fees & Charges"].group_id
+		group_id: categoryGroupNamesMap["Banking"].group_id
 	},
 
 
@@ -342,7 +368,8 @@ const categories = {
 		name: "Fast Food",
 		category_id: "4bca50a9-190f-44eb-94d2-e02df52ca312",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Food & Dining"].group_id
+		group_id: categoryGroupNamesMap["Food & Dining"].group_id,
+		icon: "fastfood",
 	},
 	"Restaurants": {
 		name: "Restaurants",
@@ -629,12 +656,6 @@ const categories = {
 
 
 	// Shopping
-	"Books": {
-		name: "Books",
-		category_id: "c4ec5320-bd66-4ad0-a8f9-0c90b9811485",
-		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Shopping"].group_id
-	},
 	"Clothing": {
 		name: "Clothing",
 		category_id: "b83f3fad-f06b-4052-b35b-01d261009c50",
@@ -736,7 +757,7 @@ const categories = {
 
 
 	// Travel
-	"Hotel & Lodging": {
+	"Lodging": {
 		name: "Hotel & Lodging",
 		category_id: "c199d55c-6e60-4e6a-8b15-675d6909db7b",
 		type: "EXPENSE",
@@ -777,6 +798,9 @@ export const flatCategoriesMap: Record<SystemCategoryName, CategoryDetails> = Ob
 
 export const categoriesArray: CategoryDetails[] = Object.values(categories);
 
+export function categoryByName(name: SystemCategoryName): CategoryDetails {
+	return flatCategoriesMap[name];
+}
 
 // Maps Plaid categories to our system categories
 // The Typescript here helps alert us if we're missing any
@@ -887,7 +911,7 @@ export const plaidCategoryToSystemCategoryMap: Record<PlaidCategory, SystemCateg
 
   // Government and non-profit
   "GOVERNMENT_AND_NON_PROFIT_DONATIONS": "Charity",
-  "GOVERNMENT_AND_NON_PROFIT_GOVERNMENT_DEPARTMENTS_AND_AGENCIES": "Registration",
+  "GOVERNMENT_AND_NON_PROFIT_GOVERNMENT_DEPARTMENTS_AND_AGENCIES": "Vehicle Registration",
   "GOVERNMENT_AND_NON_PROFIT_TAX_PAYMENT": "Federal Tax",
   "GOVERNMENT_AND_NON_PROFIT_OTHER_GOVERNMENT_AND_NON_PROFIT": "Charity",
 
@@ -902,7 +926,7 @@ export const plaidCategoryToSystemCategoryMap: Record<PlaidCategory, SystemCateg
 
   // Travel
   "TRAVEL_FLIGHTS": "Flights",
-  "TRAVEL_LODGING": "Hotel & Lodging",
+  "TRAVEL_LODGING": "Lodging",
   "TRAVEL_RENTAL_CARS": "Transportation",
   "TRAVEL_OTHER_TRAVEL": "Activities",
 
@@ -911,7 +935,7 @@ export const plaidCategoryToSystemCategoryMap: Record<PlaidCategory, SystemCateg
   "RENT_AND_UTILITIES_INTERNET_AND_CABLE": "Internet",
   "RENT_AND_UTILITIES_RENT": "Mortgage & Rent",
   "RENT_AND_UTILITIES_SEWAGE_AND_WASTE_MANAGEMENT": "Utilities",
-  "RENT_AND_UTILITIES_TELEPHONE": "Mobile Phone",
+  "RENT_AND_UTILITIES_TELEPHONE": "Phone Plan",
   "RENT_AND_UTILITIES_WATER": "Utilities",
   "RENT_AND_UTILITIES_OTHER_UTILITIES": "Utilities",
 };

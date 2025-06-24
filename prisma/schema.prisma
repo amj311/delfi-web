@@ -213,6 +213,7 @@ model Category {
     category_id String       @id @default(uuid())
     name        String
     type        CategoryType
+    icon        String?
 
     Workspace    Workspace? @relation(fields: [workspace_id], references: [workspace_id])
     workspace_id String
@@ -227,6 +228,8 @@ model Category {
 model CategoryGroup {
     group_id     String     @id @default(uuid())
     name         String
+    icon         String?
+    color        String?
     Workspace    Workspace? @relation(fields: [workspace_id], references: [workspace_id])
     workspace_id String
     Categories   Category[]

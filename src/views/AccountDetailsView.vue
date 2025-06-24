@@ -6,6 +6,7 @@ import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
 import Currency from '@/components/Currency.vue';
 import { TransactionService } from '@/services/transaction.service';
 import { TransactionUtils } from 'delfi-core/models/Transaction';
+import Icon from '@/components/Icon.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -279,6 +280,12 @@ const attributedEvents = computed(() => {
 											v-if="event.Merchant?.logo"
 											:src="event.Merchant.logo"
 										/>
+										<template v-else-if="event.Category?.icon">
+											<Icon :name="event.Category.icon" />
+										</template>
+										<template v-else-if="event.Category?.Group?.icon">
+											<Icon :name="event.Category?.Group?.icon" />
+										</template>
 										<span v-else class="avatar-placeholder">
 											{{
 												event.original_description
@@ -571,13 +578,13 @@ tr:hover {
 .transaction-avatar {
     aspect-ratio: 1;
     width: 2.5rem;
+	font-size: 1.2rem;
     overflow: hidden;
     display: flex;
     justify-content: center;
     align-items: center;
     border-radius: 50%;
 	background: #eeeeeeef;
-	border: 1px solid #eeeeeeef;
 
 	img {
 		width: 100%;

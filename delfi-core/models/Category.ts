@@ -1,6 +1,7 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils";
 import { type BudgetEvent, type BudgetOccurrence, type Budget, EventFlag } from "./Budget";
 import type { PlaidCategory } from "server/services/PlaidService";
+import type { IconName } from "delfi-core/utils/constants";
 
 type CategoryType = 'INCOME' | 'TRANSFER' | 'EXPENSE';
 
@@ -8,7 +9,7 @@ export type CategoryGroup = {
 	group_id: string,
 	name: string,
 	color?: string,
-	icon?: string,
+	icon?: IconName,
 }
 
 export type CategoryDetails = {
@@ -16,11 +17,12 @@ export type CategoryDetails = {
 	name: string,
 	type: CategoryType,
 	group_id: string,
+	icon?: IconName,
 	detection_keys?: [PlaidCategory]
 }
 
 export type Category = CategoryDetails & {
-	group?: CategoryGroup,
+	Group?: CategoryGroup,
 }
 
 export type BudgetSummary = {

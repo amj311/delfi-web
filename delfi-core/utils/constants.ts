@@ -15,8 +15,6 @@ export const colors = {
 	gray12: "#1F2528",
 	gray13: "#101516",
 
-	
-
 	tag_red3: "#ff886e",
 	tag_red4: "#F14035",
 	tag_red6: "#AF0015",
@@ -42,6 +40,12 @@ export const colors = {
 	tag_pink5: "#C50099",
 	tag_pink6: "#95007D",
 }
+
+
+const IconSources = [
+	'material-symbols',
+] as const;
+export type IconSource = typeof IconSources[number];
 
 export const tagColors = [
 	"tag_red3",
@@ -69,3 +73,141 @@ export const tagColors = [
 	"tag_pink5",
 	"tag_pink6",
 ]
+
+export type Icon = {
+	name: string,
+	source: IconSource,
+	source_id: string,
+}
+
+export const Icons = {
+	"bank": {
+		name: "bank",
+		source: "material-symbols",
+		source_id: "account_balance",
+	},
+	"briefcase": {
+		name: "briefcase",
+		source: "material-symbols",
+		source_id: "work",
+	},
+	"car": {
+		name: "car",
+		source: "material-symbols",
+		source_id: "directions_car",
+	},
+	
+	"chart-line": {
+		name: "chart-line",
+		source: "material-symbols",
+		source_id: "shopping_cart",
+	},
+	"child": {
+		name: "child",
+		source: "material-symbols",
+		source_id: "child_care",
+	},
+	"compass": {
+		name: "compass",
+		source: "material-symbols",
+		source_id: "explore",
+	},
+	"commute": {
+		name: "commute",
+		source: "material-symbols",
+		source_id: "commute",
+	},
+
+	"dollar-bills": {
+		name: "dollar-bills",
+		source: "material-symbols",
+		source_id: "payments",
+	},
+	"fastfood": {
+		name: "fastfood",
+		source: "material-symbols",
+		source_id: "fastfood",
+	},
+	"faucet": {
+		name: "faucet",
+		source: "material-symbols",
+		source_id: "faucet",
+	},
+	"gavel": {
+		name: "gavel",
+		source: "material-symbols",
+		source_id: "gavel",
+	},
+	"gift": {
+		name: "gift",
+		source: "material-symbols",
+		source_id: "featured_seasonal_and_gifts",
+	},
+	"graduation-cap": {
+		name: "graduation-cap",
+		source: "material-symbols",
+		source_id: "school",
+	},
+	"grocery": {
+		name: "grocery",
+		source: "material-symbols",
+		source_id: "grocery",
+	},
+	"heartbeat": {
+		name: "heartbeat",
+		source: "material-symbols",
+		source_id: "cardiology",
+	},
+	"home": {
+		name: "home",
+		source: "material-symbols",
+		source_id: "cottage",
+	},
+	"lightbulb": {
+		name: "lightbulb",
+		source: "material-symbols",
+		source_id: "lightbulb",
+	},
+	"money-bag": {
+		name: "money-bag",
+		source: "material-symbols",
+		source_id: "money_bag",
+	},
+	"paw": {
+		name: "paw",
+		source: "material-symbols",
+		source_id: "pets",
+	},
+	"shopping-cart": {
+		name: "shopping-cart",
+		source: "material-symbols",
+		source_id: "shopping_cart",
+	},
+	"smiley": {
+		name: "smiley",
+		source: "material-symbols",
+		source_id: "sentiment_excited",
+	},
+	// "toothbrush": {
+	// 	name: "toothbrush",
+	// 	source: "material-symbols",
+	// 	source_id: "",
+	// },
+	"tooth": {
+		name: "tooth",
+		source: "material-symbols",
+		source_id: "dentistry",
+	},
+	"transfer": {
+		name: "transfer",
+		source: "material-symbols",
+		source_id: "swap_horiz",
+	},
+	"utensils": {
+		name: "utensils",
+		source: "material-symbols",
+		source_id: "local_dining",
+	},
+} as const;
+
+export type IconName = keyof typeof Icons;

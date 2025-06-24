@@ -1,5 +1,5 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils"
-import type { CategoryDetails } from "./Category"
+import type { Category } from "./Category"
 
 
 /**
@@ -51,7 +51,7 @@ type AttributionBudgetableDetails = {
 	category_id: string | null,
 	// ABOUT INCLUDING CATEGORIES: it may be expensive to include categories over API calls
 	// If so, we'll need to define different type that joins entities like this in the client
-	Category?: CategoryDetails | null,
+	Category?: Category | null,
 	tag_ids?: string[],
 	Tags?: Array<Tag>,
 	group_id?: string,

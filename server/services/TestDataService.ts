@@ -1,6 +1,6 @@
 import { colors, MONTHS } from "../../delfi-core/utils/constants";
 import { v4 as uuid } from "uuid";
-import { flatCategoriesMap } from "../../delfi-core/models/systemCategories";
+import { categoryByName, flatCategoriesMap } from "../../delfi-core/models/systemCategories";
 import { BudgetType, RecurrenceType, type Budget } from "../../delfi-core/models/Budget";
 import { date } from "../../delfi-core/utils/dateUtils";
 import { type Account, type Institution } from "../../delfi-core/models/Account";
@@ -9,6 +9,7 @@ import { type Workspace } from "./WorkspaceService";
 import { WorkspaceDao } from "server/data/WorkspaceDao";
 import type { User } from "./UserService";
 import type { Group, Tag } from "delfi-core/models/Transaction";
+import { CategoryDao } from "server/data/CategoryDao";
 
 export class TestDataService {
 	public static get userId(): string {
@@ -102,8 +103,8 @@ export class TestDataService {
 						// 	origin_account_id: getAccountByName('Checking').account_id,
 						// 	workspace_id: 'myself',
 						// 	schedule: { start: '2021-04-25', frequency: 'MONTHLY', byDayOfMonth: [25] },
-						// 	category_id: flatCategoriesMap["Transfer"].category_id,
-						// 	Category: flatCategoriesMap["Transfer"],
+						// 	category_id: categoryByName("Transfer").category_id,
+						// 	Category: categoryByName("Transfer"),
 						// },
 					}
 				}
@@ -137,6 +138,8 @@ export class TestDataService {
 
 
 	public static async getBudgets(): Promise<Budget[]> {
+		await CategoryDao.setupTestData();
+		
 		const workspace = (await WorkspaceDao.getAllWorkspaces())[0];
 		if (!workspace) {
 			return [];
@@ -162,8 +165,8 @@ export class TestDataService {
 					schedule: { start: '2021-04-05', frequency: 'MONTHLY', byDayOfMonth: [5] },
 					amount: -300,
 				}],
-				category_id: flatCategoriesMap["Life Insurance"].category_id,
-				Category: flatCategoriesMap["Life Insurance"],
+				category_id: categoryByName("Life Insurance").category_id,
+				Category: categoryByName("Life Insurance"),
 			},
 			{
 				budget_id: uuid(),
@@ -176,8 +179,8 @@ export class TestDataService {
 					schedule: { start: '2021-04-05', frequency: 'MONTHLY', byDayOfMonth: [5] },
 					amount: -70,
 				}],
-				category_id: flatCategoriesMap["Life Insurance"].category_id,
-				Category: flatCategoriesMap["Life Insurance"],
+				category_id: categoryByName("Life Insurance").category_id,
+				Category: categoryByName("Life Insurance"),
 			},
 			{ // Car Insurance
 				budget_id: uuid(),
@@ -190,8 +193,8 @@ export class TestDataService {
 					schedule: { start: '2021-04-08', frequency: 'MONTHLY', byDayOfMonth: [8] },
 					amount: -81,
 				}],
-				category_id: flatCategoriesMap["Auto Insurance"].category_id,
-				Category: flatCategoriesMap["Auto Insurance"],
+				category_id: categoryByName("Auto Insurance").category_id,
+				Category: categoryByName("Auto Insurance"),
 			},
 
 			{ // Clozd fulltime
@@ -205,16 +208,16 @@ export class TestDataService {
 					schedule: { start: '2021-04-08', frequency: 'MONTHLY', byDayOfMonth: [14, 27] },
 					amount: 3140,
 				}],
-				category_id: flatCategoriesMap["Paycheck"].category_id,
-				Category: flatCategoriesMap["Paycheck"],
+				category_id: categoryByName("Paycheck").category_id,
+				Category: categoryByName("Paycheck"),
 			},
 			{
 				budget_id: uuid(),
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Tithing",
 				account_id: getAccountByName('Checking').account_id,
-				category_id: flatCategoriesMap["Tithing"].category_id,
-				Category: flatCategoriesMap["Tithing"],
+				category_id: categoryByName("Tithing").category_id,
+				Category: categoryByName("Tithing"),
 				recurrence_type: RecurrenceType.TRIGGER,
 				triggerVariants: [{
 					trigger: {
@@ -237,8 +240,8 @@ export class TestDataService {
 				memo: "Fast Offering",
 				amount: -100,
 				account_id: getAccountByName('Checking').account_id,
-				category_id: flatCategoriesMap["Fast Offering"].category_id,
-				Category: flatCategoriesMap["Fast Offering"],
+				category_id: categoryByName("Fast Offering").category_id,
+				Category: categoryByName("Fast Offering"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-05-07', frequency: 'MONTHLY', byDayOfMonth: [7] },
@@ -252,8 +255,8 @@ export class TestDataService {
 				memo: "Mortgage",
 				amount: -2445,
 				account_id: getAccountByName('Checking').account_id,
-				category_id: flatCategoriesMap["Mortgage & Rent"].category_id,
-				Category: flatCategoriesMap["Mortgage & Rent"],
+				category_id: categoryByName("Mortgage & Rent").category_id,
+				Category: categoryByName("Mortgage & Rent"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] },
@@ -266,8 +269,8 @@ export class TestDataService {
 				memo: "HOA",
 				amount: -215,
 				account_id: getAccountByName('Checking').account_id,
-				category_id: flatCategoriesMap["Home Services"].category_id,
-				Category: flatCategoriesMap["Home Services"],
+				category_id: categoryByName("Home Services").category_id,
+				Category: categoryByName("Home Services"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-06-18', frequency: 'MONTHLY', byDayOfMonth: [18] },
@@ -280,8 +283,8 @@ export class TestDataService {
 				memo: "Gas Bill",
 				amount: -50,
 				account_id: getAccountByName('Checking').account_id,
-				category_id: flatCategoriesMap["Utilities"].category_id,
-				Category: flatCategoriesMap["Utilities"],
+				category_id: categoryByName("Utilities").category_id,
+				Category: categoryByName("Utilities"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-06-18', frequency: 'MONTHLY', byDayOfMonth: [18] },
@@ -294,8 +297,8 @@ export class TestDataService {
 				memo: "Power Bill",
 				amount: -30,
 				account_id: getAccountByName('Checking').account_id,
-				category_id: flatCategoriesMap["Utilities"].category_id,
-				Category: flatCategoriesMap["Utilities"],
+				category_id: categoryByName("Utilities").category_id,
+				Category: categoryByName("Utilities"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] },
@@ -308,8 +311,8 @@ export class TestDataService {
 				memo: "Internet",
 				amount: -50,
 				account_id: getAccountByName('Checking').account_id,
-				category_id: flatCategoriesMap["Utilities"].category_id,
-				Category: flatCategoriesMap["Utilities"],
+				category_id: categoryByName("Utilities").category_id,
+				Category: categoryByName("Utilities"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] },
@@ -323,8 +326,8 @@ export class TestDataService {
 				memo: "Preschool",
 				amount: -170,
 				account_id: getAccountByName('Checking').account_id,
-				category_id: flatCategoriesMap["Tuition"].category_id,
-				Category: flatCategoriesMap["Tuition"],
+				category_id: categoryByName("Tuition").category_id,
+				Category: categoryByName("Tuition"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2024-09-01', end: '2025-05-31', frequency: 'MONTHLY', byDayOfMonth: [1] },
@@ -346,8 +349,8 @@ export class TestDataService {
 					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
 					amount: 300,
 				}],
-				category_id: flatCategoriesMap["Transfer"].category_id,
-				Category: flatCategoriesMap["Transfer"],
+				category_id: categoryByName("Transfer").category_id,
+				Category: categoryByName("Transfer"),
 			},
 			{
 				budget_id: uuid(),
@@ -361,8 +364,8 @@ export class TestDataService {
 					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
 					amount: 500,
 				}],
-				category_id: flatCategoriesMap["Transfer"].category_id,
-				Category: flatCategoriesMap["Transfer"],
+				category_id: categoryByName("Transfer").category_id,
+				Category: categoryByName("Transfer"),
 			},
 
 
@@ -371,7 +374,7 @@ export class TestDataService {
 				budget_id: uuid(),
 				memo: 'Groceries',
 				schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
-				category_id: flatCategoriesMap.Groceries.category_id,
+				category_id: categoryByName("Groceries").category_id,
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
@@ -387,7 +390,7 @@ export class TestDataService {
 			{
 				budget_id: uuid(),
 				memo: "Fuel",
-				category_id: flatCategoriesMap.Fuel.category_id,
+				category_id: categoryByName("Fuel").category_id,
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
@@ -441,7 +444,7 @@ export class TestDataService {
 			// {
 			// 	budget_id: uuid(),
 			// 	memo: "Baby Care",
-			// 	category_id: flatCategoriesMap["Baby Supplies"].category_id,
+			// 	category_id: categoryByName("Baby Supplies").category_id,
 			// 	budgetType: BudgetType.TRANSACTION,
 			// 	recurrence_type: RecurrenceType.SCHEDULE,
 			// 	scheduleVariants: [{
@@ -459,7 +462,7 @@ export class TestDataService {
 			{
 				budget_id: 'yearly-travel-budget',
 				memo: 'Travel',
-				category_id: flatCategoriesMap.Groceries.category_id,
+				category_id: categoryByName("Groceries").category_id,
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				account_id: getAccountByName('Checking').account_id,
@@ -477,8 +480,8 @@ export class TestDataService {
 						memo: 'Round-trip flights to Montreal',
 						amount: -500,
 						group_id: this.groupId('Montreal 2025')!,
-						category_id: flatCategoriesMap["Flights"].category_id,
-						Category: flatCategoriesMap["Flights"],
+						category_id: categoryByName("Flights").category_id,
+						Category: categoryByName("Flights"),
 						date: date('2025-06-15'), // June 15, 2025
 						budgetType: BudgetType.TRANSACTION,
 						account_id: getAccountByName('Expense Savings').account_id,
@@ -488,8 +491,8 @@ export class TestDataService {
 					{
 						group_id: this.groupId('Montreal 2025')!,
 						budget_id: 'yearly-travel-budget',
-						category_id: flatCategoriesMap["Hotel & Lodging"].category_id,
-						Category: flatCategoriesMap["Hotel & Lodging"],
+						category_id: categoryByName("Lodging").category_id,
+						Category: categoryByName("Lodging"),
 						memo: 'Airbnb',
 						amount: -1000,
 						date: date('2025-06-16'), // June 16, 2025
@@ -500,8 +503,8 @@ export class TestDataService {
 					{
 						group_id: this.groupId('Montreal 2025')!,
 						budget_id: 'yearly-travel-budget',
-						category_id: flatCategoriesMap["Activities"].category_id,
-						Category: flatCategoriesMap["Activities"],
+						category_id: categoryByName("Activities").category_id,
+						Category: categoryByName("Activities"),
 						memo: 'All Activities',
 						amount: -500,
 						date: date('2025-06-18'), // June 18, 2025

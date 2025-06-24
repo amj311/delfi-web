@@ -12,11 +12,19 @@ export const CategoryDao = {
 		for (const group of categoryGroups) {
 			await prisma.categoryGroup.upsert({
 				where: { group_id: group.group_id, workspace_id: workspace_id },
-				update: {},
+				update: {
+					group_id: group.group_id,
+					name: group.name,
+					workspace_id: workspace_id,
+					icon: group.icon,
+					color: group.color,
+				},
 				create: {
 					group_id: group.group_id,
 					name: group.name,
 					workspace_id: workspace_id,
+					icon: group.icon,
+					color: group.color,
 				},
 			});
 		}
@@ -24,10 +32,18 @@ export const CategoryDao = {
 		for (const category of categoriesArray) {
 			await prisma.category.upsert({
 				where: { category_id: category.category_id, workspace_id: workspace_id },
-				update: {},
+				update: {
+					category_id: category.category_id,
+					name: category.name,
+					icon: category.icon,
+					workspace_id: workspace_id,
+					group_id: category.group_id,
+					type: category.type,
+				},
 				create: {
 					category_id: category.category_id,
 					name: category.name,
+					icon: category.icon,
 					workspace_id: workspace_id,
 					group_id: category.group_id,
 					type: category.type,
@@ -38,7 +54,11 @@ export const CategoryDao = {
 		for (const [detection_key, system_category_name] of Object.entries(plaidCategoryToSystemCategoryMap)) {
 			await prisma.categoryDetectionMapping.upsert({
 				where: { workspace_id_detection_key: { workspace_id, detection_key } },
-				update: {},
+				update: {
+					detection_key: detection_key,
+					category_id: flatCategoriesMap[system_category_name].category_id,
+					workspace_id,
+				},
 				create: {
 					detection_key: detection_key,
 					category_id: flatCategoriesMap[system_category_name].category_id,

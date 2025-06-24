@@ -12,8 +12,7 @@ import tagRoute from "./routes/tag.route";
 import groupRoute from "./routes/group.route";
 import firebaseAuthMiddleware, { firebaseConfig } from "./services/FirebaseService";
 import signupRoute from "./routes/signup.route";
-import './services/SyncService';
-import { colors, tagColors } from 'delfi-core/utils/constants';
+import './services/SyncService'; // Import to trigger job creation
 
 // HTTPS support for development
 const isDevelopment = !("RENDER" in process.env);
@@ -26,20 +25,13 @@ const httpsOptions = isDevelopment ? {
 
 const app = Fastify({
 	logger: false,
-  ...httpsOptions
+	...httpsOptions
 });
 app.register(require('@fastify/cors'));
 
 app.get('/firebase-config', () => {
 	return {
 		data: firebaseConfig
-	}
-});
-
-app.get('/colors', () => {
-	return {
-		colors: colors,
-		tagColors: tagColors
 	}
 });
 
@@ -82,7 +74,7 @@ app.setErrorHandler((error: any, request, reply) => {
 		throw error;
 	}
 	reply.status(500).send({
-		message: "Internal Server Error"
+		message: "Internal Server Errorzzz"
 	});
 });
 
