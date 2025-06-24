@@ -1,6 +1,6 @@
 import { computed, reactive, ref, type Reactive, type Ref } from 'vue'
 import { defineStore } from 'pinia'
-import { Delfi, type DelfiConfig } from '../../delfi-core';
+import { Delfi, type DelfiConfig } from '../../delfi-core/Delfi';
 import { date } from 'delfi-core/utils/dateUtils';
 
 export const useDelfiStore = defineStore('delfi', () => {

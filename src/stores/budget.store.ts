@@ -16,7 +16,6 @@ export const useBudgetStore = defineStore('budget', () => {
 			const { data } = await request.get('/budget');
 			instantiateDates(data.data);
 			budgets.value = data.data;
-			console.log(budgets.value)
 		}
 		catch (e) {
 			console.error("Could not load budgets!")

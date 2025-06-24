@@ -48,7 +48,7 @@ type TrueBudgetableDetails = {
 
 type AttributionBudgetableDetails = {
 	target_account_partition_id?: string,
-	category_id?: string | null,
+	category_id: string | null,
 	// ABOUT INCLUDING CATEGORIES: it may be expensive to include categories over API calls
 	// If so, we'll need to define different type that joins entities like this in the client
 	Category?: CategoryDetails | null,

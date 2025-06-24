@@ -401,6 +401,7 @@ export class TestDataService {
 			{
 				budget_id: uuid(),
 				memo: "Arthur $",
+				category_id: null,
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
@@ -413,6 +414,7 @@ export class TestDataService {
 			{
 				budget_id: uuid(),
 				memo: "Rachel $",
+				category_id: null,
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
@@ -425,6 +427,7 @@ export class TestDataService {
 			{
 				budget_id: uuid(),
 				memo: "Family Fun",
+				category_id: null,
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{

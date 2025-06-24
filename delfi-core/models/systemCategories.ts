@@ -83,10 +83,6 @@ export const categoryGroups: CategoryGroup[] = [
 		group_id: "b4c5d6e7-f8a9-4b8c-fd3e-0f1a2b3c4d5e",
 		name: "Travel",
 	},
-	{
-		group_id: "26993349-13a8-422b-beb2-fd3be37f596b",
-		name: "Uncategorized",
-	}
 ];
 
 // Also create a lookup map for groups by ID

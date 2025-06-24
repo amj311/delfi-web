@@ -10,7 +10,7 @@ import Currency from '@/components/Currency.vue';
 import { useCategoryStore } from '@/stores/category.store';
 import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
 import UpsertBudgetForm from '@/components/UpsertBudgetForm.vue';
-import type { Delfi } from 'delfi-core';
+import type { Delfi } from 'delfi-core/Delfi';
 import { EventFlag, type BudgetEvent, type Budget } from '../../delfi-core/models/Budget';
 import type { Account } from 'delfi-core/models/Account';
 import { useRoute, useRouter } from 'vue-router';

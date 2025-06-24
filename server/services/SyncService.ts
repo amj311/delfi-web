@@ -72,7 +72,7 @@ JobService.addJob({
 	schedule: {
 		start: dayjs().startOf('day'),
 		frequency: 'HOURLY',
-		interval: 6,
+		interval: 1,
 	},
 	handler: async () => {
 		console.log(`Starting sync job for all workspaces`);

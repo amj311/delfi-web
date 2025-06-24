@@ -24,7 +24,7 @@ async function initApp() {
 		await delfiStore.initDelfi({
 			accounts: accountStore.accounts,
 			budgets: budgetStore.budgets,
-			categories: categoryStore.categories,
+			categories: categoryStore.allCategories,
 		})
 	}
 	catch (error) {
