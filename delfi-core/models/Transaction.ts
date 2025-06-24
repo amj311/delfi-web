@@ -1,6 +1,12 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils"
 import type { CategoryDetails } from "./Category"
 
+export type Tag = {
+	tag_id?: string,
+	workspace_id?: string,
+	name: string,
+	color: string,
+}
 
 // PROBLEM Transactions can be shown in a list as the parent with their splits, but the splits also need to be handled individually for attributing
 //         How and when to represent each?
@@ -21,6 +27,7 @@ type AttributionBudgetableDetails = {
 	// If so, we'll need to define different type that joins entities like this in the client
 	Category?: CategoryDetails | null,
 	tag_ids?: string[],
+	Tags?: Array<Tag>,
 	memo?: string | null,
 	budget_id?: string | null,
 }

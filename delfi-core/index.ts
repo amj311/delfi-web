@@ -5,7 +5,7 @@
  */
 
 import { type Account } from "./models/Account";
-import { type Budget } from "./models/Budget";
+import { type Budget, type BudgetEvent } from "./models/Budget";
 import Forecast from "./models/Forecast";
 import { CategorySummary, type CategoryDetails, type OccurrenceSummary, type BudgetSummary } from "./models/Category";
 import { date, type DelfiDate, instantiateDates } from "./utils/dateUtils";
@@ -151,6 +151,18 @@ export class Delfi {
 			occurrences: transferCategories.reduce((acc, c) => acc.concat(c.allOccurrences), <OccurrenceSummary[]>[]),
 		};
 
+		const tagEvents = new Map<string, Array<BudgetEvent>>();
+		monthEvents.forEach(event => {
+			event.tag_ids?.forEach(tagId => {
+				if (!tagEvents.has(tagId)) {
+					tagEvents.set(tagId, []);
+				}
+				tagEvents.get(tagId)!.push(event);
+			});
+		});
+
+		console.log("month tags", tagEvents);
+
 		return {
 			netGrowth: monthNet,
 			events: monthEvents,
@@ -161,6 +173,10 @@ export class Delfi {
 			transferSummary,
 			spendingCategories,
 			spendingTotal: spendingCategories.reduce((acc, c) => acc + c.allNetChange, 0),
+			tagsEvents: Array.from(tagEvents.entries()).map(([tagId, events]) => ({
+				tagId,
+				events
+			})),
 		};
 	}
 }

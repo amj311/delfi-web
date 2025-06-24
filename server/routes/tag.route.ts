@@ -1,5 +1,5 @@
-import { Tag } from "@prisma/client";
-import { TagService } from "../services/TagService";
+import type { Tag } from "delfi-core/models/Transaction";
+import { TagService } from "../data/TagDao";
 
 export default (app, _, done) => {
 

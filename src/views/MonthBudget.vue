@@ -4,7 +4,7 @@ import { useAccountStore } from '@/stores/account.store';
 import { computed, reactive, ref, onMounted, watch } from 'vue';
 import { useBudgetStore } from '@/stores/budget.store';
 import Forecast from '../../delfi-core/models/Forecast';
-import { type DelfiDate, date} from '../../delfi-core/utils/dateUtils';
+import { type DelfiDate, date } from '../../delfi-core/utils/dateUtils';
 import Currency from '@/components/Currency.vue';
 // import { useBudgetStore } from '@/stores/budget.store';
 import { useCategoryStore } from '@/stores/category.store';
@@ -14,22 +14,21 @@ import type { Delfi } from 'delfi-core';
 import { EventFlag, type BudgetEvent, type Budget } from '../../delfi-core/models/Budget';
 import type { Account } from 'delfi-core/models/Account';
 import { useRoute, useRouter } from 'vue-router';
+import { useTagStore } from '@/stores/tag.store';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
-const transactionStore = useBudgetStore();
-// const budgetStore = useBudgetStore();
-const categoryStore = useCategoryStore();
+const tagStore = useTagStore();
 const route = useRoute();
 const router = useRouter();
 
 const state = reactive({
 	loading: true,
 	viewingMonth: date().startOf('month'),
-	forecast: <Forecast><unknown>null,
+	forecast: <Forecast>(<unknown>null),
 	upsertingAccount: <Partial<Account> | {} | null>null,
 	upsertingBudget: <Budget | {} | null>null,
-	summaryData: <Awaited<ReturnType<Delfi["getMonthSummary"]>> | null>null,
+	summaryData: <Awaited<ReturnType<Delfi['getMonthSummary']>> | null>null,
 });
 
 async function getSummary(month: DelfiDate) {
@@ -38,9 +37,9 @@ async function getSummary(month: DelfiDate) {
 		return null;
 	}
 	let summary = await delfiStore.delfi.getMonthSummary(month);
-	state.loading = false;	
+	state.loading = false;
 	return summary;
-};
+}
 
 // Helper to format the month for URL
 function formatMonthForUrl(monthDate: DelfiDate): string {
@@ -52,7 +51,7 @@ function parseMonthFromUrl(monthStr: string | null | undefined): DelfiDate {
 	if (!monthStr) {
 		return date().startOf('month');
 	}
-	
+
 	const parsedDate = date(monthStr);
 	return parsedDate.isValid() ? parsedDate.startOf('month') : date().startOf('month');
 }
@@ -63,23 +62,27 @@ onMounted(async () => {
 	state.viewingMonth = parseMonthFromUrl(monthParam);
 	state.summaryData = await getSummary(state.viewingMonth);
 	state.loading = false;
-	
+
 	// Update URL if it doesn't match the current month (happens when no month parameter was provided)
 	if (!monthParam || monthParam !== formatMonthForUrl(state.viewingMonth)) {
 		router.replace({
 			name: 'Budget',
-			params: { month: formatMonthForUrl(state.viewingMonth) }
+			params: { month: formatMonthForUrl(state.viewingMonth) },
 		});
 	}
 });
 
 // Watch for route changes to update the view
-watch(() => route.params.month, async (newMonth) => {
-	if (newMonth && newMonth !== formatMonthForUrl(state.viewingMonth)) {
-		state.viewingMonth = parseMonthFromUrl(newMonth as string);
-		state.summaryData = await getSummary(state.viewingMonth);
-	}
-}, { immediate: true });
+watch(
+	() => route.params.month,
+	async (newMonth) => {
+		if (newMonth && newMonth !== formatMonthForUrl(state.viewingMonth)) {
+			state.viewingMonth = parseMonthFromUrl(newMonth as string);
+			state.summaryData = await getSummary(state.viewingMonth);
+		}
+	},
+	{ immediate: true }
+);
 
 const canGoBack = computed(() => {
 	if (!state.viewingMonth) {
@@ -92,7 +95,9 @@ const canGoForward = computed(() => {
 	if (!state.viewingMonth) {
 		return false;
 	}
-	return state.viewingMonth.isBefore(date().add(5, 'years').subtract(1, 'month').startOf('month'));
+	return state.viewingMonth.isBefore(
+		date().add(5, 'years').subtract(1, 'month').startOf('month')
+	);
 });
 
 const goForward = async () => {
@@ -105,7 +110,7 @@ const goForward = async () => {
 	const newMonth = date(state.viewingMonth.add(1, 'month'));
 	router.push({
 		name: 'Budget',
-		params: { month: formatMonthForUrl(newMonth) }
+		params: { month: formatMonthForUrl(newMonth) },
 	});
 };
 
@@ -119,7 +124,7 @@ const goBack = async () => {
 	const newMonth = date(state.viewingMonth.subtract(1, 'month'));
 	router.push({
 		name: 'Budget',
-		params: { month: formatMonthForUrl(newMonth) }
+		params: { month: formatMonthForUrl(newMonth) },
 	});
 };
 
@@ -128,7 +133,9 @@ const dailyEvents = computed(() => {
 	if (!state.summaryData || !state.summaryData.events) {
 		return [];
 	}
-	const eventsByDay: Record<number, Array<BudgetEvent>> = Object.fromEntries(Array.from({ length: 31 }, (_, i) => [i + 1, []]));
+	const eventsByDay: Record<number, Array<BudgetEvent>> = Object.fromEntries(
+		Array.from({ length: 31 }, (_, i) => [i + 1, []])
+	);
 	for (const event of state.summaryData.events) {
 		const dayKey = event.date.date();
 		if (!eventsByDay[dayKey]) {
@@ -137,8 +144,7 @@ const dailyEvents = computed(() => {
 		eventsByDay[dayKey].push(event);
 	}
 	return Object.entries(eventsByDay).flatMap(([, events]) => events);
-})
-
+});
 </script>
 
 <template>
@@ -155,48 +161,93 @@ const dailyEvents = computed(() => {
 		<div v-else-if="state.summaryData">
 			<div>
 				<h3>Accounts</h3>
-				<div>Net Growth ...... <Currency :amount="state.summaryData.netGrowth" mode="net_change" /></div>
+				<div>
+					Net Growth ......
+					<Currency :amount="state.summaryData.netGrowth" mode="net_change" />
+				</div>
 				<div class="list">
 					<div v-for="summary of state.summaryData.accountSummaries" class="list-row">
 						<div class="flex-between hover-show-trigger">
 							<div class="flex-center gap-2">
-								<div class="text-semibold">{{ accountStore.getAccountName(summary.account_id) }}</div>
-								<button class="hover-show" @click="() => state.upsertingAccount = accountStore.getAccountById(summary.account_id)!">Edit</button>
+								<div class="text-semibold">
+									{{ accountStore.getAccountName(summary.account_id) }}
+								</div>
+								<button
+									class="hover-show"
+									@click="() => state.upsertingAccount = accountStore.getAccountById(summary.account_id)!"
+								>
+									Edit
+								</button>
 							</div>
 							<div class="flex-center">
 								<small v-if="summary.netChange !== 0">
-									<Currency :amount="summary.netChange" mode="net_change" hideCurrency />
+									<Currency
+										:amount="summary.netChange"
+										mode="net_change"
+										hideCurrency
+									/>
 									&emsp13;
 								</small>
-								<span class="text-semibold"><Currency :amount="summary.endingBalance" mode="balance" /></span>
+								<span class="text-semibold"
+									><Currency :amount="summary.endingBalance" mode="balance"
+								/></span>
 							</div>
 						</div>
 						<small v-for="partition of summary.partitions" class="flex-between">
-							&emsp13;- {{partition.name}}
+							&emsp13;- {{ partition.name }}
 							<div class="flex-center">
 								<small v-if="partition.netChange !== 0">
-									<Currency :amount="partition.netChange" mode="net_change" hideCurrency />
+									<Currency
+										:amount="partition.netChange"
+										mode="net_change"
+										hideCurrency
+									/>
 									&emsp13;
 								</small>
-								<span><Currency :amount="partition.endingBalance" mode="balance" /></span>
+								<span
+									><Currency :amount="partition.endingBalance" mode="balance"
+								/></span>
 							</div>
 						</small>
 					</div>
 				</div>
-				<UpsertAccountForm v-if="state.upsertingAccount" :account="state.upsertingAccount || {}" :close="() => state.upsertingAccount = null" />
-				<button v-else @click="() => state.upsertingAccount = {}">Add Account</button>
+				<UpsertAccountForm
+					v-if="state.upsertingAccount"
+					:account="state.upsertingAccount || {}"
+					:close="() => (state.upsertingAccount = null)"
+				/>
+				<button v-else @click="() => (state.upsertingAccount = {})">Add Account</button>
 			</div>
 			<br />
 
-			
 			<div>
 				<h3>Income</h3>
-				<div>Total ...... <Currency :amount="state.summaryData.incomeSummary?.netChange || 0" mode="net_change" /></div>
+				<div>
+					Total ......
+					<Currency
+						:amount="state.summaryData.incomeSummary?.netChange || 0"
+						mode="net_change"
+					/>
+				</div>
 				<div class="list">
-					<div v-for="{ budget, occurrences } of state.summaryData.incomeSummary?.allBudgetOccurrences" class="list-row">
+					<div
+						v-for="{ budget, occurrences } of state.summaryData.incomeSummary
+							?.allBudgetOccurrences"
+						class="list-row"
+					>
 						<div class="transaction-main-line">
 							{{ budget.memo }}
-							<Currency :amount="occurrences.reduce((acc, o) => acc + o.eventsInRange.reduce((acc, e) => acc + e.amount, 0), 0)" mode="transaction" />	
+							<Currency
+								:amount="
+									occurrences.reduce(
+										(acc, o) =>
+											acc +
+											o.eventsInRange.reduce((acc, e) => acc + e.amount, 0),
+										0
+									)
+								"
+								mode="transaction"
+							/>
 						</div>
 						<small>
 							{{ accountStore.getAccountName(budget.account_id) }}
@@ -209,27 +260,70 @@ const dailyEvents = computed(() => {
 			<div>
 				<h3>Savings and Transfers</h3>
 				<div class="list">
-					<div v-for="{ budget, eventsInRange } of state.summaryData.transferSummary?.occurrences" class="list-row">
+					<div
+						v-for="{ budget, eventsInRange } of state.summaryData.transferSummary
+							?.occurrences"
+						class="list-row"
+					>
 						<div class="transaction-main-line">
 							{{ budget.memo }}
-							<Currency :amount="eventsInRange.filter(e => !e.flags.includes(EventFlag.TRANSFER_COPY)).reduce((acc, e) => acc + e.amount, 0)" /> <!-- counting both events cancels out -->
+							<Currency
+								:amount="
+									eventsInRange
+										.filter((e) => !e.flags.includes(EventFlag.TRANSFER_COPY))
+										.reduce((acc, e) => acc + e.amount, 0)
+								"
+							/>
+							<!-- counting both events cancels out -->
 						</div>
-						<small>{{ accountStore.getAccountName(budget.origin_account_id!) }} → {{ accountStore.getAccountName(budget.account_id) }}</small>
+						<small
+							>{{ accountStore.getAccountName(budget.origin_account_id!) }} →
+							{{ accountStore.getAccountName(budget.account_id) }}</small
+						>
 					</div>
 				</div>
 			</div>
 			<br />
 
-
-			<UpsertBudgetForm v-if="state.upsertingBudget" :budget="state.upsertingBudget || {}" :close="() => state.upsertingBudget = null" />
-			<button v-else @click="() => state.upsertingBudget = {}">Add Transaction</button>
+			<UpsertBudgetForm
+				v-if="state.upsertingBudget"
+				:budget="state.upsertingBudget || {}"
+				:close="() => (state.upsertingBudget = null)"
+			/>
+			<button v-else @click="() => (state.upsertingBudget = {})">Add Transaction</button>
 			<br />
 			<!-- <UpsertBudgetForm v-if="state.upsertingBudget" :budget="state.upsertingBudget || {}" :close="() => state.upsertingBudget = null" :onSave="createDelfi" />
 			<button v-else @click="() => state.upsertingBudget = {}">Add Budget</button> -->
 
+
+			<br />
+			<div>
+				<div v-for="{ tagId, events } of state.summaryData.tagsEvents" class="tag-summary ">
+					<div class="title flex align-items-center gap-2">
+						<span class="material-symbols-rounded" :style="{ color: tagStore.getTagById(tagId)!.color }">
+							sell
+						</span>
+						{{ tagStore.getTagById(tagId)!.name }}
+					</div>
+					<div>
+						<div v-for="event of events" class="list-row">
+							<div class="transaction-main-line">
+								{{ event.memo }}
+								<Currency :amount="event.amount" mode="transaction" />
+							</div>
+							<small>
+								{{ accountStore.getAccountName(event.sourceBudget.account_id) }}
+							</small>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<br />
 			<div>
 				<h3>Spending</h3>
-				Total spending: <Currency :amount="state.summaryData.spendingTotal" mode="transaction" />
+				Total spending:
+				<Currency :amount="state.summaryData.spendingTotal" mode="transaction" />
 				<br />
 				<br />
 				<template v-for="category of state.summaryData.spendingCategories">
@@ -240,10 +334,28 @@ const dailyEvents = computed(() => {
 								<div class="flex-center">
 									&nbsp;&nbsp;&nbsp;&nbsp;
 									{{ budgetOccurrences.budget.memo }}
-									<button class="hover-show" @click="() => state.upsertingBudget = budgetOccurrences.budget!">Edit</button>
+									<button
+										class="hover-show"
+										@click="() => state.upsertingBudget = budgetOccurrences.budget!"
+									>
+										Edit
+									</button>
 								</div>
 								&nbsp;......&nbsp;
-								<Currency :amount="budgetOccurrences.occurrences.reduce((acc, e) => acc + e.eventsInRange.reduce((acc, e) => acc + e.amount, 0), 0)" mode="transaction" />
+								<Currency
+									:amount="
+										budgetOccurrences.occurrences.reduce(
+											(acc, e) =>
+												acc +
+												e.eventsInRange.reduce(
+													(acc, e) => acc + e.amount,
+													0
+												),
+											0
+										)
+									"
+									mode="transaction"
+								/>
 							</div>
 						</template>
 					</div>
@@ -251,29 +363,47 @@ const dailyEvents = computed(() => {
 			</div>
 
 			<br />
-			
+
 			<div>
 				<h3>Transactions</h3>
 				<template v-for="(event, i) of dailyEvents">
 					<div
 						v-if="i === 0 || !dailyEvents[i - 1]?.date.isSame(event.date)"
-						:style="{ padding: '5px 8px', marginTop: '8px'}"
+						:style="{ padding: '5px 8px', marginTop: '8px' }"
 					>
 						{{ event.date }}
 					</div>
 					<div class="list">
-						<div class="list-row" v-if="!event.flags.includes(EventFlag.TRANSFER_COPY)"> <!-- Don't show transfers twice! -->
+						<div class="list-row" v-if="!event.flags.includes(EventFlag.TRANSFER_COPY)">
+							<!-- Don't show transfers twice! -->
 							<div class="transaction-main-line">
 								{{ event.memo }}
 								<div style="flex-grow: 1"></div>
-								<div style="display: flex; align-items: center; gap: 4px;">
-									<span v-if="event.sourceBudget.budgetType === 'TRANSFER'">⇥</span>
-									<Currency :amount="event.sourceBudget.budgetType === 'TRANSFER' ? Math.abs(event.amount) : event.amount" :mode="event.sourceBudget.budgetType === 'TRANSFER' ? undefined : 'transaction'"/>	
+								<div style="display: flex; align-items: center; gap: 4px">
+									<span v-if="event.sourceBudget.budgetType === 'TRANSFER'"
+										>⇥</span
+									>
+									<Currency
+										:amount="
+											event.sourceBudget.budgetType === 'TRANSFER'
+												? Math.abs(event.amount)
+												: event.amount
+										"
+										:mode="
+											event.sourceBudget.budgetType === 'TRANSFER'
+												? undefined
+												: 'transaction'
+										"
+									/>
 								</div>
 							</div>
 							<small>
 								<span v-if="event.sourceBudget.budgetType === 'TRANSFER'">
-									{{ accountStore.getAccountName(event.sourceBudget.origin_account_id) }}
+									{{
+										accountStore.getAccountName(
+											event.sourceBudget.origin_account_id
+										)
+									}}
 									→
 								</span>
 								{{ accountStore.getAccountName(event.sourceBudget.account_id) }}
@@ -367,7 +497,6 @@ const dailyEvents = computed(() => {
 			<div style="padding: 20px; background: #2E1280" />
 			<div style="padding: 20px; background: #170047" /> -->
 
-
 			<!-- <div style="padding: 20px; background: #E6FDF9" />
 			<div style="padding: 20px; background: #B4FFF3" />
 			<div style="padding: 20px; background: #5DEEDF" />
@@ -378,46 +507,45 @@ const dailyEvents = computed(() => {
 			<div style="padding: 20px; background: #00323D" /> -->
 
 			<br />
-			<div style="padding: 20px; background: #F8F9FA" />
-			<div style="padding: 20px; background: #F4F5F6" />
-			<div style="padding: 20px; background: #F0F1F2" />
-			<div style="padding: 20px; background: #E1E3E5" />
-			<div style="padding: 20px; background: #D8DADE" />
-			<div style="padding: 20px; background: #C0C3C8" />
-			<div style="padding: 20px; background: #ACB0B6" />
-			<div style="padding: 20px; background: #90959B" />
+			<div style="padding: 20px; background: #f8f9fa" />
+			<div style="padding: 20px; background: #f4f5f6" />
+			<div style="padding: 20px; background: #f0f1f2" />
+			<div style="padding: 20px; background: #e1e3e5" />
+			<div style="padding: 20px; background: #d8dade" />
+			<div style="padding: 20px; background: #c0c3c8" />
+			<div style="padding: 20px; background: #acb0b6" />
+			<div style="padding: 20px; background: #90959b" />
 			<div style="padding: 20px; background: #798087" />
-			<div style="padding: 20px; background: #565F66" />
-			<div style="padding: 20px; background: #363F44" />
-			<div style="padding: 20px; background: #1F2528" />
+			<div style="padding: 20px; background: #565f66" />
+			<div style="padding: 20px; background: #363f44" />
+			<div style="padding: 20px; background: #1f2528" />
 			<div style="padding: 20px; background: #101516" />
 			<br />
 			<div style="color: #fff; padding: 10px; background: #ff886e">red3</div>
-			<div style="color: #fff; padding: 10px; background: #F14035">red4</div>
-			<div style="color: #fff; padding: 10px; background: #AF0015">red6</div>
-			<div style="color: #fff; padding: 10px; background: #FEAD62">orange3</div>
-			<div style="color: #fff; padding: 10px; background: #EB7319">orange4</div>
-			<div style="color: #fff; padding: 10px; background: #C94C00">orange5</div>
-			<div style="color: #fff; padding: 10px; background: #F8C220">yellow4</div>
-			<div style="color: #fff; padding: 10px; background: #CF9500">yellow5</div>
+			<div style="color: #fff; padding: 10px; background: #f14035">red4</div>
+			<div style="color: #fff; padding: 10px; background: #af0015">red6</div>
+			<div style="color: #fff; padding: 10px; background: #fead62">orange3</div>
+			<div style="color: #fff; padding: 10px; background: #eb7319">orange4</div>
+			<div style="color: #fff; padding: 10px; background: #c94c00">orange5</div>
+			<div style="color: #fff; padding: 10px; background: #f8c220">yellow4</div>
+			<div style="color: #fff; padding: 10px; background: #cf9500">yellow5</div>
 			<div style="color: #fff; padding: 10px; background: #996504">yellow6</div>
-			<div style="color: #fff; padding: 10px; background: #AED70D">#AED70D</div>
-			<div style="color: #fff; padding: 10px; background: #7CB100">#7CB100</div>
+			<div style="color: #fff; padding: 10px; background: #aed70d">#AED70D</div>
+			<div style="color: #fff; padding: 10px; background: #7cb100">#7CB100</div>
 			<div style="color: #fff; padding: 10px; background: #348500">#348500</div>
-			<div style="color: #fff; padding: 10px; background: #09D4CB">teal4</div>
-			<div style="color: #fff; padding: 10px; background: #0AB2AC">teal5</div>
-			<div style="color: #fff; padding: 10px; background: #007E88">teal6</div>
-			<div style="color: #fff; padding: 10px; background: #7DC9FF">blue3</div>
-			<div style="color: #fff; padding: 10px; background: #14A6F8">blue4</div>
-			<div style="color: #fff; padding: 10px; background: #274FDB">blue6</div>
-			<div style="color: #fff; padding: 10px; background: #865CFF">violet4</div>
-			<div style="color: #fff; padding: 10px; background: #7031F5">violet5</div>
-			<div style="color: #fff; padding: 10px; background: #471FBA">violet6</div>
-			<div style="color: #fff; padding: 10px; background: #E55EC8">pink4</div>
-			<div style="color: #fff; padding: 10px; background: #C50099">pink5</div>
-			<div style="color: #fff; padding: 10px; background: #95007D">pink6</div>
+			<div style="color: #fff; padding: 10px; background: #09d4cb">teal4</div>
+			<div style="color: #fff; padding: 10px; background: #0ab2ac">teal5</div>
+			<div style="color: #fff; padding: 10px; background: #007e88">teal6</div>
+			<div style="color: #fff; padding: 10px; background: #7dc9ff">blue3</div>
+			<div style="color: #fff; padding: 10px; background: #14a6f8">blue4</div>
+			<div style="color: #fff; padding: 10px; background: #274fdb">blue6</div>
+			<div style="color: #fff; padding: 10px; background: #865cff">violet4</div>
+			<div style="color: #fff; padding: 10px; background: #7031f5">violet5</div>
+			<div style="color: #fff; padding: 10px; background: #471fba">violet6</div>
+			<div style="color: #fff; padding: 10px; background: #e55ec8">pink4</div>
+			<div style="color: #fff; padding: 10px; background: #c50099">pink5</div>
+			<div style="color: #fff; padding: 10px; background: #95007d">pink6</div>
 		</div>
-		
 	</main>
 </template>
 
@@ -442,4 +570,15 @@ const dailyEvents = computed(() => {
 	font-weight: 500;
 }
 
+.tag-summary {
+	background: #fff;
+	box-shadow: 0 0 3px #0002;
+	border-radius: 1rem;
+	overflow: hidden;
+
+	.title {
+		padding: 0.5rem 0.7rem;
+		font-weight: bold;
+	}
+}
 </style>

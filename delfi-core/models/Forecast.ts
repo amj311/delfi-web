@@ -4,8 +4,6 @@ import BudgetService from "./Budget";
 import FilterService from "../services/FilterService";
 import { TransactionStore } from "./TransactionStore";
 
-type Interval = 'day' | 'week' | 'month' | 'year';
-
 type MonthForecast = {
 	occurrences: BudgetOccurrence[],
 	events: BudgetEvent[],

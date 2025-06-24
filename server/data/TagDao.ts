@@ -1,5 +1,6 @@
-import { Tag } from "@prisma/client";
+import type { Tag } from "delfi-core/models/Transaction";
 import { prisma } from "../../prisma/client";
+import { TestDataService } from "server/services/TestDataService";
 
 export const TagService = {
 	async createTag(data: Omit<Tag, 'tag_id'>) {
@@ -8,8 +9,13 @@ export const TagService = {
 		});
 	},
 
-	async getAllTags() {
-		return await prisma.tag.findMany();
+	async getAllTags(workspace_id?: string) {
+		// return await prisma.tag.findMany({
+		// 	where: {
+		// 		workspace_id: workspace_id,
+		// 	},
+		// });
+		return TestDataService.tags;
 	},
 
 	async getTagById(tagId: string) {

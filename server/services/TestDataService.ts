@@ -1,4 +1,4 @@
-import { MONTHS } from "../../delfi-core/utils/constants";
+import { colors, MONTHS } from "../../delfi-core/utils/constants";
 import { v4 as uuid } from "uuid";
 import { flatCategoriesMap } from "../../delfi-core/models/systemCategories";
 import { BudgetType, RecurrenceType, type Budget } from "../../delfi-core/models/Budget";
@@ -8,8 +8,15 @@ import { AccountService } from "./AccountService";
 import { type Workspace } from "./WorkspaceService";
 import { WorkspaceDao } from "server/data/WorkspaceDao";
 import type { User } from "./UserService";
+import type { Tag } from "delfi-core/models/Transaction";
 
 export class TestDataService {
+	public static get userId(): string {
+		return this.users[0].user_id;
+	}
+	public static get workspaceId(): string {
+		return this.workspaces[0].workspace_id;
+	}
 
 	public static users: Array<User> = [{
 		user_id: "a911cba0-3f61-4bc7-86a6-0d1c407baf18",
@@ -75,7 +82,6 @@ export class TestDataService {
 		// 	};
 
 		const savingsAccount = existingAccounts.find(account => account.external_name === 'Expense Savings');
-		console.log('Savings Account:', savingsAccount);
 		if (savingsAccount) {
 			savingsAccount.partitions = [
 				{
@@ -106,6 +112,20 @@ export class TestDataService {
 		}
 
 		return existingAccounts;
+	}
+
+
+	public static tags: Array<Tag> = [
+		{
+			tag_id: 'test-montreal-2025',
+			name: 'Montreal 2025',
+			workspace_id: this.workspaceId,
+			color: colors.tag_yellow4,
+		}
+	]
+
+	public static tagId(name: string): string | undefined {
+		return this.tags.find(tag => tag.name === name)?.tag_id;
 	}
 
 
@@ -403,7 +423,7 @@ export class TestDataService {
 			// LARGE budgets with children
 
 			{
-				budget_id: uuid(),
+				budget_id: 'yearly-travel-budget',
 				memo: 'Travel',
 				category_id: flatCategoriesMap.Groceries.category_id,
 				budgetType: BudgetType.TRANSACTION,
@@ -418,37 +438,38 @@ export class TestDataService {
 					},
 				}],
 				childItems: [
+					// MONTREAL 2025
 					{
-						budget_id: 'travel-budget-2025',
+						memo: 'Round-trip flights to Montreal',
+						amount: -500,
+						tag_ids: [this.tagId('Montreal 2025')!],
 						category_id: flatCategoriesMap["Flights"].category_id,
 						Category: flatCategoriesMap["Flights"],
-						memo: 'Delta Flight to NYC',
-						notes: 'Family summer trip',
-						amount: -1200,
 						date: date('2025-06-15'), // June 15, 2025
 						budgetType: BudgetType.TRANSACTION,
 						account_id: getAccountByName('Expense Savings').account_id,
 						target_account_partition_id: null,
+						budget_id: 'yearly-travel-budget',
 					},
 					{
-						budget_id: 'travel-budget-2025',
+						tag_ids: [this.tagId('Montreal 2025')!],
+						budget_id: 'yearly-travel-budget',
 						category_id: flatCategoriesMap["Hotel & Lodging"].category_id,
 						Category: flatCategoriesMap["Hotel & Lodging"],
-						memo: 'Hotel NYC',
-						notes: '5 nights in Manhattan',
-						amount: -1500,
+						memo: 'Airbnb',
+						amount: -1000,
 						date: date('2025-06-16'), // June 16, 2025
 						budgetType: BudgetType.TRANSACTION,
 						account_id: getAccountByName('Expense Savings').account_id,
 						target_account_partition_id: null,
 					},
 					{
-						budget_id: 'travel-budget-2025',
+						tag_ids: [this.tagId('Montreal 2025')!],
+						budget_id: 'yearly-travel-budget',
 						category_id: flatCategoriesMap["Activities"].category_id,
 						Category: flatCategoriesMap["Activities"],
-						memo: 'Broadway Tickets',
-						notes: 'Show for family',
-						amount: -400,
+						memo: 'All Activities',
+						amount: -500,
 						date: date('2025-06-18'), // June 18, 2025
 						budgetType: BudgetType.TRANSACTION,
 						account_id: getAccountByName('Expense Savings').account_id,

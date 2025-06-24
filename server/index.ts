@@ -8,9 +8,11 @@ import accountRoute from "./routes/account.route";
 import budgetRoute from "./routes/budget.route";
 import categoryRoute from "./routes/category.route";
 import userRoute from "./routes/user.route";
+import tagRoute from "./routes/tag.route";
 import firebaseAuthMiddleware, { firebaseConfig } from "./services/FirebaseService";
 import signupRoute from "./routes/signup.route";
 import './services/SyncService';
+import { colors, tagColors } from 'delfi-core/utils/constants';
 
 // HTTPS support for development
 const isDevelopment = !("RENDER" in process.env);
@@ -33,6 +35,13 @@ app.get('/firebase-config', () => {
 	}
 });
 
+app.get('/colors', () => {
+	return {
+		colors: colors,
+		tagColors: tagColors
+	}
+});
+
 // Signup routes
 app.register(signupRoute, { prefix: '/signup' });
 
@@ -50,6 +59,7 @@ app.register((authRoutes, _, done) => {
 	authRoutes.register(accountRoute, { prefix: '/account' });
 	authRoutes.register(budgetRoute, { prefix: '/budget' });
 	authRoutes.register(categoryRoute, { prefix: '/category' });
+	authRoutes.register(tagRoute, { prefix: '/tag' });
 
 	done();
 }, { prefix: '/' });
