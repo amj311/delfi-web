@@ -7,6 +7,8 @@ import Currency from '@/components/Currency.vue';
 import { TransactionService } from '@/services/transaction.service';
 import { TransactionUtils } from 'delfi-core/models/Transaction';
 import Icon from '@/components/Icon.vue';
+import { colors } from 'delfi-core/utils/constants';
+import CategoryAvatar from '@/components/CategoryAvatar.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -53,7 +55,6 @@ async function loadTransactions() {
 
 	try {
 		const response = await TransactionService.getAccountTransactions(accountId.value);
-		console.log('Transactions response:', response);
 		transactions.value = response.data || [];
 
 		// If no transactions found, set error message
@@ -281,7 +282,10 @@ const attributedEvents = computed(() => {
 											:src="event.Merchant.logo"
 										/>
 										<template v-else>
-											<Icon :name="event.Category?.icon || event.Category?.Group?.icon || 'question-circle'" />
+											<CategoryAvatar
+												:category="event.Category"
+												:categoryId="event.category_id"
+											/>
 										</template>
 									</div>
 								</td>
@@ -566,6 +570,7 @@ tr:hover {
 }
 
 .transaction-avatar {
+	color: #fff;
     aspect-ratio: 1;
     width: 2.5rem;
 	font-size: 1.2rem;
@@ -574,7 +579,6 @@ tr:hover {
     justify-content: center;
     align-items: center;
     border-radius: 50%;
-	background: #eeeeeeef;
 
 	img {
 		width: 100%;

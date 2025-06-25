@@ -128,7 +128,7 @@ export class TestDataService {
 			group_id: 'test-montreal-2025',
 			name: 'Montreal 2025',
 			workspace_id: this.workspaceId,
-			color: TagColor.tag_yellow4,
+			color: TagColor.yellow2,
 		}
 	]
 

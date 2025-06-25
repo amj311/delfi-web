@@ -301,7 +301,7 @@ const dailyEvents = computed(() => {
 			<div>
 				<div v-for="{ groupId, events } of state.summaryData.groupsEvents" class="group-summary ">
 					<div class="title flex align-items-center gap-1">
-						<Icon name="tag" fill :color="groupStore.getGroupById(groupId)!.color" />
+						<Icon name="tag" fill :color="groupStore.getGroupById(groupId)?.color" />
 						{{ groupStore.getGroupById(groupId)!.name }}
 						<div class="flex-grow-1"></div>
 						<Currency
@@ -527,30 +527,59 @@ const dailyEvents = computed(() => {
 			<div style="padding: 20px; background: #1f2528" />
 			<div style="padding: 20px; background: #101516" />
 			<br />
-			<div style="color: #fff; padding: 10px; background: #ff886e">red3</div>
-			<div style="color: #fff; padding: 10px; background: #f14035">red4</div>
-			<div style="color: #fff; padding: 10px; background: #af0015">red6</div>
-			<div style="color: #fff; padding: 10px; background: #fead62">orange3</div>
-			<div style="color: #fff; padding: 10px; background: #eb7319">orange4</div>
-			<div style="color: #fff; padding: 10px; background: #c94c00">orange5</div>
-			<div style="color: #fff; padding: 10px; background: #f8c220">yellow4</div>
-			<div style="color: #fff; padding: 10px; background: #cf9500">yellow5</div>
-			<div style="color: #fff; padding: 10px; background: #996504">yellow6</div>
-			<div style="color: #fff; padding: 10px; background: #aed70d">#AED70D</div>
-			<div style="color: #fff; padding: 10px; background: #7cb100">#7CB100</div>
-			<div style="color: #fff; padding: 10px; background: #348500">#348500</div>
-			<div style="color: #fff; padding: 10px; background: #09d4cb">teal4</div>
-			<div style="color: #fff; padding: 10px; background: #0ab2ac">teal5</div>
-			<div style="color: #fff; padding: 10px; background: #007e88">teal6</div>
-			<div style="color: #fff; padding: 10px; background: #7dc9ff">blue3</div>
-			<div style="color: #fff; padding: 10px; background: #14a6f8">blue4</div>
-			<div style="color: #fff; padding: 10px; background: #274fdb">blue6</div>
-			<div style="color: #fff; padding: 10px; background: #865cff">violet4</div>
-			<div style="color: #fff; padding: 10px; background: #7031f5">violet5</div>
-			<div style="color: #fff; padding: 10px; background: #471fba">violet6</div>
-			<div style="color: #fff; padding: 10px; background: #e55ec8">pink4</div>
-			<div style="color: #fff; padding: 10px; background: #c50099">pink5</div>
-			<div style="color: #fff; padding: 10px; background: #95007d">pink6</div>
+			<br />
+
+			<div style="color:#fff; padding:10px; background: #ff4c4c;">cherry1</div>
+			<div style="color:#fff; padding:10px; background: #eb2f2f;">cherry2</div>
+			<div style="color:#fff; padding:10px; background: #d81d1d;">cherry3</div>
+			<div style="color:#fff; padding:10px; background: #b52b43;">apple1</div>
+			<div style="color:#fff; padding:10px; background: #a61932;">apple2</div>
+			<div style="color:#fff; padding:10px; background: #870b21;">apple3</div>
+			<div style="color:#fff; padding:10px; background: #a1572c;">chocolate1</div>
+			<div style="color:#fff; padding:10px; background: #8a431a;">chocolate2</div>
+			<div style="color:#fff; padding:10px; background: #73310b;">chocolate3</div>
+			<div style="color:#fff; padding:10px; background: #f48239;">orange1</div>
+			<div style="color:#fff; padding:10px; background: #ea7326;">orange2</div>
+			<div style="color:#fff; padding:10px; background: #e36717;">orange3</div>
+			<div style="color:#fff; padding:10px; background: #fb9467;">peach1</div>
+			<div style="color:#fff; padding:10px; background: #fa8653;">peach2</div>
+			<div style="color:#fff; padding:10px; background: #f37842;">peach3</div>
+			<div style="color:#fff; padding:10px; background: #ffcf3f;">yellow4</div>
+			<div style="color:#fff; padding:10px; background: #f8c220;">yellow5</div>
+			<div style="color:#fff; padding:10px; background: #ecb209;">yellow6</div>
+			<div style="color:#fff; padding:10px; background: #92d72d;">lime1</div>
+			<div style="color:#fff; padding:10px; background: #81c61d;">lime2</div>
+			<div style="color:#fff; padding:10px; background: #6aae09;">lime3</div>
+			<div style="color:#fff; padding:10px; background: #4f9c25;">forest1</div>
+			<div style="color:#fff; padding:10px; background: #3b8116;">forest2</div>
+			<div style="color:#fff; padding:10px; background: #2d7108;">forest3</div>
+			<div style="color:#fff; padding:10px; background: #27d7cf;">teal1</div>
+			<div style="color:#fff; padding:10px; background: #06c6bd;">teal2</div>
+			<div style="color:#fff; padding:10px; background: #00afa7;">teal3</div>
+			<div style="color:#fff; padding:10px; background: #7dd0ff;">sky1</div>
+			<div style="color:#fff; padding:10px; background: #4fbdfb;">sky2</div>
+			<div style="color:#fff; padding:10px; background: #33abee;">sky3</div>
+			<div style="color:#fff; padding:10px; background: #2591e6;">blue1</div>
+			<div style="color:#fff; padding:10px; background: #107dd2;">blue2</div>
+			<div style="color:#fff; padding:10px; background: #006abc;">blue3</div>
+			<div style="color:#fff; padding:10px; background: #23508f;">navy1</div>
+			<div style="color:#fff; padding:10px; background: #194481;">navy2</div>
+			<div style="color:#fff; padding:10px; background: #0e356d;">navy3</div>
+			<div style="color:#fff; padding:10px; background: #9a7fec;">lavendar1</div>
+			<div style="color:#fff; padding:10px; background: #8f72e6;">lavendar2</div>
+			<div style="color:#fff; padding:10px; background: #8263de;">lavendar3</div>
+			<div style="color:#fff; padding:10px; background: #8046fb;">violet1</div>
+			<div style="color:#fff; padding:10px; background: #7031f5;">violet2</div>
+			<div style="color:#fff; padding:10px; background: #6122e8;">violet3</div>
+			<div style="color:#fff; padding:10px; background: #b728c5;">purple1</div>
+			<div style="color:#fff; padding:10px; background: #9e17ab;">purple2</div>
+			<div style="color:#fff; padding:10px; background: #900d9d;">purple3</div>
+			<div style="color:#fff; padding:10px; background: #ef72c0;">blush1</div>
+			<div style="color:#fff; padding:10px; background: #e55eb2;">blush2</div>
+			<div style="color:#fff; padding:10px; background: #d549a0;">blush3</div>
+			<div style="color:#fff; padding:10px; background: #ee37c8;">magenta1</div>
+			<div style="color:#fff; padding:10px; background: #d515ad;">magenta2</div>
+			<div style="color:#fff; padding:10px; background: #c1099b;">magenta2</div>
 		</div>
 	</main>
 </template>

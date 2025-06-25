@@ -69,14 +69,14 @@ export const CategoryDao = {
 	},
 
 	async getWorkspaceCategories(workspace_id: string) {
-		return await prisma.category.findMany({
+		return (await prisma.category.findMany({
 			where: {
 				workspace_id,
 			},
 			include: {
 				Group: true,
 			},
-		});
+		})).sort((a, b) => (a.Group.name + "__" + a.name).localeCompare(b.Group.name + "__" + b.name));
 	},
 
 	async getWorkspaceDetectionMappings(workspace_id: string) {

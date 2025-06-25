@@ -1,97 +1,116 @@
 import { PlaidCategory } from "server/services/PlaidService";
 import type { CategoryDetails, CategoryGroup } from "./Category";
+import { TagColor } from "delfi-core/utils/constants";
 
 // Define the groups based on the old parent categories
 export const categoryGroups: CategoryGroup[] = [
 	{
 		group_id: "7d2babb7-1065-4a7c-8552-67ba2f185f75",
 		name: "Transportation",
+		color: TagColor.sky2,
 		icon: "commute",
 	},
 	{
 		group_id: "ba16a566-cf88-4a3f-8b7c-877d3357d123",
 		name: "Bills & Utilities",
+		color: TagColor.yellow3,
 		icon: "faucet",
 	},
 	{
 		group_id: "e8ddbfdf-7b34-41dd-90cb-134ef3c737f5",
 		name: "Business Services",
 		icon: "briefcase",
+		color: TagColor.yellow1,
 	},
 	{
 		group_id: "f3c1b0d2-4a5e-4b8c-9f6d-7c8e1b2f3a4c",
 		name: "Education",
 		icon: "graduation-cap",
+		color: TagColor.navy1,
 	},
 	{
 		group_id: "c1b2a2ca-c82b-4efd-9bbe-31928173eb9b",
 		name: "Entertainment",
 		icon: "smiley",
+		color: TagColor.orange1,
 	},
 	{
 		group_id: "f549c254-cd52-4668-bd24-b3f131eb1559",
 		name: "Banking",
 		icon: "bank",
+		color: TagColor.teal1,
 	},
 	{
 		group_id: "a1b2c3d4-e5f6-4a5b-9c8d-7e6f5d4c3b2a",
 		name: "Financial",
 		icon: "dollar-bills",
+		color: TagColor.teal3,
 	},
 	{
 		group_id: "b2c3d4e5-f6a7-4b6c-9d1e-8f9a0b1c2d3e",
 		name: "Food & Dining",
 		icon: "utensils",
+		color: TagColor.cherry1,
 	},
 	{
 		group_id: "c3d4e5f6-a7b8-4c7d-ae2f-9a0b1c2d3e4f",
 		name: "Gifts & Donations",
-		icon: "gift",
+		icon: "give-heart",
+		color: TagColor.blush2,
 	},
 	{
 		group_id: "d4e5f6a7-b8c9-4d8e-bf3a-0b1c2d3e4f5a",
 		name: "Health & Fitness",
 		icon: "heartbeat",
+		color: TagColor.apple1,
 	},
 	{
 		group_id: "e5f6a7b8-c9d0-4e9f-ca4b-1c2d3e4f5a6b",
 		name: "Home",
 		icon: "home",
+		color: TagColor.forest1,
 	},
 	{
 		group_id: "f6a7b8c9-d0e1-4f0a-db5c-2d3e4f5a6b7c",
 		name: "Income",
 		icon: "money-bag",
+		color: TagColor.lime2,
 	},
 	{
 		group_id: "a7b8c9d0-e1f2-4a1b-ec6d-3e4f5a6b7c8d",
 		name: "Investments",
 		icon: "chart-line",
+		color: TagColor.teal1,
 	},
 	{
 		group_id: "b8c9d0e1-f2a3-4b2c-fd7e-4f5a6b7c8d9e",
 		name: "Kids",
 		icon: "child",
+		color: TagColor.peach2,
 	},
 	{
 		group_id: "c9d0e1f2-a3b4-4c3d-ae8f-5a6b7c8d9e0f",
 		name: "Personal Care",
 		icon: "tooth",
+		color: TagColor.purple1,
 	},
 	{
 		group_id: "d0e1f2a3-b4c5-4d4e-bf9a-6b7c8d9e0f1a",
 		name: "Pets",
 		icon: "paw",
+		color: TagColor.chocolate1,
 	},
 	{
 		group_id: "e1f2a3b4-c5d6-4e5f-ca0b-7c8d9e0f1a2b",
 		name: "Shopping",
 		icon: "shopping-cart",
+		color: TagColor.magenta2,
 	},
 	{
 		group_id: "f2a3b4c5-d6e7-4f6a-db1c-8d9e0f1a2b3c",
 		name: "Taxes",
 		icon: "gavel",
+		color: TagColor.navy3,
 	},
 	{
 		group_id: "a3b4c5d6-e7f8-4a7b-ec2d-9e0f1a2b3c4d",
@@ -102,6 +121,7 @@ export const categoryGroups: CategoryGroup[] = [
 		group_id: "b4c5d6e7-f8a9-4b8c-fd3e-0f1a2b3c4d5e",
 		name: "Travel",
 		icon: "compass",
+		color: TagColor.orange3,
 	},
 ];
 
@@ -350,7 +370,8 @@ const categories = {
 		name: "Treats and Sweets",
 		category_id: "3d8d6a00-d0d4-4908-a8c1-ff3d830d3ad3",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Food & Dining"].group_id
+		group_id: categoryGroupNamesMap["Food & Dining"].group_id,
+		icon: "ice-cream",
 	},
 	"Alcohol & Bars": {
 		name: "Alcohol & Bars",
@@ -369,7 +390,7 @@ const categories = {
 		category_id: "4bca50a9-190f-44eb-94d2-e02df52ca312",
 		type: "EXPENSE",
 		group_id: categoryGroupNamesMap["Food & Dining"].group_id,
-		icon: "fastfood",
+		icon: "fast-food",
 	},
 	"Restaurants": {
 		name: "Restaurants",
@@ -384,13 +405,15 @@ const categories = {
 		name: "Christmas",
 		category_id: "c9188777-62fb-4411-b4a1-9ed1e5447212",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Gifts & Donations"].group_id
+		group_id: categoryGroupNamesMap["Gifts & Donations"].group_id,
+		icon: 'gift',
 	},
 	"Birthday": {
 		name: "Birthday",
 		category_id: "22fa90b8-f3f3-4a8c-922b-6b8835e977f8",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Gifts & Donations"].group_id
+		group_id: categoryGroupNamesMap["Gifts & Donations"].group_id,
+		icon: 'cake',
 	},
 	"Charity": {
 		name: "Charity",
@@ -402,7 +425,8 @@ const categories = {
 		name: "Gift",
 		category_id: "594b69f1-cef7-4f49-b275-174d00ecece0",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Gifts & Donations"].group_id
+		group_id: categoryGroupNamesMap["Gifts & Donations"].group_id,
+		icon: 'gift',
 	},
 	"Tithing": {
 		name: "Tithing",

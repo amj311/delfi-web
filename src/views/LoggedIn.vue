@@ -44,6 +44,7 @@ onBeforeMount(() => {
 			<nav class="main-nav">
 				<router-link to="/month" class="nav-link">Budget</router-link>
 				<router-link to="/accounts" class="nav-link">Accounts</router-link>
+				<router-link to="/categories" class="nav-link">Categories</router-link>
 			</nav>
 		</header>
 		<main class="app-content">
