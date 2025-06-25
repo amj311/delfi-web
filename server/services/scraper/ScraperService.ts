@@ -1,5 +1,4 @@
 import type { TransactionDetails } from "delfi-core/models/Transaction";
-import type { CreateAccountData } from "../AccountService";
 import { doPageActions, useBrowser as useBrowser, type PageAction, type UsePage } from "./ScraperUtils";
 import type { Page } from "playwright";
 import { InstitutionService } from "../InstitutionService";
@@ -19,6 +18,7 @@ export type InstitutionScraper = {
 	listAccounts: (page: Page) => Promise<Array<ScrapedAccount>>;
 	getAccountDetails: (page: Page, external_account_id: string) => Promise<ScrapedAccount>;
 	getAccountTransactions: (page: Page, account: AccountDetails) => Promise<Array<ScrapedTransaction>>;
+	[key: string]: any; // Allow additional properties for flexibility
 }
 
 type AccountSyncFailed = {

@@ -7,10 +7,11 @@ export class TransactionService {
 		// New transaction MUST have attributions totalling the whole amount
 		if (!transactionData.Attributions || transactionData.Attributions.length === 0) {
 			transactionData.Attributions = [{
-				amount: transactionData.amount
+				amount: transactionData.amount,
+				category_id: null,
 			}];
 		}
-		const attributionTotal = transactionData.Attributions.reduce((sum, attr) => sum + attr.amount, 0);
+		const attributionTotal = transactionData.Attributions!.reduce((sum, attr) => sum + attr.amount, 0);
 		if (attributionTotal !== transactionData.amount) {
 			throw new Error("Attributions must total the transaction amount");
 		}
@@ -39,7 +40,6 @@ export class TransactionService {
 	 */
 	public static comparePendingTransactions(tx1: CreateTransaction, tx2: CreateTransaction): boolean {
 		return tx1.amount === tx2.amount &&
-			tx1.date.isSame(tx2.date) &&
 			tx1.original_description === tx2.original_description;
 	}
 
@@ -56,14 +56,21 @@ export class TransactionService {
 		// );
 	}
 
-	public static async syncNewTransactionsForAccount(workspace_id: string, account_id: string, transactions: CreateTransaction[]) {
+	public static async syncNewTransactionsForAccount(workspace_id: string, account_id: string, incomingTransactions: CreateTransaction[]) {
 		const oldPendingTransactions = await TransactionDao.getPendingForAccount(workspace_id, account_id);
 
 		// FIRST UPDATE PENDING TRANSACTIONS!
-		const newPendingTransactions = transactions.filter(t => t.pending);
-		const noLongerPendingTransactions = oldPendingTransactions.filter(oldTransaction => !newPendingTransactions.some(t =>
+		const incomingPendingTransactions = incomingTransactions.filter(t => t.pending);
+		const noLongerPendingTransactions = oldPendingTransactions.filter(oldTransaction => !incomingPendingTransactions.some(t =>
 			TransactionService.comparePendingTransactions(t, oldTransaction)
 		));
+
+		// Don't create new pending transactions if they already exist
+		const newTransactions = incomingTransactions.filter(t =>
+			!oldPendingTransactions.some(oldTransaction =>
+				TransactionService.comparePendingTransactions(t, oldTransaction)
+			)
+		);
 
 		// Update all no-longer-pending transactions
 		for (const oldTransaction of noLongerPendingTransactions) {
@@ -75,7 +82,7 @@ export class TransactionService {
 
 		// THEN UPSERT NEW TRANSACTIONS
 		const results: Transaction[] = [];
-		for (const transaction of transactions) {
+		for (const transaction of newTransactions) {
 			transaction.account_id = account_id;
 
 			// Only look through no-longer-pending transactions for matches

@@ -30,7 +30,7 @@ export const useCategoryStore = defineStore('category', () => {
 			Group: {
 				group_id: 'system',
 				name: 'System',
-				color: '#aaaaaf' as any,
+				color: TagColor.cherry2,
 				icon: 'question-circle',
 			},
 			group_id: '',
