@@ -2,6 +2,7 @@ import { computed, reactive, ref, type Reactive, type Ref } from 'vue'
 import { defineStore } from 'pinia'
 import { Delfi, type DelfiConfig } from '../../delfi-core/Delfi';
 import { date } from 'delfi-core/utils/dateUtils';
+import { TransactionService } from '@/services/transaction.service';
 
 export const useDelfiStore = defineStore('delfi', () => {
 	const delfi = new Delfi();
@@ -23,6 +24,9 @@ export const useDelfiStore = defineStore('delfi', () => {
 			categories,
 			start: projectionStart.value,
 			end: projectionEnd.value,
+			loadTransactions: async (start, end) => {
+				return await TransactionService.getTransactionsInRange(start, end);
+			}
 		});
 		isInitializing.value = false;
 		isGeneratingForecast.value = true;

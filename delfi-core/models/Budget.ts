@@ -81,7 +81,7 @@ export type ScheduledBudget = BaseBudget & {
 			quantity: number,
 			interval: 'day' | 'week' | 'month' | 'year',
 		},
-		amount: number,
+		amount: number, // TODO: support variable amounts, like a heating bill
 	}>
 	childItems?: Array<ChildBudgetItem>,
 }
@@ -113,7 +113,8 @@ export type BudgetOccurrence = {
 	budget: Budget,
 	start: DelfiDate,
 	end: DelfiDate,
-	events: BudgetEvent[],
+	amount: number, // The total amount of the budget for this occurrence
+	budgetEvents: BudgetEvent[],
 }
 
 export enum EventFlag {
@@ -129,6 +130,7 @@ type BaseBudgetEvent = BudgetedTransactionDetails & {
 	day: number;
 	amount: number,
 	sourceBudget: Budget,
+	sourceChildItem?: ChildBudgetItem, // If this event is a child item of a budget, this will be the item it came from
 	flags: EventFlag[],
 }
 
@@ -210,7 +212,8 @@ export default class BudgetUtils {
 						budget: schedule,
 						start: currentOccurrence,
 						end: occurrenceEnd,
-						events: futureEvents,
+						amount: variant.amount,
+						budgetEvents: futureEvents,
 					});
 				}
 			}
@@ -220,17 +223,18 @@ export default class BudgetUtils {
 					budget: schedule,
 					start: startDate,
 					end: BudgetUtils.getBudgetOccurrenceEndDate(variant, startDate),
-					events: [],
+					amount: variant.amount,
+					budgetEvents: [],
 				}
 
 				if (!variant.projectionInterval) {
 					// handle non-windowed schedules right off the bat, just use the cap amount
 					const hereEvents = BudgetUtils.createDateEventsFromBudgetDetails(startDate, schedule, variant.amount) as BaseBudgetEvent[];
-					occurrence.events.push(...hereEvents);
+					occurrence.budgetEvents.push(...hereEvents);
 				}
 				else {
 					// For windowed schedules, compute the interval events
-					occurrence.events.push(...computeProjectionEvents(startDate, occurrence.end));
+					occurrence.budgetEvents.push(...computeProjectionEvents(startDate, occurrence.end));
 				}
 
 				return occurrence;
@@ -264,7 +268,8 @@ export default class BudgetUtils {
 				budget,
 				start: transactionDate,
 				end: transactionDate,
-				events,
+				budgetEvents: events,
+				amount: amount,
 			};
 		}
 	}

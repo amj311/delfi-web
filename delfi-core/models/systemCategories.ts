@@ -1,5 +1,5 @@
 import { PlaidCategory } from "server/services/PlaidService";
-import type { CategoryDetails, CategoryGroup } from "./Category";
+import type { Category, CategoryDetails, CategoryGroup } from "./Category";
 import { TagColor } from "delfi-core/utils/constants";
 
 // Define the groups based on the old parent categories
@@ -7,7 +7,7 @@ export const categoryGroups: CategoryGroup[] = [
 	{
 		group_id: "7d2babb7-1065-4a7c-8552-67ba2f185f75",
 		name: "Transportation",
-		color: TagColor.sky2,
+		color: TagColor.sky3,
 		icon: "commute",
 	},
 	{
@@ -116,6 +116,7 @@ export const categoryGroups: CategoryGroup[] = [
 		group_id: "a3b4c5d6-e7f8-4a7b-ec2d-9e0f1a2b3c4d",
 		name: "Transfer",
 		icon: "transfer",
+		color: TagColor.sky1,
 	},
 	{
 		group_id: "b4c5d6e7-f8a9-4b8c-fd3e-0f1a2b3c4d5e",
@@ -133,7 +134,19 @@ export const categoryGroupNamesMap = Object.fromEntries(
 	categoryGroups.map(group => [group.name, group])
 );
 
-const categories = {
+export const UncategorizedCategory: Category = {
+	category_id: null as any, // use null to allow for selection from lists and matching to transactions
+	name: "Uncategorized",
+	type: "EXPENSE",
+	group_id: "system",
+	Group: {
+		group_id: "system",
+		name: "Uncategorized",
+		icon: "category",
+	}
+};
+
+const defaultCategories = {
 	// Transportation
 	"Vehicle Registration": {
 		name: "Vehicle Registration",
@@ -163,7 +176,8 @@ const categories = {
 		name: "Fuel",
 		category_id: "ab0bb7ab-0367-4d7a-adbb-30846f5ec897",
 		type: "EXPENSE",
-		group_id: categoryGroupNamesMap["Transportation"].group_id
+		group_id: categoryGroupNamesMap["Transportation"].group_id,
+		icon: "fuel",
 	},
 	"Parking": {
 		name: "Parking",
@@ -782,7 +796,7 @@ const categories = {
 
 	// Travel
 	"Lodging": {
-		name: "Hotel & Lodging",
+		name: "Lodging",
 		category_id: "c199d55c-6e60-4e6a-8b15-675d6909db7b",
 		type: "EXPENSE",
 		group_id: categoryGroupNamesMap["Travel"].group_id
@@ -813,14 +827,14 @@ const categories = {
 	},
 } as const;
 
-export type SystemCategoryName = keyof typeof categories;
+export type SystemCategoryName = keyof typeof defaultCategories;
 
 
 export const flatCategoriesMap: Record<SystemCategoryName, CategoryDetails> = Object.fromEntries(
-	Object.keys(categories).map(category => [category, categories[category]])
+	Object.keys(defaultCategories).map(category => [category, defaultCategories[category]])
 ) as any;
 
-export const categoriesArray: CategoryDetails[] = Object.values(categories);
+export const categoriesArray: CategoryDetails[] = Object.values(defaultCategories);
 
 export function categoryByName(name: SystemCategoryName): CategoryDetails {
 	return flatCategoriesMap[name];

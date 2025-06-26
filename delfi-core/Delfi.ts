@@ -7,15 +7,23 @@
 import { type Account } from "./models/Account";
 import { type Budget, type BudgetEvent } from "./models/Budget";
 import Forecast from "./models/Forecast";
-import { CategorySummary, type CategoryDetails, type OccurrenceSummary, type BudgetSummary } from "./models/Category";
+import { CategorySummary, type Category, type OccurrenceSummary, type BudgetSummary } from "./models/Category";
 import { date, type DelfiDate, instantiateDates } from "./utils/dateUtils";
 import type { TransactionFilter } from "./services/FilterService";
 import FilterService from "./services/FilterService";
+import { TransactionUtils, type AttributionEvent, type Transaction } from "./models/Transaction";
+import { BudgetOccurrenceSummary, OccurrenceSnapshot, RealityTally } from "./models/Summary";
 
 export type DelfiConfig = {
 	readonly accounts: Account[],
 	readonly budgets: Budget[],
-	readonly categories: CategoryDetails[],
+	readonly categories: Category[],
+	/**
+	 * Requests transactions as needed to look farther back in time
+	 * This will request a period (start to end) that is immediately before the earliest transaction currently loaded.
+	 * Remember that end date is INCLUSIVE.
+	 */
+	loadTransactions: (start: DelfiDate, end: DelfiDate) => Promise<Transaction[]>,
 	readonly start: DelfiDate,
 	readonly end: DelfiDate,
 }
@@ -24,6 +32,9 @@ export interface Delfi extends DelfiConfig {}
 
 export class Delfi {
 	public forecast!: Forecast;
+	private loadedTransactions: Array<Transaction> = [];
+	private attributedEvents: Array<AttributionEvent> = [];
+	private currentTransactionStart: DelfiDate | null = null;
 
 	constructor(config?: DelfiConfig) {
 		if (config) {
@@ -33,19 +44,15 @@ export class Delfi {
 
 	public init(config: DelfiConfig) {
 		// Copy config so that it is not connected to external state
+		this.loadTransactions = config.loadTransactions;
 		const configCopy = instantiateDates(JSON.parse(JSON.stringify(config)));
 		Object.assign(this, configCopy);
 		// Put everything in the forecast
 		this.forecast = new Forecast({
-			// accumulators,
 			budgets: this.budgets,
 			start: this.start,
 			end: this.end,
 		});
-	}
-
-	get flatCategories(): CategoryDetails[] {
-		return this.categories;
 	}
 
 	public async computeForecast(): Promise<Forecast> {
@@ -57,9 +64,27 @@ export class Delfi {
 		return this.forecast;
 	}
 
+	private async getAttributedEventsBetween(start: DelfiDate, end: DelfiDate, filter: TransactionFilter = []): Promise<Array<AttributionEvent>> {
+		// If we don't yet have transactions for this period, load them
+		if (!this.currentTransactionStart || start.isBefore(this.currentTransactionStart)) {
+			// Load up to either the forecast end or the last loaded start			
+			const loadEnd = this.currentTransactionStart ? this.currentTransactionStart.subtract(1, 'day') : this.end;
+			const newTransactions = await this.loadTransactions(start, loadEnd);
+			this.loadedTransactions.push(...newTransactions);
+			this.attributedEvents.push(...TransactionUtils.processAttributionEvents(newTransactions));
+			this.currentTransactionStart = start;
+		}
+		// Filter the loaded transactions to the requested range
+		return FilterService.filter(this.attributedEvents, [
+			{ property: 'date', operator: 'gte', operand: start },
+			{ property: 'date', operator: 'lte', operand: end },
+			...filter,
+		]);
+	}
 
 	/**
 	 * Computes the accumulation of all transactions up to the given date BUT NOT INCLUDING, filtered by the provided filter.
+	 * Not including because it should be the balance BEFORE anything that occurs on that date.
 	 * @param date 
 	 * @param filter DO NOT INCLUDE DATES. These will be automatically computed.
 	 */
@@ -79,16 +104,22 @@ export class Delfi {
 		const monthStart = date(monthDate.startOf('month'));
 		const monthEnd = date(monthDate.endOf('month'));
 		const monthForecast = await this.forecast.pollMonthReady(monthStart);
-		const monthEvents = monthForecast.events;
-		const monthOccurrences = monthForecast.occurrences;
-		const monthNet = monthEvents.reduce((acc, event) => acc + event.amount, 0);
+		const monthAttributionEvents = await this.getAttributedEventsBetween(monthStart, monthEnd);
+		const monthBudgetEvents = monthForecast.events;
+		const budgetOccurrenceSnapshots: OccurrenceSnapshot[] = await Promise.all(monthForecast.occurrences.map(async occurrence => {
+			const rangeAttributions = await this.getAttributedEventsBetween(occurrence.start, occurrence.end, [
+				{ property: 'budget_id', operator: 'eq', operand: occurrence.budget.budget_id },
+			]);
+			return new BudgetOccurrenceSummary(occurrence, rangeAttributions).snapshot(monthStart, monthEnd);
+		}));
+		const monthNet = monthBudgetEvents.reduce((acc, event) => acc + event.amount, 0);
 
 		// compute each account's balance at the beginning and end of the month
 		const accountSummaries = await Promise.all(this.accounts.map(async (account: Account) => {
 			const monthStartBalance = account.current_balance + this.accumulateUpTo(monthStart, [
 				{ property: 'account_id', operator: 'eq', operand: account.account_id },
 			]);
-			const accountEvents = FilterService.filter(monthEvents, [
+			const accountEvents = FilterService.filter(monthBudgetEvents, [
 				{ property: 'account_id', operator: 'eq', operand: account.account_id },
 				{ property: 'year', operator: 'eq', operand: monthEnd.year() },
 				{ property: 'month', operator: 'eq', operand: monthEnd.month() },
@@ -105,7 +136,7 @@ export class Delfi {
 					const partitionStartBalance = partition.current_balance + this.accumulateUpTo(monthStart, [
 						{ property: 'target_account_partition_id', operator: 'eq', operand: partition.account_partition_id },
 					]);
-					const partitionEvents = FilterService.filter(monthEvents, [
+					const partitionEvents = FilterService.filter(monthBudgetEvents, [
 						{ property: 'target_account_partition_id', operator: 'eq', operand: partition.account_partition_id },
 						{ property: 'year', operator: 'eq', operand: monthEnd.year() },
 						{ property: 'month', operator: 'eq', operand: monthEnd.month() },
@@ -124,53 +155,48 @@ export class Delfi {
 			}
 		}));
 
-		const categorySummaries = this.categories.map((category: CategoryDetails) => (
-			new CategorySummary(
-				monthStart,
-				monthEnd,
-				category,
-				monthOccurrences.filter(o => o.budget.category_id === category.category_id),
-			)
-		));
+		const categorySummaries = this.categories.map((category: Category) => ({
+			category,
+			tally: new RealityTally(
+				budgetOccurrenceSnapshots.filter(o => o.budget.category_id === category.category_id),
+				monthAttributionEvents.filter(t => t.category_id === category.category_id),
+			),
+		}));
 		const spendingCategories = categorySummaries.filter(c => c.category.type === 'EXPENSE');
 
 		const incomeCategories = categorySummaries.filter(c => c.category.type === 'INCOME');
 		const incomeSummary = {
-			allEvents: incomeCategories.flatMap(c => c.allOccurrences),
-			netChange: incomeCategories.reduce((acc, c) => acc + c.allNetChange, 0),
 			categories: incomeCategories,
-			occurrences: incomeCategories.reduce((acc, c) => acc.concat(c.allOccurrences), <OccurrenceSummary[]>[]),
-			allBudgetOccurrences: incomeCategories.reduce((acc, c) => acc.concat(c.allBudgetOccurrences), <BudgetSummary[]>[]),
+			tally: RealityTally.fromTallies(incomeCategories.map(c => c.tally)),
 		};
 
 		const transferCategories = categorySummaries.filter(c => c.category.type === 'TRANSFER');
 		const transferSummary = {
-			allEvents: transferCategories.flatMap(c => c.allOccurrences),
-			allNetChange: transferCategories.reduce((acc, c) => acc + c.allNetChange, 0),
 			categories: transferCategories,
-			occurrences: transferCategories.reduce((acc, c) => acc.concat(c.allOccurrences), <OccurrenceSummary[]>[]),
+			tally: RealityTally.fromTallies(transferCategories.map(c => c.tally)),
 		};
 
-		const groupEvents = new Map<string, Array<BudgetEvent>>();
-		monthEvents.forEach(event => {
+		const groupBudgetEvents = new Map<string, Array<BudgetEvent>>();
+		monthBudgetEvents.forEach(event => {
 			if (!event.group_id) return; // Skip events without a group
-			if (!groupEvents.has(event.group_id)) {
-				groupEvents.set(event.group_id, []);
+			if (!groupBudgetEvents.has(event.group_id)) {
+				groupBudgetEvents.set(event.group_id, []);
 			}
-			groupEvents.get(event.group_id)!.push(event);
+			groupBudgetEvents.get(event.group_id)!.push(event);
 		});
 
 		return {
 			netGrowth: monthNet,
-			events: monthEvents,
-			occurrences: monthOccurrences,
+			events: monthBudgetEvents,
+			occurrences: budgetOccurrenceSnapshots,
+			budgetsTally: new RealityTally(budgetOccurrenceSnapshots, monthAttributionEvents),
 			accountSummaries,
 			categorySummaries,
 			incomeSummary,
 			transferSummary,
 			spendingCategories,
-			spendingTotal: spendingCategories.reduce((acc, c) => acc + c.allNetChange, 0),
-			groupsEvents: Array.from(groupEvents.entries()).map(([groupId, events]) => ({
+			spendingTotal: spendingCategories.reduce((acc, c) => acc + c.tally.budgetNet, 0),
+			groupsEvents: Array.from(groupBudgetEvents.entries()).map(([groupId, events]) => ({
 				groupId,
 				events
 			})),

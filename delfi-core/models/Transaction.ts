@@ -131,7 +131,7 @@ export type CreateTransaction = Omit<Transaction, 'transaction_id' | 'Attributio
 /**
  * A compiled event that represents a single attribution as if it were a standalone transaction.
  */
-type AttributedEvent = Transaction & TransactionAttribution & {
+export type AttributionEvent = Transaction & TransactionAttribution & {
 	trueTotal: number, // The total amount of the transaction, including all splits
 }
 
@@ -144,8 +144,8 @@ export type Merchant = {
 
 
 export class TransactionUtils {
-	public static processAttributedEvents(transactions: Array<Transaction>) {
-		const attributedEvents: Array<AttributedEvent> = [];
+	public static processAttributionEvents(transactions: Array<Transaction>) {
+		const attributedEvents: Array<AttributionEvent> = [];
 
 		for (const transaction of transactions) {
 			const trueTotal = transaction.Attributions.reduce((sum, attr) => sum + attr.amount, 0);

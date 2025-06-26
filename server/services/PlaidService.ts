@@ -437,8 +437,7 @@ export const PlaidService = {
 				console.log(`Found ${transactions.length} transactions for item ${item.plaid_item_id}.`);
 				for (const transaction of transactions) {
 					// Look up a transaction match in DB
-					const matchingTransactions = await TransactionDao.matchAllMany({
-						workspace_id,
+					const matchingTransactions = await TransactionDao.matchAllMany(workspace_id, {
 						account_id: accountIds[transaction.account_id] || '',
 						amount: -transaction.amount, // plaid transactions come negative!
 						date: transaction.date as any,

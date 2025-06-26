@@ -16,6 +16,9 @@ import type { Account } from 'delfi-core/models/Account';
 import { useRoute, useRouter } from 'vue-router';
 import { useGroupStore } from '@/stores/group.store';
 import Icon from '@/components/Icon.vue';
+import { colors } from 'delfi-core/utils/constants';
+import CategoryAvatar from '@/components/CategoryAvatar.vue';
+import TransactionAvatar from '@/components/TransactionAvatar.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -226,27 +229,20 @@ const dailyEvents = computed(() => {
 				<div>
 					Total ......
 					<Currency
-						:amount="state.summaryData.incomeSummary?.netChange || 0"
+						:amount="state.summaryData.incomeSummary?.tally.budgetNet || 0"
 						mode="net_change"
 					/>
 				</div>
 				<div class="list">
 					<div
 						v-for="{ budget, occurrences } of state.summaryData.incomeSummary
-							?.allBudgetOccurrences"
+							?.tally.budgetOccurrences"
 						class="list-row"
 					>
 						<div class="transaction-main-line">
 							{{ budget.memo }}
 							<Currency
-								:amount="
-									occurrences.reduce(
-										(acc, o) =>
-											acc +
-											o.eventsInRange.reduce((acc, e) => acc + e.amount, 0),
-										0
-									)
-								"
+								:amount="occurrences.reduce((acc, o) => acc + o.budgetedNet, 0)"
 								mode="transaction"
 							/>
 						</div>
@@ -262,18 +258,13 @@ const dailyEvents = computed(() => {
 				<h3>Savings and Transfers</h3>
 				<div class="list">
 					<div
-						v-for="{ budget, eventsInRange } of state.summaryData.transferSummary
-							?.occurrences"
+						v-for="{ budget, occurrences } of state.summaryData.transferSummary.tally.budgetOccurrences"
 						class="list-row"
 					>
 						<div class="transaction-main-line">
 							{{ budget.memo }}
 							<Currency
-								:amount="
-									eventsInRange
-										.filter((e) => !e.flags.includes(EventFlag.TRANSFER_COPY))
-										.reduce((acc, e) => acc + e.amount, 0)
-								"
+								:amount="occurrences.reduce((acc, o) => acc + o.budgetedNetWithoutTransferCopies, 0)"
 							/>
 							<!-- counting both events cancels out -->
 						</div>
@@ -333,12 +324,26 @@ const dailyEvents = computed(() => {
 				<br />
 				<br />
 				<template v-for="category of state.summaryData.spendingCategories">
-					<div v-if="category.hasInfo">
-						<b>{{ category.category.name }}</b>
-						<template v-for="budgetOccurrences of category.allBudgetOccurrences">
-							<div class="flex hover-show-trigger">
+					<div v-if="category.tally.hasInfo" class="list mb-3">
+						<div class="flex justify-content-between list-row py-3">
+							<div class="flex align-items-center">
+								<CategoryAvatar
+									:category="category.category"
+									style="width: 2rem; height: 2rem; margin-right: 0.5rem"
+								/>
+								<b>{{ category.category.name }}</b>
+							</div>
+							<Currency
+								:amount="category.tally.realNet || 0"
+								mode="transaction"
+								class="text-semibold"
+							/>
+						</div>
+						<small v-if="category.tally.budgetOccurrences.length > 0" class="block list-row pl-6" style="background-color: #00000005">
+							Budgeted
+						</small><template v-for="budgetOccurrences of category.tally.budgetOccurrences">
+							<div class="flex hover-show-trigger list-row pl-6">
 								<div class="flex-center">
-									&nbsp;&nbsp;&nbsp;&nbsp;
 									{{ budgetOccurrences.budget.memo }}
 									<button
 										class="hover-show"
@@ -349,17 +354,22 @@ const dailyEvents = computed(() => {
 								</div>
 								&nbsp;......&nbsp;
 								<Currency
-									:amount="
-										budgetOccurrences.occurrences.reduce(
-											(acc, e) =>
-												acc +
-												e.eventsInRange.reduce(
-													(acc, e) => acc + e.amount,
-													0
-												),
-											0
-										)
-									"
+									:amount="budgetOccurrences.occurrences.reduce((acc, o) => acc + o.budgetedNetWithoutTransferCopies, 0)"
+									mode="transaction"
+								/>
+							</div>
+						</template>
+						<small v-if="category.tally.unBudgetedAttributions.length > 0" class="block list-row pl-6" style="background-color: #00000005">
+							Unbudgeted Spending
+						</small>
+						<template v-for="event of category.tally.unBudgetedAttributions">
+							<div class="flex hover-show-trigger list-row pl-6">
+								<div class="flex-center">
+									{{ event.memo || event.original_description }}
+								</div>
+								&nbsp;......&nbsp;
+								<Currency
+									:amount="event.amount"
 									mode="transaction"
 								/>
 							</div>
@@ -380,40 +390,45 @@ const dailyEvents = computed(() => {
 						{{ event.date }}
 					</div>
 					<div class="list">
-						<div class="list-row" v-if="!event.flags.includes(EventFlag.TRANSFER_COPY)">
 							<!-- Don't show transfers twice! -->
-							<div class="transaction-main-line">
-								{{ event.memo }}
-								<div style="flex-grow: 1"></div>
-								<div style="display: flex; align-items: center; gap: 4px">
-									<span v-if="event.sourceBudget.budgetType === 'TRANSFER'"
-										>⇥</span
-									>
-									<Currency
-										:amount="
-											event.sourceBudget.budgetType === 'TRANSFER'
-												? Math.abs(event.amount)
-												: event.amount
-										"
-										:mode="
-											event.sourceBudget.budgetType === 'TRANSFER'
-												? undefined
-												: 'transaction'
-										"
-									/>
-								</div>
+						<div class="list-row flex align-items-center gap-3" v-if="!event.flags.includes(EventFlag.TRANSFER_COPY)">
+							<div>
+								<TransactionAvatar :event="event" style="width: 2.5rem; font-size: 1.2rem;" />
 							</div>
-							<small>
-								<span v-if="event.sourceBudget.budgetType === 'TRANSFER'">
-									{{
-										accountStore.getAccountName(
-											event.sourceBudget.origin_account_id
-										)
-									}}
-									→
-								</span>
-								{{ accountStore.getAccountName(event.sourceBudget.account_id) }}
-							</small>
+							<div class="w-full">
+								<div class="transaction-main-line">
+									{{ event.memo }}
+									<div style="flex-grow: 1"></div>
+									<div style="display: flex; align-items: center; gap: 4px">
+										<span v-if="event.sourceBudget.budgetType === 'TRANSFER'"
+											>⇥</span
+										>
+										<Currency
+											:amount="
+												event.sourceBudget.budgetType === 'TRANSFER'
+													? Math.abs(event.amount)
+													: event.amount
+											"
+											:mode="
+												event.sourceBudget.budgetType === 'TRANSFER'
+													? undefined
+													: 'transaction'
+											"
+										/>
+									</div>
+								</div>
+								<small>
+									<span v-if="event.sourceBudget.budgetType === 'TRANSFER'">
+										{{
+											accountStore.getAccountName(
+												event.sourceBudget.origin_account_id
+											)
+										}}
+										→
+									</span>
+									{{ accountStore.getAccountName(event.sourceBudget.account_id) }}
+								</small>
+							</div>							
 						</div>
 					</div>
 				</template>
@@ -529,57 +544,12 @@ const dailyEvents = computed(() => {
 			<br />
 			<br />
 
-			<div style="color:#fff; padding:10px; background: #ff4c4c;">cherry1</div>
-			<div style="color:#fff; padding:10px; background: #eb2f2f;">cherry2</div>
-			<div style="color:#fff; padding:10px; background: #d81d1d;">cherry3</div>
-			<div style="color:#fff; padding:10px; background: #b52b43;">apple1</div>
-			<div style="color:#fff; padding:10px; background: #a61932;">apple2</div>
-			<div style="color:#fff; padding:10px; background: #870b21;">apple3</div>
-			<div style="color:#fff; padding:10px; background: #a1572c;">chocolate1</div>
-			<div style="color:#fff; padding:10px; background: #8a431a;">chocolate2</div>
-			<div style="color:#fff; padding:10px; background: #73310b;">chocolate3</div>
-			<div style="color:#fff; padding:10px; background: #f48239;">orange1</div>
-			<div style="color:#fff; padding:10px; background: #ea7326;">orange2</div>
-			<div style="color:#fff; padding:10px; background: #e36717;">orange3</div>
-			<div style="color:#fff; padding:10px; background: #fb9467;">peach1</div>
-			<div style="color:#fff; padding:10px; background: #fa8653;">peach2</div>
-			<div style="color:#fff; padding:10px; background: #f37842;">peach3</div>
-			<div style="color:#fff; padding:10px; background: #ffcf3f;">yellow4</div>
-			<div style="color:#fff; padding:10px; background: #f8c220;">yellow5</div>
-			<div style="color:#fff; padding:10px; background: #ecb209;">yellow6</div>
-			<div style="color:#fff; padding:10px; background: #92d72d;">lime1</div>
-			<div style="color:#fff; padding:10px; background: #81c61d;">lime2</div>
-			<div style="color:#fff; padding:10px; background: #6aae09;">lime3</div>
-			<div style="color:#fff; padding:10px; background: #4f9c25;">forest1</div>
-			<div style="color:#fff; padding:10px; background: #3b8116;">forest2</div>
-			<div style="color:#fff; padding:10px; background: #2d7108;">forest3</div>
-			<div style="color:#fff; padding:10px; background: #27d7cf;">teal1</div>
-			<div style="color:#fff; padding:10px; background: #06c6bd;">teal2</div>
-			<div style="color:#fff; padding:10px; background: #00afa7;">teal3</div>
-			<div style="color:#fff; padding:10px; background: #7dd0ff;">sky1</div>
-			<div style="color:#fff; padding:10px; background: #4fbdfb;">sky2</div>
-			<div style="color:#fff; padding:10px; background: #33abee;">sky3</div>
-			<div style="color:#fff; padding:10px; background: #2591e6;">blue1</div>
-			<div style="color:#fff; padding:10px; background: #107dd2;">blue2</div>
-			<div style="color:#fff; padding:10px; background: #006abc;">blue3</div>
-			<div style="color:#fff; padding:10px; background: #23508f;">navy1</div>
-			<div style="color:#fff; padding:10px; background: #194481;">navy2</div>
-			<div style="color:#fff; padding:10px; background: #0e356d;">navy3</div>
-			<div style="color:#fff; padding:10px; background: #9a7fec;">lavendar1</div>
-			<div style="color:#fff; padding:10px; background: #8f72e6;">lavendar2</div>
-			<div style="color:#fff; padding:10px; background: #8263de;">lavendar3</div>
-			<div style="color:#fff; padding:10px; background: #8046fb;">violet1</div>
-			<div style="color:#fff; padding:10px; background: #7031f5;">violet2</div>
-			<div style="color:#fff; padding:10px; background: #6122e8;">violet3</div>
-			<div style="color:#fff; padding:10px; background: #b728c5;">purple1</div>
-			<div style="color:#fff; padding:10px; background: #9e17ab;">purple2</div>
-			<div style="color:#fff; padding:10px; background: #900d9d;">purple3</div>
-			<div style="color:#fff; padding:10px; background: #ef72c0;">blush1</div>
-			<div style="color:#fff; padding:10px; background: #e55eb2;">blush2</div>
-			<div style="color:#fff; padding:10px; background: #d549a0;">blush3</div>
-			<div style="color:#fff; padding:10px; background: #ee37c8;">magenta1</div>
-			<div style="color:#fff; padding:10px; background: #d515ad;">magenta2</div>
-			<div style="color:#fff; padding:10px; background: #c1099b;">magenta2</div>
+			<div
+				v-for="[name, hex] in Object.entries(colors)"
+				:style="{color: '#fff', padding: '10px', background: hex}"
+			>
+				{{ name }}
+			</div>
 		</div>
 	</main>
 </template>

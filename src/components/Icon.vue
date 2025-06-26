@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Icons, type IconName, colors } from 'delfi-core/utils/constants';
+import { Icons, type IconName, colors, type Icon } from 'delfi-core/utils/constants';
 import { computed } from 'vue';
 
 const props = defineProps<{
@@ -8,14 +8,14 @@ const props = defineProps<{
 	color?: string;
 }>();
 
-const icon = computed(() => Icons[props.name]);
+const icon = computed<Icon>(() => Icons[props.name]);
 const color = computed(() => colors[props.color || ''] || props.color || 'inherit');
 </script>
 
 <template>
 	<span class="icon-wrapper" :style="{ color: color }">
 		<template v-if="icon.source === 'material-symbols'">
-			<span class="icon material-symbols-rounded" :class="{ fill }">{{ icon.source_id }}</span>
+			<span class="icon material-symbols-rounded" :class="{ fill }" :style="icon.style">{{ icon.source_id }}</span>
 		</template>
 	</span>
 </template>
@@ -30,7 +30,7 @@ const color = computed(() => colors[props.color || ''] || props.color || 'inheri
 	color: inherit;
 }
 .material-symbols-rounded {
-	padding-top: 0.08em;
+	padding-top: 0.07em;
 	font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' -25, 'opsz' 12;
 	font-size: 1.3em;
 

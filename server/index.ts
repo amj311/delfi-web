@@ -13,6 +13,7 @@ import groupRoute from "./routes/group.route";
 import firebaseAuthMiddleware, { firebaseConfig } from "./services/FirebaseService";
 import signupRoute from "./routes/signup.route";
 import './services/SyncService'; // Import to trigger job creation
+import transactionRoute from './routes/transaction.route';
 
 // HTTPS support for development
 const isDevelopment = !("RENDER" in process.env);
@@ -47,6 +48,7 @@ app.addHook('onResponse', (request, reply) => {
 app.register((authRoutes, _, done) => {
 	authRoutes.addHook('preValidation', firebaseAuthMiddleware);
 
+	authRoutes.register(transactionRoute, { prefix: '/transactions' });
 	authRoutes.register(userRoute, { prefix: '/user' });
 	authRoutes.register(plaidRoute, { prefix: '/plaid' });
 	authRoutes.register(accountRoute, { prefix: '/account' });
@@ -74,7 +76,7 @@ app.setErrorHandler((error: any, request, reply) => {
 		throw error;
 	}
 	reply.status(500).send({
-		message: "Internal Server Errorzzz"
+		message: "Internal Server Error"
 	});
 });
 

@@ -1,16 +1,17 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils"
 import { type BudgetedTransactionDetails, type BudgetEvent, type ScheduledBudget } from "../models/Budget"
 import { getPropertyByPath } from "delfi-core/utils/miscUtils"
+import type { AttributionEvent } from "delfi-core/models/Transaction"
 
 export type MatchingRule = {
-	property: 'date' | 'year' | 'month' | 'day' | 'budgetId' | 'amount' | 'memo' | 'type' | 'account_id' | 'target_account_partition_id' | 'category_id' | 'Category.type'
+	property: 'date' | 'year' | 'month' | 'day' | 'budget_id' | 'amount' | 'memo' | 'type' | 'account_id' | 'target_account_partition_id' | 'category_id' | 'Category.type'
 	operator: '*' | 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'inc'
 	not?: boolean // If true, the rule is inverted
 	operand?: number | string | string[] | DelfiDate
 }
 
 export type TransactionFilter = MatchingRule[];
-type Filterable = BudgetedTransactionDetails | ScheduledBudget | BudgetEvent;
+type Filterable = BudgetedTransactionDetails | ScheduledBudget | BudgetEvent | AttributionEvent;
 
 const FilterService = {
 	matches(filter: TransactionFilter, transaction: Filterable): boolean {

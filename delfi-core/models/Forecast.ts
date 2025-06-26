@@ -42,7 +42,7 @@ class Forecast {
 		for (let schedule of this.transactionSchedules) {
 			scheduledOccurrences.push(...BudgetUtils.createOccurrencesFromSchedule(this.start, this.end, schedule));
 		}
-		const scheduledEvents = scheduledOccurrences.flatMap(o => o.events);
+		const scheduledEvents = scheduledOccurrences.flatMap(o => o.budgetEvents);
 
 		// Compute just one month at a time
 		let monthStart = this.start.startOf('month');
@@ -65,7 +65,7 @@ class Forecast {
 				).filter(Boolean) as BudgetOccurrence[];
 				// this.transactionStore.addTransactions(triggeredEvents);
 				monthOccurrences.push(...triggeredOccurrences);
-				monthEvents.push(...triggeredOccurrences.flatMap(o => o.events));
+				monthEvents.push(...triggeredOccurrences.flatMap(o => o.budgetEvents));
 			}
 
 			// TODO compute cumulative triggers

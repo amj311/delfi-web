@@ -49,7 +49,7 @@ export class CategorySummary {
 	get occurrences(): OccurrenceSummary[] {
 		return this._occurrences.map(o => ({
 			...o,
-			eventsInRange: o.events.filter(e => e.date.isBetweenInclusive(this.start, this.end)),
+			eventsInRange: o.budgetEvents.filter(e => e.date.isBetweenInclusive(this.start, this.end)),
 		}));
 	}
 

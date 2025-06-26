@@ -9,6 +9,7 @@ import { TransactionUtils } from 'delfi-core/models/Transaction';
 import Icon from '@/components/Icon.vue';
 import { colors } from 'delfi-core/utils/constants';
 import CategoryAvatar from '@/components/CategoryAvatar.vue';
+import TransactionAvatar from '@/components/TransactionAvatar.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -105,7 +106,7 @@ async function syncAccount() {
 }
 
 const attributedEvents = computed(() => {
-	return TransactionUtils.processAttributedEvents(transactions.value);
+	return TransactionUtils.processAttributionEvents(transactions.value);
 });
 
 </script>
@@ -276,18 +277,7 @@ const attributedEvents = computed(() => {
 						<tbody>
 							<tr v-for="(event, index) in attributedEvents" :key="index">
 								<td>
-									<div class="transaction-avatar">
-										<img
-											v-if="event.Merchant?.logo"
-											:src="event.Merchant.logo"
-										/>
-										<template v-else>
-											<CategoryAvatar
-												:category="event.Category"
-												:categoryId="event.category_id"
-											/>
-										</template>
-									</div>
+									<TransactionAvatar :event="event" class="transaction-avatar" />
 								</td>
 								<td>{{ formatDate(event.date) }}</td>
 								<td>
@@ -570,19 +560,7 @@ tr:hover {
 }
 
 .transaction-avatar {
-	color: #fff;
-    aspect-ratio: 1;
     width: 2.5rem;
 	font-size: 1.2rem;
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border-radius: 50%;
-
-	img {
-		width: 100%;
-		object-fit: cover;
-	}
 }
 </style>

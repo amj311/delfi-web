@@ -70,8 +70,9 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 			}
 			const afcuType = await getMatchingRowValue('Type:');
 			const afcuName = await getMatchingRowValue('Nickname:');
-			const currentBalance = await page.locator('.primary-label-amount .money').innerText() || await getMatchingRowValue('Current Balance:');
-			const availableBalance = await getMatchingRowValue('Available Balance:');
+			// const currentBalance = await page.locator('.primary-label-amount .money').innerText() || await getMatchingRowValue('Current Balance:');
+			const currentBalance = await getMatchingRowValue('Balance:');
+			// const availableBalance = await getMatchingRowValue('Available Balance:');
 			const limit = await getMatchingRowValue('Limit:');
 
 			const typeMap = {
@@ -87,7 +88,7 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 			return {
 				mask: mask || '',
 				current_balance: currentBalance ? dollarsToNumber(currentBalance) : 0,
-				available_balance: availableBalance ? dollarsToNumber(availableBalance) : undefined,
+				// available_balance: availableBalance ? dollarsToNumber(availableBalance) : undefined,
 				limit: limit ? dollarsToNumber(limit) : undefined,
 				external_name: afcuName || '',
 				type: typeMatch?.type || AccountType.other,

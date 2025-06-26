@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import request from '@/services/request';
 import type { Category } from 'delfi-core/models/Category';
 import { TagColor } from 'delfi-core/utils/constants';
+import { UncategorizedCategory } from 'delfi-core/models/systemCategories';
 
 export const useCategoryStore = defineStore('category', () => {
 	let workspaceCategories = ref([] as any[]);
@@ -23,18 +24,7 @@ export const useCategoryStore = defineStore('category', () => {
 	}
 
 	const systemOnlyCategories: Array<Category> = [
-		{
-			category_id: null as any,
-			name: 'Uncategorized',
-			type: 'EXPENSE',
-			Group: {
-				group_id: 'system',
-				name: 'System',
-				color: TagColor.cherry2,
-				icon: 'question-circle',
-			},
-			group_id: '',
-		}
+		UncategorizedCategory,
 	];
 
 	const allCategories = computed(() => {
@@ -42,7 +32,7 @@ export const useCategoryStore = defineStore('category', () => {
 	})
 
 	function getCategoryById(categoryId?: string | null): Category {
-		return allCategories.value.find(c => c.category_id === categoryId) || systemOnlyCategories[0];
+		return allCategories.value.find(c => c.category_id === categoryId) || UncategorizedCategory;
 	}
 
 	const categoriesByGroup = computed(() => {

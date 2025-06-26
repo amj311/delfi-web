@@ -61,9 +61,10 @@ export const TransactionDao = {
 	},
 
 
-	async matchAllMany(search: Partial<Transaction>): Promise<Transaction[]> {
+	async matchAllMany(workspace_id: string, search: Partial<Transaction>): Promise<Transaction[]> {
 		const found = await prisma.transaction.findMany({
 			where: {
+				workspace_id,
 				...search,
 			} as any,
 			include: {
@@ -79,6 +80,36 @@ export const TransactionDao = {
 			where: {
 				workspace_id,
 				account_id,
+				done_pending: false,
+			},
+			include: {
+				Attributions: {
+					include: {
+						Category: {
+							include: {
+								Group: true, // Include category group details
+							},
+						}, // Include category details
+					},
+				},
+				Merchant: true,
+			},
+			orderBy: [
+				{ pending: 'desc' }, // Show pending transactions first
+				{ date: 'desc' },
+			]
+		});
+		return transactions.map(this.dbToTransaction);
+	},
+
+	async getTransactionsInRange(workspace_id: string, startDate: string, endDate: string): Promise<Transaction[]> {
+		const transactions = await prisma.transaction.findMany({
+			where: {
+				workspace_id,
+				date: {
+					gte: startDate,
+					lte: endDate,
+				},
 				done_pending: false,
 			},
 			include: {

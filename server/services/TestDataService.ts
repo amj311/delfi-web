@@ -462,7 +462,7 @@ export class TestDataService {
 			{
 				budget_id: 'yearly-travel-budget',
 				memo: 'Travel',
-				category_id: categoryByName("Groceries").category_id,
+				category_id: null,
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				account_id: getAccountByName('Checking').account_id,

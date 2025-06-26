@@ -15,12 +15,12 @@ export const colors = {
 	gray12: "#1F2528",
 	gray13: "#101516",
 
-	cherry1: "#ff4c4c",
-	cherry2: "#eb2f2f",
-	cherry3: "#d81d1d",
-	apple1: "#b52b43",
-	apple2: "#a61932",
-	apple3: "#870b21",
+	cherry1: "rgb(255 84 84)",
+	cherry2: "rgb(246 40 40)",
+	cherry3: "rgb(219 9 9)",
+	apple1: "rgb(214 53 53)",
+	apple2: "rgb(177 28 28)",
+	apple3: "rgb(156 13 13)",
 	chocolate1: "#a1572c",
 	chocolate2: "#8a431a",
 	chocolate3: "#73310b",
@@ -60,9 +60,9 @@ export const colors = {
 	purple1: "#b728c5",
 	purple2: "#9e17ab",
 	purple3: "#900d9d",
-	blush1: "#ef72c0",
-	blush2: "#e55eb2",
-	blush3: "#d549a0",
+	blush1: "#ff89bb",
+	blush2: "rgb(244 109 166)",
+	blush3: "rgb(234 84 148)",
 	magenta1: "#ee37c8",
 	magenta2: "#d515ad",
 	magenta3: "#c1099b",
@@ -132,6 +132,7 @@ export type Icon = {
 	name: string,
 	source: IconSource,
 	source_id: string,
+	style?: { [key: string]: string | number }
 }
 
 export const Icons = {
@@ -149,6 +150,14 @@ export const Icons = {
 		name: "car",
 		source: "material-symbols",
 		source_id: "directions_car",
+	},
+	"category": {
+		name: "category",
+		source: "material-symbols",
+		source_id: "category",
+		style: {
+			translate: '0 -6%',
+		}
 	},
 	
 	"chart-line": {
@@ -191,6 +200,11 @@ export const Icons = {
 		name: "faucet",
 		source: "material-symbols",
 		source_id: "faucet",
+	},
+	"fuel": {
+		name: "fuel",
+		source: "material-symbols",
+		source_id: "local_gas_station",
 	},
 	"gavel": {
 		name: "gavel",

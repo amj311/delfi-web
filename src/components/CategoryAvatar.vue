@@ -26,5 +26,6 @@ const category = computed(() => props.category || categoryStore.getCategoryById(
 	aspect-ratio: 1;
 	width: 100%;
 	height: 100%;
+	border-radius: 50%;
 }
 </style>
