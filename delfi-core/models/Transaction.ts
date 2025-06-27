@@ -1,6 +1,7 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils"
 import type { Category } from "./Category"
 import type { TagColor } from "delfi-core/utils/constants"
+import type { CommonEventDetails } from "./Summary"
 
 
 /**
@@ -58,7 +59,6 @@ type AttributionBudgetableDetails = {
 	group_id?: string,
 	Group?: Group,
 	memo?: string | null,
-	budget_id?: string | null,
 }
 
 // Provide these details for consistency with Budgets
@@ -67,6 +67,7 @@ export type BudgetableTransactionDetails = TrueBudgetableDetails & AttributionBu
 
 type AttributionEventDetails = {
 	amount: number,
+	budget_id?: string | null,
 }
 type TransactionAttribution = AttributionBudgetableDetails & AttributionEventDetails & {
 	transaction_attribution_id: string,
@@ -131,8 +132,8 @@ export type CreateTransaction = Omit<Transaction, 'transaction_id' | 'Attributio
 /**
  * A compiled event that represents a single attribution as if it were a standalone transaction.
  */
-export type AttributionEvent = Transaction & TransactionAttribution & {
-	trueTotal: number, // The total amount of the transaction, including all splits
+export type AttributionEvent = CommonEventDetails & TransactionAttribution & {
+	sourceTransaction: Transaction,
 }
 
 export type Merchant = {
@@ -152,9 +153,18 @@ export class TransactionUtils {
 
 			for (const attribution of transaction.Attributions) {
 				attributedEvents.push({
-					...transaction,
+					sourceType: 'attribution',
+					sourceTransaction: transaction,
+					date: transaction.date,
+					day: transaction.date.day(),
+					year: transaction.date.year(),
+					month: transaction.date.month(),
+
+					account_id: transaction.account_id,
+					Merchant: transaction.Merchant,
+
+					displayName: attribution.memo || transaction.original_description,
 					...attribution,
-					trueTotal,
 				});
 			}
 		}

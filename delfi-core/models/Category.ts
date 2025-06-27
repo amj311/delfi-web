@@ -1,5 +1,5 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils";
-import { type BudgetEvent, type BudgetOccurrence, type Budget, EventFlag } from "./Budget";
+import { type BudgetEvent, type BudgetOccurrence, type Budget } from "./Budget";
 import type { PlaidCategory } from "server/services/PlaidService";
 import type { IconName, TagColor } from "delfi-core/utils/constants";
 

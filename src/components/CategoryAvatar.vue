@@ -17,7 +17,7 @@ const category = computed(() => props.category || categoryStore.getCategoryById(
 
 <template>
 	<div class="category-avatar flex align-items-center justify-content-center" :style="{ backgroundColor: colors[category.Group?.color || ''] || '#aaaaaf' }">
-		<Icon :name="category.icon || category.Group?.icon || 'question-circle'" color="#fff" />
+		<Icon :name="category.icon || category.Group?.icon || 'category'" color="#fff" />
 	</div>
 </template>
 

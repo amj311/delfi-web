@@ -31,11 +31,11 @@ const color = computed(() => colors[props.color || ''] || props.color || 'inheri
 }
 .material-symbols-rounded {
 	padding-top: 0.07em;
-	font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' -25, 'opsz' 12;
+	font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' -25, 'opsz' 12;
 	font-size: 1.3em;
 
 	&.fill {
-		font-variation-settings: 'FILL' 1, 'wght' 300, 'GRAD' -25, 'opsz' 12;
+		font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' -25, 'opsz' 12;
 	}
 }
 </style>

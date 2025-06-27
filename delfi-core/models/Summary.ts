@@ -1,60 +1,44 @@
-import { EventFlag, type Budget, type BudgetEvent, type BudgetOccurrence } from "delfi-core/models/Budget";
-import type { AttributionEvent } from "delfi-core/models/Transaction";
+import { type Budget, type BudgetEvent, type BudgetOccurrence } from "delfi-core/models/Budget";
+import type { AttributionEvent, BudgetableTransactionDetails, Merchant } from "delfi-core/models/Transaction";
 import type { DelfiDate } from "../utils/dateUtils";
+import type { Category } from "./Category";
 
-export type CommonEvent = BudgetEvent | AttributionEvent;
 
-export function netChange(events: CommonEvent[]): number {
+export type CommonEventDetails = BudgetableTransactionDetails & {
+	displayName: string,
+	date: DelfiDate,
+	year: number;
+	month: number;
+	day: number;
+	amount: number,
+	sourceType: string,
+	Merchant?: Merchant | null,
+	Category?: Category | null,
+};
+
+export type CommonEvent = AttributionEvent | BudgetEvent;
+
+export function netChange(events: { amount: number }[]): number {
 	return events.reduce((acc, event) => acc + event.amount, 0);
 }
 
 /**
- * An accounting of a single budget occurrence and any real transactions attributed to it.
+ * An accounting of all occurrences of a budget and any real transactions attributed to it within a certain timeframe.
+ * There will USUALLY be only a single occurrence. When there are multiple, they are likely from triggered budgets rather than scheduled ones, and the occurrences would only be one-off events.
  * Thus it could report over-spending within this budget, but not unattributed spending.
  */
-export class BudgetOccurrenceSummary {
+export class BudgetSnapshot {
 	constructor(
-		readonly budgetOccurrence: BudgetOccurrence,
+		readonly rangeStart: DelfiDate,
+		readonly rangeEnd: DelfiDate,
+		readonly budget: Budget,
+		readonly occurrences: BudgetOccurrence[],
 		readonly attributedEvents: AttributionEvent[],
 	) {}
 
-	get budget(): Budget {
-		return this.budgetOccurrence.budget;
-	}
-
-	get occurrence(): BudgetOccurrence {
-		return this.budgetOccurrence;
-	}
-	
-	public snapshot(rangeStart: DelfiDate, rangeEnd: DelfiDate): OccurrenceSnapshot {
-		return new OccurrenceSnapshot(
-			this,
-			rangeStart,
-			rangeEnd,
-		);
-	}
-}
-
-export class OccurrenceSnapshot {
-	constructor(
-		readonly occurrenceSummary: BudgetOccurrenceSummary,
-		readonly rangeStart: DelfiDate,
-		readonly rangeEnd: DelfiDate,
-	) {}
-
-	get budget(): Budget {
-		return this.occurrenceSummary.budget;
-	}
-
-	get occurrence(): BudgetOccurrence {
-		return this.occurrenceSummary.occurrence;
-	}
 
 	get budgetEvents(): BudgetEvent[] {
-		return this.occurrenceSummary.budgetOccurrence.budgetEvents.filter(e => e.date.isBetweenInclusive(this.rangeStart, this.rangeEnd));
-	}
-	get attributedEvents(): AttributionEvent[] {
-		return this.occurrenceSummary.attributedEvents.filter(e => e.date.isBetweenInclusive(this.rangeStart, this.rangeEnd));
+		return this.occurrences.flatMap(o => o.budgetEvents.filter(e => e.date.isBetweenInclusive(this.rangeStart, this.rangeEnd)));
 	}
 
 	private totalBefore(events: CommonEvent[]): number {
@@ -67,33 +51,31 @@ export class OccurrenceSnapshot {
 	get attributedBefore(): number {
 		return this.totalBefore(this.attributedEvents);
 	}
-	get budgetedNet(): number {
-		return netChange(this.budgetEvents);
+
+	get tally(): RealityTally {
+		return new RealityTally(this.budgetEvents, this.attributedEvents);
 	}
-	get budgetedNetWithoutTransferCopies(): number {
-		return netChange(this.budgetEvents.filter(e => !e.flags.includes(EventFlag.TRANSFER_COPY)));
-	}
-	get attributedNet(): number {
-		return netChange(this.attributedEvents);
-	}
+
+
 	get budgetedAtEnd(): number {
-		return this.budgetedBefore + this.budgetedNet;
+		return this.budgetedBefore + this.tally.budgetedNet;
 	}
 	get attributedAtEnd(): number {
-		return this.attributedBefore + this.attributedNet;
+		return this.attributedBefore + this.tally.attributedNet;
+	}
+
+	get rangeBudgetRemaining(): number {
+		return this.budgetedAtEnd - this.attributedAtEnd;
+	}
+
+
+	get totalOccurrencesNet(): number {
+		return netChange(this.occurrences);
 	}
 
 	get totalBudgetRemaining(): number {
-		return this.occurrence.amount - this.attributedAtEnd;
+		return this.totalOccurrencesNet - this.attributedAtEnd;
 	}
-}
-
-/**
- * Supports having multiple occurrences of the same budget, especially for triggered one-off occurrences.
- */
-export type BudgetSummary = {
-	budget: Budget,
-	occurrences: OccurrenceSnapshot[],
 }
 
 
@@ -103,21 +85,14 @@ export type BudgetSummary = {
  */
 export class RealityTally {
 	constructor(
-		public readonly occurrenceSnapshots: OccurrenceSnapshot[] = [],
+		public readonly budgetEvents: BudgetEvent[] = [],
 		/** ALL attribution events, both budgeted and unbudgeted */
 		public readonly attributionEvents: AttributionEvent[] = [],
 	) {}
 
 	// When computing for ALL categories, we don't want to bother showing empty ones
 	get hasInfo(): boolean {
-		return this.occurrenceSnapshots.length > 0 || this.attributionEvents.length > 0;
-	}
-
-	/**
-	 * Only those events in the date range.
-	 */
-	get budgetEvents(): BudgetEvent[] {
-		return this.occurrenceSnapshots.flatMap(o => o.budgetEvents);
+		return this.budgetEvents.length > 0 || this.attributionEvents.length > 0;
 	}
 
 	get unBudgetedAttributions(): AttributionEvent[] {
@@ -125,42 +100,52 @@ export class RealityTally {
 		return this.attributionEvents.filter(e => !e.budget_id);
 	}
 
-	get budgetOccurrences() {
-		const budgets = new Map<Budget, OccurrenceSnapshot[]>();
-		this.occurrenceSnapshots.forEach(o => {
-			if (!budgets.has(o.budget)) {
-				budgets.set(o.budget, []);
-			}
-			budgets.get(o.budget)!.push(o);
-		});
-		return Array.from(budgets.entries()).map(([budget, occurrences]) => ({
-			budget,
-			occurrences,
-		}));
+
+	get budgetEventsWithoutTransferCopies(): BudgetEvent[] {
+		return this.budgetEvents.filter(e => !e.isTransferCopy);
 	}
 
-	get budgetNet(): number {
-		return netChange(this.budgetEvents);
+	/**
+	 * NOTE This ALWAYS excludes transfer copies. I don't yet know of a situation where we would want to include them in the budgeted net.
+	 */
+	get budgetedNet(): number {
+		return netChange(this.budgetEvents.filter(e => !e.isTransferCopy));
 	}
 
-	get realNet(): number {
+	get attributedNet(): number {
 		return netChange(this.attributionEvents);
 	}
 
 	get budgetRemaining(): number {
-		return this.budgetNet - this.realNet;
+		return this.budgetedNet - this.attributedNet;
 	}
 
 	get unBudgetedNet(): number {
 		return netChange(this.unBudgetedAttributions);
 	}
 
-
+	get budgetSummaries() {
+		const eventsByBudget = new Map<Budget, BudgetEvent[]>();
+		this.budgetEvents.forEach(event => {
+			const array = eventsByBudget.get(event.sourceBudget) || [];
+			array.push(event);
+			eventsByBudget.set(event.sourceBudget, array);
+		});
+		return Array.from(eventsByBudget.entries()).map(([budget, events]) => ({
+			budget,
+			budgetEvents: events,
+			attributedEvents: this.attributionEvents.filter(e => e.budget_id === budget.budget_id),
+		}));
+	}
 
 
 	static fromTallies(tallies: RealityTally[]): RealityTally {
-		const occurrenceSnapshots = tallies.flatMap(t => t.occurrenceSnapshots);
+		const budgetEvents = tallies.flatMap(t => t.budgetEvents);
 		const attributionEvents = tallies.flatMap(t => t.attributionEvents);
-		return new RealityTally(occurrenceSnapshots, attributionEvents);
+		return new RealityTally(budgetEvents, attributionEvents);
 	}
+}
+
+
+export class SummaryUtils {
 }

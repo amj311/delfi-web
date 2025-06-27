@@ -6,12 +6,11 @@ import { useBudgetStore } from '@/stores/budget.store';
 import Forecast from '../../delfi-core/models/Forecast';
 import { type DelfiDate, date } from '../../delfi-core/utils/dateUtils';
 import Currency from '@/components/Currency.vue';
-// import { useBudgetStore } from '@/stores/budget.store';
 import { useCategoryStore } from '@/stores/category.store';
 import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
 import UpsertBudgetForm from '@/components/UpsertBudgetForm.vue';
 import type { Delfi } from 'delfi-core/Delfi';
-import { EventFlag, type BudgetEvent, type Budget } from '../../delfi-core/models/Budget';
+import { type BudgetEvent, type Budget } from '../../delfi-core/models/Budget';
 import type { Account } from 'delfi-core/models/Account';
 import { useRoute, useRouter } from 'vue-router';
 import { useGroupStore } from '@/stores/group.store';
@@ -229,20 +228,19 @@ const dailyEvents = computed(() => {
 				<div>
 					Total ......
 					<Currency
-						:amount="state.summaryData.incomeSummary?.tally.budgetNet || 0"
+						:amount="state.summaryData.incomeSummary?.tally.budgetedNet || 0"
 						mode="net_change"
 					/>
 				</div>
 				<div class="list">
 					<div
-						v-for="{ budget, occurrences } of state.summaryData.incomeSummary
-							?.tally.budgetOccurrences"
+						v-for="{ budget, budgetEvents } of state.summaryData.incomeSummary?.tally.budgetSummaries"
 						class="list-row"
 					>
 						<div class="transaction-main-line">
 							{{ budget.memo }}
 							<Currency
-								:amount="occurrences.reduce((acc, o) => acc + o.budgetedNet, 0)"
+								:amount="budgetEvents.reduce((acc, o) => acc + o.amount, 0)"
 								mode="transaction"
 							/>
 						</div>
@@ -258,20 +256,19 @@ const dailyEvents = computed(() => {
 				<h3>Savings and Transfers</h3>
 				<div class="list">
 					<div
-						v-for="{ budget, occurrences } of state.summaryData.transferSummary.tally.budgetOccurrences"
+						v-for="budgetEvent of state.summaryData.transferSummary.tally
+							.budgetEventsWithoutTransferCopies"
 						class="list-row"
 					>
 						<div class="transaction-main-line">
-							{{ budget.memo }}
-							<Currency
-								:amount="occurrences.reduce((acc, o) => acc + o.budgetedNetWithoutTransferCopies, 0)"
-							/>
+							{{ budgetEvent.displayName }}
+							<Currency :amount="budgetEvent.amount" />
 							<!-- counting both events cancels out -->
 						</div>
-						<small
-							>{{ accountStore.getAccountName(budget.origin_account_id!) }} →
-							{{ accountStore.getAccountName(budget.account_id) }}</small
-						>
+						<small>
+							{{ accountStore.getAccountName(budgetEvent.origin_account_id!) }} →
+							{{ accountStore.getAccountName(budgetEvent.account_id) }}
+						</small>
 					</div>
 				</div>
 			</div>
@@ -287,18 +284,18 @@ const dailyEvents = computed(() => {
 			<!-- <UpsertBudgetForm v-if="state.upsertingBudget" :budget="state.upsertingBudget || {}" :close="() => state.upsertingBudget = null" :onSave="createDelfi" />
 			<button v-else @click="() => state.upsertingBudget = {}">Add Budget</button> -->
 
-
 			<br />
 			<div>
-				<div v-for="{ groupId, events } of state.summaryData.groupsEvents" class="group-summary ">
+				<div
+					v-for="{ groupId, events } of state.summaryData.groupsEvents"
+					class="group-summary"
+				>
 					<div class="title flex align-items-center gap-1">
 						<Icon name="tag" fill :color="groupStore.getGroupById(groupId)?.color" />
 						{{ groupStore.getGroupById(groupId)!.name }}
 						<div class="flex-grow-1"></div>
 						<Currency
-							:amount="
-								events.reduce((acc, e) => acc + e.amount, 0)
-							"
+							:amount="events.reduce((acc, e) => acc + e.amount, 0)"
 							mode="transaction"
 						/>
 					</div>
@@ -320,10 +317,18 @@ const dailyEvents = computed(() => {
 			<div>
 				<h3>Spending</h3>
 				Total spending:
-				<Currency :amount="state.summaryData.spendingTotal" mode="transaction" />
+				<Currency
+					:amount="state.summaryData.spendingSummary.tally.attributedNet"
+					mode="transaction"
+				/>
+				&nbsp;/&nbsp;
+				<Currency
+					:amount="state.summaryData.spendingSummary.tally.budgetedNet"
+					mode="transaction"
+				/>
 				<br />
 				<br />
-				<template v-for="category of state.summaryData.spendingCategories">
+				<template v-for="category of state.summaryData.spendingSummary.categories">
 					<div v-if="category.tally.hasInfo" class="list mb-3">
 						<div class="flex justify-content-between list-row py-3">
 							<div class="flex align-items-center">
@@ -333,45 +338,48 @@ const dailyEvents = computed(() => {
 								/>
 								<b>{{ category.category.name }}</b>
 							</div>
+							<div class="flex-grow-1"></div>
 							<Currency
-								:amount="category.tally.realNet || 0"
+								:amount="category.tally.attributedNet || 0"
+								mode="transaction"
+								class="text-semibold"
+							/>
+							&nbsp;/&nbsp;
+							<Currency
+								:amount="category.tally.budgetedNet || 0"
 								mode="transaction"
 								class="text-semibold"
 							/>
 						</div>
-						<small v-if="category.tally.budgetOccurrences.length > 0" class="block list-row pl-6" style="background-color: #00000005">
-							Budgeted
-						</small><template v-for="budgetOccurrences of category.tally.budgetOccurrences">
+						<template v-for="budgetEvent of category.tally.budgetEvents">
 							<div class="flex hover-show-trigger list-row pl-6">
 								<div class="flex-center">
-									{{ budgetOccurrences.budget.memo }}
+									{{ budgetEvent.displayName }}
 									<button
 										class="hover-show"
-										@click="() => state.upsertingBudget = budgetOccurrences.budget!"
+										@click="() => state.upsertingBudget = budgetEvent.sourceBudget!"
 									>
 										Edit
 									</button>
 								</div>
 								&nbsp;......&nbsp;
-								<Currency
-									:amount="budgetOccurrences.occurrences.reduce((acc, o) => acc + o.budgetedNetWithoutTransferCopies, 0)"
-									mode="transaction"
-								/>
+								<Currency :amount="budgetEvent.amount" mode="transaction" />
 							</div>
 						</template>
-						<small v-if="category.tally.unBudgetedAttributions.length > 0" class="block list-row pl-6" style="background-color: #00000005">
+						<small
+							v-if="category.tally.unBudgetedAttributions.length > 0"
+							class="block list-row pl-6"
+							style="background-color: #00000005"
+						>
 							Unbudgeted Spending
 						</small>
 						<template v-for="event of category.tally.unBudgetedAttributions">
 							<div class="flex hover-show-trigger list-row pl-6">
 								<div class="flex-center">
-									{{ event.memo || event.original_description }}
+									{{ event.displayName }}
 								</div>
 								&nbsp;......&nbsp;
-								<Currency
-									:amount="event.amount"
-									mode="transaction"
-								/>
+								<Currency :amount="event.amount" mode="transaction" />
 							</div>
 						</template>
 					</div>
@@ -390,10 +398,16 @@ const dailyEvents = computed(() => {
 						{{ event.date }}
 					</div>
 					<div class="list">
-							<!-- Don't show transfers twice! -->
-						<div class="list-row flex align-items-center gap-3" v-if="!event.flags.includes(EventFlag.TRANSFER_COPY)">
+						<!-- Don't show transfers twice! -->
+						<div
+							class="list-row flex align-items-center gap-3"
+							v-if="!event.isTransferCopy"
+						>
 							<div>
-								<TransactionAvatar :event="event" style="width: 2.5rem; font-size: 1.2rem;" />
+								<TransactionAvatar
+									:event="event"
+									style="width: 2.5rem; font-size: 1.2rem"
+								/>
 							</div>
 							<div class="w-full">
 								<div class="transaction-main-line">
@@ -428,7 +442,7 @@ const dailyEvents = computed(() => {
 									</span>
 									{{ accountStore.getAccountName(event.sourceBudget.account_id) }}
 								</small>
-							</div>							
+							</div>
 						</div>
 					</div>
 				</template>
@@ -546,7 +560,7 @@ const dailyEvents = computed(() => {
 
 			<div
 				v-for="[name, hex] in Object.entries(colors)"
-				:style="{color: '#fff', padding: '10px', background: hex}"
+				:style="{ color: '#fff', padding: '10px', background: hex }"
 			>
 				{{ name }}
 			</div>

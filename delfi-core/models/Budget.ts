@@ -5,6 +5,7 @@ import { computeTriggeredAmount, type Trigger } from "./schedules/triggers"
 import { date, toDelfiInterval, type DelfiDate } from "../utils/dateUtils";
 import FilterService from "../services/FilterService";
 import { type BudgetableTransactionDetails } from "./Transaction";
+import type { CommonEventDetails } from "./Summary";
 
 export enum RecurrenceType {
 	SCHEDULE = "SCHEDULE",
@@ -55,7 +56,8 @@ type BaseBudget = BudgetedTransactionDetails & {
 	budget_id: string,
 }
 
-type ChildBudgetItem = BudgetedTransactionDetails & {
+export type BudgetChildItem = BudgetedTransactionDetails & {
+	budget_child_item_id: string, // Unique ID for the child item
 	amount: number,
 	date: DelfiDate,
 }
@@ -83,7 +85,7 @@ export type ScheduledBudget = BaseBudget & {
 		},
 		amount: number, // TODO: support variable amounts, like a heating bill
 	}>
-	childItems?: Array<ChildBudgetItem>,
+	childItems?: Array<BudgetChildItem>,
 }
 
 export type TriggeredBudget = BaseBudget & {
@@ -101,6 +103,31 @@ export type TriggeredBudget = BaseBudget & {
 export type Budget = ScheduledBudget | TriggeredBudget;
 
 
+type BaseBudgetEventConstruction = CommonEventDetails & BudgetedTransactionDetails & {
+	sourceType: 'budget',
+	sourceBudget: Budget, // The budget this event is associated with
+	sourceChildItem?: BudgetChildItem, // If this event is a child item of a budget, this will be the item it came from
+	isTransferCopy?: boolean, // If true, this event is a copy of a transfer event, i.e. the target of a transfer
+}
+
+type PartialBudgetEventConstruction = BaseBudgetEventConstruction & {
+	isPartial: true, // indicates that this event is a partial event, i.e. it is not the full amount of the budget
+	budgetCap: number, // the total cap for the budget
+	budgetSoFar: number, // the accumulation of this and previous events for the same window
+}
+
+type ScheduledBudgetEventConstruction = PartialBudgetEventConstruction | BaseBudgetEventConstruction;
+
+type TriggeredBudgetEvent = BaseBudgetEventConstruction & {
+	triggerEvent: BudgetEventConstruction
+}
+
+type BudgetEventConstruction = ScheduledBudgetEventConstruction | TriggeredBudgetEvent;
+
+export type BudgetEvent = BudgetEventConstruction & {
+	sourceOccurrence: BudgetOccurrence, // The occurrence this event is associated with
+};
+
 
 // PROBLEM: A general yearly "Vacation" budget only applies to a broad category, but specifics aren't known. As we plan vacations each year, we need to start budgeting for specifics, but still not real transactions.
 // SOLUTION: Children budget items! Children budget items do not recur, but are planned for a specific date or date range. They will apply to a specific occurrence of the parent budget.
@@ -117,59 +144,29 @@ export type BudgetOccurrence = {
 	budgetEvents: BudgetEvent[],
 }
 
-export enum EventFlag {
-	TRANSFER_COPY,
-	SYSTEM_GENERATED,
-}
-
-type BaseBudgetEvent = BudgetedTransactionDetails & {
-	id: string,
-	date: DelfiDate,
-	year: number;
-	month: number;
-	day: number;
-	amount: number,
-	sourceBudget: Budget,
-	sourceChildItem?: ChildBudgetItem, // If this event is a child item of a budget, this will be the item it came from
-	flags: EventFlag[],
-}
-
-type PartialBudgetEvent = BaseBudgetEvent & {
-	isPartial: true, // indicates that this event is a partial event, i.e. it is not the full amount of the budget
-	budgetCap: number, // the total cap for the budget
-	budgetSoFar: number, // the accumulation of this and previous events for the same window
-}
-
-type ScheduledBudgetEvent = PartialBudgetEvent | BaseBudgetEvent;
-
-type TriggeredBudgetEvent = BaseBudgetEvent & {
-	triggerEvent: BudgetEvent
-}
-
-export type BudgetEvent = ScheduledBudgetEvent | TriggeredBudgetEvent;
-
-
 export default class BudgetUtils {
-	static createOccurrencesFromSchedule(start: DelfiDate, end: DelfiDate, schedule: ScheduledBudget): BudgetOccurrence[] {
+	static createOccurrencesFromSchedule(start: DelfiDate, end: DelfiDate, scheduledBudget: ScheduledBudget): BudgetOccurrence[] {
 		const occurrences: BudgetOccurrence[] = [];
-		for (const variant of schedule.scheduleVariants) {
+		for (const variant of scheduledBudget.scheduleVariants) {
 			const recurrenceDates = ScheduleService.delfi.getOccurrences(variant.schedule, { start, end });
 
-			const computeProjectionEvents = function(windowStart: DelfiDate, windowEnd: DelfiDate): PartialBudgetEvent[] {
+			const computeProjectionEvents = function(windowStart: DelfiDate, windowEnd: DelfiDate): PartialBudgetEventConstruction[] {
 				const intervalQty = variant.projectionInterval!.quantity;
 				const interval = variant.projectionInterval!.interval;
-				const projectionEvents: PartialBudgetEvent[] = [];
+				const projectionEvents: PartialBudgetEventConstruction[] = [];
 				// Get child items within this window
-				const childItems = schedule.childItems?.filter(item => date(item.date).isBetweenInclusive(windowStart, windowEnd)) || [];
+				const childItems = scheduledBudget.childItems?.filter(item => date(item.date).isBetweenInclusive(windowStart, windowEnd)) || [];
 
 				let budgetSoFar = 0;
 				// Process child items into events
 				for (const child of childItems) {
-					const childEvents = BudgetUtils.createDateEventsFromBudgetDetails(date(child.date), child, child.amount) as PartialBudgetEvent[];
+					const childEvents = BudgetUtils.createDateEventsFromBudgetDetails(date(child.date), child.amount, child, scheduledBudget) as PartialBudgetEventConstruction[];
 					childEvents.forEach(event => {
 						event.isPartial = true;
 						event.budgetCap = variant.amount;
 						event.budgetSoFar = budgetSoFar + child.amount;
+						event.sourceChildItem = child;
+
 						budgetSoFar += child.amount;
 					});
 					projectionEvents.push(...childEvents);
@@ -188,7 +185,7 @@ export default class BudgetUtils {
 					for (let i = 0; i < totalIntervals; i++) {
 						const intervalDate = date(windowStart.add(i * intervalQty, interval));
 						budgetSoFar += eventAmount;
-						projectionEvents.push(...BudgetUtils.createDateEventsFromBudgetDetails(intervalDate, schedule, eventAmount).map(event => ({
+						projectionEvents.push(...BudgetUtils.createDateEventsFromBudgetDetails(intervalDate, eventAmount, scheduledBudget, scheduledBudget).map(event => ({
 							...event,
 							isPartial: true as true,
 							budgetCap: variant.amount,
@@ -208,19 +205,21 @@ export default class BudgetUtils {
 					const occurrenceEnd = BudgetUtils.getBudgetOccurrenceEndDate(variant, currentOccurrence);
 					const currentOccurrenceEvents = computeProjectionEvents(currentOccurrence, occurrenceEnd);
 					const futureEvents = currentOccurrenceEvents.filter(event => event.date.isAfter(start));
-					occurrences.push({
-						budget: schedule,
+					const newOccurrence: BudgetOccurrence = {
+						budget: scheduledBudget,
 						start: currentOccurrence,
 						end: occurrenceEnd,
 						amount: variant.amount,
-						budgetEvents: futureEvents,
-					});
+						budgetEvents: [],
+					};
+					this.createEventsOnOccurrence(futureEvents, newOccurrence, scheduledBudget);
+					occurrences.push(newOccurrence);
 				}
 			}
 
 			occurrences.push(...recurrenceDates.map((startDate) => {
 				const occurrence: BudgetOccurrence = {
-					budget: schedule,
+					budget: scheduledBudget,
 					start: startDate,
 					end: BudgetUtils.getBudgetOccurrenceEndDate(variant, startDate),
 					amount: variant.amount,
@@ -229,12 +228,13 @@ export default class BudgetUtils {
 
 				if (!variant.projectionInterval) {
 					// handle non-windowed schedules right off the bat, just use the cap amount
-					const hereEvents = BudgetUtils.createDateEventsFromBudgetDetails(startDate, schedule, variant.amount) as BaseBudgetEvent[];
-					occurrence.budgetEvents.push(...hereEvents);
+					const hereEvents = BudgetUtils.createDateEventsFromBudgetDetails(startDate, variant.amount, scheduledBudget, scheduledBudget);
+					this.createEventsOnOccurrence(hereEvents, occurrence, scheduledBudget);
 				}
 				else {
 					// For windowed schedules, compute the interval events
-					occurrence.budgetEvents.push(...computeProjectionEvents(startDate, occurrence.end));
+					const scheduledBudgetEvents = computeProjectionEvents(startDate, occurrence.end);
+					this.createEventsOnOccurrence(scheduledBudgetEvents, occurrence, scheduledBudget);
 				}
 
 				return occurrence;
@@ -244,12 +244,21 @@ export default class BudgetUtils {
 		return occurrences;
 	}
 
+	private static createEventsOnOccurrence(events: BudgetEventConstruction[], occurrence: BudgetOccurrence, budget: Budget): BudgetOccurrence {
+		occurrence.budgetEvents.push(...events.map(event => ({
+			...event,
+			sourceOccurrence: occurrence,
+			sourceBudget: budget,
+		})));
+		return occurrence;
+	}
+
 	private static getBudgetOccurrenceEndDate(variant: ScheduledBudget['scheduleVariants'][number], occurrenceStart: DelfiDate): DelfiDate {
 		return occurrenceStart.add(variant.schedule.interval || 1, toDelfiInterval(variant.schedule.frequency)).subtract(1, 'day'); // Subtract one day to get the end of the occurrence, not the start of the next one
 	}
 
 	// TODO support triggering budgets based on REAL transactions?
-	static createOccurrenceFromTrigger(transactionDate: DelfiDate, budget: TriggeredBudget, triggerEvent: BudgetEvent): BudgetOccurrence | undefined {
+	static createOccurrenceFromTrigger(transactionDate: DelfiDate, budget: TriggeredBudget, triggerEvent: BudgetEventConstruction): BudgetOccurrence | undefined {
 		for (const variant of budget.triggerVariants) {
 			if (!transactionDate.isBetweenInclusive(variant.start || date(transactionDate.subtract(999, 'year')), variant.end || date(transactionDate.add(999, 'year')))) {
 				// If the transaction date is not within the variant's active period, skip it
@@ -259,41 +268,46 @@ export default class BudgetUtils {
 				// If the trigger event does not match the variant's filter, skip it
 				continue;
 			}
-			const amount = computeTriggeredAmount(triggerEvent.amount, variant.trigger.computation);
-			const events = BudgetUtils.createDateEventsFromBudgetDetails(transactionDate, budget, amount) as TriggeredBudgetEvent[];
-			events.forEach(event => {
-				event.triggerEvent = triggerEvent;
-			});
-			return {
+			const occurrence: BudgetOccurrence = {
 				budget,
 				start: transactionDate,
 				end: transactionDate,
-				budgetEvents: events,
-				amount: amount,
+				budgetEvents: [],
+				amount: computeTriggeredAmount(triggerEvent.amount, variant.trigger.computation),
 			};
+
+			const events = BudgetUtils.createDateEventsFromBudgetDetails(transactionDate, occurrence.amount, budget, budget) as TriggeredBudgetEvent[];
+			events.forEach(event => {
+				event.triggerEvent = triggerEvent;
+			});
+
+			this.createEventsOnOccurrence(events, occurrence, budget);
+			return occurrence;
 		}
 	}
 
-	private static createDateEventsFromBudgetDetails(eventDate: DelfiDate, budget: BudgetedTransactionDetails, amount: number): BaseBudgetEvent[] {
-		const base = {
-			...BudgetUtils.copyTransactionDetails(budget),
-			id: uuid(),
+	private static createDateEventsFromBudgetDetails(eventDate: DelfiDate, amount: number, details: BudgetedTransactionDetails, sourceBudget: Budget): BudgetEventConstruction[] {
+		const base: BudgetEventConstruction = {
+			...BudgetUtils.copyTransactionDetails(details),
+			sourceType: 'budget',
+			sourceBudget,
+			displayName: details.memo,
 			date: eventDate,
 			year: eventDate.year(),
 			month: eventDate.month(),
 			day: eventDate.day(),
-			sourceBudget: budget as Budget,
+			amount,
 		}
-		const events: BaseBudgetEvent[] = [];
+		const events: BudgetEventConstruction[] = [];
 		// Origin transaction for Transfer
-		if (budget.budgetType === BudgetType.TRANSFER && budget.origin_account_id) {
+		if (details.budgetType === BudgetType.TRANSFER && details.origin_account_id) {
 			// TODO don't allow transfers without origin account
 			events.push({
 				...base,
 				amount: -amount,
-				account_id: budget.origin_account_id,
-				target_account_partition_id: budget.origin_account_partition_id,
-				flags: [EventFlag.TRANSFER_COPY],
+				account_id: details.origin_account_id,
+				target_account_partition_id: details.origin_account_partition_id,
+				isTransferCopy: true,
 			});
 		}
 
@@ -301,8 +315,6 @@ export default class BudgetUtils {
 		events.push({
 			...base,
 			amount: amount,
-			id: uuid(),
-			flags: [],
 		});
 		return events;
 	}

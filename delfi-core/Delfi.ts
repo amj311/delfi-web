@@ -5,14 +5,14 @@
  */
 
 import { type Account } from "./models/Account";
-import { type Budget, type BudgetEvent } from "./models/Budget";
+import { type Budget, type BudgetEvent, type BudgetOccurrence } from "./models/Budget";
 import Forecast from "./models/Forecast";
 import { CategorySummary, type Category, type OccurrenceSummary, type BudgetSummary } from "./models/Category";
 import { date, type DelfiDate, instantiateDates } from "./utils/dateUtils";
 import type { TransactionFilter } from "./services/FilterService";
 import FilterService from "./services/FilterService";
 import { TransactionUtils, type AttributionEvent, type Transaction } from "./models/Transaction";
-import { BudgetOccurrenceSummary, OccurrenceSnapshot, RealityTally } from "./models/Summary";
+import { BudgetSnapshot, RealityTally } from "./models/Summary";
 
 export type DelfiConfig = {
 	readonly accounts: Account[],
@@ -106,12 +106,6 @@ export class Delfi {
 		const monthForecast = await this.forecast.pollMonthReady(monthStart);
 		const monthAttributionEvents = await this.getAttributedEventsBetween(monthStart, monthEnd);
 		const monthBudgetEvents = monthForecast.events;
-		const budgetOccurrenceSnapshots: OccurrenceSnapshot[] = await Promise.all(monthForecast.occurrences.map(async occurrence => {
-			const rangeAttributions = await this.getAttributedEventsBetween(occurrence.start, occurrence.end, [
-				{ property: 'budget_id', operator: 'eq', operand: occurrence.budget.budget_id },
-			]);
-			return new BudgetOccurrenceSummary(occurrence, rangeAttributions).snapshot(monthStart, monthEnd);
-		}));
 		const monthNet = monthBudgetEvents.reduce((acc, event) => acc + event.amount, 0);
 
 		// compute each account's balance at the beginning and end of the month
@@ -155,14 +149,35 @@ export class Delfi {
 			}
 		}));
 
+		const occurrencesByBudget: Map<Budget, BudgetOccurrence[]> = new Map();
+		monthForecast.occurrences.forEach(event => {
+			const occurrences = occurrencesByBudget.get(event.budget) || [];
+			occurrences.push(event);
+			occurrencesByBudget.set(event.budget, occurrences);
+		});
+		const budgetSummaries = Array.from(occurrencesByBudget.entries()).map(([budget, occurrences]) => {
+			const attributedEvents = monthAttributionEvents.filter(e => e.budget_id === budget.budget_id && e.date.isBetweenInclusive(monthStart, monthEnd));
+			return new BudgetSnapshot(
+				monthStart,
+				monthEnd,
+				budget,
+				occurrences,
+				attributedEvents,
+			);
+		});
+
 		const categorySummaries = this.categories.map((category: Category) => ({
 			category,
 			tally: new RealityTally(
-				budgetOccurrenceSnapshots.filter(o => o.budget.category_id === category.category_id),
+				monthBudgetEvents.filter(o => o.category_id === category.category_id),
 				monthAttributionEvents.filter(t => t.category_id === category.category_id),
 			),
 		}));
 		const spendingCategories = categorySummaries.filter(c => c.category.type === 'EXPENSE');
+		const spendingSummary = {
+			categories: spendingCategories,
+			tally: RealityTally.fromTallies(spendingCategories.map(c => c.tally)),
+		};
 
 		const incomeCategories = categorySummaries.filter(c => c.category.type === 'INCOME');
 		const incomeSummary = {
@@ -188,14 +203,13 @@ export class Delfi {
 		return {
 			netGrowth: monthNet,
 			events: monthBudgetEvents,
-			occurrences: budgetOccurrenceSnapshots,
-			budgetsTally: new RealityTally(budgetOccurrenceSnapshots, monthAttributionEvents),
+			budgetSummaries: budgetSummaries,
+			totalTally: new RealityTally(monthBudgetEvents, monthAttributionEvents),
 			accountSummaries,
 			categorySummaries,
 			incomeSummary,
 			transferSummary,
-			spendingCategories,
-			spendingTotal: spendingCategories.reduce((acc, c) => acc + c.tally.budgetNet, 0),
+			spendingSummary,
 			groupsEvents: Array.from(groupBudgetEvents.entries()).map(([groupId, events]) => ({
 				groupId,
 				events

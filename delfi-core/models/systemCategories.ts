@@ -91,8 +91,8 @@ export const categoryGroups: CategoryGroup[] = [
 	{
 		group_id: "c9d0e1f2-a3b4-4c3d-ae8f-5a6b7c8d9e0f",
 		name: "Personal Care",
-		icon: "tooth",
-		color: TagColor.purple1,
+		icon: "self-care",
+		color: TagColor.lavender1,
 	},
 	{
 		group_id: "d0e1f2a3-b4c5-4d4e-bf9a-6b7c8d9e0f1a",

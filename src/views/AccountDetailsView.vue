@@ -281,7 +281,7 @@ const attributedEvents = computed(() => {
 								</td>
 								<td>{{ formatDate(event.date) }}</td>
 								<td>
-									{{ event.memo || event.original_description }}
+									{{ event.displayName }}
 								</td>
 								<td>
 									{{

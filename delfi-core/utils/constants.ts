@@ -24,9 +24,9 @@ export const colors = {
 	chocolate1: "#a1572c",
 	chocolate2: "#8a431a",
 	chocolate3: "#73310b",
-	orange1: "#f48239",
-	orange2: "#ea7326",
-	orange3: "#e36717",
+	orange1: "rgb(255 147 63)",
+	orange2: "rgb(235 119 29)",
+	orange3: "rgb(222 101 7)",
 	peach1: "#fb9467",
 	peach2: "#fa8653",
 	peach3: "#f37842",
@@ -275,6 +275,14 @@ export const Icons = {
 		name: "shopping-cart",
 		source: "material-symbols",
 		source_id: "shopping_cart",
+	},
+	"self-care": {
+		name: "self-care",
+		source: "material-symbols",
+		source_id: "self_care",
+		style: {
+			translate: '0 -6%',
+		}
 	},
 	"smiley": {
 		name: "smiley",
