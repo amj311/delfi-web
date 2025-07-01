@@ -32,7 +32,7 @@ model Workspace {
     PlaidItem                PlaidItem[]
     CategoryGroup            CategoryGroup[]
     CategoryDetectionMapping CategoryDetectionMapping[]
-    Group                    Group[]
+    Group                    BudgetGroup[]
 }
 
 model Institution {
@@ -172,7 +172,7 @@ model Budget {
     category_id             String?
     Tags                    Tag[]                    @relation("BudgetTags")
     TransactionAttributions TransactionAttribution[]
-    Group                   Group?                   @relation(fields: [group_id], references: [group_id])
+    Group                   BudgetGroup?                   @relation(fields: [group_id], references: [group_id])
     group_id                String?
 }
 
@@ -255,13 +255,14 @@ model Tag {
     TransactionAttributions TransactionAttribution[] @relation("TransactionTags")
 }
 
-model Group {
+model BudgetGroup {
     group_id                String                   @id @default(uuid())
     name                    String
     Workspace               Workspace?               @relation(fields: [workspace_id], references: [workspace_id])
     workspace_id            String
     Budgets                 Budget[]
     TransactionAttributions TransactionAttribution[]
+	@@map("Group")
 }
 
 // Real transaction, created manually or imported from source (plaid)
@@ -319,7 +320,7 @@ model TransactionAttribution {
     Tags                 Tag[]             @relation("TransactionTags")
     Budget               Budget?           @relation(fields: [budget_id], references: [budget_id])
     budget_id            String?
-    Group                Group?            @relation(fields: [group_id], references: [group_id])
+    Group                BudgetGroup?            @relation(fields: [group_id], references: [group_id])
     group_id             String?
 }
 

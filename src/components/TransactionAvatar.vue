@@ -1,13 +1,24 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import CategoryAvatar from './CategoryAvatar.vue';
 
-defineProps<{
+const props = defineProps<{
 	event: any;
+	size?: number; // rems
 }>();
+
+const width = computed(() => {
+	return props.size || 2;
+});
+
+const fontSize = computed(() => {
+	return 0.5 * width.value;
+});
+
 </script>
 
 <template>
-	<div class="transaction-avatar">
+	<div class="transaction-avatar" :style="{ fontSize: `${fontSize}rem`, width: `${props.size}rem` }">
 		<img
 			v-if="event.Merchant?.logo"
 			:src="event.Merchant.logo"

@@ -13,6 +13,7 @@ const props = defineProps<{
 }>();
 
 const category = computed(() => props.category || categoryStore.getCategoryById(props.categoryId));
+
 </script>
 
 <template>

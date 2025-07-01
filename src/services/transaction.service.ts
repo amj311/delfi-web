@@ -1,5 +1,6 @@
 import { instantiateDates, type DelfiDate } from 'delfi-core/utils/dateUtils';
 import request from './request';
+import type { CreateTransaction, Transaction } from 'delfi-core/models/Transaction';
 
 export const TransactionService = {
 	/**
@@ -24,6 +25,16 @@ export const TransactionService = {
 				endDate: endDate.toString(),
 			},
 		});
-		return instantiateDates(data.data);
+		return instantiateDates(data.data) as Transaction[];
+	},
+
+	async updateTransaction(transactionId: string, updates: CreateTransaction) {
+		try {
+			const response = await request.post(`/transactions/${transactionId}`, updates);
+			return response.data;
+		} catch (error) {
+			console.error('Error updating transaction:', error);
+			throw error;
+		}
 	}
 };

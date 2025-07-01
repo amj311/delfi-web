@@ -45,6 +45,9 @@ export class Delfi {
 	public init(config: DelfiConfig) {
 		// Copy config so that it is not connected to external state
 		this.loadTransactions = config.loadTransactions;
+		this.loadedTransactions = [];
+		this.attributedEvents = [];
+		this.currentTransactionStart = null;
 		const configCopy = instantiateDates(JSON.parse(JSON.stringify(config)));
 		Object.assign(this, configCopy);
 		// Put everything in the forecast
@@ -100,11 +103,13 @@ export class Delfi {
 
 	
 	async getMonthSummary(monthDate: DelfiDate) {
+		console.log('Computing month summary for', monthDate.toString());
 		// make extra sure we have the start and end date
 		const monthStart = date(monthDate.startOf('month'));
 		const monthEnd = date(monthDate.endOf('month'));
 		const monthForecast = await this.forecast.pollMonthReady(monthStart);
 		const monthAttributionEvents = await this.getAttributedEventsBetween(monthStart, monthEnd);
+		console.log('Month attribution events:', monthAttributionEvents.length);
 		const monthBudgetEvents = monthForecast.events;
 		const monthNet = monthBudgetEvents.reduce((acc, event) => acc + event.amount, 0);
 
@@ -202,7 +207,8 @@ export class Delfi {
 
 		return {
 			netGrowth: monthNet,
-			events: monthBudgetEvents,
+			budgetEvents: monthBudgetEvents,
+			attributionEvents: monthAttributionEvents,
 			budgetSummaries: budgetSummaries,
 			totalTally: new RealityTally(monthBudgetEvents, monthAttributionEvents),
 			accountSummaries,

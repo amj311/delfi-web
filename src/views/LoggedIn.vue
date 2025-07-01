@@ -21,11 +21,7 @@ async function initApp() {
 			await categoryStore.loadCategories(),
 		]);
 
-		await delfiStore.initDelfi({
-			accounts: accountStore.accounts,
-			budgets: budgetStore.budgets,
-			categories: categoryStore.allCategories,
-		})
+		await delfiStore.initDelfi();
 	}
 	catch (error) {
 		console.error('Error initializing app:', error);

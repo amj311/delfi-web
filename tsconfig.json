@@ -16,7 +16,6 @@
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "paths": {
-      "@/*": ["./src/*"],
       "delfi-core": ["./delfi-core"],
       "delfi-core/*": ["./delfi-core/*"],
       "server/*": ["./server/*"],

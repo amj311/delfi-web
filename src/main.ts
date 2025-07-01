@@ -9,7 +9,6 @@ import App from './App.vue'
 import router from './router/router'
 import { AuthService } from './services/authService'
 
-import 'primeflex/primeflex.css'
 import 'primeicons/primeicons.css'
 
 import PrimeVue from 'primevue/config';

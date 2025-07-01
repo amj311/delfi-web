@@ -17,9 +17,8 @@ export enum BudgetType {
 	TRANSFER = "TRANSFER",
 }
 
-export type BudgetedTransactionDetails = BudgetableTransactionDetails & Required<{
+export type BudgetedTransactionDetails = BudgetableTransactionDetails & {
 	memo: string,
-}> & {
 	budgetType: BudgetType,
 	notes?: string | null,
 	origin_account_id?: string, // The account from which the transaction is made (for transfers)
@@ -96,6 +95,7 @@ export type TriggeredBudget = BaseBudget & {
 		end?: DelfiDate, // The date when this variant is no longer active
 		trigger: Trigger,
 	}>
+	childItems: undefined,
 }
 
 

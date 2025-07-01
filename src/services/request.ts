@@ -15,7 +15,7 @@ instance.interceptors.request.use(async (config) => {
 
 
 instance.interceptors.response.use(null, (error) => {
-	if (error.isAxiosError && error.response.status === 401) {
+	if (error.isAxiosError && error.response?.status === 401) {
 		console.log("Received unauthorized response. Logging out");
 		AuthService.signOut();
 	}

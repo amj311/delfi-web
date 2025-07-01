@@ -1,4 +1,4 @@
-import { type Budget, type BudgetEvent, type BudgetOccurrence } from "delfi-core/models/Budget";
+import { type Budget, type BudgetChildItem, type BudgetEvent, type BudgetOccurrence } from "delfi-core/models/Budget";
 import type { AttributionEvent, BudgetableTransactionDetails, Merchant } from "delfi-core/models/Transaction";
 import type { DelfiDate } from "../utils/dateUtils";
 import type { Category } from "./Category";
@@ -79,15 +79,46 @@ export class BudgetSnapshot {
 }
 
 
+type BudgetEventWithAttributions = BudgetEvent & {
+	tally: RealityTally,
+};
+
+/**
+ * Given a collection of both type of events that belong to the same budget, extrapolates info about how the transactions stack up against the budgets.
+ * Because budget events are generated on the fly, the assignments have to be through some sort of reproducible unique string.
+ * The majority of assignments only need to happen at a budget level, not a specific event. But say we could if we wanted to.
+ */
+export class BudgetToRealitySummary {
+	constructor(
+		public readonly budget: Budget,
+		public readonly budgetEvents: BudgetEvent[],
+		public readonly attributionEvents: AttributionEvent[],
+	) {}
+
+	get tally(): RealityTally {
+		return new RealityTally(this.budgetEvents, this.attributionEvents);
+	}
+
+	// get childItems(): Array<RealityTally<BudgetChildItem>> {
+	// 	return this.budget.childItems?.map(item => {
+	// 		const budgetEvents = this.budgetEvents.filter(e => e.sourceChildItem === item);
+	// 		const attributionEvents = this.attributionEvents.filter(e => e.budget_child_item_id === item.budget_child_item_id);
+	// 		return new RealityTally(budgetEvents, attributionEvents, item);
+	// 	}) ?? [];
+	// }
+}
+
+
 /**
  * Given both budgets and transactions for a period of time, provides the comparison between the two.
  * Example: A single category over a month, both budgeted and unbudgeted expenses
  */
-export class RealityTally {
+export class RealityTally<Grouper = any> {
 	constructor(
 		public readonly budgetEvents: BudgetEvent[] = [],
 		/** ALL attribution events, both budgeted and unbudgeted */
 		public readonly attributionEvents: AttributionEvent[] = [],
+		public readonly grouper?: Grouper,
 	) {}
 
 	// When computing for ALL categories, we don't want to bother showing empty ones
@@ -131,11 +162,11 @@ export class RealityTally {
 			array.push(event);
 			eventsByBudget.set(event.sourceBudget, array);
 		});
-		return Array.from(eventsByBudget.entries()).map(([budget, events]) => ({
+		return Array.from(eventsByBudget.entries()).map(([budget, budgetEvents]) => new BudgetToRealitySummary(
 			budget,
-			budgetEvents: events,
-			attributedEvents: this.attributionEvents.filter(e => e.budget_id === budget.budget_id),
-		}));
+			budgetEvents,
+			this.attributionEvents.filter(e => e.budget_id === budget.budget_id),
+		));
 	}
 
 
@@ -148,4 +179,12 @@ export class RealityTally {
 
 
 export class SummaryUtils {
+	public static getBudgetEventIdentifier(event: BudgetEvent): string {
+		const attributes = [
+			['sourceBudget', event.sourceBudget?.budget_id],
+			['childItem', event.sourceChildItem?.budget_child_item_id],
+			['date', event.date.toISOString()],
+		]
+		return attributes.map(([key, value]) => `${key}:${value}`).join('__');
+	}
 }

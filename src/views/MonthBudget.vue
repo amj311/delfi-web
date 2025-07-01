@@ -18,6 +18,9 @@ import Icon from '@/components/Icon.vue';
 import { colors } from 'delfi-core/utils/constants';
 import CategoryAvatar from '@/components/CategoryAvatar.vue';
 import TransactionAvatar from '@/components/TransactionAvatar.vue';
+import { type AttributionEvent, type Transaction } from 'delfi-core/models/Transaction';
+import TransactionDetailsDrawer from '@/components/TransactionDetailsDrawer.vue';
+import { SummaryUtils } from 'delfi-core/models/Summary';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -34,14 +37,16 @@ const state = reactive({
 	summaryData: <Awaited<ReturnType<Delfi['getMonthSummary']>> | null>null,
 });
 
-async function getSummary(month: DelfiDate) {
-	state.loading = true;
+const viewingTransaction = ref<Transaction | null>(null);
+
+async function getSummary(month: DelfiDate, silent = false) {
+	state.loading = !silent && true;
 	if (!month || !delfiStore.delfi) {
 		return null;
 	}
 	let summary = await delfiStore.delfi.getMonthSummary(month);
 	state.loading = false;
-	return summary;
+	return reactive(summary);
 }
 
 // Helper to format the month for URL
@@ -63,8 +68,6 @@ function parseMonthFromUrl(monthStr: string | null | undefined): DelfiDate {
 onMounted(async () => {
 	const monthParam = route.params.month as string | undefined;
 	state.viewingMonth = parseMonthFromUrl(monthParam);
-	state.summaryData = await getSummary(state.viewingMonth);
-	state.loading = false;
 
 	// Update URL if it doesn't match the current month (happens when no month parameter was provided)
 	if (!monthParam || monthParam !== formatMonthForUrl(state.viewingMonth)) {
@@ -87,20 +90,22 @@ watch(
 	{ immediate: true }
 );
 
+watch(() => delfiStore.reComputed, async () => {
+	state.summaryData = await getSummary(state.viewingMonth, true);
+});
+
 const canGoBack = computed(() => {
 	if (!state.viewingMonth) {
 		return false;
 	}
-	return state.viewingMonth.isAfter(date().startOf('month'));
+	return state.viewingMonth.isAfter(delfiStore.delfi.start);
 });
 
 const canGoForward = computed(() => {
 	if (!state.viewingMonth) {
 		return false;
 	}
-	return state.viewingMonth.isBefore(
-		date().add(5, 'years').subtract(1, 'month').startOf('month')
-	);
+	return state.viewingMonth.isBefore(delfiStore.delfi.end.subtract(1, 'month'));
 });
 
 const goForward = async () => {
@@ -133,13 +138,13 @@ const goBack = async () => {
 
 // Get the events in order of days WITHOUT sorting because that is too slow
 const dailyEvents = computed(() => {
-	if (!state.summaryData || !state.summaryData.events) {
+	if (!state.summaryData || !state.summaryData.attributionEvents) {
 		return [];
 	}
-	const eventsByDay: Record<number, Array<BudgetEvent>> = Object.fromEntries(
+	const eventsByDay: Record<number, Array<AttributionEvent>> = Object.fromEntries(
 		Array.from({ length: 31 }, (_, i) => [i + 1, []])
 	);
-	for (const event of state.summaryData.events) {
+	for (const event of state.summaryData.attributionEvents) {
 		const dayKey = event.date.date();
 		if (!eventsByDay[dayKey]) {
 			eventsByDay[dayKey] = [];
@@ -292,7 +297,7 @@ const dailyEvents = computed(() => {
 				>
 					<div class="title flex align-items-center gap-1">
 						<Icon name="tag" fill :color="groupStore.getGroupById(groupId)?.color" />
-						{{ groupStore.getGroupById(groupId)!.name }}
+						{{ groupStore.getGroupById(groupId)?.name }}
 						<div class="flex-grow-1"></div>
 						<Currency
 							:amount="events.reduce((acc, e) => acc + e.amount, 0)"
@@ -351,19 +356,21 @@ const dailyEvents = computed(() => {
 								class="text-semibold"
 							/>
 						</div>
-						<template v-for="budgetEvent of category.tally.budgetEvents">
+						<template v-for="budgetSummary of category.tally.budgetSummaries">
 							<div class="flex hover-show-trigger list-row pl-6">
 								<div class="flex-center">
-									{{ budgetEvent.displayName }}
-									<button
+									{{ budgetSummary.budget.memo }}
+									<!-- <button
 										class="hover-show"
-										@click="() => state.upsertingBudget = budgetEvent.sourceBudget!"
+										@click="() => state.upsertingBudget = budgetSummary.sourceBudget!"
 									>
 										Edit
-									</button>
+									</button> -->
 								</div>
 								&nbsp;......&nbsp;
-								<Currency :amount="budgetEvent.amount" mode="transaction" />
+								<Currency :amount="budgetSummary.tally.attributedNet" mode="transaction" />
+								&nbsp;/&nbsp;
+								<Currency :amount="budgetSummary.tally.budgetedNet" mode="transaction" />
 							</div>
 						</template>
 						<small
@@ -374,7 +381,7 @@ const dailyEvents = computed(() => {
 							Unbudgeted Spending
 						</small>
 						<template v-for="event of category.tally.unBudgetedAttributions">
-							<div class="flex hover-show-trigger list-row pl-6">
+							<div class="flex hover-show-trigger list-row pl-6" @click="viewingTransaction = event.sourceTransaction">
 								<div class="flex-center">
 									{{ event.displayName }}
 								</div>
@@ -391,17 +398,16 @@ const dailyEvents = computed(() => {
 			<div>
 				<h3>Transactions</h3>
 				<template v-for="(event, i) of dailyEvents">
-					<div
+					<h4
 						v-if="i === 0 || !dailyEvents[i - 1]?.date.isSame(event.date)"
-						:style="{ padding: '5px 8px', marginTop: '8px' }"
+						:style="{ padding: '8px 8px', marginTop: '8px', position: 'sticky', top: '0', backgroundColor: '#ffff', zIndex: 1, marginLeft: '-5px', marginRight: '-5px' }"
 					>
-						{{ event.date }}
-					</div>
+						{{ event.date.formatFull() }}
+					</h4>
 					<div class="list">
-						<!-- Don't show transfers twice! -->
 						<div
 							class="list-row flex align-items-center gap-3"
-							v-if="!event.isTransferCopy"
+							@click="viewingTransaction = event.sourceTransaction"
 						>
 							<div>
 								<TransactionAvatar
@@ -409,38 +415,21 @@ const dailyEvents = computed(() => {
 									style="width: 2.5rem; font-size: 1.2rem"
 								/>
 							</div>
-							<div class="w-full">
+							<div class="flex flex-column w-full min-w-0">
 								<div class="transaction-main-line">
-									{{ event.memo }}
+									<div class="text-ellipsis w-full min-w-0">{{ event.displayName }}</div>
 									<div style="flex-grow: 1"></div>
 									<div style="display: flex; align-items: center; gap: 4px">
-										<span v-if="event.sourceBudget.budgetType === 'TRANSFER'"
-											>⇥</span
-										>
 										<Currency
-											:amount="
-												event.sourceBudget.budgetType === 'TRANSFER'
-													? Math.abs(event.amount)
-													: event.amount
-											"
-											:mode="
-												event.sourceBudget.budgetType === 'TRANSFER'
-													? undefined
-													: 'transaction'
-											"
+											:amount="event.amount"
+											mode="transaction"
 										/>
 									</div>
 								</div>
 								<small>
-									<span v-if="event.sourceBudget.budgetType === 'TRANSFER'">
-										{{
-											accountStore.getAccountName(
-												event.sourceBudget.origin_account_id
-											)
-										}}
-										→
-									</span>
-									{{ accountStore.getAccountName(event.sourceBudget.account_id) }}
+									{{ useCategoryStore().getCategoryById(event.category_id).name }}
+									-
+									{{ accountStore.getAccountName(event.account_id) }}
 								</small>
 							</div>
 						</div>
@@ -449,7 +438,13 @@ const dailyEvents = computed(() => {
 			</div>
 		</div>
 
-		<div>
+		<TransactionDetailsDrawer
+			v-if="viewingTransaction"
+			:key="viewingTransaction.transaction_id"
+			:transaction="viewingTransaction"
+		/>
+
+		<div class="hidden">
 			<!-- <div style="padding: 20px; background: #ebe6fa" />
 			<div style="padding: 20px; background: #BE47FB" />
 			<div style="padding: 20px; background: #9A39E7" />
@@ -587,6 +582,8 @@ const dailyEvents = computed(() => {
 	justify-content: space-between;
 	gap: 12px;
 	font-weight: 500;
+	width: 100%;
+	min-width: 0;
 }
 
 .group-summary {

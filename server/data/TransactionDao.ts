@@ -1,6 +1,7 @@
 import type { CreateTransaction, Transaction, TransactionUniqueFields } from "delfi-core/models/Transaction";
 import { prisma } from "../../prisma/client";
 import { date } from "delfi-core/utils/dateUtils";
+import { v4 as uuid } from "uuid";
 
 export const TransactionDao = {
 	dbToTransaction(dbTransaction: NonNullable<Record<string, any>>): Transaction {
@@ -73,6 +74,27 @@ export const TransactionDao = {
 			},
 		});
 		return found.map(this.dbToTransaction);
+	},
+
+	async getTransactionById(transaction_id: string): Promise<Transaction | null> {
+		const found = await prisma.transaction.findUnique({
+			where: {
+				transaction_id,
+			},
+			include: {
+				Attributions: {
+					include: {
+						Category: {
+							include: {
+								Group: true, // Include category group details
+							},
+						}, // Include category details
+					},
+				},
+				Merchant: true,
+			},
+		});
+		return found ? this.dbToTransaction(found) : null;
 	},
 
 	async getTransactionsForAccount(workspace_id: string, account_id: string): Promise<Transaction[]> {
@@ -190,7 +212,14 @@ export const TransactionDao = {
 
 				Attributions: {
 					create: transactionData.Attributions.map(attr => ({
-						...attr,
+						amount: attr.amount,
+						target_account_partition_id: attr.target_account_partition_id || undefined,
+						category_id: attr.category_id || null,
+						memo: attr.memo || null,
+						budget_id: attr.budget_id || null,
+						Tags: attr.Tags ? {
+							connect: attr.Tags.map(tag => ({ tag_id: tag.tag_id })),
+						} : undefined,
 					})),
 				},
 				Workspace: {
@@ -204,8 +233,8 @@ export const TransactionDao = {
 		return this.dbToTransaction(created);
     },
 
-	async updateTransaction(workspace_id: string, transaction_id: string, transactionData: Partial<CreateTransaction>): Promise<Transaction> {
-		const updated = await prisma.transaction.update({
+	async updateTransaction(workspace_id: string, transaction_id: string, transactionData: Partial<Transaction>): Promise<Transaction> {
+		await prisma.transaction.update({
 			where: {
 				transaction_id,
 				workspace_id,
@@ -224,7 +253,37 @@ export const TransactionDao = {
 			},
 		});
 
-		return this.dbToTransaction(updated);
+		// Update attributions
+		if (transactionData.Attributions) {
+			await this.setAllAttributionsForTransaction(transaction_id, transactionData.Attributions);
+		}
+
+		const updated = await this.getTransactionById(transaction_id);
+		return updated!;
+	},
+
+	async setAllAttributionsForTransaction(transaction_id: string, attributions: Transaction["Attributions"]) {
+	// delete all prior attributions
+		await prisma.transactionAttribution.deleteMany({
+			where: {
+				transaction_id,
+			},
+		});
+
+		// create new attributions
+		await prisma.transactionAttribution.createMany({
+			data: attributions.map(attr => ({
+				transaction_id,
+				amount: attr.amount,
+				target_account_partition_id: attr.target_account_partition_id || undefined,
+				category_id: attr.category_id || null,
+				memo: attr.memo || null,
+				budget_id: attr.budget_id || null,
+				Tags: attr.Tags ? {
+					connect: attr.Tags.map(tag => ({ tag_id: tag.tag_id })),
+				} : undefined,
+			})),
+		});
 	},
 
 	async updateTransactionAttribution(

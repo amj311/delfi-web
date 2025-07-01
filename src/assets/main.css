@@ -14,42 +14,12 @@ b,
 .text-semibold {
 	font-weight: 500;
 }
-
+ 
 a,
 .green {
 	text-decoration: none;
 	color: #4ccd8d;
 	transition: 0.4s;
-}
-
-.flex {
-	display: flex;
-}
-
-.flex-between {
-	display: flex;
-	justify-content: space-between;
-}
-
-.flex-center {
-	display: flex;
-	align-items: center;
-}
-
-.gap-1 {
-	gap: 4px;
-}
-
-.gap-2 {
-	gap: 8px;
-}
-
-.gap-3 {
-	gap: 12px;
-}
-
-.gap-4 {
-	gap: 16px;
 }
 
 .hover-show-trigger .hover-show {
@@ -77,4 +47,14 @@ a,
 		grid-template-columns: 1fr 1fr;
 		padding: 0 2rem;
 	}
+}
+
+.text-ellipsis {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.square {
+	aspect-ratio: 1;
 }

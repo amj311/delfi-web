@@ -38,12 +38,16 @@ export const useCategoryStore = defineStore('category', () => {
 	const categoriesByGroup = computed(() => {
 		const groups: Record<string, Category[]> = {};
 		allCategories.value.forEach(category => {
-			if (!groups[category.Group?.group_id]) {
-				groups[category.Group?.group_id] = [];
+			if (!groups[category.Group?.name]) {
+				groups[category.Group?.name] = [];
 			}
-			groups[category.Group?.group_id].push(category);
+			groups[category.Group?.name].push(category);
 		});
-		return groups;
+		return Array.from(Object.entries(groups)).map(([groupName, categories]) => ({
+			name: groupName,
+			categories: categories.sort((a, b) => a.name.localeCompare(b.name)),
+			color: categories[0]?.Group?.color,
+		}));
 	});
 
 	return {

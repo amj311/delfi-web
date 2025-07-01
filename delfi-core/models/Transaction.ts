@@ -58,7 +58,6 @@ type AttributionBudgetableDetails = {
 	Tags?: Array<Tag>,
 	group_id?: string,
 	Group?: Group,
-	memo?: string | null,
 }
 
 // Provide these details for consistency with Budgets
@@ -68,11 +67,13 @@ export type BudgetableTransactionDetails = TrueBudgetableDetails & AttributionBu
 type AttributionEventDetails = {
 	amount: number,
 	budget_id?: string | null,
+	budget_child_item_id?: string | null,
 }
 type TransactionAttribution = AttributionBudgetableDetails & AttributionEventDetails & {
 	transaction_attribution_id: string,
 	transaction_id: string,
 	amount: number,
+	memo?: string | null,
 }
 
 
