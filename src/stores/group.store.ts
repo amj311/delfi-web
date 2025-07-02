@@ -1,10 +1,10 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import request from '@/services/request';
-import type { Group } from 'delfi-core/models/Transaction';
+import type { BudgetGroup } from 'delfi-core/models/Transaction';
 
 export const useGroupStore = defineStore('group', () => {
-	let groups = ref([] as Group[]);
+	let groups = ref([] as BudgetGroup[]);
 	let isLoadingGroups = ref(false);
 	let isUpsertingGroup = ref(false);
 	let isDeletingGroup = ref(false);
@@ -52,8 +52,8 @@ export const useGroupStore = defineStore('group', () => {
 		}
 	}
 
-	const upsertGroup = async (groupData: Partial<Group>): Promise<Group> => {
-		let groupRes: Group;
+	const upsertGroup = async (groupData: Partial<BudgetGroup>): Promise<BudgetGroup> => {
+		let groupRes: BudgetGroup;
 		try {
 			isUpsertingGroup.value = true;
 			let { data } = groupData.group_id

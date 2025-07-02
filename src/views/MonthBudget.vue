@@ -175,8 +175,8 @@ const dailyEvents = computed(() => {
 				</div>
 				<div class="list">
 					<div v-for="summary of state.summaryData.accountSummaries" class="list-row">
-						<div class="flex-between hover-show-trigger">
-							<div class="flex-center gap-2">
+						<div class="flex hover-show-trigger">
+							<div class="flex gap-2">
 								<div class="text-semibold">
 									{{ accountStore.getAccountName(summary.account_id) }}
 								</div>
@@ -187,7 +187,8 @@ const dailyEvents = computed(() => {
 									Edit
 								</button>
 							</div>
-							<div class="flex-center">
+							<div class="flex-grow-1"></div>
+							<div class="flex align-items-center">
 								<small v-if="summary.netChange !== 0">
 									<Currency
 										:amount="summary.netChange"
@@ -201,9 +202,10 @@ const dailyEvents = computed(() => {
 								/></span>
 							</div>
 						</div>
-						<small v-for="partition of summary.partitions" class="flex-between">
+						<small v-for="partition of summary.partitions" class="flex align-items-center">
 							&emsp13;- {{ partition.name }}
-							<div class="flex-center">
+							<div class="flex-grow-1"></div>
+							<div class="flex align-items-center">
 								<small v-if="partition.netChange !== 0">
 									<Currency
 										:amount="partition.netChange"
@@ -358,7 +360,7 @@ const dailyEvents = computed(() => {
 						</div>
 						<template v-for="budgetSummary of category.tally.budgetSummaries">
 							<div class="flex hover-show-trigger list-row pl-6">
-								<div class="flex-center">
+								<div class="flex align-items-center">
 									{{ budgetSummary.budget.memo }}
 									<!-- <button
 										class="hover-show"
@@ -382,7 +384,7 @@ const dailyEvents = computed(() => {
 						</small>
 						<template v-for="event of category.tally.unBudgetedAttributions">
 							<div class="flex hover-show-trigger list-row pl-6" @click="viewingTransaction = event.sourceTransaction">
-								<div class="flex-center">
+								<div class="flex align-items-center">
 									{{ event.displayName }}
 								</div>
 								&nbsp;......&nbsp;

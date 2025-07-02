@@ -1,24 +1,43 @@
-import { RecurrenceType, type Budget, type ScheduledBudget, type TriggeredBudget } from "delfi-core/models/Budget";
+import { RecurrenceType, type Budget, type BudgetChildItem, type ScheduledBudget, type TriggeredBudget } from "delfi-core/models/Budget";
 import { prisma } from "../../prisma/client";
 import { TestDataService } from "../services/TestDataService";
 import { asAny } from "delfi-core/utils/miscUtils";
+import { date } from "delfi-core/utils/dateUtils";
+import { BudgetGroupDao } from "./GroupDao";
 
-export const BudgetDao = {
-	async setupTestData() {
+export class BudgetDao {
+	private static async setupTestData() {
+		await BudgetGroupDao.setupTestData(); // Ensure budget groups are set up before budgets
 		// setup default budgets for the test workspace
 		const workspace_id = TestDataService.workspaceId;
 
 		for (const budget of await TestDataService.getBudgets()) {
-			const exists = Boolean(await this.getBudgetById(workspace_id, budget.budget_id));
+			const exists = Boolean(await BudgetDao.getBudgetById(workspace_id, budget.budget_id));
 			if (exists) {
-				await this.updateBudget(workspace_id, budget.budget_id, budget);
+				await BudgetDao.updateBudget(workspace_id, budget.budget_id, budget);
 			} else {
-				await this.createBudget(workspace_id, budget);
+				await BudgetDao.createBudget(workspace_id, budget);
+			}
+
+			// Create child items if they exist
+			if (budget.childItems && budget.childItems.length > 0) {
+				for (const child of budget.childItems) {
+					const childExists = Boolean(await prisma.budgetChildItem.findUnique({
+						where: {
+							budget_child_item_id: child.budget_child_item_id,
+						}
+					}));
+					if (childExists) {
+						await BudgetDao.updateBudgetChildItem(budget.budget_id, child.budget_child_item_id, child);
+					} else {
+						await BudgetDao.createBudgetChildItem(budget.budget_id, child);
+					}
+				}
 			}
 		}
-	},
+	}
 
-	dbToBudget(budget: NonNullable<{[key: string]: any}>): Budget {
+	private static dbToBudget(budget: NonNullable<{[key: string]: any}>): Budget {
 		const budgetData: any = {
 			budget_id: budget.budget_id,
 			memo: budget.memo,
@@ -56,10 +75,10 @@ export const BudgetDao = {
 					computation: {
 						operator: variant.trigger_operator as any,
 						operand: variant.trigger_operand as any,
-					},
-				},
+					}
+				}
 			})),
-			childItems: [],
+			childItems: budget.childItems?.map(BudgetDao.dbToBudgetChildItem),
 			// childItems: budget.childItems?.map((item: any) => ({
 			// 	budget_child_item_id: item.budget_child_item_id,
 			// 	amount: item.amount,
@@ -68,10 +87,19 @@ export const BudgetDao = {
 		}
 
 		return budgetData as Budget;
-	},
+	}
 
-	async getAllBudgets(workspace_id: string) {
-		await this.setupTestData(); // Ensure test data is set up before fetching
+	private static dbToBudgetChildItem(budget: NonNullable<{[key: string]: any}>): BudgetChildItem {
+		return {
+			...BudgetDao.dbToBudget(budget),
+			budget_child_item_id: budget.budget_child_item_id,
+			amount: budget.amount,
+			date: date(budget.date),
+		}
+	}
+
+	public static async getAllBudgets(workspace_id: string) {
+		await BudgetDao.setupTestData(); // Ensure test data is set up before fetching
 		return (await prisma.budget.findMany({
 			where: {
 				workspace_id,
@@ -86,23 +114,41 @@ export const BudgetDao = {
 				Tags: true,
 				scheduleVariants: true,
 				triggerVariants: true,
-			},
-		})).map(this.dbToBudget);
-	},
+				childItems: true,
+			}
+		})).map(BudgetDao.dbToBudget);
+	}
 
-	async getBudgetById(workspace_id: string, budget_id: string) {
+	public static async getBudgetById(workspace_id: string, budget_id: string) {
 		return await prisma.budget.findUnique({
 			where: {
 				budget_id,
 				workspace_id,
-			},
+			}
 		});
-	},
+	}
 
-	async createInsertInstructions(workspace_id: string, budgetData: Budget) {
+	public static async createBudgetInsertData(workspace_id: string, budgetData: Budget) {
+		const sharedInsertData = await BudgetDao.createSharedInsertData(budgetData as any);
+		return {
+			...sharedInsertData,
+			workspace_id,
+		};
+	}
+
+	public static async createBudgetChildItemInsertData(budget_id: string, budgetData: BudgetChildItem) {
+		const sharedInsertData = await BudgetDao.createSharedInsertData(budgetData as any);
+		return {
+			...sharedInsertData,
+			budget_id,
+			amount: budgetData.amount,
+			date: date(budgetData.date).toString(),
+		};
+	}
+
+	public static async createSharedInsertData(budgetData: Budget) {
 		return {
 			memo: budgetData.memo,
-			workspace_id,
 			budget_id: budgetData.budget_id || undefined,
 			transaction_type: budgetData.budgetType,
 			recurrence_type: budgetData.recurrence_type,
@@ -115,33 +161,34 @@ export const BudgetDao = {
 
 			// ASSOCIATIONS
 			category_id: budgetData.category_id,
+			group_id: budgetData.group_id,
 			// Tags: {
 			// 	[connectOrSet]: budgetData.tag_ids?.map(tagId => ({
 			// 		tag_id: tagId,
 			// 	})) || [],
-			// },
+			// }
 		};
-	},
+	}
 
-	async createBudget(workspace_id: string, budgetData: Budget) {
-		const insertInstructions = await this.createInsertInstructions(workspace_id, budgetData);
+	public static async createBudget(workspace_id: string, budgetData: Budget) {
+		const insertInstructions = await BudgetDao.createBudgetInsertData(workspace_id, budgetData);
 
 		await prisma.budget.create({
 			data: {
 				...insertInstructions,
-			},
+			}
 		});
 
 		// set schedule variants
 		if (asAny(budgetData).scheduleVariants) {
-			await this.setAllScheduleVariantsForBudget(budgetData.budget_id, asAny(budgetData).scheduleVariants);
+			await BudgetDao.setAllScheduleVariantsForBudget(budgetData.budget_id, asAny(budgetData).scheduleVariants);
 		}
 
 		// set trigger variants
 		if (asAny(budgetData).triggerVariants) {
-			await this.setAllTriggerVariantsForBudget(budgetData.budget_id, asAny(budgetData).triggerVariants);
+			await BudgetDao.setAllTriggerVariantsForBudget(budgetData.budget_id, asAny(budgetData).triggerVariants);
 		}
-	},
+	}
 
 
 
@@ -152,8 +199,8 @@ export const BudgetDao = {
 	 * @param budgetData 
 	 * @returns 
 	 */
-	async updateBudget(workspace_id: string, budget_id: string, budgetData: Budget) {
-		const insertInstructions = await this.createInsertInstructions(workspace_id, budgetData);
+	public static async updateBudget(workspace_id: string, budget_id: string, budgetData: Budget) {
+		const insertInstructions = await BudgetDao.createBudgetInsertData(workspace_id, budgetData);
 		// Don't update these fields
 		const fieldsToOmit = ['recurrence_type', 'transaction_type'];
 		for (const field of fieldsToOmit) {
@@ -172,22 +219,22 @@ export const BudgetDao = {
 
 		// Update schedule variants
 		if (asAny(budgetData).scheduleVariants) {
-			await this.setAllScheduleVariantsForBudget(budget_id, asAny(budgetData).scheduleVariants);
+			await BudgetDao.setAllScheduleVariantsForBudget(budget_id, asAny(budgetData).scheduleVariants);
 		}
 
 		// Update trigger variants
 		if (asAny(budgetData).triggerVariants) {
-			await this.setAllTriggerVariantsForBudget(budget_id, asAny(budgetData).triggerVariants);
+			await BudgetDao.setAllTriggerVariantsForBudget(budget_id, asAny(budgetData).triggerVariants);
 		}
 
-	},
+	}
 
-	async setAllScheduleVariantsForBudget(budget_id: string, scheduleVariants: ScheduledBudget["scheduleVariants"]) {
+	public static async setAllScheduleVariantsForBudget(budget_id: string, scheduleVariants: ScheduledBudget["scheduleVariants"]) {
 		// delete all prior attributions
 		await prisma.budgetScheduleVariant.deleteMany({
 			where: {
 				budget_id,
-			},
+			}
 		});
 
 		// create new attributions
@@ -202,14 +249,14 @@ export const BudgetDao = {
 				projection_quantity: variant.projectionInterval?.quantity,
 			})),
 		});
-	},
+	}
 
-	async setAllTriggerVariantsForBudget(budget_id: string, triggerVariants: TriggeredBudget["triggerVariants"]) {
+	public static async setAllTriggerVariantsForBudget(budget_id: string, triggerVariants: TriggeredBudget["triggerVariants"]) {
 		// delete all prior attributions
 		await prisma.budgetTriggerVariant.deleteMany({
 			where: {
 				budget_id,
-			},
+			}
 		});
 
 		// create new attributions
@@ -222,14 +269,43 @@ export const BudgetDao = {
 				trigger_operator: variant.trigger.computation.operator,
 			})),
 		});
-	},
+	}
 
-	async deleteBudget(workspace_id: string, budget_id: string) {
+	public static async createBudgetChildItem(budget_id: string, item: BudgetChildItem) {
+		const insertInstructions = await BudgetDao.createBudgetChildItemInsertData(budget_id, item as any);
+		await prisma.budgetChildItem.create({
+			data: {
+				...insertInstructions,
+				budget_id,
+				budget_child_item_id: item.budget_child_item_id || undefined,
+				amount: item.amount,
+				date: date(item.date).toString(),
+			}
+		});
+	}
+
+
+	public static async updateBudgetChildItem(budget_id: string, budget_child_item_id: string, item: BudgetChildItem) {
+		const insertInstructions = await BudgetDao.createBudgetChildItemInsertData(budget_id, item as any);
+		await prisma.budgetChildItem.update({
+			where: {
+				budget_child_item_id,
+				budget_id,
+			},
+			data: {
+				...insertInstructions,
+				amount: item.amount,
+				date: date(item.date).toString(),
+			}
+		});
+	}
+
+	public static async deleteBudget(workspace_id: string, budget_id: string) {
 		await prisma.budget.delete({
 			where: {
 				budget_id,
 				workspace_id,
-			},
+			}
 		});
-	},
+	}
 };

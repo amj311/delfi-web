@@ -27,14 +27,14 @@ export type Tag = {
 	workspace_id?: string,
 }
 
-export type Group = {
+export type BudgetGroup = {
 	// details
 	name: string,
 	color: TagColor,
 
 	// DB
-	group_id?: string,
-	workspace_id?: string,
+	group_id: string,
+	workspace_id: string,
 }
 
 // PROBLEM Transactions can be shown in a list as the parent with their splits, but the splits also need to be handled individually for attributing
@@ -58,7 +58,7 @@ type AttributionBudgetableDetails = {
 	tag_ids?: string[],
 	Tags?: Array<Tag>,
 	group_id?: string,
-	Group?: Group | null,
+	Group?: BudgetGroup | null,
 }
 
 // Provide these details for consistency with Budgets
@@ -156,7 +156,6 @@ export class TransactionUtils {
 
 		for (const transaction of transactions) {
 			for (const attribution of transaction.Attributions) {
-				if (attribution.budget_id) console.log(attribution);
 				attributedEvents.push({
 					sourceType: 'attribution',
 					sourceTransaction: transaction,
@@ -166,7 +165,6 @@ export class TransactionUtils {
 					month: transaction.date.month(),
 
 					account_id: transaction.account_id,
-					Merchant: transaction.Merchant,
 
 					displayName: attribution.memo || transaction.original_description,
 					...attribution,

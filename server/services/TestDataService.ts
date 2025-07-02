@@ -7,7 +7,7 @@ import { AccountService } from "./AccountService";
 import { type Workspace } from "./WorkspaceService";
 import { WorkspaceDao } from "server/data/WorkspaceDao";
 import type { User } from "./UserService";
-import type { Group, Tag } from "delfi-core/models/Transaction";
+import type { BudgetGroup, Tag } from "delfi-core/models/Transaction";
 import { CategoryDao } from "server/data/CategoryDao";
 
 export class TestDataService {
@@ -122,7 +122,7 @@ export class TestDataService {
 	}
 
 
-	public static groups: Array<Group> = [
+	public static budgetGroups: Array<BudgetGroup> = [
 		{
 			group_id: 'test-montreal-2025',
 			name: 'Montreal 2025',
@@ -132,7 +132,7 @@ export class TestDataService {
 	]
 
 	public static groupId(name: string): string | undefined {
-		return this.groups.find(group => group.name === name)?.group_id;
+		return this.budgetGroups.find(group => group.name === name)?.group_id;
 	}
 
 
@@ -205,7 +205,7 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-08', frequency: 'MONTHLY', byDayOfMonth: [14, 27] },
-					amount: 3140,
+					amount: 3594,
 				}],
 				category_id: categoryByName("Paycheck").category_id,
 				Category: categoryByName("Paycheck"),
@@ -237,7 +237,6 @@ export class TestDataService {
 				budget_id: 'd6e7f8a9-0123-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Fast Offering",
-				amount: -100,
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Charitable Donations").category_id,
 				Category: categoryByName("Charitable Donations"),
@@ -252,21 +251,19 @@ export class TestDataService {
 				budget_id: 'd7e8f9a0-1234-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Mortgage",
-				amount: -2445,
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Mortgage & Rent").category_id,
 				Category: categoryByName("Mortgage & Rent"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] },
-					amount: -2445,
+					amount: -2725,
 				}],
 			},
 			{
 				budget_id: 'd8e9f0a1-2345-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "HOA",
-				amount: -215,
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Home Services").category_id,
 				Category: categoryByName("Home Services"),
@@ -280,7 +277,6 @@ export class TestDataService {
 				budget_id: 'd9e0f1a2-3456-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Gas Bill",
-				amount: -50,
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Utilities").category_id,
 				Category: categoryByName("Utilities"),
@@ -294,7 +290,6 @@ export class TestDataService {
 				budget_id: 'a20e1f2-4567-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Power Bill",
-				amount: -30,
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Utilities").category_id,
 				Category: categoryByName("Utilities"),
@@ -308,7 +303,6 @@ export class TestDataService {
 				budget_id: 'b30e1f2-4567-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Internet",
-				amount: -50,
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Utilities").category_id,
 				Category: categoryByName("Utilities"),
@@ -323,7 +317,6 @@ export class TestDataService {
 				budget_id: 'c40e1f2-4567-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Preschool",
-				amount: -170,
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Tuition").category_id,
 				Category: categoryByName("Tuition"),
@@ -331,6 +324,20 @@ export class TestDataService {
 				scheduleVariants: [{
 					schedule: { start: '2024-09-01', end: '2025-05-31', frequency: 'MONTHLY', byDayOfMonth: [1] },
 					amount: -170,
+				}],
+			},
+
+			{
+				budget_id: 'd50e1f2-4567-abcd-ef01-234567890123',
+				budgetType: BudgetType.TRANSACTION,
+				memo: "Rachel Focus Babysitter",
+				account_id: getAccountByName('Checking').account_id,
+				category_id: categoryByName("Babysitter & Daycare").category_id,
+				Category: categoryByName("Babysitter & Daycare"),
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					amount: -60,
 				}],
 			},
 
@@ -476,6 +483,7 @@ export class TestDataService {
 				childItems: [
 					// MONTREAL 2025
 					{
+						budget_child_item_id: '5e6f7890-abcd-ef01-2345-6789abcdef01',
 						memo: 'Round-trip flights to Montreal',
 						amount: -500,
 						group_id: this.groupId('Montreal 2025')!,
@@ -488,6 +496,7 @@ export class TestDataService {
 						budget_id: '5e6f7890-abcd-ef01-2345-6789abcdef01',
 					},
 					{
+						budget_child_item_id: '6f7890ab-cdef-0123-4567-89abcdef0123',
 						group_id: this.groupId('Montreal 2025')!,
 						budget_id: '6f7890ab-cdef-0123-4567-89abcdef0123',
 						category_id: categoryByName("Lodging").category_id,
@@ -501,6 +510,7 @@ export class TestDataService {
 					},
 					// Leave a catch-all as uncategorized
 					{
+						budget_child_item_id: '7890abcd-ef01-2345-6789-abcdef012345',
 						group_id: this.groupId('Montreal 2025')!,
 						budget_id: '7890abcd-ef01-2345-6789-abcdef012345',
 						category_id: null,

@@ -1,11 +1,11 @@
-import type { Group } from "delfi-core/models/Transaction";
-import { GroupDao } from "../data/GroupDao";
+import type { BudgetGroup } from "delfi-core/models/Transaction";
+import { BudgetGroupDao } from "../data/GroupDao";
 
 export default (app, _, done) => {
 
     app.post('/', async function handler (request, reply) {
-        const groupData = request.body as Group;
-        const data = await GroupDao.createGroup(groupData);
+        const groupData = request.body as BudgetGroup;
+        const data = await BudgetGroupDao.createGroup(groupData);
         return {
             success: true,
             data,
@@ -13,7 +13,7 @@ export default (app, _, done) => {
     });
 
     app.get('/', async function handler (request, reply) {
-        const data = await GroupDao.getAllGroups();
+        const data = await BudgetGroupDao.getAllGroups();
         return {
             success: true,
             data,
@@ -22,7 +22,7 @@ export default (app, _, done) => {
 
     app.get('/:id', async function handler (request, reply) {
         const groupId = request.params.id;
-        const data = await GroupDao.getGroupById(groupId);
+        const data = await BudgetGroupDao.getGroupById(groupId);
         return {
             success: true,
             data,
@@ -31,8 +31,8 @@ export default (app, _, done) => {
 
     app.put('/:id', async function handler (request, reply) {
         const groupId = request.params.id;
-        const groupData = request.body as Group;
-        const data = await GroupDao.updateGroup(groupId, groupData);
+        const groupData = request.body as BudgetGroup;
+        const data = await BudgetGroupDao.updateGroup(groupId, groupData);
         return {
             success: true,
             data,
@@ -41,7 +41,7 @@ export default (app, _, done) => {
 
     app.delete('/:id', async function handler (request, reply) {
         const groupId = request.params.id;
-        await GroupDao.deleteGroup(groupId);
+        await BudgetGroupDao.deleteGroup(groupId);
         return {
             success: true,
         };

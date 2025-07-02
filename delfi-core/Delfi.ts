@@ -112,6 +112,8 @@ export class Delfi {
 		const monthBudgetEvents = monthForecast.events;
 		const monthNet = monthBudgetEvents.reduce((acc, event) => acc + event.amount, 0);
 
+		console.log(this.budgets.filter(e => e.childItems?.some(c => c.group_id)))
+
 		// compute each account's balance at the beginning and end of the month
 		const accountSummaries = await Promise.all(this.accounts.map(async (account: Account) => {
 			const monthStartBalance = account.current_balance + this.accumulateUpTo(monthStart, [

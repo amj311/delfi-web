@@ -47,7 +47,6 @@ class Forecast {
 		// Compute just one month at a time
 		let monthStart = this.start.startOf('month');
 		while (monthStart < this.end) {
-			console.log("looping while monthStart < end", monthStart.toString(), this.end.toString());
 			const monthEnd = monthStart.endOf('month');
 			await new Promise(resolve => setTimeout(resolve, 0)); // Yield to the event loop to avoid blocking the UI
 			const monthOccurrences = scheduledOccurrences.filter(o =>

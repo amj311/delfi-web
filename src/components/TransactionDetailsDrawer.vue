@@ -78,6 +78,7 @@ async function assignBudget(attribution: Transaction["Attributions"][number] = l
 		const budget = useBudgetStore().getBudgetById(selectedBudgetId);
 		if (budget && selectedBudgetId !== attribution.budget_id) {
 			attribution.budget_id = selectedBudgetId;
+			attribution.Budget = budget;
 
 			// copy assignments from budget
 			if (budget.category_id) {

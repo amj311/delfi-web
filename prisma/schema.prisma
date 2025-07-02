@@ -78,17 +78,19 @@ model Account {
     sync_error           String? // e.g. error message from last failed sync
 
     // relations
-    Workspace         Workspace?          @relation(fields: [workspace_id], references: [workspace_id])
-    workspace_id      String
-    Institution       Institution?        @relation(fields: [institution_id], references: [institution_id])
-    institution_id    String?
-    PlaidItem         PlaidItem?          @relation(fields: [plaid_item_id], references: [plaid_item_id])
-    plaid_item_id     String?
-    plaid_account_id  String?
-    BudgetsAsTarget   Budget[]            @relation("TargetAccount")
-    BudgetsAsOrigin   Budget[]            @relation("OriginAccount")
-    Transaction       Transaction[]
-    BalanceAdjustment BalanceAdjustment[]
+    Workspace           Workspace?          @relation(fields: [workspace_id], references: [workspace_id])
+    workspace_id        String
+    Institution         Institution?        @relation(fields: [institution_id], references: [institution_id])
+    institution_id      String?
+    PlaidItem           PlaidItem?          @relation(fields: [plaid_item_id], references: [plaid_item_id])
+    plaid_item_id       String?
+    plaid_account_id    String?
+    BudgetsAsTarget     Budget[]            @relation("TargetAccount")
+    BudgetsAsOrigin     Budget[]            @relation("OriginAccount")
+    BudgetChildAsTarget BudgetChildItem[]   @relation("BudgetChildTargetAccount")
+    BudgetChildAsOrigin BudgetChildItem[]   @relation("BudgetChildOriginAccount")
+    Transaction         Transaction[]
+    BalanceAdjustment   BalanceAdjustment[]
 }
 
 // Especially for Partitions, which the user can control the balance of a will
@@ -119,6 +121,8 @@ model AccountPartition {
 
     BudgetsAsTarget        Budget[]                 @relation("TargetAccountPartition")
     BudgetsAsOrigin        Budget[]                 @relation("OriginAccountPartition")
+    BudgetChildAsTarget    BudgetChildItem[]        @relation("BudgetChildTargetAccountPartition")
+    BudgetChildAsOrigin    BudgetChildItem[]        @relation("BudgetChildOriginAccountPartition")
     BalanceAdjustment      BalanceAdjustment[]
     TransactionAttribution TransactionAttribution[]
 }
@@ -173,6 +177,7 @@ model Budget {
     TransactionAttributions TransactionAttribution[]
     Group                   BudgetGroup?             @relation(fields: [group_id], references: [group_id])
     group_id                String?
+    childItems              BudgetChildItem[]
 }
 
 model BudgetScheduleVariant {
@@ -202,6 +207,37 @@ model BudgetTriggerVariant {
     trigger_operand  Float
 }
 
+model BudgetChildItem {
+    budget_child_item_id String @id @default(uuid())
+    budget_id            String
+    Budget               Budget @relation(fields: [budget_id], references: [budget_id])
+
+    amount            Float
+    date              String // DATE ONLY  e.g. "2023-10-01"
+    date_order        String? // For sorting transaction from the same date, since time info is not always available. IE 2025-04-12-01 (e.g. 01 for the first transaction of the day)
+    authorized_date   String? // e.g. for credit card transactions, the date the transaction was authorized
+    iso_currency_code String?
+    memo              String
+    transaction_type  BudgetTransactionType
+
+    // accounts
+    TargetAccount               Account           @relation(name: "BudgetChildTargetAccount", fields: [account_id], references: [account_id])
+    OriginAccount               Account?          @relation(name: "BudgetChildOriginAccount", fields: [origin_account_id], references: [account_id])
+    account_id                  String
+    origin_account_id           String?
+    TargetAccountPartition      AccountPartition? @relation(name: "BudgetChildTargetAccountPartition", fields: [target_account_partition_id], references: [account_partition_id])
+    OriginAccountPartition      AccountPartition? @relation(name: "BudgetChildOriginAccountPartition", fields: [origin_account_partition_id], references: [account_partition_id])
+    target_account_partition_id String?
+    origin_account_partition_id String?
+
+    Category                Category?                @relation(fields: [category_id], references: [category_id])
+    category_id             String?
+    Tags                    Tag[]                    @relation("BudgetChildTags")
+    TransactionAttributions TransactionAttribution[]
+    Group                   BudgetGroup?             @relation(fields: [group_id], references: [group_id])
+    group_id                String?
+}
+
 enum CategoryType {
     EXPENSE
     INCOME
@@ -222,9 +258,10 @@ model Category {
     TransactionAttributions  TransactionAttribution[]
     CategoryDetectionMapping CategoryDetectionMapping[]
 
-    ParentCategory     Category?  @relation("CategoryHierarchy", fields: [parent_category_id], references: [category_id])
-    Children           Category[] @relation("CategoryHierarchy")
+    ParentCategory     Category?         @relation("CategoryHierarchy", fields: [parent_category_id], references: [category_id])
+    Children           Category[]        @relation("CategoryHierarchy")
     parent_category_id String?
+    BudgetChildItem    BudgetChildItem[]
 }
 
 model CategoryDetectionMapping {
@@ -245,15 +282,18 @@ model Tag {
     workspace_id            String
     Budgets                 Budget[]                 @relation("BudgetTags")
     TransactionAttributions TransactionAttribution[] @relation("TransactionTags")
+    BudgetChildItem         BudgetChildItem[]        @relation("BudgetChildTags")
 }
 
 model BudgetGroup {
     group_id                String                   @id @default(uuid())
     name                    String
-    Workspace               Workspace?               @relation(fields: [workspace_id], references: [workspace_id])
+    color                   String?
+    Workspace               Workspace                @relation(fields: [workspace_id], references: [workspace_id])
     workspace_id            String
     Budgets                 Budget[]
     TransactionAttributions TransactionAttribution[]
+    BudgetChildItem         BudgetChildItem[]
 
     @@map("Group")
 }
@@ -291,9 +331,9 @@ model Transaction {
     merchant_id  String?
     Attributions TransactionAttribution[]
 
-    ParentCategory         Transaction?  @relation("PendingTransaction", fields: [pending_transaction_id], references: [transaction_id])
-    child_categories       Transaction[] @relation("PendingTransaction")
-    pending_transaction_id String?
+    PendingTransaction     Transaction? @relation("PendingCompletedTransaction", fields: [pending_transaction_id], references: [transaction_id])
+    CompletedTransaction   Transaction? @relation("PendingCompletedTransaction")
+    pending_transaction_id String?      @unique
 
     Workspace    Workspace @relation(fields: [workspace_id], references: [workspace_id])
     workspace_id String
@@ -309,15 +349,17 @@ model TransactionAttribution {
     Transaction    Transaction @relation(fields: [transaction_id], references: [transaction_id])
     transaction_id String
 
-    AccountPartition     AccountPartition? @relation(fields: [account_partition_id], references: [account_partition_id])
-    account_partition_id String?
-    Category             Category?         @relation(fields: [category_id], references: [category_id])
-    category_id          String?
-    Tags                 Tag[]             @relation("TransactionTags")
-    Budget               Budget?           @relation(fields: [budget_id], references: [budget_id])
-    budget_id            String?
-    Group                BudgetGroup?      @relation(fields: [group_id], references: [group_id])
-    group_id             String?
+    AccountPartition                    AccountPartition? @relation(fields: [account_partition_id], references: [account_partition_id])
+    account_partition_id                String?
+    Category                            Category?         @relation(fields: [category_id], references: [category_id])
+    category_id                         String?
+    Tags                                Tag[]             @relation("TransactionTags")
+    Budget                              Budget?           @relation(fields: [budget_id], references: [budget_id])
+    budget_id                           String?
+    Group                               BudgetGroup?      @relation(fields: [group_id], references: [group_id])
+    group_id                            String?
+    BudgetChildItem                     BudgetChildItem?  @relation(fields: [budgetChildItemBudget_child_item_id], references: [budget_child_item_id])
+    budgetChildItemBudget_child_item_id String?
 }
 
 model Merchant {
