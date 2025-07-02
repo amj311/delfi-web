@@ -41,9 +41,9 @@ defineExpose({
 
 		if (currentCategoryId.value && selectedCategory) {
 			setTimeout(() => {
-				const groupElement = document.getElementById(`group_${selectedCategory.value.Group?.name}`);
+				const groupElement = document.getElementById(`group_${selectedCategory.value.ParentCategory?.name}`);
 				if (groupElement) {
-					groupElement.scrollIntoView({ behavior: 'smooth' });
+					groupElement.scrollIntoView();
 				}
 			}, 50)
 		}

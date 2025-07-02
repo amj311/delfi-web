@@ -2,6 +2,7 @@ import type { DelfiDate } from "delfi-core/utils/dateUtils"
 import type { Category } from "./Category"
 import type { TagColor } from "delfi-core/utils/constants"
 import type { CommonEventDetails } from "./Summary"
+import type { Budget } from "./Budget"
 
 
 /**
@@ -57,7 +58,7 @@ type AttributionBudgetableDetails = {
 	tag_ids?: string[],
 	Tags?: Array<Tag>,
 	group_id?: string,
-	Group?: Group,
+	Group?: Group | null,
 }
 
 // Provide these details for consistency with Budgets
@@ -67,6 +68,7 @@ export type BudgetableTransactionDetails = TrueBudgetableDetails & AttributionBu
 type AttributionEventDetails = {
 	amount: number,
 	budget_id?: string | null,
+	Budget?: Budget | null,
 	budget_child_item_id?: string | null,
 }
 type TransactionAttribution = AttributionBudgetableDetails & AttributionEventDetails & {
@@ -153,9 +155,8 @@ export class TransactionUtils {
 		const attributedEvents: Array<AttributionEvent> = [];
 
 		for (const transaction of transactions) {
-			const trueTotal = transaction.Attributions.reduce((sum, attr) => sum + attr.amount, 0);
-
 			for (const attribution of transaction.Attributions) {
+				if (attribution.budget_id) console.log(attribution);
 				attributedEvents.push({
 					sourceType: 'attribution',
 					sourceTransaction: transaction,

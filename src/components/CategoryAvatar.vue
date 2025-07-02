@@ -17,7 +17,7 @@ const category = computed(() => props.category || categoryStore.getCategoryById(
 </script>
 
 <template>
-	<div class="category-avatar flex align-items-center justify-content-center" :style="{ backgroundColor: colors[category.ParentCategory?.color || ''] || '#aaaaaf' }">
+	<div class="category-avatar flex align-items-center justify-content-center" :style="{ backgroundColor: colors[category.color || category.ParentCategory?.color || ''] || '#aaaaaf' }">
 		<Icon :name="category.icon || category.ParentCategory?.icon || 'category'" color="#fff" />
 	</div>
 </template>

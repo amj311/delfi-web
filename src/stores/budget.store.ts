@@ -65,6 +65,8 @@ export const useBudgetStore = defineStore('budget', () => {
 		isLoadingBudgets,
 		loadBudgets: loadBudgets,
 		upsertBudget: upsertBudget,
-		deleteBudget: deleteBudget
+		deleteBudget: deleteBudget,
+
+		getBudgetById: (budgetId?: string | null): Budget | undefined => budgets.value.find(b => b.budget_id === budgetId) || undefined,
 	};
 })

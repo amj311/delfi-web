@@ -41,9 +41,11 @@ export const TransactionDao = {
 				target_account_partition_id: attr.target_account_partition_id || undefined,
 				category_id: attr.category_id || null,
 				Category: attr.Category || null,
-				tagIds: attr.tagIds || [],
 				memo: attr.memo || null,
 				budget_id: attr.budget_id || null,
+				Budget: attr.Budget || null,
+				Tags: attr.Tags,
+				Group: attr.Group || null,
 			})),
 		};
 	},
@@ -143,6 +145,9 @@ export const TransactionDao = {
 								ParentCategory: true, // Include category group details
 							},
 						}, // Include category details
+						Budget: true,
+						Tags: true, // Include tags
+						Group: true, // Include group details
 					},
 				},
 				Merchant: true,
@@ -286,9 +291,9 @@ export const TransactionDao = {
 				category_id: attr.category_id || null,
 				memo: attr.memo || null,
 				budget_id: attr.budget_id || null,
-				Tags: attr.Tags ? {
-					connect: attr.Tags.map(tag => ({ tag_id: tag.tag_id })),
-				} : undefined,
+				// Tags: attr.Tags ? {
+				// 	connect: attr.Tags.map(tag => ({ tag_id: tag.tag_id })),
+				// } : undefined,
 			})),
 		});
 	},

@@ -13,6 +13,8 @@ import CategorySelectDrawer from './CategorySelectDrawer.vue';
 import { useCategoryStore } from '@/stores/category.store';
 import { TransactionService } from '@/services/transaction.service';
 import { useDelfiStore } from '@/stores/delfi.store';
+import BudgetSelectDrawer from './BudgetSelectDrawer.vue';
+import { useBudgetStore } from '@/stores/budget.store';
 
 const transaction = defineModel<Transaction>('transaction', {
 	required: true,
@@ -20,6 +22,7 @@ const transaction = defineModel<Transaction>('transaction', {
 
 const drawerTrigger = ref<InstanceType<typeof NavTrigger> | null>(null);
 const categorySelectDrawer = ref<InstanceType<typeof CategorySelectDrawer> | null>(null);
+const budgetSelectDrawer = ref<InstanceType<typeof BudgetSelectDrawer> | null>(null);
 
 defineExpose({
 	open: drawerTrigger.value?.open,
@@ -69,11 +72,30 @@ const account = computed(() => {
 	return useAccountStore().getAccountById(transaction.value.account_id);
 });
 
+async function assignBudget(attribution: Transaction["Attributions"][number] = largestAttribution.value) {
+	if (budgetSelectDrawer.value) {
+		const selectedBudgetId = await budgetSelectDrawer.value.waitForSelection(largestAttribution.value.budget_id);
+		const budget = useBudgetStore().getBudgetById(selectedBudgetId);
+		if (budget && selectedBudgetId !== attribution.budget_id) {
+			attribution.budget_id = selectedBudgetId;
+
+			// copy assignments from budget
+			if (budget.category_id) {
+				attribution.category_id = budget.category_id;
+				attribution.Category = useCategoryStore().getCategoryById(budget.category_id);
+			}
+			if (budget.group_id) {
+				attribution.group_id = budget.group_id;
+				attribution.Group = budget.Group;
+			}
+		}
+	}
+}
+
 async function assignCategory(attribution: Transaction["Attributions"][number] = largestAttribution.value) {
 	if (categorySelectDrawer.value) {
 		const selectedCategoryId = await categorySelectDrawer.value.waitForSelection(largestAttribution.value.category_id);
 		if (selectedCategoryId !== attribution.category_id) {
-			console.log('Assigning category:', selectedCategoryId, 'to attribution:', attribution);
 			attribution.category_id = selectedCategoryId;
 			attribution.Category = useCategoryStore().getCategoryById(selectedCategoryId);
 		}
@@ -124,10 +146,21 @@ async function assignCategory(attribution: Transaction["Attributions"][number] =
 				<br />
 
 				<div class="details-rows">
+
+					<div class="row">
+						<label>Budget</label>
+						<Button size="small" text severity="contrast" class="flex align-items-center gap-2"
+							@click="() => assignBudget()"
+						>
+							{{ largestAttribution.Budget?.memo || 'Unbudgeted' }}
+						</Button>
+					</div>
+
 					<div class="row">
 						<label>Category</label>
 						<Button size="small" text severity="contrast" class="flex align-items-center gap-2"
 							@click="() => assignCategory()"
+							:disabled="Boolean(largestAttribution.Budget?.category_id)"
 						>
 							<Icon :name="largestAttribution.Category?.icon || largestAttribution.Category?.ParentCategory?.icon || 'question-circle'" />
 							{{ largestAttribution.Category?.name || 'Uncategorized' }}
@@ -140,6 +173,7 @@ async function assignCategory(attribution: Transaction["Attributions"][number] =
 	</NavTrigger>
 
 	<CategorySelectDrawer ref="categorySelectDrawer" />
+	<BudgetSelectDrawer ref="budgetSelectDrawer" />
 </template>
 
 <style scoped lang="scss">

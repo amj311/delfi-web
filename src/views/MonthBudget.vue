@@ -430,7 +430,6 @@ const dailyEvents = computed(() => {
 									{{ useCategoryStore().getCategoryById(event.category_id).name }}
 									-
 									{{ accountStore.getAccountName(event.account_id) }}
-									{{ event.sourceTransaction.date_order }}
 								</small>
 							</div>
 						</div>

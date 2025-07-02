@@ -25,6 +25,13 @@ export const TransactionService = {
 				endDate: endDate.toString(),
 			},
 		});
+		for (const transaction of data.data) {
+			for (const attribution of transaction.Attributions) {
+				if (attribution.budget_id) {
+					console.log(attribution);
+				}
+			}
+		}
 		return instantiateDates(data.data) as Transaction[];
 	},
 

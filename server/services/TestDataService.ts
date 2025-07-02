@@ -1,5 +1,4 @@
 import { colors, MONTHS, TagColor } from "../../delfi-core/utils/constants";
-import { v4 as uuid } from "uuid";
 import { categoryByName, flatCategoriesMap } from "../../delfi-core/models/systemCategories";
 import { BudgetType, RecurrenceType, type Budget } from "../../delfi-core/models/Budget";
 import { date } from "../../delfi-core/utils/dateUtils";
@@ -156,7 +155,7 @@ export class TestDataService {
 			 * EVERY MONTH
 			 */
 			{
-				budget_id: uuid(),
+				budget_id: 'fe89138d-43e6-4733-aa6e-77b4f76e8582',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Arthur Life Insurance",
 				account_id: getAccountByName('Checking').account_id,
@@ -169,7 +168,7 @@ export class TestDataService {
 				Category: categoryByName("Life Insurance"),
 			},
 			{
-				budget_id: uuid(),
+				budget_id: 'a3c1d3e4-5f6a-7890-abcd-ef0123456789',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Rachel Life Insurance",
 				amount: -70,
@@ -183,7 +182,7 @@ export class TestDataService {
 				Category: categoryByName("Life Insurance"),
 			},
 			{ // Car Insurance
-				budget_id: uuid(),
+				budget_id: 'd3e4f5a6-7890-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Car Insurance",
 				amount: -81,
@@ -198,7 +197,7 @@ export class TestDataService {
 			},
 
 			{ // Clozd fulltime
-				budget_id: uuid(),
+				budget_id: 'd4e5f6a7-8901-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Clozd Salary",
 				amount: -3140,
@@ -212,7 +211,7 @@ export class TestDataService {
 				Category: categoryByName("Paycheck"),
 			},
 			{
-				budget_id: uuid(),
+				budget_id: 'c5d6e7f8-9012-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Tithing",
 				account_id: getAccountByName('Checking').account_id,
@@ -235,7 +234,7 @@ export class TestDataService {
 				}]
 			},
 			{
-				budget_id: uuid(),
+				budget_id: 'd6e7f8a9-0123-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Fast Offering",
 				amount: -100,
@@ -250,7 +249,7 @@ export class TestDataService {
 			},
 
 			{
-				budget_id: uuid(),
+				budget_id: 'd7e8f9a0-1234-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Mortgage",
 				amount: -2445,
@@ -264,7 +263,7 @@ export class TestDataService {
 				}],
 			},
 			{
-				budget_id: uuid(),
+				budget_id: 'd8e9f0a1-2345-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "HOA",
 				amount: -215,
@@ -278,7 +277,7 @@ export class TestDataService {
 				}],
 			},
 			{
-				budget_id: uuid(),
+				budget_id: 'd9e0f1a2-3456-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Gas Bill",
 				amount: -50,
@@ -292,7 +291,7 @@ export class TestDataService {
 				}],
 			},
 			{
-				budget_id: uuid(),
+				budget_id: 'a20e1f2-4567-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Power Bill",
 				amount: -30,
@@ -306,7 +305,7 @@ export class TestDataService {
 				}],
 			},
 			{
-				budget_id: uuid(),
+				budget_id: 'b30e1f2-4567-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Internet",
 				amount: -50,
@@ -321,7 +320,7 @@ export class TestDataService {
 			},
 
 			{
-				budget_id: uuid(),
+				budget_id: 'c40e1f2-4567-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Preschool",
 				amount: -170,
@@ -339,7 +338,7 @@ export class TestDataService {
 			 * SAVINGS
 			 */
 			{
-				budget_id: uuid(),
+				budget_id: 'e12f34a5-67b8-90cd-ef12-345678901234',
 				budgetType: BudgetType.TRANSFER,
 				memo: "Emergency Savings Transfer",
 				account_id: getAccountByName('Expense Savings').account_id,
@@ -353,7 +352,7 @@ export class TestDataService {
 				Category: categoryByName("Transfer"),
 			},
 			{
-				budget_id: uuid(),
+				budget_id: '42f56a78-90b1-2c3d-e4f5-678901234567',
 				budgetType: BudgetType.TRANSFER,
 				memo: "To Car Fund",
 				account_id: getAccountByName('Expense Savings').account_id,
@@ -371,7 +370,7 @@ export class TestDataService {
 
 			// BROUGHT IN FROM OLD "BUDGETS"
 			{
-				budget_id: uuid(),
+				budget_id: 'f9e8d7c6-5b4a-3210-9876-543210fedcba',
 				memo: 'Groceries',
 				schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
 				category_id: categoryByName("Groceries").category_id,
@@ -388,7 +387,7 @@ export class TestDataService {
 				account_id: getAccountByName('Checking').account_id,
 			} as any,
 			{
-				budget_id: uuid(),
+				budget_id: '98765432-1fed-cba9-8765-432109876543',
 				memo: "Fuel",
 				category_id: categoryByName("Fuel").category_id,
 				budgetType: BudgetType.TRANSACTION,
@@ -402,7 +401,7 @@ export class TestDataService {
 			},
 			// Fun Money
 			{
-				budget_id: uuid(),
+				budget_id: '1a2b3c4d-5e6f-7890-abcd-ef0123456789',
 				memo: "Arthur $",
 				category_id: null,
 				budgetType: BudgetType.TRANSACTION,
@@ -415,7 +414,7 @@ export class TestDataService {
 				num_months: 1,
 			},
 			{
-				budget_id: uuid(),
+				budget_id: '2b3c4d5e-6f78-90ab-cdef-0123456789ab',
 				memo: "Rachel $",
 				category_id: null,
 				budgetType: BudgetType.TRANSACTION,
@@ -428,7 +427,7 @@ export class TestDataService {
 				num_months: 1,
 			},
 			{
-				budget_id: uuid(),
+				budget_id: '3c4d5e6f-7890-abcd-ef01-23456789abcd',
 				memo: "Family Fun",
 				category_id: null,
 				budgetType: BudgetType.TRANSACTION,
@@ -442,7 +441,7 @@ export class TestDataService {
 			},
 			// // Baby Care
 			// {
-			// 	budget_id: uuid(),
+			// 	budget_id: '8f9a0b1c-2d3e-4f56-7890-123456789abc',
 			// 	memo: "Baby Care",
 			// 	category_id: categoryByName("Baby Supplies").category_id,
 			// 	budgetType: BudgetType.TRANSACTION,
@@ -460,7 +459,7 @@ export class TestDataService {
 			// LARGE budgets with children
 
 			{
-				budget_id: 'yearly-travel-budget',
+				budget_id: '4d5e6f78-90ab-cdef-0123-456789abcdef',
 				memo: 'Travel',
 				category_id: null,
 				budgetType: BudgetType.TRANSACTION,
@@ -486,11 +485,11 @@ export class TestDataService {
 						budgetType: BudgetType.TRANSACTION,
 						account_id: getAccountByName('Expense Savings').account_id,
 						target_account_partition_id: null,
-						budget_id: 'yearly-travel-budget',
+						budget_id: '5e6f7890-abcd-ef01-2345-6789abcdef01',
 					},
 					{
 						group_id: this.groupId('Montreal 2025')!,
-						budget_id: 'yearly-travel-budget',
+						budget_id: '6f7890ab-cdef-0123-4567-89abcdef0123',
 						category_id: categoryByName("Lodging").category_id,
 						Category: categoryByName("Lodging"),
 						memo: 'Airbnb',
@@ -503,7 +502,7 @@ export class TestDataService {
 					// Leave a catch-all as uncategorized
 					{
 						group_id: this.groupId('Montreal 2025')!,
-						budget_id: 'yearly-travel-budget',
+						budget_id: '7890abcd-ef01-2345-6789-abcdef012345',
 						category_id: null,
 						memo: 'Activities and Purchases',
 						amount: -500,
