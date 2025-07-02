@@ -7,7 +7,7 @@
 import { type Account } from "./models/Account";
 import { type Budget, type BudgetEvent, type BudgetOccurrence } from "./models/Budget";
 import Forecast from "./models/Forecast";
-import { CategorySummary, type Category, type OccurrenceSummary, type BudgetSummary } from "./models/Category";
+import { type Category } from "./models/Category";
 import { date, type DelfiDate, instantiateDates } from "./utils/dateUtils";
 import type { TransactionFilter } from "./services/FilterService";
 import FilterService from "./services/FilterService";
@@ -109,7 +109,6 @@ export class Delfi {
 		const monthEnd = date(monthDate.endOf('month'));
 		const monthForecast = await this.forecast.pollMonthReady(monthStart);
 		const monthAttributionEvents = await this.getAttributedEventsBetween(monthStart, monthEnd);
-		console.log('Month attribution events:', monthAttributionEvents.length);
 		const monthBudgetEvents = monthForecast.events;
 		const monthNet = monthBudgetEvents.reduce((acc, event) => acc + event.amount, 0);
 

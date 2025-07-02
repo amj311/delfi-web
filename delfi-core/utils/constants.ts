@@ -170,6 +170,11 @@ export const Icons = {
 		source: "material-symbols",
 		source_id: "child_care",
 	},
+	"church": {
+		name: "church",
+		source: "material-symbols",
+		source_id: "church",
+	},
 	"cake": {
 		name: "cake",
 		source: "material-symbols",
@@ -260,6 +265,11 @@ export const Icons = {
 		name: "paw",
 		source: "material-symbols",
 		source_id: "pets",
+	},
+	"parking-sign": {
+		name: "parking-sign",
+		source: "material-symbols",
+		source_id: "parking_sign",
 	},
 	"party-popper": {
 		name: "party-popper",

@@ -30,7 +30,6 @@ model Workspace {
     tags                     Tag[]
     Transaction              Transaction[]
     PlaidItem                PlaidItem[]
-    CategoryGroup            CategoryGroup[]
     CategoryDetectionMapping CategoryDetectionMapping[]
     Group                    BudgetGroup[]
 }
@@ -172,7 +171,7 @@ model Budget {
     category_id             String?
     Tags                    Tag[]                    @relation("BudgetTags")
     TransactionAttributions TransactionAttribution[]
-    Group                   BudgetGroup?                   @relation(fields: [group_id], references: [group_id])
+    Group                   BudgetGroup?             @relation(fields: [group_id], references: [group_id])
     group_id                String?
 }
 
@@ -214,25 +213,18 @@ model Category {
     name        String
     type        CategoryType
     icon        String?
+    color       String?
 
     Workspace    Workspace? @relation(fields: [workspace_id], references: [workspace_id])
     workspace_id String
 
     Budgets                  Budget[]
     TransactionAttributions  TransactionAttribution[]
-    Group                    CategoryGroup              @relation(fields: [group_id], references: [group_id])
-    group_id                 String
     CategoryDetectionMapping CategoryDetectionMapping[]
-}
 
-model CategoryGroup {
-    group_id     String     @id @default(uuid())
-    name         String
-    icon         String?
-    color        String?
-    Workspace    Workspace? @relation(fields: [workspace_id], references: [workspace_id])
-    workspace_id String
-    Categories   Category[]
+    ParentCategory     Category?  @relation("CategoryHierarchy", fields: [parent_category_id], references: [category_id])
+    Children           Category[] @relation("CategoryHierarchy")
+    parent_category_id String?
 }
 
 model CategoryDetectionMapping {
@@ -262,7 +254,8 @@ model BudgetGroup {
     workspace_id            String
     Budgets                 Budget[]
     TransactionAttributions TransactionAttribution[]
-	@@map("Group")
+
+    @@map("Group")
 }
 
 // Real transaction, created manually or imported from source (plaid)
@@ -270,6 +263,7 @@ model Transaction {
     transaction_id       String  @id @default(uuid())
     amount               Float
     date                 String // DATE ONLY  e.g. "2023-10-01"
+    date_order           String? // For sorting transaction from the same date, since time info is not always available. IE 2025-04-12-01 (e.g. 01 for the first transaction of the day)
     authorized_date      String? // e.g. for credit card transactions, the date the transaction was authorized
     iso_currency_code    String?
     notes                String?
@@ -283,6 +277,8 @@ model Transaction {
     location_city    String? // e.g. "San Francisco"
     location_region  String? // e.g. "CA"
     location_postal  String? // e.g. "94103"
+
+    account_balance Float? // The account balance at the time of the transaction, if available
 
     source      String // e.g. "plaid", "manual", "imported"
     source_id   String? // e.g. plaid transaction id, manual transaction id, imported transaction id
@@ -320,14 +316,17 @@ model TransactionAttribution {
     Tags                 Tag[]             @relation("TransactionTags")
     Budget               Budget?           @relation(fields: [budget_id], references: [budget_id])
     budget_id            String?
-    Group                BudgetGroup?            @relation(fields: [group_id], references: [group_id])
+    Group                BudgetGroup?      @relation(fields: [group_id], references: [group_id])
     group_id             String?
 }
 
 model Merchant {
-    merchant_id       String        @id @default(uuid())
-    name              String
-    logo              String?
-    plaid_merchant_id String? // e.g. plaid merchant id, manual merchant id, imported merchant id
-    Transaction       Transaction[]
+    merchant_id String  @id @default(uuid())
+    name        String
+    logo        String?
+
+    transaction_identifier String? // the string parsed from transactions that identifies this merchant, e.g. "Starbucks 1234"
+    plaid_merchant_id      String? // e.g. plaid merchant id, manual merchant id, imported merchant id
+    category_association   String? // e.g. "Food & Drink"
+    Transaction            Transaction[]
 }

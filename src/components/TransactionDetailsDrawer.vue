@@ -129,7 +129,7 @@ async function assignCategory(attribution: Transaction["Attributions"][number] =
 						<Button size="small" text severity="contrast" class="flex align-items-center gap-2"
 							@click="() => assignCategory()"
 						>
-							<Icon :name="largestAttribution.Category?.icon || largestAttribution.Category?.Group?.icon || 'question-circle'" />
+							<Icon :name="largestAttribution.Category?.icon || largestAttribution.Category?.ParentCategory?.icon || 'question-circle'" />
 							{{ largestAttribution.Category?.name || 'Uncategorized' }}
 						</Button>
 					</div>
@@ -154,8 +154,6 @@ async function assignCategory(attribution: Transaction["Attributions"][number] =
 			opacity: .75;
 			min-width: var(--width);
 			max-width: var(--width);
-		}
-		> div {
 		}
 	}
 }

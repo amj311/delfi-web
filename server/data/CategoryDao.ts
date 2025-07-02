@@ -1,33 +1,12 @@
 import { prisma } from "../../prisma/client";
-import { categoriesArray, categoryGroups, flatCategoriesMap, plaidCategoryToSystemCategoryMap } from "delfi-core/models/systemCategories";
+import { categoriesArray, flatCategoriesMap, plaidCategoryToSystemCategoryMap } from "delfi-core/models/systemCategories";
 import { WorkspaceDao } from "./WorkspaceDao";
 
 export const CategoryDao = {
 	async setupTestData() {
 		// setup default categories for the test workspace
 		const workspaces = await WorkspaceDao.getAllWorkspaces();
-
 		const workspace_id = workspaces[0]!.workspace_id;
-
-		for (const group of categoryGroups) {
-			await prisma.categoryGroup.upsert({
-				where: { group_id: group.group_id, workspace_id: workspace_id },
-				update: {
-					group_id: group.group_id,
-					name: group.name,
-					workspace_id: workspace_id,
-					icon: group.icon,
-					color: group.color,
-				},
-				create: {
-					group_id: group.group_id,
-					name: group.name,
-					workspace_id: workspace_id,
-					icon: group.icon,
-					color: group.color,
-				},
-			});
-		}
 
 		for (const category of categoriesArray) {
 			await prisma.category.upsert({
@@ -36,16 +15,18 @@ export const CategoryDao = {
 					category_id: category.category_id,
 					name: category.name,
 					icon: category.icon,
+					color: category.color,
 					workspace_id: workspace_id,
-					group_id: category.group_id,
+					parent_category_id: category.parent_category_id,
 					type: category.type,
 				},
 				create: {
 					category_id: category.category_id,
 					name: category.name,
 					icon: category.icon,
+					color: category.color,
 					workspace_id: workspace_id,
-					group_id: category.group_id,
+					parent_category_id: category.parent_category_id,
 					type: category.type,
 				},
 			});
@@ -72,11 +53,17 @@ export const CategoryDao = {
 		return (await prisma.category.findMany({
 			where: {
 				workspace_id,
+				parent_category_id: null, // Only fetch parent categories
 			},
 			include: {
-				Group: true,
+				Children: true,
 			},
-		})).sort((a, b) => (a.Group.name + "__" + a.name).localeCompare(b.Group.name + "__" + b.name));
+		})).sort((a, b) => (a.name).localeCompare(b.name)).map(category => {
+			return {
+				...category,
+				Children: category.Children.sort((a, b) => (a.name).localeCompare(b.name)),
+			};
+		});
 	},
 
 	async getWorkspaceDetectionMappings(workspace_id: string) {

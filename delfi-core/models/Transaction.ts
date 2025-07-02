@@ -80,6 +80,7 @@ type TransactionAttribution = AttributionBudgetableDetails & AttributionEventDet
 // The details that are available for events from true transactions but NOT Budgetable
 type TrueEventDetails = {
 	date: DelfiDate,
+	date_order?: string | null, // For sorting transactions from the same date, since time info is not always available. IE 2025-04-12-01 (e.g. 01 for the first transaction of the day)
 	authorized_date?: DelfiDate | null, // The date the transaction was authorized, if different from the date
 	amount: number,
 	original_description: string,
@@ -98,6 +99,8 @@ type TrueEventDetails = {
 		lat?: number | null,
 		lon?: number | null,
 	} | null,
+
+	account_balance?: number | null, // The account balance at the time of the transaction, if available
 
     source:      string, // e.g. "plaid", "manual", "imported"
     source_id?:   string | null, // e.g. plaid transaction id, manual transaction id, imported transaction id

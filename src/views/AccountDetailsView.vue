@@ -5,11 +5,12 @@ import { ref, onMounted, computed } from 'vue';
 import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
 import Currency from '@/components/Currency.vue';
 import { TransactionService } from '@/services/transaction.service';
-import { TransactionUtils } from 'delfi-core/models/Transaction';
+import { TransactionUtils, type Transaction } from 'delfi-core/models/Transaction';
 import Icon from '@/components/Icon.vue';
 import { colors } from 'delfi-core/utils/constants';
 import CategoryAvatar from '@/components/CategoryAvatar.vue';
 import TransactionAvatar from '@/components/TransactionAvatar.vue';
+import { instantiateDates } from 'delfi-core/utils/dateUtils';
 
 const route = useRoute();
 const router = useRouter();
@@ -56,7 +57,7 @@ async function loadTransactions() {
 
 	try {
 		const response = await TransactionService.getAccountTransactions(accountId.value);
-		transactions.value = response.data || [];
+		transactions.value = instantiateDates(response.data) as Transaction[];
 
 		// If no transactions found, set error message
 		if (transactions.value.length === 0) {

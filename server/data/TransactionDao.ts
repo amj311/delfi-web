@@ -1,13 +1,13 @@
 import type { CreateTransaction, Transaction, TransactionUniqueFields } from "delfi-core/models/Transaction";
 import { prisma } from "../../prisma/client";
 import { date } from "delfi-core/utils/dateUtils";
-import { v4 as uuid } from "uuid";
 
 export const TransactionDao = {
 	dbToTransaction(dbTransaction: NonNullable<Record<string, any>>): Transaction {
 		return {
 			transaction_id: dbTransaction.transaction_id,
 			date: date(dbTransaction.date),
+			date_order: dbTransaction.date_order,
 			authorized_date: dbTransaction.authorized_date ? date(dbTransaction.authorized_date) : null,
 			amount: dbTransaction.amount,
 			original_description: dbTransaction.original_description,
@@ -29,6 +29,7 @@ export const TransactionDao = {
 			workspace_id: dbTransaction.workspace_id,
 
 			account_id: dbTransaction.account_id,
+			account_balance: dbTransaction.account_balance || null,
 
 			merchant_id: dbTransaction.merchant_id || null,
 			Merchant: dbTransaction.Merchant || null,
@@ -86,7 +87,7 @@ export const TransactionDao = {
 					include: {
 						Category: {
 							include: {
-								Group: true, // Include category group details
+								ParentCategory: true, // Include category group details
 							},
 						}, // Include category details
 					},
@@ -109,7 +110,7 @@ export const TransactionDao = {
 					include: {
 						Category: {
 							include: {
-								Group: true, // Include category group details
+								ParentCategory: true, // Include category group details
 							},
 						}, // Include category details
 					},
@@ -139,7 +140,7 @@ export const TransactionDao = {
 					include: {
 						Category: {
 							include: {
-								Group: true, // Include category group details
+								ParentCategory: true, // Include category group details
 							},
 						}, // Include category details
 					},
@@ -180,6 +181,7 @@ export const TransactionDao = {
             data: {
     			amount: transactionData.amount,
     			date: transactionData.date.toString(),
+				date_order: transactionData.date_order || null, // For sorting transactions from the same date
     			authorized_date: transactionData.authorized_date?.toString(),
     			iso_currency_code: transactionData.iso_currency_code,
     			notes: transactionData.notes,
@@ -192,6 +194,8 @@ export const TransactionDao = {
     			location_city: transactionData.location?.city,
     			location_region: transactionData.location?.region,
     			location_postal: transactionData.location?.postal,
+
+				account_balance: transactionData.account_balance || null,
 
     			source: transactionData.source,
     			source_id: transactionData.source_id,
@@ -239,7 +243,10 @@ export const TransactionDao = {
 				transaction_id,
 				workspace_id,
 			},
+			// LEAVE THE DATA UNDEFINED IF NOT PROVIDED TO NOT OVERWRITE IT
 			data: {
+				date_order: transactionData.date_order, // For sorting transactions from the same date
+				authorized_date: transactionData.authorized_date?.toString(),
 				notes: transactionData.notes,
 				pending: transactionData.pending,
 				done_pending: transactionData.done_pending,

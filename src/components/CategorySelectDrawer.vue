@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import Drawer from 'primevue/drawer';
 import { useRouter } from 'vue-router';
 import TransactionAvatar from './TransactionAvatar.vue';
@@ -15,6 +15,8 @@ import CategoryAvatar from './CategoryAvatar.vue';
 const drawerTrigger = ref<InstanceType<typeof NavTrigger> | null>(null);
 
 const currentCategoryId = ref<string | null>(null);
+const selectedCategory = computed(() => useCategoryStore().getCategoryById(currentCategoryId.value));
+
 const promiseResolver = ref<((value: string | null) => void) | null>(null);
 const promiseRejector = ref<((reason?: any) => void) | null>(null);
 
@@ -37,6 +39,15 @@ defineExpose({
 		drawerTrigger.value?.open();
 		currentCategoryId.value = _currentCategoryId;
 
+		if (currentCategoryId.value && selectedCategory) {
+			setTimeout(() => {
+				const groupElement = document.getElementById(`group_${selectedCategory.value.Group?.name}`);
+				if (groupElement) {
+					groupElement.scrollIntoView({ behavior: 'smooth' });
+				}
+			}, 50)
+		}
+
 		return new Promise<string | null>((resolve) => {
 			promiseResolver.value = resolve;
 			promiseRejector.value = () => {
@@ -48,6 +59,7 @@ defineExpose({
 });
 
 const groups = useCategoryStore().categoriesByGroup;
+
 </script>
 
 <template>
@@ -74,7 +86,7 @@ const groups = useCategoryStore().categoriesByGroup;
 				
 				<div class="flex flex-column gap-3">
 					<div v-for="group in groups" :key="group.name" class="flex flex-column gap-2">
-						<h4>{{ group.name }}</h4>
+						<h4 :id="`group_${group.name}`" class="group">{{ group.name }}</h4>
 						<div class="flex flex-column">
 							<div
 								v-for="category in group.categories"

@@ -216,8 +216,8 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Tithing",
 				account_id: getAccountByName('Checking').account_id,
-				category_id: categoryByName("Tithing").category_id,
-				Category: categoryByName("Tithing"),
+				category_id: categoryByName("Church Donations").category_id,
+				Category: categoryByName("Church Donations"),
 				recurrence_type: RecurrenceType.TRIGGER,
 				triggerVariants: [{
 					trigger: {
@@ -240,8 +240,8 @@ export class TestDataService {
 				memo: "Fast Offering",
 				amount: -100,
 				account_id: getAccountByName('Checking').account_id,
-				category_id: categoryByName("Fast Offering").category_id,
-				Category: categoryByName("Fast Offering"),
+				category_id: categoryByName("Charitable Donations").category_id,
+				Category: categoryByName("Charitable Donations"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-05-07', frequency: 'MONTHLY', byDayOfMonth: [7] },
@@ -500,12 +500,12 @@ export class TestDataService {
 						account_id: getAccountByName('Expense Savings').account_id,
 						target_account_partition_id: null,
 					},
+					// Leave a catch-all as uncategorized
 					{
 						group_id: this.groupId('Montreal 2025')!,
 						budget_id: 'yearly-travel-budget',
-						category_id: categoryByName("Activities").category_id,
-						Category: categoryByName("Activities"),
-						memo: 'All Activities',
+						category_id: null,
+						memo: 'Activities and Purchases',
 						amount: -500,
 						date: date('2025-06-18'), // June 18, 2025
 						budgetType: BudgetType.TRANSACTION,

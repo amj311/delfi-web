@@ -151,7 +151,7 @@ const dailyEvents = computed(() => {
 		}
 		eventsByDay[dayKey].push(event);
 	}
-	return Object.entries(eventsByDay).flatMap(([, events]) => events);
+	return Object.entries(eventsByDay).flatMap(([, events]) => events.sort((a, b) => a.sourceTransaction.date_order?.localeCompare(b.sourceTransaction.date_order || '') || 0));
 });
 </script>
 
@@ -430,6 +430,7 @@ const dailyEvents = computed(() => {
 									{{ useCategoryStore().getCategoryById(event.category_id).name }}
 									-
 									{{ accountStore.getAccountName(event.account_id) }}
+									{{ event.sourceTransaction.date_order }}
 								</small>
 							</div>
 						</div>

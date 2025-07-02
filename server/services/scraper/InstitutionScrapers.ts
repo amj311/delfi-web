@@ -107,7 +107,6 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 
 			async function scrapeTable(tableId: string, pending: boolean) {
 				let rows = await page.locator(`#${tableId} tbody tr`).all();
-				console.log(`Found ${rows.length} rows in ${account.external_name} ${tableId}`);
 				for (const row of rows) {
 					const exists = await row.locator('.column-date').count();
 					if (!exists) {
@@ -131,8 +130,29 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 			await scrapeTable('UpcomingTransactionsGrid', true);
 			await scrapeTable('PastTransactionsGrid', false);
 
-			return transactions;
+			return this.assignDateOrders(transactions.reverse()); // the list is most recent first, so reverse it to be chronological
 		},
+
+		/**
+		 * For a given array of transactions, assigns each an order string based on it's date and the order it appears on that day.
+		 * Assumes array is provided in chronological order! Reverse it first if you must.
+		 * Date order looks like this: "2025-04-12-01" (e.g. 01 for the first transaction of the day).
+		 * @param transactions 
+		 * @returns 
+		 */
+		assignDateOrders(transactions: Array<ScrapedTransaction>): Array<ScrapedTransaction> {
+			const dateTallies = new Map<string, number>();
+			return transactions.map(transaction => {
+				const dateKey = transaction.date.toString();
+				const order = dateTallies.get(dateKey) || 0;
+				dateTallies.set(dateKey, order + 1);
+				const date_order = `${dateKey}-${String(order + 1).padStart(2, '0')}`;
+				return {
+					...transaction,
+					date_order
+				};
+			});
+		}
 	}
 }
 

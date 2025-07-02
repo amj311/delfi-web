@@ -434,7 +434,6 @@ export const PlaidService = {
 		for (const item of workspacePlaidItems) {
 			try {
 				const transactions = await this.getItemTransactions(workspace_id, item.plaid_item_id);
-				console.log(`Found ${transactions.length} transactions for item ${item.plaid_item_id}.`);
 				for (const transaction of transactions) {
 					// Look up a transaction match in DB
 					const matchingTransactions = await TransactionDao.matchAllMany(workspace_id, {

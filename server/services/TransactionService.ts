@@ -27,7 +27,6 @@ export class TransactionService {
 	public static upsertTransaction = async (workspace_id: string, transactionData: CreateTransaction) => {
 		const existingTransaction = await TransactionDao.getMatchingTransaction(workspace_id, transactionData);
 		if (existingTransaction) {
-			console.log("Found existing transaction", existingTransaction.transaction_id, "for", transactionData.original_description);
 			// Update existing transaction
 			return await TransactionDao.updateTransaction(workspace_id, existingTransaction.transaction_id, transactionData);
 		} else {

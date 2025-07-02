@@ -43,9 +43,7 @@ export class SyncService {
 				apy: result.accountDetails.apy,
 				last_successful_sync: new Date(),
 			});
-			console.log('Updated account:', account.account_id, result.accountDetails.external_name);
 			await TransactionService.syncNewTransactionsForAccount(workspace_id, account.account_id, result.transactions);
-			console.log('Synced transactions for account', account.account_id, result.transactions.length);
 
 		}));
 

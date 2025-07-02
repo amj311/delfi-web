@@ -1,11 +1,11 @@
 import { categoriesArray } from "delfi-core/models/systemCategories";
 import { prisma } from "../../prisma/client";
-import type { CategoryDetails } from "delfi-core/models/Category";
+import type { Category } from "delfi-core/models/Category";
 import { CategoryDao } from "server/data/CategoryDao";
 
 
 export const CategoryService = {
-    async createWorkspaceCategory(categoryData: Omit<CategoryDetails, 'category_id'>) {
+    async createWorkspaceCategory(categoryData: Omit<Category, 'category_id'>) {
         // return await prisma.category.create({
         //     data: categoryData,
         // });
@@ -29,7 +29,7 @@ export const CategoryService = {
         // });
     },
 
-    async updateCategory(workspace_id: string, category_id: string, categoryData: Partial<CategoryDetails>) {
+    async updateCategory(workspace_id: string, category_id: string, categoryData: Partial<Category>) {
         // return await prisma.workspaceDefinedCategory.update({
         //     where: {
         //         category_id,
