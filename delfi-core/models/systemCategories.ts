@@ -345,7 +345,7 @@ const defaultCategories = {
 	},
 	"Books": {
 		name: "Books",
-		category_id: "bd4c5e34-27ca-4652-a422-ec7673d90cc7",
+		category_id: "ae4c5e34-27ca-4652-a422-ec7673d90cc7",
 		type: "EXPENSE",
 		parent_category_id: parentCategories["Entertainment"].category_id
 	},
@@ -360,7 +360,7 @@ const defaultCategories = {
 	// Banking
 	"ATM Withdrawal": {
 		name: "ATM Withdrawal",
-		category_id: "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d56",
+		category_id: "b3c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d56",
 		type: "EXPENSE",
 		parent_category_id: parentCategories["Banking"].category_id
 	},
@@ -475,7 +475,7 @@ const defaultCategories = {
 	},
 	"Party": {
 		name: "Party",
-		category_id: "b1c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d56",
+		category_id: "c2c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d56",
 		type: "EXPENSE",
 		parent_category_id: parentCategories["Gifts & Celebrations"].category_id,
 		icon: 'party-popper',
@@ -888,7 +888,7 @@ const defaultCategories = {
 	},
 	"Car Rental": {
 		name: "Car Rental",
-		category_id: "b1c2d3e4-5678-9abc-def0-1234567890ab",
+		category_id: "c2c2d3e4-5678-9abc-def0-1234567890ab",
 		type: "EXPENSE",
 		parent_category_id: parentCategories["Travel"].category_id
 	},

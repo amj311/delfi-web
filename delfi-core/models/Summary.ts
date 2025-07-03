@@ -156,16 +156,19 @@ export class RealityTally<Grouper = any> {
 	}
 
 	get budgetSummaries() {
-		const eventsByBudget = new Map<Budget, BudgetEvent[]>();
+		const presentBudgets = new Map<string, Budget>();
 		this.budgetEvents.forEach(event => {
-			const array = eventsByBudget.get(event.sourceBudget) || [];
-			array.push(event);
-			eventsByBudget.set(event.sourceBudget, array);
+			presentBudgets.set(event.sourceBudget.budget_id, event.sourceBudget);
 		});
-		return Array.from(eventsByBudget.entries()).map(([budget, budgetEvents]) => new BudgetToRealitySummary(
+		this.attributionEvents.forEach(event => {
+			if (event.budget_id && event.Budget) {
+				presentBudgets.set(event.budget_id, event.Budget);
+			}
+		});
+		return Array.from(presentBudgets.entries()).map(([budgetId, budget]) => new BudgetToRealitySummary(
 			budget,
-			budgetEvents,
-			this.attributionEvents.filter(e => e.budget_id === budget.budget_id),
+			this.budgetEvents.filter(e => e.sourceBudget.budget_id === budgetId),
+			this.attributionEvents.filter(e => e.budget_id === budgetId),
 		));
 	}
 

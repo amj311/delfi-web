@@ -58,7 +58,7 @@ export const TransactionDao = {
 				original_description: search.original_description,
 				amount: search.amount,
 				date: date(search.date).toString(),
-				source_id: search.source_id || undefined,
+				date_order: search.date_order, // Crucial for catching transactions that look the same otherwise!
 			},
 		});
 		return found ? this.dbToTransaction(found) : null;

@@ -349,17 +349,17 @@ model TransactionAttribution {
     Transaction    Transaction @relation(fields: [transaction_id], references: [transaction_id])
     transaction_id String
 
-    AccountPartition                    AccountPartition? @relation(fields: [account_partition_id], references: [account_partition_id])
-    account_partition_id                String?
-    Category                            Category?         @relation(fields: [category_id], references: [category_id])
-    category_id                         String?
-    Tags                                Tag[]             @relation("TransactionTags")
-    Budget                              Budget?           @relation(fields: [budget_id], references: [budget_id])
-    budget_id                           String?
-    Group                               BudgetGroup?      @relation(fields: [group_id], references: [group_id])
-    group_id                            String?
-    BudgetChildItem                     BudgetChildItem?  @relation(fields: [budgetChildItemBudget_child_item_id], references: [budget_child_item_id])
-    budgetChildItemBudget_child_item_id String?
+    AccountPartition     AccountPartition? @relation(fields: [account_partition_id], references: [account_partition_id])
+    account_partition_id String?
+    Category             Category?         @relation(fields: [category_id], references: [category_id])
+    category_id          String?
+    Tags                 Tag[]             @relation("TransactionTags")
+    Budget               Budget?           @relation(fields: [budget_id], references: [budget_id])
+    budget_id            String?
+    Group                BudgetGroup?      @relation(fields: [group_id], references: [group_id])
+    group_id             String?
+    BudgetChildItem      BudgetChildItem?  @relation(fields: [budget_child_item_id], references: [budget_child_item_id])
+    budget_child_item_id String?
 }
 
 model Merchant {

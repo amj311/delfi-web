@@ -4,44 +4,47 @@ import Drawer from 'primevue/drawer';
 import NavTrigger from './utils/NavTrigger.vue';
 import Button from 'primevue/button';
 import { useBudgetStore } from '@/stores/budget.store';
+import BudgetSelector from './BudgetSelector.vue';
 
 const drawerTrigger = ref<InstanceType<typeof NavTrigger> | null>(null);
 
-const currentBudgetId = ref<string | null>(null);
+type Selection = {
+	budgetId: string | null;
+	childItemId: string | null;
+};
 
-const promiseResolver = ref<((value: string | null) => void) | null>(null);
+const currentSelection = ref<Selection>({
+	budgetId: null,
+	childItemId: null,
+});
+
+const promiseResolver = ref<((value: Selection | null) => void) | null>(null);
 const promiseRejector = ref<((reason?: any) => void) | null>(null);
 
-function closeDrawer() {
+function onSelection(selection: Selection) {
+	currentSelection.value = selection;
 	if (drawerTrigger.value) {
 		drawerTrigger.value.close();
 	}
 	if (promiseResolver.value) {
-		promiseResolver.value(currentBudgetId.value);
+		promiseResolver.value(selection);
 	}
 }
 
-function selectBudget(budgetId: string | null) {
-	currentBudgetId.value = budgetId;
-	closeDrawer();
-}
-
 defineExpose({
-	waitForSelection(_currentBudgetId: string | null = null) {
-		drawerTrigger.value?.open();
-		currentBudgetId.value = _currentBudgetId;
+	waitForSelection(_currentBudgetId: string | null = null, _currentChildItemId: string | null = null) {
+		currentSelection.value.budgetId = _currentBudgetId;
+		currentSelection.value.childItemId = _currentChildItemId;
 
-		return new Promise<string | null>((resolve) => {
+		drawerTrigger.value?.open();
+
+		return new Promise<Selection | null>((resolve, reject) => {
 			promiseResolver.value = resolve;
-			promiseRejector.value = () => {
-				resolve(null);
-			};
+			promiseRejector.value = reject;
 		});
 	},
 	close: drawerTrigger.value?.close,
 });
-
-const budgets = useBudgetStore().budgets;
 
 </script>
 
@@ -62,22 +65,16 @@ const budgets = useBudgetStore().budgets;
 						icon="pi pi-times"
 						size="small"
 						text
-						@click="closeDrawer"
+						@click="() => onSelection(currentSelection)"
 						severity="secondary"
 					/>
 				</template>
 				
-				<div class="flex flex-column">
-					<div
-						v-for="budget in budgets"
-						:key="budget.budget_id"
-						class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round"
-						@click="selectBudget(budget.budget_id)"
-					>
-						<div class="flex-grow-1">{{  budget.memo }}</div>
-					</div>
-				</div>
-
+				<BudgetSelector
+					:currentBudgetId="currentSelection.budgetId"
+					:currentChildItemId="currentSelection.childItemId"
+					@select="onSelection"
+				/>
 			</Drawer>
 		</template>
 	</NavTrigger>

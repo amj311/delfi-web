@@ -15,14 +15,17 @@ import { TransactionService } from '@/services/transaction.service';
 import { useDelfiStore } from '@/stores/delfi.store';
 import BudgetSelectDrawer from './BudgetSelectDrawer.vue';
 import { useBudgetStore } from '@/stores/budget.store';
+import { useGroupStore } from '@/stores/group.store';
+import TransactionAttributionDrawer from './TransactionAttributionDrawer.vue';
 
 const transaction = defineModel<Transaction>('transaction', {
 	required: true,
 });
 
 const drawerTrigger = ref<InstanceType<typeof NavTrigger> | null>(null);
-const categorySelectDrawer = ref<InstanceType<typeof CategorySelectDrawer> | null>(null);
-const budgetSelectDrawer = ref<InstanceType<typeof BudgetSelectDrawer> | null>(null);
+// const categorySelectDrawer = ref<InstanceType<typeof CategorySelectDrawer> | null>(null);
+// const budgetSelectDrawer = ref<InstanceType<typeof BudgetSelectDrawer> | null>(null);
+const transactionAttributionDrawer = ref<InstanceType<typeof TransactionAttributionDrawer> | null>(null);
 
 defineExpose({
 	open: drawerTrigger.value?.open,
@@ -72,34 +75,45 @@ const account = computed(() => {
 	return useAccountStore().getAccountById(transaction.value.account_id);
 });
 
-async function assignBudget(attribution: Transaction["Attributions"][number] = largestAttribution.value) {
-	if (budgetSelectDrawer.value) {
-		const selectedBudgetId = await budgetSelectDrawer.value.waitForSelection(largestAttribution.value.budget_id);
-		const budget = useBudgetStore().getBudgetById(selectedBudgetId);
-		if (budget && selectedBudgetId !== attribution.budget_id) {
-			attribution.budget_id = selectedBudgetId;
-			attribution.Budget = budget;
+// function assignBudget(attribution: Transaction["Attributions"][number], budget_id: string | null, budget_child_item_id: string | null) {
+// 	const budget = useBudgetStore().getBudgetById(budget_id);
+// 	const childItem = budget?.childItems?.find(item => item.budget_child_item_id === budget_child_item_id);
+// 	if (budget && (budget_id !== attribution.budget_id || budget_child_item_id !== attribution.budget_child_item_id)) {
+// 		attribution.budget_id = budget_id;
+// 		attribution.Budget = budget;
+// 		attribution.budget_child_item_id = budget_child_item_id;
 
-			// copy assignments from budget
-			if (budget.category_id) {
-				attribution.category_id = budget.category_id;
-				attribution.Category = useCategoryStore().getCategoryById(budget.category_id);
-			}
-			if (budget.group_id) {
-				attribution.group_id = budget.group_id;
-				attribution.Group = budget.Group;
-			}
-		}
-	}
-}
+// 		// copy assignments from budget. If Not available, use the attribution's values
+// 		// use the child's attributes first
+// 		if (childItem?.category_id || budget.category_id) {
+// 			attribution.category_id = childItem?.category_id || budget.category_id;
+// 			attribution.Category = useCategoryStore().getCategoryById(attribution.category_id);
+// 		}
+// 		if (childItem?.group_id || budget.group_id) {
+// 			attribution.group_id = childItem?.group_id || budget.group_id;
+// 			attribution.Group = useGroupStore().getGroupById(attribution.group_id);
+// 		}
+// 	}
+// }
 
-async function assignCategory(attribution: Transaction["Attributions"][number] = largestAttribution.value) {
-	if (categorySelectDrawer.value) {
-		const selectedCategoryId = await categorySelectDrawer.value.waitForSelection(largestAttribution.value.category_id);
-		if (selectedCategoryId !== attribution.category_id) {
-			attribution.category_id = selectedCategoryId;
-			attribution.Category = useCategoryStore().getCategoryById(selectedCategoryId);
-		}
+// function assignCategory(attribution: Transaction["Attributions"][number], selectedCategoryId: string | null) {
+// 	if (selectedCategoryId !== attribution.category_id) {
+// 		attribution.category_id = selectedCategoryId;
+// 		attribution.Category = useCategoryStore().getCategoryById(selectedCategoryId);
+// 	}
+// }
+
+async function doAttributionDrawer(attribution: Transaction["Attributions"][number] = largestAttribution.value) {
+	if (transactionAttributionDrawer.value) {
+		const selection = await transactionAttributionDrawer.value.waitForSelection(attribution);
+		attribution.budget_id = selection.budget_id;
+		attribution.Budget = selection.Budget;
+		attribution.budget_child_item_id = selection.budget_child_item_id;
+		attribution.BudgetChildItem = selection.BudgetChildItem;
+		attribution.category_id = selection.category_id || null;
+		attribution.Category = selection.Category;
+		attribution.group_id = selection.group_id || undefined;
+		attribution.Group = selection.Group;
 	}
 }
 
@@ -147,24 +161,45 @@ async function assignCategory(attribution: Transaction["Attributions"][number] =
 				<br />
 
 				<div class="details-rows">
-
 					<div class="row">
 						<label>Budget</label>
 						<Button size="small" text severity="contrast" class="flex align-items-center gap-2"
-							@click="() => assignBudget()"
+							@click="() => doAttributionDrawer()"
 						>
-							{{ largestAttribution.Budget?.memo || 'Unbudgeted' }}
+							<template v-if="largestAttribution.Budget">
+								{{ largestAttribution.Budget.memo }}
+								<span v-if="largestAttribution.BudgetChildItem">- {{ largestAttribution.BudgetChildItem.memo }}</span>
+							</template>
+							<template v-else>
+								Unbudgeted
+							</template>
 						</Button>
 					</div>
 
 					<div class="row">
 						<label>Category</label>
 						<Button size="small" text severity="contrast" class="flex align-items-center gap-2"
-							@click="() => assignCategory()"
+							@click="() => doAttributionDrawer()"
 							:disabled="Boolean(largestAttribution.Budget?.category_id)"
 						>
 							<Icon :name="largestAttribution.Category?.icon || largestAttribution.Category?.ParentCategory?.icon || 'question-circle'" />
 							{{ largestAttribution.Category?.name || 'Uncategorized' }}
+						</Button>
+					</div>
+
+					<div class="row">
+						<label>Group</label>
+						<Button size="small" text severity="contrast" class="flex align-items-center gap-2"
+							@click="() => doAttributionDrawer()"
+							:disabled="Boolean(largestAttribution.Budget?.group_id)"
+						>
+							<template v-if="largestAttribution.Group">
+								<Icon name="tag" fill :color="largestAttribution.Group.color || '#aaa'" />
+								{{ largestAttribution.Group.name }}
+							</template>
+							<template v-else>
+								No Group
+							</template>
 						</Button>
 					</div>
 				</div>
@@ -173,8 +208,9 @@ async function assignCategory(attribution: Transaction["Attributions"][number] =
 		</template>
 	</NavTrigger>
 
-	<CategorySelectDrawer ref="categorySelectDrawer" />
-	<BudgetSelectDrawer ref="budgetSelectDrawer" />
+	<!-- <CategorySelectDrawer ref="categorySelectDrawer" />
+	<BudgetSelectDrawer ref="budgetSelectDrawer" /> -->
+	<TransactionAttributionDrawer ref="transactionAttributionDrawer" />
 </template>
 
 <style scoped lang="scss">

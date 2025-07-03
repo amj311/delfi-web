@@ -1,0 +1,90 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue';
+import Drawer from 'primevue/drawer';
+import NavTrigger from './utils/NavTrigger.vue';
+import Button from 'primevue/button';
+import { useBudgetStore } from '@/stores/budget.store';
+
+const props = defineProps<{
+	currentBudgetId?: string | null;
+	currentChildItemId?: string | null;
+}>();
+
+type Selection = {
+	budgetId: string | null;
+	childItemId: string | null;
+};
+
+const emit = defineEmits<{
+	'select': [Selection];
+}>();
+
+const currentSelection = ref<Selection>({
+	budgetId: props.currentBudgetId || null,
+	childItemId: props.currentChildItemId || null,
+});
+
+const selectedBudget = computed(() => {
+	return useBudgetStore().getBudgetById(currentSelection.value.budgetId);
+});
+const showChildItemsSelection = ref(false);
+
+function emitSelection() {
+	emit('select', currentSelection.value);
+}
+
+function selectBudget(budgetId: string | null) {
+	currentSelection.value.budgetId = budgetId;
+	const selectedBudget = useBudgetStore().getBudgetById(budgetId);
+	if (selectedBudget && selectedBudget.childItems?.length) {
+		showChildItemsSelection.value = true;
+	}
+	else {
+		emitSelection();
+	}
+}
+
+function selectChildItem(childItemId: string | null) {
+	currentSelection.value.childItemId = childItemId;
+	emitSelection();
+	showChildItemsSelection.value = false;
+}
+
+const budgets = useBudgetStore().budgets;
+
+</script>
+
+<template>
+	<div class="flex flex-column" v-if="!showChildItemsSelection">
+		<div 
+			class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round"
+			@click="selectBudget(null)"
+		>
+			<div class="flex-grow-1">No Budget</div>
+		</div>
+
+		<div
+			v-for="budget in budgets"
+			:key="budget.budget_id"
+			class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round"
+			@click="selectBudget(budget.budget_id)"
+		>
+			<div class="flex-grow-1">{{  budget.memo }}</div>
+		</div>
+	</div>
+
+	<div v-else class="flex flex-column">
+		<h4 class="p-2">Select a Child Item</h4>
+		<div
+			v-for="childItem in selectedBudget?.childItems || []"
+			:key="childItem.budget_child_item_id"
+			class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round"
+			@click="selectChildItem(childItem.budget_child_item_id)"
+		>
+			<div class="flex-grow-1">{{ childItem.memo }}</div>
+		</div>
+	</div>
+</template>
+
+<style scoped lang="scss">
+</style>

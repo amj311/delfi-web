@@ -11,11 +11,11 @@ import Button from 'primevue/button';
 import Icon from './Icon.vue';
 import { useCategoryStore } from '@/stores/category.store';
 import CategoryAvatar from './CategoryAvatar.vue';
+import CategorySelector from './CategorySelector.vue';
 
 const drawerTrigger = ref<InstanceType<typeof NavTrigger> | null>(null);
 
 const currentCategoryId = ref<string | null>(null);
-const selectedCategory = computed(() => useCategoryStore().getCategoryById(currentCategoryId.value));
 
 const promiseResolver = ref<((value: string | null) => void) | null>(null);
 const promiseRejector = ref<((reason?: any) => void) | null>(null);
@@ -39,20 +39,9 @@ defineExpose({
 		drawerTrigger.value?.open();
 		currentCategoryId.value = _currentCategoryId;
 
-		if (currentCategoryId.value && selectedCategory) {
-			setTimeout(() => {
-				const groupElement = document.getElementById(`group_${selectedCategory.value.ParentCategory?.name}`);
-				if (groupElement) {
-					groupElement.scrollIntoView();
-				}
-			}, 50)
-		}
-
-		return new Promise<string | null>((resolve) => {
+		return new Promise<string | null>((resolve, reject) => {
 			promiseResolver.value = resolve;
-			promiseRejector.value = () => {
-				resolve(null);
-			};
+			promiseRejector.value = reject;
 		});
 	},
 	close: drawerTrigger.value?.close,
@@ -70,6 +59,7 @@ const groups = useCategoryStore().categoriesByGroup;
 		<template #default="{ show }">
 			<Drawer
 				:visible="show"
+				v-if="show"
 				position="right"
 				header="Select a Category"
 				class="w-full sm:w-25rem"
@@ -84,27 +74,7 @@ const groups = useCategoryStore().categoriesByGroup;
 					/>
 				</template>
 				
-				<div class="flex flex-column gap-3">
-					<div v-for="group in groups" :key="group.name" class="flex flex-column gap-2">
-						<h4 :id="`group_${group.name}`" class="group">{{ group.name }}</h4>
-						<div class="flex flex-column">
-							<div
-								v-for="category in group.categories"
-								:key="category.category_id"
-								class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round"
-								@click="selectCategory(category.category_id)"
-							>
-								<CategoryAvatar
-									:category="category"
-									:groupColor="group.color"
-									style="width: 2rem; height: 2rem;"
-								/>
-								<div class="flex-grow-1">{{  category.name }}</div>
-								<i class="pi pi-check" v-if="currentCategoryId === category.category_id" />
-							</div>
-						</div>
-					</div>
-				</div>
+				<CategorySelector :currentCategoryId="currentCategoryId" @select="selectCategory" />
 
 			</Drawer>
 		</template>

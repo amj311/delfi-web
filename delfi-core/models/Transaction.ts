@@ -2,7 +2,7 @@ import type { DelfiDate } from "delfi-core/utils/dateUtils"
 import type { Category } from "./Category"
 import type { TagColor } from "delfi-core/utils/constants"
 import type { CommonEventDetails } from "./Summary"
-import type { Budget } from "./Budget"
+import type { Budget, BudgetChildItem } from "./Budget"
 
 
 /**
@@ -70,6 +70,7 @@ type AttributionEventDetails = {
 	budget_id?: string | null,
 	Budget?: Budget | null,
 	budget_child_item_id?: string | null,
+	BudgetChildItem?: BudgetChildItem | null,
 }
 type TransactionAttribution = AttributionBudgetableDetails & AttributionEventDetails & {
 	transaction_attribution_id: string,
@@ -110,13 +111,14 @@ type TrueEventDetails = {
 }
 
 // TODO: POTENTIAL FALSE POSITIVES. I think it is technically possible to have two transactions with the same description and amount on the same day
+// Plaid will need to compute the date_order for this to be unique
 // Plaid might provide different source_ids which would, but only if available
 export type TransactionUniqueFields = {
 	account_id: string,
 	original_description: string,
 	amount: number,
 	date: DelfiDate,
-	source_id?: string | null,
+	date_order?: string | null,
 }
 
 export type TransactionDetails = TrueBudgetableDetails & TrueEventDetails;
@@ -156,6 +158,7 @@ export class TransactionUtils {
 
 		for (const transaction of transactions) {
 			for (const attribution of transaction.Attributions) {
+				const BudgetChildItem = attribution.Budget?.childItems?.find(item => item.budget_child_item_id === attribution.budget_child_item_id) || null;
 				attributedEvents.push({
 					sourceType: 'attribution',
 					sourceTransaction: transaction,
@@ -165,6 +168,8 @@ export class TransactionUtils {
 					month: transaction.date.month(),
 
 					account_id: transaction.account_id,
+					Merchant: transaction.Merchant || null,
+					BudgetChildItem,
 
 					displayName: attribution.memo || transaction.original_description,
 					...attribution,

@@ -90,9 +90,12 @@ watch(
 	{ immediate: true }
 );
 
-watch(() => delfiStore.reComputed, async () => {
-	state.summaryData = await getSummary(state.viewingMonth, true);
-});
+watch(
+	() => delfiStore.reComputed,
+	async () => {
+		state.summaryData = await getSummary(state.viewingMonth, true);
+	}
+);
 
 const canGoBack = computed(() => {
 	if (!state.viewingMonth) {
@@ -151,7 +154,14 @@ const dailyEvents = computed(() => {
 		}
 		eventsByDay[dayKey].push(event);
 	}
-	return Object.entries(eventsByDay).flatMap(([, events]) => events.sort((a, b) => a.sourceTransaction.date_order?.localeCompare(b.sourceTransaction.date_order || '') || 0));
+	return Object.entries(eventsByDay).flatMap(([, events]) =>
+		events.sort(
+			(a, b) =>
+				a.sourceTransaction.date_order?.localeCompare(
+					b.sourceTransaction.date_order || ''
+				) || 0
+		)
+	);
 });
 </script>
 
@@ -202,7 +212,10 @@ const dailyEvents = computed(() => {
 								/></span>
 							</div>
 						</div>
-						<small v-for="partition of summary.partitions" class="flex align-items-center">
+						<small
+							v-for="partition of summary.partitions"
+							class="flex align-items-center"
+						>
 							&emsp13;- {{ partition.name }}
 							<div class="flex-grow-1"></div>
 							<div class="flex align-items-center">
@@ -241,7 +254,8 @@ const dailyEvents = computed(() => {
 				</div>
 				<div class="list">
 					<div
-						v-for="{ budget, budgetEvents } of state.summaryData.incomeSummary?.tally.budgetSummaries"
+						v-for="{ budget, budgetEvents } of state.summaryData.incomeSummary?.tally
+							.budgetSummaries"
 						class="list-row"
 					>
 						<div class="transaction-main-line">
@@ -346,33 +360,41 @@ const dailyEvents = computed(() => {
 								<b>{{ category.category.name }}</b>
 							</div>
 							<div class="flex-grow-1"></div>
-							<Currency
-								:amount="category.tally.attributedNet || 0"
-								mode="transaction"
-								class="text-semibold"
-							/>
-							&nbsp;/&nbsp;
-							<Currency
-								:amount="category.tally.budgetedNet || 0"
-								mode="transaction"
-								class="text-semibold"
-							/>
+							<div class="flex align-items-end gap-1">
+								<Currency
+									:amount="category.tally.attributedNet || 0"
+									mode="transaction"
+									class="text-semibold"
+								/>
+								<small>/</small>
+								<small>
+									<Currency
+										:amount="category.tally.budgetedNet || 0"
+										mode="transaction"
+										class="text-semibold"
+									/>
+								</small>
+							</div>
 						</div>
 						<template v-for="budgetSummary of category.tally.budgetSummaries">
-							<div class="flex hover-show-trigger list-row pl-6">
+							<div class="flex hover-show-trigger list-row pl-6 gap-2">
 								<div class="flex align-items-center">
 									{{ budgetSummary.budget.memo }}
-									<!-- <button
-										class="hover-show"
-										@click="() => state.upsertingBudget = budgetSummary.sourceBudget!"
-									>
-										Edit
-									</button> -->
 								</div>
-								&nbsp;......&nbsp;
-								<Currency :amount="budgetSummary.tally.attributedNet" mode="transaction" />
-								&nbsp;/&nbsp;
-								<Currency :amount="budgetSummary.tally.budgetedNet" mode="transaction" />
+								<div class="flex-grow-1"></div>
+								<div class="flex align-items-end gap-1">
+									<Currency
+										:amount="budgetSummary.tally.attributedNet"
+										mode="transaction"
+									/>
+									<small>/</small>
+									<small>
+										<Currency
+											:amount="budgetSummary.tally.budgetedNet"
+											mode="transaction"
+										/>
+									</small>
+								</div>
 							</div>
 						</template>
 						<small
@@ -383,11 +405,14 @@ const dailyEvents = computed(() => {
 							Unbudgeted Spending
 						</small>
 						<template v-for="event of category.tally.unBudgetedAttributions">
-							<div class="flex hover-show-trigger list-row pl-6" @click="viewingTransaction = event.sourceTransaction">
+							<div
+								class="flex hover-show-trigger list-row pl-6 gap-2"
+								@click="viewingTransaction = event.sourceTransaction"
+							>
 								<div class="flex align-items-center">
 									{{ event.displayName }}
 								</div>
-								&nbsp;......&nbsp;
+								<div class="flex-grow-1"></div>
 								<Currency :amount="event.amount" mode="transaction" />
 							</div>
 						</template>
@@ -402,7 +427,16 @@ const dailyEvents = computed(() => {
 				<template v-for="(event, i) of dailyEvents">
 					<h4
 						v-if="i === 0 || !dailyEvents[i - 1]?.date.isSame(event.date)"
-						:style="{ padding: '8px 8px', marginTop: '8px', position: 'sticky', top: '0', backgroundColor: '#ffff', zIndex: 1, marginLeft: '-5px', marginRight: '-5px' }"
+						:style="{
+							padding: '8px 8px',
+							marginTop: '8px',
+							position: 'sticky',
+							top: '0',
+							backgroundColor: '#ffff',
+							zIndex: 1,
+							marginLeft: '-5px',
+							marginRight: '-5px',
+						}"
 					>
 						{{ event.date.formatFull() }}
 					</h4>
@@ -419,17 +453,19 @@ const dailyEvents = computed(() => {
 							</div>
 							<div class="flex flex-column w-full min-w-0">
 								<div class="transaction-main-line">
-									<div class="text-ellipsis w-full min-w-0">{{ event.displayName }}</div>
+									<div class="text-ellipsis w-full min-w-0">
+										{{ event.displayName }}
+									</div>
 									<div style="flex-grow: 1"></div>
 									<div style="display: flex; align-items: center; gap: 4px">
-										<Currency
-											:amount="event.amount"
-											mode="transaction"
-										/>
+										<Currency :amount="event.amount" mode="transaction" />
 									</div>
 								</div>
 								<small>
-									{{ useCategoryStore().getCategoryById(event.category_id).name }}
+									{{
+										event.Budget?.memo ||
+										useCategoryStore().getCategoryById(event.category_id).name
+									}}
 									-
 									{{ accountStore.getAccountName(event.account_id) }}
 								</small>

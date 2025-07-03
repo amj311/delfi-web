@@ -35,7 +35,6 @@ export const useCategoryStore = defineStore('category', () => {
 			{
 				...parent,
 				name: `Other ${parent.name}`,
-				Children: undefined, // Remove children from parent category
 				ParentCategory: parent,
 			}
 		];

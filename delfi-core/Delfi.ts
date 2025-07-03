@@ -103,7 +103,6 @@ export class Delfi {
 
 	
 	async getMonthSummary(monthDate: DelfiDate) {
-		console.log('Computing month summary for', monthDate.toString());
 		// make extra sure we have the start and end date
 		const monthStart = date(monthDate.startOf('month'));
 		const monthEnd = date(monthDate.endOf('month'));
@@ -111,8 +110,6 @@ export class Delfi {
 		const monthAttributionEvents = await this.getAttributedEventsBetween(monthStart, monthEnd);
 		const monthBudgetEvents = monthForecast.events;
 		const monthNet = monthBudgetEvents.reduce((acc, event) => acc + event.amount, 0);
-
-		console.log(this.budgets.filter(e => e.childItems?.some(c => c.group_id)))
 
 		// compute each account's balance at the beginning and end of the month
 		const accountSummaries = await Promise.all(this.accounts.map(async (account: Account) => {
