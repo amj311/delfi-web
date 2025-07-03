@@ -255,12 +255,14 @@ const allowedGroups = computed(() => {
 					<div class="flex justify-content-end gap-2">
 						<Button
 							label="Cancel"
+							size="large"
 							text
 							severity="secondary"
 							@click="cancel"
 						/>
 						<Button
-							label="Submit"
+							label="Save"
+							size="large"
 							@click="submit"
 						/>
 

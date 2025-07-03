@@ -4,6 +4,7 @@ import { AuthService } from './services/authService';
 import Registration from './views/Registration.vue';
 import { onBeforeUnmount, ref } from 'vue';
 import LoggedIn from './views/LoggedIn.vue';
+import PromptModal from './components/utils/PromptModal.vue';
 
 const userStore = useUserStore();
 const sessionInterval = setInterval(userStore.loadSessionData, 60000);
@@ -26,6 +27,9 @@ onBeforeUnmount(() => {
 	<div v-else>
 		<a @click="AuthService.signInWithGoogle()">Sign in with Google</a>
 	</div>
+    
+    <!-- Global Prompt Modal -->
+    <PromptModal />
 </template>
 
 <style scoped></style>

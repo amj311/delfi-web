@@ -17,6 +17,8 @@ import BudgetSelectDrawer from './BudgetSelectDrawer.vue';
 import { useBudgetStore } from '@/stores/budget.store';
 import { useGroupStore } from '@/stores/group.store';
 import TransactionAttributionDrawer, { type Step } from './TransactionAttributionDrawer.vue';
+import InlineInput from './utils/InlineInput.vue';
+import { usePrompt } from './utils/PromptModal.vue';
 
 const transaction = defineModel<Transaction>('transaction', {
 	required: true,
@@ -42,7 +44,6 @@ const saving = ref(false);
 const lastSaved = ref<Date | null>(null);
 
 watch(() => transaction.value, async (newTransaction) => {
-	console.log('Transaction changed:', newTransaction);
 	saving.value = true;
 	try {
 		await TransactionService.updateTransaction(transaction.value.transaction_id, newTransaction);
@@ -118,6 +119,18 @@ async function doAttributionDrawer(step: Step, attribution: Transaction["Attribu
 	}
 }
 
+async function promptForMemo(attribution: Transaction["Attributions"][number]) {
+	const result = await usePrompt().prompt({
+		title: 'Edit Memo',
+		message: 'Enter a memo for this transaction:',
+		defaultValue: attribution.memo || '',
+		placeholder: 'Enter memo...',
+	});
+	if (result !== null) {
+		attribution.memo = result.trim();
+	}
+}
+
 </script>
 
 <template>
@@ -162,9 +175,20 @@ async function doAttributionDrawer(step: Step, attribution: Transaction["Attribu
 				<br />
 
 				<div class="details-rows">
+
+					<div class="row">
+						<label>Memo</label>
+						<Button size="small" text :severity="largestAttribution.memo ? 'contrast' : 'secondary'" class="flex align-items-center gap-2"
+							@click="() => promptForMemo(largestAttribution)"
+						>
+							{{ largestAttribution.memo || 'None' }}
+						</Button>
+					</div>
+
+
 					<div class="row">
 						<label>Budget</label>
-						<Button size="small" text severity="contrast" class="flex align-items-center gap-2"
+						<Button size="small" text :severity="largestAttribution.Budget ? 'contrast' : 'secondary'" class="flex align-items-center gap-2"
 							@click="() => doAttributionDrawer('Budget')"
 						>
 							<template v-if="largestAttribution.Budget">
@@ -179,7 +203,7 @@ async function doAttributionDrawer(step: Step, attribution: Transaction["Attribu
 
 					<div class="row">
 						<label>Category</label>
-						<Button size="small" text severity="contrast" class="flex align-items-center gap-2"
+						<Button size="small" text :severity="largestAttribution.Category ? 'contrast' : 'secondary'" class="flex align-items-center gap-2"
 							@click="() => doAttributionDrawer('Category')"
 							:disabled="Boolean(largestAttribution.Budget?.category_id)"
 						>
@@ -190,7 +214,7 @@ async function doAttributionDrawer(step: Step, attribution: Transaction["Attribu
 
 					<div class="row">
 						<label>Group</label>
-						<Button size="small" text severity="contrast" class="flex align-items-center gap-2"
+						<Button size="small" text :severity="largestAttribution.Group ? 'contrast' : 'secondary'" class="flex align-items-center gap-2"
 							@click="() => doAttributionDrawer('Group')"
 							:disabled="Boolean(largestAttribution.Budget?.group_id)"
 						>

@@ -12,6 +12,7 @@ export default defineConfig({
 	],
 	resolve: {
 		alias: {
+			'vue': 'vue/dist/vue.esm-bundler.js',
 			'delfi-core': fileURLToPath(new URL('./delfi-core', import.meta.url)),
 			'@': fileURLToPath(new URL('./src', import.meta.url))
 		}

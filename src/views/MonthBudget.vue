@@ -3,6 +3,7 @@ import { useDelfiStore } from '@/stores/delfi.store';
 import { useAccountStore } from '@/stores/account.store';
 import { computed, reactive, ref, onMounted, watch } from 'vue';
 import { useBudgetStore } from '@/stores/budget.store';
+import Button from 'primevue/button';
 import Forecast from '../../delfi-core/models/Forecast';
 import { type DelfiDate, date } from '../../delfi-core/utils/dateUtils';
 import Currency from '@/components/Currency.vue';
@@ -20,13 +21,31 @@ import CategoryAvatar from '@/components/CategoryAvatar.vue';
 import TransactionAvatar from '@/components/TransactionAvatar.vue';
 import { type AttributionEvent, type Transaction } from 'delfi-core/models/Transaction';
 import TransactionDetailsDrawer from '@/components/TransactionDetailsDrawer.vue';
-import { SummaryUtils } from 'delfi-core/models/Summary';
+import { usePrompt } from '@/components/utils/PromptModal.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
 const groupStore = useGroupStore();
 const route = useRoute();
 const router = useRouter();
+const prompt = usePrompt();
+
+// Function to show the prompt modal
+async function showAddNotePrompt() {
+  const result = await prompt.prompt({
+    title: 'Add Budget Note',
+    message: 'Add a note to this month\'s budget:',
+    placeholder: 'Enter your note here...',
+    defaultValue: ''
+  });
+  
+  if (result !== null) {
+    // Here you would typically save the note to your budget data
+    console.log('Budget note added:', result);
+    // For demo purposes, we'll just show an alert
+    alert(`Note added: "${result}"`);
+  }
+}
 
 const state = reactive({
 	loading: true,
@@ -167,7 +186,16 @@ const dailyEvents = computed(() => {
 
 <template>
 	<main>
-		<h2>Monthly Budget</h2>
+		<div style="display: flex; justify-content: space-between; align-items: center">
+			<h2>Monthly Budget</h2>
+			<Button 
+				label="Add Note" 
+				icon="pi pi-plus" 
+				size="small"
+				outlined
+				@click="showAddNotePrompt"
+			/>
+		</div>
 		<div style="display: flex; justify-content: space-between">
 			<a @click="goBack()">Back</a>
 			<span>{{ state.viewingMonth?.format('MMMM YYYY') }}</span>
