@@ -69,7 +69,7 @@ function cancel() {
 }
 
 const Steps = ['Budget', 'Category', 'Group'] as const;
-type Step = (typeof Steps)[number];
+export type Step = (typeof Steps)[number];
 
 const currentStep = ref<Step>('Budget');
 
@@ -191,7 +191,8 @@ const allowedGroups = computed(() => {
 								<span v-if="currentSelection.BudgetChildItem">- {{ currentSelection.BudgetChildItem.memo }}</span>
 							</template>
 						</div>
-						<i class="pi pi-chevron-down" v-if="currentStep !== 'Budget'" />
+						<i class="pi pi-angle-right" v-if="currentStep !== 'Budget'" />
+						<i class="pi pi-angle-down" v-else />
 					</div>
 
 					<div class="selector-frame" :class="{ 'current': currentStep === 'Budget' }">
@@ -211,7 +212,8 @@ const allowedGroups = computed(() => {
 							<template v-else>{{ currentSelection.Category.name }}</template>
 						</div>
 
-						<i class="pi pi-chevron-down" v-if="currentStep !== 'Category'" />
+						<i class="pi pi-angle-right" v-if="currentStep !== 'Category'" />
+						<i class="pi pi-angle-down" v-else />
 					</div>
 
 					<div class="selector-frame" :class="{ 'current': currentStep === 'Category' }">
@@ -233,7 +235,8 @@ const allowedGroups = computed(() => {
 							<template v-if="!currentSelection.Group">No group</template>
 							<template v-else>{{ currentSelection.Group.name }}</template>
 						</div>
-						<i class="pi pi-chevron-down" v-if="currentStep !== 'Group'" />
+						<i class="pi pi-angle-right" v-if="currentStep !== 'Group'" />
+						<i class="pi pi-angle-down" v-else />
 					</div>
 
 					<div class="selector-frame" :class="{ 'current': currentStep === 'Group' }">

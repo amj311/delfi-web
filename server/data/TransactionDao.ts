@@ -5,6 +5,8 @@ import { date } from "delfi-core/utils/dateUtils";
 export const TransactionDao = {
 	dbToTransaction(dbTransaction: NonNullable<Record<string, any>>): Transaction {
 		return {
+			...dbTransaction, // Spread the base transaction fields
+
 			transaction_id: dbTransaction.transaction_id,
 			date: date(dbTransaction.date),
 			date_order: dbTransaction.date_order,
@@ -35,6 +37,8 @@ export const TransactionDao = {
 			Merchant: dbTransaction.Merchant || null,
 
 			Attributions: dbTransaction.Attributions?.map(attr => ({
+				...attr, // Spread the base attribution fields
+
 				transaction_attribution_id: attr.transaction_attribution_id,
 				transaction_id: attr.transaction_id,
 				amount: attr.amount,
@@ -115,6 +119,11 @@ export const TransactionDao = {
 								ParentCategory: true, // Include category group details
 							},
 						}, // Include category details
+						Budget: true,
+						BudgetChildItem: true, // Include budget child item details
+						Tags: true, // Include tags
+						Group: true, // Include group details
+
 					},
 				},
 				Merchant: true,
@@ -146,6 +155,7 @@ export const TransactionDao = {
 							},
 						}, // Include category details
 						Budget: true,
+						BudgetChildItem: true, // Include budget child item details
 						Tags: true, // Include tags
 						Group: true, // Include group details
 					},
@@ -291,6 +301,8 @@ export const TransactionDao = {
 				category_id: attr.category_id || null,
 				memo: attr.memo || null,
 				budget_id: attr.budget_id || null,
+				budget_child_item_id: attr.budget_child_item_id || null,
+				group_id: attr.group_id || null,
 				// Tags: attr.Tags ? {
 				// 	connect: attr.Tags.map(tag => ({ tag_id: tag.tag_id })),
 				// } : undefined,

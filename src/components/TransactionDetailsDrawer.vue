@@ -16,7 +16,7 @@ import { useDelfiStore } from '@/stores/delfi.store';
 import BudgetSelectDrawer from './BudgetSelectDrawer.vue';
 import { useBudgetStore } from '@/stores/budget.store';
 import { useGroupStore } from '@/stores/group.store';
-import TransactionAttributionDrawer from './TransactionAttributionDrawer.vue';
+import TransactionAttributionDrawer, { type Step } from './TransactionAttributionDrawer.vue';
 
 const transaction = defineModel<Transaction>('transaction', {
 	required: true,
@@ -42,6 +42,7 @@ const saving = ref(false);
 const lastSaved = ref<Date | null>(null);
 
 watch(() => transaction.value, async (newTransaction) => {
+	console.log('Transaction changed:', newTransaction);
 	saving.value = true;
 	try {
 		await TransactionService.updateTransaction(transaction.value.transaction_id, newTransaction);
@@ -103,9 +104,9 @@ const account = computed(() => {
 // 	}
 // }
 
-async function doAttributionDrawer(attribution: Transaction["Attributions"][number] = largestAttribution.value) {
+async function doAttributionDrawer(step: Step, attribution: Transaction["Attributions"][number] = largestAttribution.value) {
 	if (transactionAttributionDrawer.value) {
-		const selection = await transactionAttributionDrawer.value.waitForSelection(attribution);
+		const selection = await transactionAttributionDrawer.value.waitForSelection(attribution, step);
 		attribution.budget_id = selection.budget_id;
 		attribution.Budget = selection.Budget;
 		attribution.budget_child_item_id = selection.budget_child_item_id;
@@ -164,7 +165,7 @@ async function doAttributionDrawer(attribution: Transaction["Attributions"][numb
 					<div class="row">
 						<label>Budget</label>
 						<Button size="small" text severity="contrast" class="flex align-items-center gap-2"
-							@click="() => doAttributionDrawer()"
+							@click="() => doAttributionDrawer('Budget')"
 						>
 							<template v-if="largestAttribution.Budget">
 								{{ largestAttribution.Budget.memo }}
@@ -179,7 +180,7 @@ async function doAttributionDrawer(attribution: Transaction["Attributions"][numb
 					<div class="row">
 						<label>Category</label>
 						<Button size="small" text severity="contrast" class="flex align-items-center gap-2"
-							@click="() => doAttributionDrawer()"
+							@click="() => doAttributionDrawer('Category')"
 							:disabled="Boolean(largestAttribution.Budget?.category_id)"
 						>
 							<Icon :name="largestAttribution.Category?.icon || largestAttribution.Category?.ParentCategory?.icon || 'question-circle'" />
@@ -190,7 +191,7 @@ async function doAttributionDrawer(attribution: Transaction["Attributions"][numb
 					<div class="row">
 						<label>Group</label>
 						<Button size="small" text severity="contrast" class="flex align-items-center gap-2"
-							@click="() => doAttributionDrawer()"
+							@click="() => doAttributionDrawer('Group')"
 							:disabled="Boolean(largestAttribution.Budget?.group_id)"
 						>
 							<template v-if="largestAttribution.Group">

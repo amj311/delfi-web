@@ -308,7 +308,7 @@ const dailyEvents = computed(() => {
 			<br />
 			<div>
 				<div
-					v-for="{ groupId, events } of state.summaryData.groupsEvents"
+					v-for="{ groupId, tally } of state.summaryData.groupSummaries"
 					class="group-summary"
 				>
 					<div class="title flex align-items-center gap-1">
@@ -316,12 +316,21 @@ const dailyEvents = computed(() => {
 						{{ groupStore.getGroupById(groupId)?.name }}
 						<div class="flex-grow-1"></div>
 						<Currency
-							:amount="events.reduce((acc, e) => acc + e.amount, 0)"
+							:amount="tally.attributedNet || 0"
 							mode="transaction"
+							class="text-semibold"
 						/>
+						<small>/</small>
+						<small>
+							<Currency
+								:amount="tally.budgetedNet || 0"
+								mode="transaction"
+								class="text-semibold"
+							/>
+						</small>
 					</div>
 					<div>
-						<div v-for="event of events" class="list-row">
+						<div v-for="event of tally.budgetEvents" class="list-row">
 							<div class="transaction-main-line">
 								{{ event.memo }}
 								<Currency :amount="event.amount" mode="transaction" />

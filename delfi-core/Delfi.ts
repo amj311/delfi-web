@@ -194,13 +194,24 @@ export class Delfi {
 			tally: RealityTally.fromTallies(transferCategories.map(c => c.tally)),
 		};
 
-		const groupBudgetEvents = new Map<string, Array<BudgetEvent>>();
+		const presentGroups = new Set<string>();
 		monthBudgetEvents.forEach(event => {
-			if (!event.group_id) return; // Skip events without a group
-			if (!groupBudgetEvents.has(event.group_id)) {
-				groupBudgetEvents.set(event.group_id, []);
+			if (event.group_id) {
+				presentGroups.add(event.group_id);
 			}
-			groupBudgetEvents.get(event.group_id)!.push(event);
+		});
+		monthAttributionEvents.forEach(event => {
+			if (event.group_id) {
+				presentGroups.add(event.group_id);
+			}
+		});
+		const groupSummaries = Array.from(presentGroups).map(groupId => {
+			const groupBudgetEvents = monthBudgetEvents.filter(event => event.group_id === groupId);
+			const groupAttributionEvents = monthAttributionEvents.filter(event => event.group_id === groupId);
+			return {
+				groupId,
+				tally: new RealityTally(groupBudgetEvents, groupAttributionEvents),
+			};
 		});
 
 		return {
@@ -214,10 +225,7 @@ export class Delfi {
 			incomeSummary,
 			transferSummary,
 			spendingSummary,
-			groupsEvents: Array.from(groupBudgetEvents.entries()).map(([groupId, events]) => ({
-				groupId,
-				events
-			})),
+			groupSummaries
 		};
 	}
 }
