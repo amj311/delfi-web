@@ -179,13 +179,11 @@ const PromptForm = defineComponent({
     <div class="flex justify-content-end gap-2">
       <Button
         label="Cancel"
-        icon="pi pi-times"
         class="p-button-text"
         @click="handleCancel"
       />
       <Button
         label="Submit"
-        icon="pi pi-check"
         @click="handleSubmit"
       />
     </div>

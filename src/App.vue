@@ -2,7 +2,7 @@
 import { useUserStore } from './stores/user.store';
 import { AuthService } from './services/authService';
 import Registration from './views/Registration.vue';
-import { onBeforeUnmount, ref } from 'vue';
+import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 import LoggedIn from './views/LoggedIn.vue';
 import PromptModal from './components/utils/PromptModal.vue';
 
@@ -13,6 +13,16 @@ const waitingForAuth = ref(true);
 setTimeout(() => {
 	waitingForAuth.value = false;
 }, 1000); // wait for 1 second before showing the app
+
+
+onBeforeMount(() => {
+	// the page has reloaded - remove any lingering drawer queries
+	// const query = new URLSearchParams(window.location.search);
+	// if (query.has('v')) {
+	// 	query.delete('v');
+	// 	window.history.replaceState({}, '', `${window.location.pathname}`);
+	// }
+});
 
 onBeforeUnmount(() => {
 	clearInterval(sessionInterval);
