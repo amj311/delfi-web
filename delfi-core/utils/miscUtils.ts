@@ -29,3 +29,7 @@ export const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 export const asAny = <T>(value: T): any => {
 	return value as any;
 }
+
+export const jsonCopy = <T>(value: T): T => {
+	return JSON.parse(JSON.stringify(value));
+}

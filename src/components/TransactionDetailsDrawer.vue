@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import Drawer from 'primevue/drawer';
-import { useRouter } from 'vue-router';
 import TransactionAvatar from './TransactionAvatar.vue';
 import type { Transaction } from 'delfi-core/models/Transaction';
 import Currency from './Currency.vue';
@@ -9,16 +8,11 @@ import { useAccountStore } from '@/stores/account.store';
 import NavTrigger from './utils/NavTrigger.vue';
 import Button from 'primevue/button';
 import Icon from './Icon.vue';
-import CategorySelectDrawer from './CategorySelectDrawer.vue';
-import { useCategoryStore } from '@/stores/category.store';
 import { TransactionService } from '@/services/transaction.service';
 import { useDelfiStore } from '@/stores/delfi.store';
-import BudgetSelectDrawer from './BudgetSelectDrawer.vue';
-import { useBudgetStore } from '@/stores/budget.store';
-import { useGroupStore } from '@/stores/group.store';
 import TransactionAttributionDrawer, { type Step } from './TransactionAttributionDrawer.vue';
-import InlineInput from './utils/InlineInput.vue';
 import { usePrompt } from './utils/PromptModal.vue';
+import { jsonCopy } from 'delfi-core/utils/miscUtils';
 
 const transaction = defineModel<Transaction>('transaction', {
 	required: true,
@@ -107,7 +101,11 @@ const account = computed(() => {
 
 async function doAttributionDrawer(step: Step, attribution: Transaction["Attributions"][number] = largestAttribution.value) {
 	if (transactionAttributionDrawer.value) {
-		const selection = await transactionAttributionDrawer.value.waitForSelection(attribution, step);
+		const selection = await transactionAttributionDrawer.value.waitForSelection(jsonCopy(attribution), step);
+		if (!selection) {
+			// rejected or closed
+			return;
+		}
 		attribution.budget_id = selection.budget_id;
 		attribution.Budget = selection.Budget;
 		attribution.budget_child_item_id = selection.budget_child_item_id;

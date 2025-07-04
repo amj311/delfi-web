@@ -49,15 +49,15 @@ const currentSelection = ref<Selection>({
 	Group: null,
 });
 
-const promiseResolver = ref<((value: Selection) => void) | null>(null);
+const promiseResolver = ref<((value: Selection | null) => void) | null>(null);
 const promiseRejector = ref<((reason?: any) => void) | null>(null);
 
-function closeAndEmit(final: Selection) {
+function closeAndEmit(final: Selection | null) {
 	if (drawerTrigger.value) {
 		drawerTrigger.value.close();
 	}
 	if (promiseResolver.value) {
-		promiseResolver.value(currentSelection.value);
+		promiseResolver.value(final);
 	}
 }
 function submit() {
@@ -65,7 +65,7 @@ function submit() {
 }
 
 function cancel() {
-	closeAndEmit(originalSelection.value);
+	closeAndEmit(null);
 }
 
 const Steps = ['Budget', 'Category', 'Group'] as const;
@@ -90,7 +90,7 @@ defineExpose({
 
 		drawerTrigger.value?.open();
 
-		return new Promise<Selection>((resolve, reject) => {
+		return new Promise<Selection | null>((resolve, reject) => {
 			promiseResolver.value = resolve;
 			promiseRejector.value = reject;
 		});
@@ -175,7 +175,7 @@ const allowedGroups = computed(() => {
 						icon="pi pi-times"
 						size="small"
 						text
-						@click="() => submit()"
+						@click="cancel"
 						severity="secondary"
 					/>
 				</template>
