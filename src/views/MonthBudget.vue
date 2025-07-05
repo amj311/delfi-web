@@ -314,21 +314,22 @@ const dailyEvents = computed(() => {
 				>
 					<div class="title flex align-items-center gap-1">
 						<Icon name="tag" fill :color="groupStore.getGroupById(groupId)?.color" />
-						{{ groupStore.getGroupById(groupId)?.name }}
+						<b>{{ groupStore.getGroupById(groupId)?.name }}</b>
 						<div class="flex-grow-1"></div>
-						<Currency
-							:amount="tally.attributedNet || 0"
-							mode="transaction"
-							class="text-semibold"
-						/>
-						<small>/</small>
-						<small>
+						<div class="flex align-items-center gap-1">
 							<Currency
-								:amount="tally.budgetedNet || 0"
+								:amount="tally.attributedNet || 0"
 								mode="transaction"
 								class="text-semibold"
 							/>
-						</small>
+							<small>/</small>
+							<small>
+								<Currency
+									:amount="tally.budgetedNet || 0"
+									mode="transaction"
+								/>
+							</small>
+						</div>
 					</div>
 					<div>
 						<div v-for="event of tally.budgetEvents" class="list-row">
@@ -370,7 +371,7 @@ const dailyEvents = computed(() => {
 								<b>{{ category.category.name }}</b>
 							</div>
 							<div class="flex-grow-1"></div>
-							<div class="flex align-items-end gap-1">
+							<div class="flex align-items-center gap-1">
 								<Currency
 									:amount="category.tally.attributedNet || 0"
 									mode="transaction"
@@ -381,7 +382,6 @@ const dailyEvents = computed(() => {
 									<Currency
 										:amount="category.tally.budgetedNet || 0"
 										mode="transaction"
-										class="text-semibold"
 									/>
 								</small>
 							</div>
@@ -392,7 +392,7 @@ const dailyEvents = computed(() => {
 									{{ budgetSummary.budget.memo }}
 								</div>
 								<div class="flex-grow-1"></div>
-								<div class="flex align-items-end gap-1">
+								<div class="flex align-items-center gap-1">
 									<Currency
 										:amount="budgetSummary.tally.attributedNet"
 										mode="transaction"
@@ -642,7 +642,7 @@ const dailyEvents = computed(() => {
 
 	.title {
 		padding: 0.5rem 0.7rem;
-		font-weight: bold;
+		/* font-weight: bold; */
 	}
 }
 </style>

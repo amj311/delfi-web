@@ -2,6 +2,7 @@ import type { Page } from "playwright";
 import type { InstitutionScraper, ScrapedAccount, ScrapedTransaction } from "./ScraperService";
 import { AccountSubtype, AccountType, type AccountDetails } from "delfi-core/models/Account";
 import { dollarsToNumber, stringToDate } from "./ScraperUtils";
+import { TransactionUtils } from "delfi-core/models/Transaction";
 
 export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 	'test-afcu-id': {
@@ -116,11 +117,13 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 					const description = await row.locator('.column-description').innerText();
 					const amountCols = await row.locator('.column-amount').all();
 					const amount = (await amountCols[amountCols.length - 1].innerText()).replaceAll(/[$,]/g, '');
+					const balance = await (await find(row, '.column-balance'))?.innerText();
 					const useInverseAmount = pending || account.type === AccountType.credit;
 					transactions.push({
 						date: stringToDate(date),
 						original_description: description,
 						amount: useInverseAmount ? -dollarsToNumber(amount) : dollarsToNumber(amount),
+						account_balance: dollarsToNumber(balance),
 						source: 'scraper',
 						pending,
 					});
@@ -130,29 +133,18 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 			await scrapeTable('UpcomingTransactionsGrid', true);
 			await scrapeTable('PastTransactionsGrid', false);
 
-			return this.assignDateOrders(transactions.reverse()); // the list is most recent first, so reverse it to be chronological
+			return TransactionUtils.assignDateOrders(transactions.reverse()); // the list is most recent first, so reverse it to be chronological
 		},
 
-		/**
-		 * For a given array of transactions, assigns each an order string based on it's date and the order it appears on that day.
-		 * Assumes array is provided in chronological order! Reverse it first if you must.
-		 * Date order looks like this: "2025-04-12-01" (e.g. 01 for the first transaction of the day).
-		 * @param transactions 
-		 * @returns 
-		 */
-		assignDateOrders(transactions: Array<ScrapedTransaction>): Array<ScrapedTransaction> {
-			const dateTallies = new Map<string, number>();
-			return transactions.map(transaction => {
-				const dateKey = transaction.date.toString();
-				const order = dateTallies.get(dateKey) || 0;
-				dateTallies.set(dateKey, order + 1);
-				const date_order = `${dateKey}-${String(order + 1).padStart(2, '0')}`;
-				return {
-					...transaction,
-					date_order
-				};
-			});
-		}
+		
+		
 	}
 }
 
+async function find(locator, selector, options = {}) {
+	const count = await locator.locator(selector, options).count();
+	if (count > 0) {
+		return await locator.locator(selector, options).first();
+	}
+	return null;
+}

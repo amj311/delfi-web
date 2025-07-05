@@ -272,6 +272,8 @@ export const TransactionDao = {
 				location_region: transactionData.location?.region,
 				location_postal: transactionData.location?.postal,
 				merchant_id: transactionData.merchant_id,
+				plaid_data: transactionData.plaid_data,
+				account_balance: transactionData.account_balance,
 			},
 		});
 

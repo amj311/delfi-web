@@ -108,6 +108,7 @@ type TrueEventDetails = {
     source:      string, // e.g. "plaid", "manual", "imported"
     source_id?:   string | null, // e.g. plaid transaction id, manual transaction id, imported transaction id
     source_data?: any // e.g. plaid transaction data, imported transaction data
+	plaid_data?: any | null, // e.g. plaid transaction data, if available
 }
 
 // TODO: POTENTIAL FALSE POSITIVES. I think it is technically possible to have two transactions with the same description and amount on the same day
@@ -178,5 +179,26 @@ export class TransactionUtils {
 		}
 
 		return attributedEvents;
+	}
+
+	/**
+	 * For a given array of transactions, assigns each an order string based on it's date and the order it appears on that day.
+	 * Assumes array is provided in chronological order! Reverse it first if you must.
+	 * Date order looks like this: "2025-04-12-01" (e.g. 01 for the first transaction of the day).
+	 * @param transactions 
+	 * @returns 
+	 */
+	public static assignDateOrders<T extends {date: DelfiDate}>(transactions: Array<T>): Array<T & {date_order: string}> {
+		const dateTallies = new Map<string, number>();
+		return transactions.map(transaction => {
+			const dateKey = transaction.date.toString();
+			const order = dateTallies.get(dateKey) || 0;
+			dateTallies.set(dateKey, order + 1);
+			const date_order = `${dateKey}-${String(order + 1).padStart(2, '0')}`;
+			return {
+				...transaction,
+				date_order
+			};
+		});
 	}
 }

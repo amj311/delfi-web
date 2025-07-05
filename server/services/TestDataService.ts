@@ -1,5 +1,5 @@
-import { colors, MONTHS, TagColor } from "../../delfi-core/utils/constants";
-import { categoryByName, flatCategoriesMap } from "../../delfi-core/models/systemCategories";
+import { MONTHS, TagColor } from "../../delfi-core/utils/constants";
+import { categoryByName } from "../../delfi-core/models/systemCategories";
 import { BudgetType, RecurrenceType, type Budget } from "../../delfi-core/models/Budget";
 import { date } from "../../delfi-core/utils/dateUtils";
 import { type Account, type Institution } from "../../delfi-core/models/Account";

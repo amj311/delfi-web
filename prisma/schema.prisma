@@ -323,6 +323,7 @@ model Transaction {
     source      String // e.g. "plaid", "manual", "imported"
     source_id   String? // e.g. plaid transaction id, manual transaction id, imported transaction id
     source_data Json? // e.g. plaid transaction data, imported transaction data
+    plaid_data  Json? // e.g. plaid transaction data, if available
 
     // A single transaction cannot be split between accounts
     Account      Account                  @relation(fields: [account_id], references: [account_id])

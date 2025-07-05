@@ -9,6 +9,8 @@ import { TransactionDao } from 'server/data/TransactionDao';
 import { MerchantDao } from 'server/data/MerchantDao';
 import { TestDataService } from './TestDataService';
 import { CategoryDao } from 'server/data/CategoryDao';
+import { TransactionUtils } from 'delfi-core/models/Transaction';
+import { date } from 'delfi-core/utils/dateUtils';
 
 // Plaid Items define a single workspace's connection to a financial institution
 export type PlaidItem = {
@@ -433,13 +435,18 @@ export const PlaidService = {
 
 		for (const item of workspacePlaidItems) {
 			try {
-				const transactions = await this.getItemTransactions(workspace_id, item.plaid_item_id);
+				const plaidTransactions = await this.getItemTransactions(workspace_id, item.plaid_item_id);
+				const transactions = TransactionUtils.assignDateOrders(plaidTransactions.reverse().map(transaction => ({
+					...transaction,
+					date: date(transaction.date),
+				})));
 				for (const transaction of transactions) {
 					// Look up a transaction match in DB
 					const matchingTransactions = await TransactionDao.matchAllMany(workspace_id, {
 						account_id: accountIds[transaction.account_id] || '',
 						amount: -transaction.amount, // plaid transactions come negative!
 						date: transaction.date as any,
+						date_order: transaction.date_order,
 					});
 
 					// If a match is found, update the transaction with Plaid data
@@ -468,7 +475,8 @@ export const PlaidService = {
 								postal: match.location?.postal || transaction.location?.postal as string || '',
 								lat: match.location?.lat || transaction.location?.lat || null,
 								lon: match.location?.lon || transaction.location?.lon || null,
-							}
+							},
+							plaid_data: transaction,
 						});
 
 						// Assign attribution info if the transaction has not been split
