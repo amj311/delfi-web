@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import Drawer from 'primevue/drawer';
-import TransactionAvatar from './TransactionAvatar.vue';
 import type { Transaction } from 'delfi-core/models/Transaction';
 import Currency from './Currency.vue';
 import { useAccountStore } from '@/stores/account.store';
@@ -13,6 +12,7 @@ import { useDelfiStore } from '@/stores/delfi.store';
 import TransactionAttributionDrawer, { type Step } from './TransactionAttributionDrawer.vue';
 import { usePrompt } from './utils/PromptModal.vue';
 import { jsonCopy } from 'delfi-core/utils/miscUtils';
+import AttributionAvatar from './AttributionAvatar.vue';
 
 const transaction = defineModel<Transaction>('transaction', {
 	required: true,
@@ -153,7 +153,7 @@ async function promptForMemo(attribution: Transaction["Attributions"][number]) {
 					/>
 				</template>
 				<div class="flex align-items-center gap-3">
-					<div><TransactionAvatar :event="avatarDetails" :size="3" /></div>
+					<div><AttributionAvatar :event="avatarDetails" :size="3" /></div>
 					<div class="flex-frow-1 min-w-0">
 						<h3 class="m-0 text-ellipsis w-full min-w-0">{{ transaction.Merchant?.name || transaction.original_description }}</h3>
 						<div>{{ transaction.date.formatFull() }}</div>

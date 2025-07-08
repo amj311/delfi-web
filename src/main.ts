@@ -1,3 +1,6 @@
+import PrimeVue from 'primevue/config';
+import Aura from '@primeuix/themes/aura';
+import 'primeicons/primeicons.css'
 import 'primeflex/primeflex.css'
 import './assets/main.css'
 
@@ -9,10 +12,7 @@ import App from './App.vue'
 import router from './router/router'
 import { AuthService } from './services/authService'
 
-import 'primeicons/primeicons.css'
 
-import PrimeVue from 'primevue/config';
-import Aura from '@primeuix/themes/aura';
 
 import ConfirmationService from 'primevue/confirmationservice';
 import ToastService from 'primevue/toastservice';

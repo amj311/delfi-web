@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, ref } from 'vue';
 import Drawer from 'primevue/drawer';
 import { useRouter } from 'vue-router';
-import TransactionAvatar from './TransactionAvatar.vue';
+import AttributionAvatar from './AttributionAvatar.vue';
 import type { Transaction } from 'delfi-core/models/Transaction';
 import Currency from './Currency.vue';
 import { useAccountStore } from '@/stores/account.store';

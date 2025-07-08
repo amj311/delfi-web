@@ -9,7 +9,7 @@ import { TransactionUtils, type Transaction } from 'delfi-core/models/Transactio
 import Icon from '@/components/Icon.vue';
 import { colors } from 'delfi-core/utils/constants';
 import CategoryAvatar from '@/components/CategoryAvatar.vue';
-import TransactionAvatar from '@/components/TransactionAvatar.vue';
+import AttributionAvatar from '@/components/AttributionAvatar.vue';
 import { instantiateDates } from 'delfi-core/utils/dateUtils';
 
 const route = useRoute();
@@ -278,7 +278,7 @@ const attributedEvents = computed(() => {
 						<tbody>
 							<tr v-for="(event, index) in attributedEvents" :key="index">
 								<td>
-									<TransactionAvatar :event="event" class="transaction-avatar" />
+									<AttributionAvatar :event="event" class="transaction-avatar" />
 								</td>
 								<td>{{ formatDate(event.date) }}</td>
 								<td>

@@ -178,6 +178,8 @@ export class Delfi {
 		}));
 		const spendingCategories = categorySummaries.filter(c => c.category.type === 'EXPENSE');
 		const spendingSummary = {
+			// spending budgets are any budgets not in an income or transfer category
+			budgets: budgetSummaries.filter(b => !b.budget.category_id || b.budget.Category?.type === 'EXPENSE'),
 			categories: spendingCategories,
 			tally: RealityTally.fromTallies(spendingCategories.map(c => c.tally)),
 		};
@@ -220,6 +222,7 @@ export class Delfi {
 			attributionEvents: monthAttributionEvents,
 			budgetSummaries: budgetSummaries,
 			totalTally: new RealityTally(monthBudgetEvents, monthAttributionEvents),
+			allUnbudgeted: new RealityTally([], monthAttributionEvents.filter(t => !t.budget_id && (!t.category_id || t.Category?.type === 'EXPENSE'))),
 			accountSummaries,
 			categorySummaries,
 			incomeSummary,

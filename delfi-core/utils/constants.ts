@@ -324,6 +324,11 @@ export const Icons = {
 		source: "material-symbols",
 		source_id: "local_dining",
 	},
+	"wallet": {
+		name: "wallet",
+		source: "material-symbols",
+		source_id: "account_balance_wallet",
+	},
 } as const;
 
 export type IconName = keyof typeof Icons;

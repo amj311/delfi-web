@@ -7,6 +7,7 @@ import { useBudgetStore } from '@/stores/budget.store';
 import { date } from 'delfi-core/utils/dateUtils';
 import { computed, onBeforeMount, reactive } from 'vue';
 import { RouterView } from 'vue-router'
+import Icon from '@/components/Icon.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -38,9 +39,18 @@ onBeforeMount(() => {
 	<div class="app-container">
 		<header class="app-header">
 			<nav class="main-nav">
-				<router-link to="/month" class="nav-link">Budget</router-link>
-				<router-link to="/accounts" class="nav-link">Accounts</router-link>
-				<router-link to="/categories" class="nav-link">Categories</router-link>
+				<router-link to="/month" class="nav-link flex align-items-center gap-1">
+					<Icon name="wallet" />
+					Budget
+				</router-link>
+				<router-link to="/accounts" class="nav-link flex align-items-center gap-1">
+					<Icon name="bank" />
+					Accounts
+				</router-link>
+				<router-link to="/categories" class="nav-link flex align-items-center gap-1">
+					<Icon name="category" />
+					Categories
+				</router-link>
 			</nav>
 		</header>
 		<main class="app-content">
@@ -64,7 +74,6 @@ onBeforeMount(() => {
 
 .main-nav {
 	display: flex;
-	gap: 1rem;
 }
 
 .nav-link {

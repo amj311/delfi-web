@@ -3,7 +3,7 @@ import { useCategoryStore } from '@/stores/category.store';
 import type { Category } from 'delfi-core/models/Category';
 import { colors } from 'delfi-core/utils/constants';
 import { computed } from 'vue';
-import Icon from './Icon.vue';
+import AttributionAvatar from './AttributionAvatar.vue';
 
 const categoryStore = useCategoryStore();
 
@@ -17,16 +17,11 @@ const category = computed(() => props.category || categoryStore.getCategoryById(
 </script>
 
 <template>
-	<div class="category-avatar flex align-items-center justify-content-center" :style="{ backgroundColor: colors[category.color || category.ParentCategory?.color || ''] || '#aaaaaf' }">
-		<Icon :name="category.icon || category.ParentCategory?.icon || 'category'" color="#fff" />
-	</div>
+	<AttributionAvatar
+		:icon="category.icon || category.ParentCategory?.icon || 'category'"
+		:background="colors[category.color || category.ParentCategory?.color || ''] || '#aaaaaf'"
+	/>
 </template>
 
 <style scoped>
-.category-avatar {
-	aspect-ratio: 1;
-	width: 100%;
-	height: 100%;
-	border-radius: 50%;
-}
 </style>

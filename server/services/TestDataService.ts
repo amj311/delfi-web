@@ -270,7 +270,7 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-06-18', frequency: 'MONTHLY', byDayOfMonth: [18] },
-					amount: -215,
+					amount: -240,
 				}],
 			},
 			{
