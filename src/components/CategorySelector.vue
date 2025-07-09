@@ -34,7 +34,7 @@ const groups = computed(() => useCategoryStore().categoriesByGroup
 		...group,
 		categories: group.categories
 			.filter(cat => !props.allowedCategories || props.allowedCategories.some(c => c.category_id === cat.category_id))
-			.filter(c => !search.value.trim() || c.name.toLowerCase().includes(search.value.trim().toLowerCase()))
+			.filter(c => !search.value.trim() || c.name.toLowerCase().includes(search.value.trim().toLowerCase()) || group.name.toLowerCase().includes(search.value.trim().toLowerCase()))
 	}))
 	.filter(group => group.categories.length > 0)
 );
