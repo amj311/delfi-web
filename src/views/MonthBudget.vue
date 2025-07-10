@@ -25,6 +25,7 @@ import AccordionPanel from 'primevue/accordionpanel';
 import AccordionHeader from 'primevue/accordionheader';
 import Knob from 'primevue/knob';
 import AttributionAvatar from '@/components/AttributionAvatar.vue';
+import { asAny } from 'delfi-core/utils/miscUtils';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -159,12 +160,7 @@ const dailyEvents = computed(() => {
 		eventsByDay[dayKey].push(event);
 	}
 	return Object.entries(eventsByDay).flatMap(([, events]) =>
-		events.sort(
-			(a, b) =>
-				a.sourceTransaction.date_order?.localeCompare(
-					b.sourceTransaction.date_order || ''
-				) || 0
-		)
+		events.sort((a, b) => a.sourceTransaction.date_order?.localeCompare(b.sourceTransaction.date_order || '') || 0)
 	);
 });
 
@@ -174,12 +170,11 @@ function budgetProgress(budgetSummary) {
 		dialPercent: 0, // modified to render within a dial component
 		pace: 0,
 		color: colors.lime2,
-	}
+	};
 	if (!budgetSummary.tally.budgetedNet) {
 		res.percent = 101;
 		res.pace = 0;
-	}
-	else {
+	} else {
 		// allow the budget target to be either positive or negative
 		// compute percentages with the absolute value, then adjust the sign if needed
 		const budgetedNet = Math.abs(budgetSummary.tally.budgetedNet);
@@ -243,11 +238,7 @@ function budgetProgress(budgetSummary) {
 							<div class="flex-grow-1"></div>
 							<div class="flex align-items-center">
 								<small v-if="summary.netChange !== 0">
-									<Currency
-										:amount="summary.netChange"
-										mode="net_change"
-										hideCurrency
-									/>
+									<Currency :amount="summary.netChange" mode="net_change" hideCurrency />
 									&emsp13;
 								</small>
 								<span class="text-semibold"
@@ -255,24 +246,15 @@ function budgetProgress(budgetSummary) {
 								/></span>
 							</div>
 						</div>
-						<small
-							v-for="partition of summary.partitions"
-							class="flex align-items-center"
-						>
+						<small v-for="partition of summary.partitions" class="flex align-items-center">
 							&emsp13;- {{ partition.name }}
 							<div class="flex-grow-1"></div>
 							<div class="flex align-items-center">
 								<small v-if="partition.netChange !== 0">
-									<Currency
-										:amount="partition.netChange"
-										mode="net_change"
-										hideCurrency
-									/>
+									<Currency :amount="partition.netChange" mode="net_change" hideCurrency />
 									&emsp13;
 								</small>
-								<span
-									><Currency :amount="partition.endingBalance" mode="balance"
-								/></span>
+								<span><Currency :amount="partition.endingBalance" mode="balance" /></span>
 							</div>
 						</small>
 					</div>
@@ -290,23 +272,16 @@ function budgetProgress(budgetSummary) {
 				<h3>Income</h3>
 				<div>
 					Total ......
-					<Currency
-						:amount="state.summaryData.incomeSummary?.tally.budgetedNet || 0"
-						mode="net_change"
-					/>
+					<Currency :amount="state.summaryData.incomeSummary?.tally.budgetedNet || 0" mode="net_change" />
 				</div>
 				<div class="list">
 					<div
-						v-for="{ budget, budgetEvents } of state.summaryData.incomeSummary?.tally
-							.budgetSummaries"
+						v-for="{ budget, budgetEvents } of state.summaryData.incomeSummary?.tally.budgetSnapshots"
 						class="list-row"
 					>
 						<div class="transaction-main-line">
 							{{ budget.memo }}
-							<Currency
-								:amount="budgetEvents.reduce((acc, o) => acc + o.amount, 0)"
-								mode="transaction"
-							/>
+							<Currency :amount="budgetEvents.reduce((acc, o) => acc + o.amount, 0)" mode="transaction" />
 						</div>
 						<small>
 							{{ accountStore.getAccountName(budget.account_id) }}
@@ -320,8 +295,7 @@ function budgetProgress(budgetSummary) {
 				<h3>Savings and Transfers</h3>
 				<div class="list">
 					<div
-						v-for="budgetEvent of state.summaryData.transferSummary.tally
-							.budgetEventsWithoutTransferCopies"
+						v-for="budgetEvent of state.summaryData.transferSummary.tally.budgetEventsWithoutTransferCopies"
 						class="list-row"
 					>
 						<div class="transaction-main-line">
@@ -329,11 +303,7 @@ function budgetProgress(budgetSummary) {
 							<Currency :amount="budgetEvent.amount" />
 						</div>
 						<small>
-							{{
-								accountStore.getAccountName(
-									budgetEvent.sourceBudget.origin_account_id!
-								)
-							}}
+							{{ accountStore.getAccountName(budgetEvent.sourceBudget.origin_account_id!) }}
 							→
 							{{ accountStore.getAccountName(budgetEvent.account_id) }}
 						</small>
@@ -354,35 +324,134 @@ function budgetProgress(budgetSummary) {
 
 			<br />
 			<div>
-				<div
-					v-for="{ groupId, tally } of state.summaryData.groupSummaries"
-					class="group-summary"
-				>
+				<div v-for="{ groupId, tally } of state.summaryData.groupSummaries" class="group-summary">
 					<div class="title flex align-items-center gap-1">
 						<Icon name="tag" fill :color="groupStore.getGroupById(groupId)?.color" />
 						<b>{{ groupStore.getGroupById(groupId)?.name }}</b>
 						<div class="flex-grow-1"></div>
 						<div class="flex align-items-center gap-1">
-							<Currency
-								:amount="tally.attributedNet || 0"
-								mode="transaction"
-								class="text-semibold"
-							/>
-							<small>/</small>
-							<small>
-								<Currency :amount="tally.budgetedNet || 0" mode="transaction" />
-							</small>
+							<Currency :amount="tally.attributedNet || 0" mode="transaction" class="text-semibold" />
 						</div>
 					</div>
 					<div>
-						<div v-for="event of tally.budgetEvents" class="list-row">
-							<div class="transaction-main-line">
-								{{ event.memo }}
-								<Currency :amount="event.amount" mode="transaction" />
+						<template v-for="budgetSnapshot of tally.budgetSnapshots">
+							<template v-if="budgetSnapshot.tally.hasInfo">
+								<div class="flex hover-show-trigger list-row gap-2">
+									<div class="flex align-items-center gap-2">
+										<i class="pi pi-wallet" />
+										{{ budgetSnapshot.budget.memo }}
+									</div>
+									<div class="flex-grow-1"></div>
+									<!-- <Currency :amount="budgetSnapshot.tally.attributedNet" mode="transaction" /> -->
+								</div>
+								<div
+									v-for="childItem of budgetSnapshot.childItemEvents"
+									class="list-row flex align-items-center gap-3"
+								>
+									<AttributionAvatar :categoryId="childItem.category_id" :size="1.9">
+										<template #badge>
+											<Icon name="checklist" />
+										</template>
+									</AttributionAvatar>
+									<div class="flex flex-column w-full min-w-0">
+										<div class="transaction-main-line">
+											<div class="text-ellipsis w-full min-w-0">
+												{{ childItem.displayName }}
+											</div>
+											<div style="flex-grow: 1"></div>
+											<div style="display: flex; align-items: center; gap: 4px">
+												<Currency :amount="childItem.tally.attributedNet" mode="transaction" />
+											</div>
+											<Knob
+												v-model="
+													{
+														percent:
+															(childItem.tally.attributedNet /
+																childItem.tally.budgetedNet) *
+															100,
+													}.percent
+												"
+												:min="0"
+												:max="100"
+												:size="20"
+												:strokeWidth="20"
+												:valueColor="colors.lime2"
+												:readonly="true"
+												:showValue="false"
+											/>
+										</div>
+										<!-- <small>
+											{{
+												childItem.sourceBudget?.memo ||
+												useCategoryStore().getCategoryById(childItem.category_id).name
+											}}
+											-
+											{{ accountStore.getAccountName(childItem.account_id) }}
+										</small> -->
+									</div>
+								</div>
+								<template v-for="event of budgetSnapshot.notChildAttributions">
+									<div
+										class="list-row flex align-items-center gap-3"
+										@click="viewingTransaction = event.sourceTransaction"
+									>
+										<AttributionAvatar :event="event" :size="1.9" />
+										<div class="flex flex-column w-full min-w-0">
+											<div class="transaction-main-line">
+												<div class="text-ellipsis w-full min-w-0">
+													{{ event.displayName }}
+												</div>
+												<div style="flex-grow: 1"></div>
+												<div style="display: flex; align-items: center; gap: 4px">
+													<Currency :amount="event.amount" mode="transaction" />
+												</div>
+											</div>
+											<small>
+												{{
+													event.Budget?.memo ||
+													useCategoryStore().getCategoryById(event.category_id).name
+												}}
+												-
+												{{ accountStore.getAccountName(event.account_id) }}
+											</small>
+										</div>
+									</div>
+								</template>
+							</template>
+						</template>
+						<div
+							v-if="tally.unBudgetedAttributions.length > 0"
+							class="flex align-items-center list-row gap-2"
+						>
+							<i class="pi pi-exclamation-triangle" />
+							Unbudgeted
+							<div class="flex-grow-1"></div>
+							<!-- <Currency :amount="tally.unBudgetedNet" mode="transaction" /> -->
+						</div>
+						<div
+							v-for="event of tally.unBudgetedAttributions"
+							class="list-row flex align-items-center gap-3"
+							@click="viewingTransaction = event.sourceTransaction"
+						>
+							<AttributionAvatar :event="event" :size="1.9" />
+							<div class="flex flex-column w-full min-w-0">
+								<div class="transaction-main-line">
+									<div class="text-ellipsis w-full min-w-0">
+										{{ event.displayName }}
+									</div>
+									<div style="flex-grow: 1"></div>
+									<div style="display: flex; align-items: center; gap: 4px">
+										<Currency :amount="event.amount" mode="transaction" />
+									</div>
+								</div>
+								<small>
+									{{
+										event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name
+									}}
+									-
+									{{ accountStore.getAccountName(event.account_id) }}
+								</small>
 							</div>
-							<small>
-								{{ accountStore.getAccountName(event.sourceBudget.account_id) }}
-							</small>
 						</div>
 					</div>
 				</div>
@@ -392,46 +461,62 @@ function budgetProgress(budgetSummary) {
 			<div>
 				<h3>Spending</h3>
 				Total spending:
-				<Currency
-					:amount="state.summaryData.spendingSummary.tally.attributedNet"
-					mode="transaction"
-				/>
+				<Currency :amount="state.summaryData.spendingSummary.tally.attributedNet" mode="transaction" />
 				&nbsp;/&nbsp;
-				<Currency
-					:amount="state.summaryData.spendingSummary.tally.budgetedNet"
-					mode="transaction"
-				/>
+				<Currency :amount="state.summaryData.spendingSummary.tally.budgetedNet" mode="transaction" />
 				<br />
 				<br />
 				<Accordion multiple>
 					<template v-for="(category, i) of state.summaryData.spendingSummary.categories">
 						<AccordionPanel :value="i" v-if="category.tally.hasInfo">
 							<AccordionHeader class="flex align-items-center gap-2">
-									<CategoryAvatar
-										:category="category.category"
-										style="width: 2rem; height: 2rem;"
-									/>
-									<b>{{ category.category.name }}</b>
-									<div class="flex-grow-1"></div>
-									<Currency
-										:amount="category.tally.attributedNet || 0"
-										mode="transaction"
-										class="text-semibold"
-									/>
+								<CategoryAvatar :category="category.category" style="width: 2rem; height: 2rem" />
+								<b>{{ category.category.name }}</b>
+								<div class="flex-grow-1"></div>
+								<Currency
+									:amount="category.tally.attributedNet || 0"
+									mode="transaction"
+									class="text-semibold"
+								/>
 							</AccordionHeader>
-							<AccordionContent>	
-								<template v-for="budgetSummary of category.tally.budgetSummaries">
-									<div class="flex hover-show-trigger list-row gap-2">
-										<div class="flex align-items-center gap-1">
-											<!-- <Icon name="wallet" /> -->
-											{{ budgetSummary.budget.memo }}
+							<AccordionContent>
+								<template v-for="budgetSummary of category.tally.budgetSnapshots">
+									<template v-if="budgetSummary.tally.hasInfo">
+										<div class="flex hover-show-trigger list-row gap-2">
+											<div class="flex align-items-center gap-2">
+												<i class="pi pi-wallet" />
+												{{ budgetSummary.budget.memo }}
+											</div>
+											<div class="flex-grow-1"></div>
+											<!-- <Currency :amount="budgetSummary.tally.attributedNet" mode="transaction" /> -->
 										</div>
-										<div class="flex-grow-1"></div>
-										<Currency
-											:amount="budgetSummary.tally.attributedNet"
-											mode="transaction"
-										/>
-									</div>
+										<div
+											v-for="event of budgetSummary.tally.attributionEvents"
+											class="list-row flex align-items-center gap-3"
+											@click="viewingTransaction = event.sourceTransaction"
+										>
+											<AttributionAvatar :event="event" :size="1.9" />
+											<div class="flex flex-column w-full min-w-0">
+												<div class="transaction-main-line">
+													<div class="text-ellipsis w-full min-w-0">
+														{{ event.displayName }}
+													</div>
+													<div style="flex-grow: 1"></div>
+													<div style="display: flex; align-items: center; gap: 4px">
+														<Currency :amount="event.amount" mode="transaction" />
+													</div>
+												</div>
+												<small>
+													{{
+														event.Budget?.memo ||
+														useCategoryStore().getCategoryById(event.category_id).name
+													}}
+													-
+													{{ accountStore.getAccountName(event.account_id) }}
+												</small>
+											</div>
+										</div>
+									</template>
 								</template>
 								<div
 									v-if="category.tally.unBudgetedAttributions.length > 0"
@@ -440,23 +525,34 @@ function budgetProgress(budgetSummary) {
 									<i class="pi pi-exclamation-triangle" />
 									Unbudgeted
 									<div class="flex-grow-1"></div>
-									<Currency
-										:amount="category.tally.unBudgetedNet"
-										mode="transaction"
-									/>
+									<Currency :amount="category.tally.unBudgetedNet" mode="transaction" />
 								</div>
-								<!-- <template v-for="event of category.tally.unBudgetedAttributions">
-									<div
-										class="flex hover-show-trigger list-row gap-2"
-										@click="viewingTransaction = event.sourceTransaction"
-									>
-										<div class="flex align-items-center">
-											{{ event.displayName }}
+								<div
+									v-for="event of category.tally.unBudgetedAttributions"
+									class="list-row flex align-items-center gap-3"
+									@click="viewingTransaction = event.sourceTransaction"
+								>
+									<AttributionAvatar :event="event" :size="1.9" />
+									<div class="flex flex-column w-full min-w-0">
+										<div class="transaction-main-line">
+											<div class="text-ellipsis w-full min-w-0">
+												{{ event.displayName }}
+											</div>
+											<div style="flex-grow: 1"></div>
+											<div style="display: flex; align-items: center; gap: 4px">
+												<Currency :amount="event.amount" mode="transaction" />
+											</div>
 										</div>
-										<div class="flex-grow-1"></div>
-										<Currency :amount="event.amount" mode="transaction" />
+										<small>
+											{{
+												event.Budget?.memo ||
+												useCategoryStore().getCategoryById(event.category_id).name
+											}}
+											-
+											{{ accountStore.getAccountName(event.account_id) }}
+										</small>
 									</div>
-								</template> -->
+								</div>
 							</AccordionContent>
 						</AccordionPanel>
 					</template>
@@ -471,13 +567,10 @@ function budgetProgress(budgetSummary) {
 				<Accordion multiple>
 					<AccordionPanel value="0">
 						<AccordionHeader class="flex align-items-center gap-2">
-							<AttributionAvatar icon="question-circle" style="width: 2rem;" />
+							<AttributionAvatar icon="question-circle" :size="2" />
 							<b>Unbudgeted</b>
 							<div class="flex-grow-1"></div>
-							<Currency
-								:amount="state.summaryData.allUnbudgeted.unBudgetedNet"
-								mode="transaction"
-							/>
+							<Currency :amount="state.summaryData.allUnbudgeted.unBudgetedNet" mode="transaction" />
 						</AccordionHeader>
 						<AccordionContent>
 							<template v-for="(event, i) of state.summaryData.allUnbudgeted.unBudgetedAttributions">
@@ -486,10 +579,7 @@ function budgetProgress(budgetSummary) {
 									@click="viewingTransaction = event.sourceTransaction"
 								>
 									<div>
-										<AttributionAvatar
-											:event="event"
-											:size="1.9"
-										/>
+										<AttributionAvatar :event="event" :size="1.9" />
 									</div>
 									<div class="flex flex-column w-full min-w-0">
 										<div class="transaction-main-line">
@@ -511,17 +601,14 @@ function budgetProgress(budgetSummary) {
 										</small>
 									</div>
 								</div>
-							</template>				
+							</template>
 						</AccordionContent>
 					</AccordionPanel>
-					<template v-for="budgetSummary of state.summaryData.spendingSummary.budgets">
-						<AccordionPanel :value="budgetSummary.budget.budget_id">
+					<template v-for="budgetSnapshot of state.summaryData.spendingSummary.budgets">
+						<AccordionPanel :value="budgetSnapshot.budget.budget_id">
 							<AccordionHeader class="flex align-items-center gap-2">
-								<CategoryAvatar
-									:category="budgetSummary.budget.Category"
-									style="width: 2rem; height: 2rem;"
-								/>
-								<b>{{ budgetSummary.budget.memo }}</b>
+								<AttributionAvatar :category="budgetSnapshot.budget.Category" :size="2" />
+								<b>{{ budgetSnapshot.budget.memo }}</b>
 								<div class="flex-grow-1"></div>
 								<div class="flex align-items-center gap-2">
 									<!-- <Currency
@@ -529,14 +616,14 @@ function budgetProgress(budgetSummary) {
 										mode="transaction"
 										class="text-semibold"
 									/> -->
-									{{ Math.floor(budgetProgress(budgetSummary).percent) }}%
+									{{ Math.floor(budgetProgress(budgetSnapshot).percent) }}%
 									<Knob
-										v-model="budgetProgress(budgetSummary).dialPercent"
+										v-model="budgetProgress(budgetSnapshot).dialPercent"
 										:min="0"
 										:max="100"
 										:size="25"
 										:strokeWidth="15"
-										:valueColor="budgetProgress(budgetSummary).color"
+										:valueColor="budgetProgress(budgetSnapshot).color"
 										:readonly="true"
 										:showValue="false"
 									/>
@@ -550,15 +637,58 @@ function budgetProgress(budgetSummary) {
 								</div>
 							</AccordionHeader>
 							<AccordionContent>
-								<template v-for="event of budgetSummary.tally.attributionEvents">
+								<div
+									v-for="childItem of budgetSnapshot.childItemEvents"
+									class="list-row flex align-items-center gap-3"
+								>
+									<AttributionAvatar :categoryId="childItem.category_id" :size="1.9">
+										<template #badge>
+											<Icon name="checklist" />
+										</template>
+									</AttributionAvatar>
+									<div class="flex flex-column w-full min-w-0">
+										<div class="transaction-main-line">
+											<div class="text-ellipsis w-full min-w-0">
+												{{ childItem.displayName }}
+											</div>
+											<div style="flex-grow: 1"></div>
+											<div style="display: flex; align-items: center; gap: 4px">
+												<Currency :amount="childItem.tally.attributedNet" mode="transaction" />
+											</div>
+											<Knob
+												v-model="
+													{
+														percent:
+															(childItem.tally.attributedNet /
+																childItem.tally.budgetedNet) *
+															100,
+													}.percent
+												"
+												:min="0"
+												:max="100"
+												:size="20"
+												:strokeWidth="20"
+												:valueColor="colors.lime2"
+												:readonly="true"
+												:showValue="false"
+											/>
+										</div>
+										<!-- <small>
+											{{
+												childItem.sourceBudget?.memo ||
+												useCategoryStore().getCategoryById(childItem.category_id).name
+											}}
+											-
+											{{ accountStore.getAccountName(childItem.account_id) }}
+										</small> -->
+									</div>
+								</div>
+								<template v-for="event of budgetSnapshot.notChildAttributions">
 									<div
 										class="list-row flex align-items-center gap-3"
 										@click="viewingTransaction = event.sourceTransaction"
 									>
-										<AttributionAvatar
-											:event="event"
-											:size="1.9"
-										/>
+										<AttributionAvatar :event="event" :size="1.9" />
 										<div class="flex flex-column w-full min-w-0">
 											<div class="transaction-main-line">
 												<div class="text-ellipsis w-full min-w-0">
@@ -612,10 +742,7 @@ function budgetProgress(budgetSummary) {
 							@click="viewingTransaction = event.sourceTransaction"
 						>
 							<div>
-								<AttributionAvatar
-									:event="event"
-									style="width: 2.5rem; font-size: 1.2rem"
-								/>
+								<AttributionAvatar :event="event" style="width: 2.5rem; font-size: 1.2rem" />
 							</div>
 							<div class="flex flex-column w-full min-w-0">
 								<div class="transaction-main-line">
@@ -629,8 +756,7 @@ function budgetProgress(budgetSummary) {
 								</div>
 								<small>
 									{{
-										event.Budget?.memo ||
-										useCategoryStore().getCategoryById(event.category_id).name
+										event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name
 									}}
 									-
 									{{ accountStore.getAccountName(event.account_id) }}

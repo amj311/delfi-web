@@ -13,6 +13,8 @@ import TransactionAttributionDrawer, { type Step } from './TransactionAttributio
 import { usePrompt } from './utils/PromptModal.vue';
 import { jsonCopy } from 'delfi-core/utils/miscUtils';
 import AttributionAvatar from './AttributionAvatar.vue';
+import Textarea from 'primevue/textarea';
+import debounce from '@/utils/debounce';
 
 const transaction = defineModel<Transaction>('transaction', {
 	required: true,
@@ -42,6 +44,7 @@ watch(() => transaction.value, async (newTransaction) => {
 	try {
 		await TransactionService.updateTransaction(transaction.value.transaction_id, newTransaction);
 		lastSaved.value = new Date();
+		// TODO only recompute if meaningful changes were made, i.e. not just notes
 		useDelfiStore().reCompute();
 	} catch (error) {
 		console.error('Error saving transaction:', error);
@@ -129,6 +132,19 @@ async function promptForMemo(attribution: Transaction["Attributions"][number]) {
 	}
 }
 
+const notesDraft = ref<string>(transaction.value.notes || '');
+const debounceNotesSave = debounce(
+	() => {
+		transaction.value.notes = notesDraft.value;
+	},
+	1000,
+)
+watch(notesDraft, (newNotes) => {
+	if (newNotes !== transaction.value.notes) {
+		debounceNotesSave();
+	}
+}, { immediate: true });
+
 </script>
 
 <template>
@@ -176,7 +192,7 @@ async function promptForMemo(attribution: Transaction["Attributions"][number]) {
 
 					<div class="row">
 						<label>Memo</label>
-						<Button size="small" text :severity="largestAttribution.memo ? 'contrast' : 'secondary'" class="flex align-items-center gap-2"
+						<Button text :severity="largestAttribution.memo ? 'contrast' : 'secondary'" class="flex align-items-center gap-2"
 							@click="() => promptForMemo(largestAttribution)"
 						>
 							{{ largestAttribution.memo || 'None' }}
@@ -186,7 +202,7 @@ async function promptForMemo(attribution: Transaction["Attributions"][number]) {
 
 					<div class="row">
 						<label>Budget</label>
-						<Button size="small" text :severity="largestAttribution.Budget ? 'contrast' : 'secondary'" class="flex align-items-center gap-2"
+						<Button text :severity="largestAttribution.Budget ? 'contrast' : 'secondary'" class="flex align-items-center gap-2"
 							@click="() => doAttributionDrawer('Budget')"
 						>
 							<template v-if="largestAttribution.Budget">
@@ -201,9 +217,8 @@ async function promptForMemo(attribution: Transaction["Attributions"][number]) {
 
 					<div class="row">
 						<label>Category</label>
-						<Button size="small" text :severity="largestAttribution.Category ? 'contrast' : 'secondary'" class="flex align-items-center gap-2"
+						<Button text :severity="largestAttribution.Category ? 'contrast' : 'secondary'" class="flex align-items-center gap-2"
 							@click="() => doAttributionDrawer('Category')"
-							:disabled="Boolean(largestAttribution.Budget?.category_id)"
 						>
 							<Icon :name="largestAttribution.Category?.icon || largestAttribution.Category?.ParentCategory?.icon || 'question-circle'" />
 							{{ largestAttribution.Category?.name || 'Uncategorized' }}
@@ -212,9 +227,8 @@ async function promptForMemo(attribution: Transaction["Attributions"][number]) {
 
 					<div class="row">
 						<label>Group</label>
-						<Button size="small" text :severity="largestAttribution.Group ? 'contrast' : 'secondary'" class="flex align-items-center gap-2"
+						<Button text :severity="largestAttribution.Group ? 'contrast' : 'secondary'" class="flex align-items-center gap-2"
 							@click="() => doAttributionDrawer('Group')"
-							:disabled="Boolean(largestAttribution.Budget?.group_id)"
 						>
 							<template v-if="largestAttribution.Group">
 								<Icon name="tag" fill :color="largestAttribution.Group.color || '#aaa'" />
@@ -224,6 +238,16 @@ async function promptForMemo(attribution: Transaction["Attributions"][number]) {
 								No Group
 							</template>
 						</Button>
+					</div>
+
+					<div class="row">
+						<label>Notes</label>
+						<Textarea
+							v-model="notesDraft"
+							rows="3"
+							placeholder="Add notes about this transaction..."
+							class="w-full"
+						/>
 					</div>
 				</div>
 
@@ -240,11 +264,14 @@ async function promptForMemo(attribution: Transaction["Attributions"][number]) {
 .details-rows {
 	.row {
 		display: flex;
-		align-items: center;
+		align-items: top;
 		gap: 1rem;
 
 		> label {
 			--width: 7em;
+			--min-height: 2.5rem;
+			min-height: var(--min-height);
+			line-height: var(--min-height);
 			opacity: .75;
 			min-width: var(--width);
 			max-width: var(--width);

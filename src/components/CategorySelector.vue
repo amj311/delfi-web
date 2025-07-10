@@ -80,6 +80,7 @@ const groups = computed(() => useCategoryStore().categoriesByGroup
 	top: 0;
 	padding: 0.5rem 0;
 	background: var(--color-background);
+	z-index: 2;
 
 	> i.pi {
 		position: absolute;

@@ -39,8 +39,8 @@ onBeforeMount(() => {
 	<div class="app-container">
 		<header class="app-header">
 			<nav class="main-nav">
-				<router-link to="/month" class="nav-link flex align-items-center gap-1">
-					<Icon name="wallet" />
+				<router-link to="/month" class="nav-link flex align-items-center gap-2">
+					<i class="pi pi-wallet" />
 					Budget
 				</router-link>
 				<router-link to="/accounts" class="nav-link flex align-items-center gap-1">

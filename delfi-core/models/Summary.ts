@@ -24,87 +24,83 @@ export function netChange(events: { amount: number }[]): number {
 
 /**
  * An accounting of all occurrences of a budget and any real transactions attributed to it within a certain timeframe.
+ * Provided events MAY be only a subset of the occurrence events, i.e. those belonging to a certain category.
  * There will USUALLY be only a single occurrence. When there are multiple, they are likely from triggered budgets rather than scheduled ones, and the occurrences would only be one-off events.
- * Thus it could report over-spending within this budget, but not unattributed spending.
+ * If it has multiple occurrences we'll assume they're just a bunch of one offs and treat them like events of one complete occurrence.
+ * It can report over-spending within this budget, but not unattributed spending.
+ * Created with occurrences because you CAN have a snapshot of an occurrence which has no events in it
  */
 export class BudgetSnapshot {
 	constructor(
-		readonly rangeStart: DelfiDate,
-		readonly rangeEnd: DelfiDate,
+		readonly rangeStart: DelfiDate | null,
+		readonly rangeEnd: DelfiDate | null,
 		readonly budget: Budget,
-		readonly occurrences: BudgetOccurrence[],
+		/** Always just the events applicable to the snapshot (date range or other common attribute) */
+		readonly budgetEvents: BudgetEvent[],
 		readonly attributedEvents: AttributionEvent[],
 	) {}
 
-
-	get budgetEvents(): BudgetEvent[] {
-		return this.occurrences.flatMap(o => o.budgetEvents.filter(e => e.date.isBetweenInclusive(this.rangeStart, this.rangeEnd)));
+	/** Set of occurrences from which the budget events are drawn */
+	get occurrences(): BudgetOccurrence[] {
+		const presentOccurrences = new Set<BudgetOccurrence>();
+		this.budgetEvents.forEach(event => {
+			if (event.sourceOccurrence) {
+				presentOccurrences.add(event.sourceOccurrence);
+			}
+		});
+		return Array.from(presentOccurrences);
 	}
 
-	private totalBefore(events: CommonEvent[]): number {
-		return netChange(events.filter(e => e.date < this.rangeStart));
+	get childItemEvents() {
+		return this.budgetEvents.filter(e => Boolean(e.sourceChildItem)).map(e => {
+			const attributedEvents = this.attributedEvents.filter(a => a.budget_child_item_id === e.sourceChildItem!.budget_child_item_id);
+			return {
+				...e,
+				sourceChildItem: e.sourceChildItem as NonNullable<BudgetChildItem>,
+				attributedEvents,
+				tally: new RealityTally([e], attributedEvents),
+			};
+		});
 	}
 
-	get budgetedBefore(): number {
-		return this.totalBefore(this.budgetEvents);
+	get notChildAttributions(): AttributionEvent[] {
+		return this.attributedEvents.filter(e => !e.budget_child_item_id);
 	}
-	get attributedBefore(): number {
-		return this.totalBefore(this.attributedEvents);
-	}
+
+	// private totalBefore(events: CommonEvent[]): number {
+	// 	return netChange(events.filter(e => e.date < this.rangeStart));
+	// }
+
+	// get budgetedBefore(): number {
+	// 	return this.totalBefore(this.budgetEvents);
+	// }
+	// get attributedBefore(): number {
+	// 	return this.totalBefore(this.attributedEvents);
+	// }
 
 	get tally(): RealityTally {
 		return new RealityTally(this.budgetEvents, this.attributedEvents);
 	}
 
 
-	get budgetedAtEnd(): number {
-		return this.budgetedBefore + this.tally.budgetedNet;
-	}
-	get attributedAtEnd(): number {
-		return this.attributedBefore + this.tally.attributedNet;
-	}
+	// get budgetedAtEnd(): number {
+	// 	return this.budgetedBefore + this.tally.budgetedNet;
+	// }
+	// get attributedAtEnd(): number {
+	// 	return this.attributedBefore + this.tally.attributedNet;
+	// }
 
-	get rangeBudgetRemaining(): number {
-		return this.budgetedAtEnd - this.attributedAtEnd;
-	}
-
-
-	get totalOccurrencesNet(): number {
-		return netChange(this.occurrences);
-	}
-
-	get totalBudgetRemaining(): number {
-		return this.totalOccurrencesNet - this.attributedAtEnd;
-	}
-}
+	// get rangeBudgetRemaining(): number {
+	// 	return this.budgetedAtEnd - this.attributedAtEnd;
+	// }
 
 
-type BudgetEventWithAttributions = BudgetEvent & {
-	tally: RealityTally,
-};
+	// get totalOccurrencesNet(): number {
+	// 	return netChange(this.occurrences);
+	// }
 
-/**
- * Given a collection of both type of events that belong to the same budget, extrapolates info about how the transactions stack up against the budgets.
- * Because budget events are generated on the fly, the assignments have to be through some sort of reproducible unique string.
- * The majority of assignments only need to happen at a budget level, not a specific event. But say we could if we wanted to.
- */
-export class BudgetToRealitySummary {
-	constructor(
-		public readonly budget: Budget,
-		public readonly budgetEvents: BudgetEvent[],
-		public readonly attributionEvents: AttributionEvent[],
-	) {}
-
-	get tally(): RealityTally {
-		return new RealityTally(this.budgetEvents, this.attributionEvents);
-	}
-
-	// get childItems(): Array<RealityTally<BudgetChildItem>> {
-	// 	return this.budget.childItems?.map(item => {
-	// 		const budgetEvents = this.budgetEvents.filter(e => e.sourceChildItem === item);
-	// 		const attributionEvents = this.attributionEvents.filter(e => e.budget_child_item_id === item.budget_child_item_id);
-	// 		return new RealityTally(budgetEvents, attributionEvents, item);
-	// 	}) ?? [];
+	// get totalBudgetRemaining(): number {
+	// 	return this.totalOccurrencesNet - this.attributedAtEnd;
 	// }
 }
 
@@ -155,7 +151,7 @@ export class RealityTally<Grouper = any> {
 		return netChange(this.unBudgetedAttributions);
 	}
 
-	get budgetSummaries() {
+	get budgetSnapshots() {
 		const presentBudgets = new Map<string, Budget>();
 		this.budgetEvents.forEach(event => {
 			presentBudgets.set(event.sourceBudget.budget_id, event.sourceBudget);
@@ -165,7 +161,9 @@ export class RealityTally<Grouper = any> {
 				presentBudgets.set(event.budget_id, event.Budget);
 			}
 		});
-		return Array.from(presentBudgets.entries()).map(([budgetId, budget]) => new BudgetToRealitySummary(
+		return Array.from(presentBudgets.entries()).map(([budgetId, budget]) => new BudgetSnapshot(
+			null, // rangeStart
+			null, // rangeEnd
 			budget,
 			this.budgetEvents.filter(e => e.sourceBudget.budget_id === budgetId),
 			this.attributionEvents.filter(e => e.budget_id === budgetId),

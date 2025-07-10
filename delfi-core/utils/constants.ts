@@ -165,6 +165,11 @@ export const Icons = {
 		source: "material-symbols",
 		source_id: "monitoring",
 	},
+	"checklist": {
+		name: "checklist",
+		source: "material-symbols",
+		source_id: "checklist",
+	},
 	"child": {
 		name: "child",
 		source: "material-symbols",

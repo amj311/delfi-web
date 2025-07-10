@@ -152,19 +152,19 @@ export class Delfi {
 			}
 		}));
 
-		const occurrencesByBudget: Map<Budget, BudgetOccurrence[]> = new Map();
-		monthForecast.occurrences.forEach(event => {
-			const occurrences = occurrencesByBudget.get(event.budget) || [];
-			occurrences.push(event);
-			occurrencesByBudget.set(event.budget, occurrences);
+		const budgetEventsByBudget: Map<Budget, BudgetEvent[]> = new Map();
+		monthBudgetEvents.forEach(event => {
+			const events = budgetEventsByBudget.get(event.sourceBudget) || [];
+			events.push(event);
+			budgetEventsByBudget.set(event.sourceBudget, events);
 		});
-		const budgetSummaries = Array.from(occurrencesByBudget.entries()).map(([budget, occurrences]) => {
+		const budgetSummaries = Array.from(budgetEventsByBudget.entries()).map(([budget, budgetEvents]) => {
 			const attributedEvents = monthAttributionEvents.filter(e => e.budget_id === budget.budget_id && e.date.isBetweenInclusive(monthStart, monthEnd));
 			return new BudgetSnapshot(
 				monthStart,
 				monthEnd,
 				budget,
-				occurrences,
+				budgetEvents,
 				attributedEvents,
 			);
 		});
