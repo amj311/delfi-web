@@ -2,6 +2,8 @@ import { type Budget, type BudgetChildItem, type BudgetEvent, type BudgetOccurre
 import type { AttributionEvent, BudgetableTransactionDetails, Merchant } from "delfi-core/models/Transaction";
 import type { DelfiDate } from "../utils/dateUtils";
 import type { Category } from "./Category";
+import type { Delfi } from "delfi-core/Delfi";
+import type { TransactionFilter } from "delfi-core/services/FilterService";
 
 
 export type CommonEventDetails = BudgetableTransactionDetails & {
@@ -23,6 +25,56 @@ export function netChange(events: { amount: number }[]): number {
 }
 
 /**
+ * The occurrence of a budget, from start to end, with all events attributed to the occurrence within that time.
+ */
+export interface BudgetOccurrenceSummary extends BudgetOccurrence {}
+
+export class BudgetOccurrenceSummary {
+	constructor(
+		readonly occurrence: BudgetOccurrence,
+		readonly attributedEvents: AttributionEvent[],
+	) {
+		Object.assign(this, occurrence); // Copy all properties from occurrence
+	}
+
+	get budgetEvents(): BudgetEventSummary[] {
+		return this.occurrence.budgetEvents.map(event => {
+			// Right now the only link between attributions and specific events are child events.
+			const attributedEvents = this.attributedEvents.filter(a => event.sourceChildItem && a.budget_child_item_id === event.sourceChildItem.budget_child_item_id);
+			return new BudgetEventSummary(this, event, attributedEvents);
+		});
+	}
+	// This setter is just to satisfy the interface, it doesn't actually do anything.
+	set budgetEvents(value: BudgetEventSummary[]) {}
+
+	get tally(): RealityTally {
+		return new RealityTally(this.budgetEvents, this.attributedEvents);
+	}
+
+	snapshot(start: DelfiDate, end: DelfiDate): BudgetSnapshot {
+		const budgetEvents = this.budgetEvents.filter(event => event.date.isBetweenInclusive(start, end));
+		const attributedEvents = this.attributedEvents.filter(event => event.date.isBetweenInclusive(start, end));
+		return new BudgetSnapshot(start, end, this.occurrence.budget, budgetEvents, attributedEvents);
+	}
+}
+
+/** A single budgeted event with an occurrenceSummary and any applicable attributions */
+export interface BudgetEventSummary extends BudgetEvent {};
+export class BudgetEventSummary {
+	constructor (
+		readonly occurrenceSummary: BudgetOccurrenceSummary,
+		readonly budgetEvent: BudgetEvent,
+		readonly attributedEvents: AttributionEvent[],
+	) {
+		Object.assign(this, budgetEvent); // Copy all properties from budgetEvent
+	}
+
+	get tally(): RealityTally {
+		return new RealityTally([this], this.attributedEvents);
+	}
+}
+
+/**
  * An accounting of all occurrences of a budget and any real transactions attributed to it within a certain timeframe.
  * Provided events MAY be only a subset of the occurrence events, i.e. those belonging to a certain category.
  * There will USUALLY be only a single occurrence. When there are multiple, they are likely from triggered budgets rather than scheduled ones, and the occurrences would only be one-off events.
@@ -36,7 +88,7 @@ export class BudgetSnapshot {
 		readonly rangeEnd: DelfiDate | null,
 		readonly budget: Budget,
 		/** Always just the events applicable to the snapshot (date range or other common attribute) */
-		readonly budgetEvents: BudgetEvent[],
+		readonly budgetEvents: BudgetEventSummary[],
 		readonly attributedEvents: AttributionEvent[],
 	) {}
 
@@ -57,8 +109,7 @@ export class BudgetSnapshot {
 			return {
 				...e,
 				sourceChildItem: e.sourceChildItem as NonNullable<BudgetChildItem>,
-				attributedEvents,
-				tally: new RealityTally([e], attributedEvents),
+				rangeTally: new RealityTally([e], attributedEvents),
 			};
 		});
 	}
@@ -111,7 +162,7 @@ export class BudgetSnapshot {
  */
 export class RealityTally<Grouper = any> {
 	constructor(
-		public readonly budgetEvents: BudgetEvent[] = [],
+		public readonly budgetEvents: BudgetEventSummary[] = [],
 		/** ALL attribution events, both budgeted and unbudgeted */
 		public readonly attributionEvents: AttributionEvent[] = [],
 		public readonly grouper?: Grouper,
@@ -124,7 +175,11 @@ export class RealityTally<Grouper = any> {
 
 	get unBudgetedAttributions(): AttributionEvent[] {
 		// ??? Does it need to be assigned to one of the specific budgets?
-		return this.attributionEvents.filter(e => !e.budget_id);
+		return this.attributionEvents.filter(e => !e.budget_id).sort((a, b) => {
+			const aParentCategory = a.Category?.ParentCategory ? a.Category!.ParentCategory.name : a.Category?.name || 'Uncategorized';
+			const bParentCategory = b.Category?.ParentCategory ? b.Category!.ParentCategory.name : b.Category?.name || 'Uncategorized';
+			return aParentCategory.localeCompare(bParentCategory);
+		});
 	}
 
 
@@ -167,7 +222,11 @@ export class RealityTally<Grouper = any> {
 			budget,
 			this.budgetEvents.filter(e => e.sourceBudget.budget_id === budgetId),
 			this.attributionEvents.filter(e => e.budget_id === budgetId),
-		));
+		)).sort((a, b) => {
+			const aParentCategory = a.budget.Category?.ParentCategory ? a.budget.Category!.ParentCategory.name : a.budget.Category?.name || 'Uncategorized';
+			const bParentCategory = b.budget.Category?.ParentCategory ? b.budget.Category!.ParentCategory.name : b.budget.Category?.name || 'Uncategorized';
+			return aParentCategory.localeCompare(bParentCategory);
+		});
 	}
 
 

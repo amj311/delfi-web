@@ -2,7 +2,6 @@
 import { useDelfiStore } from '@/stores/delfi.store';
 import { useAccountStore } from '@/stores/account.store';
 import { computed, reactive, ref, onMounted, watch } from 'vue';
-import Button from 'primevue/button';
 import Forecast from '../../delfi-core/models/Forecast';
 import { type DelfiDate, date } from '../../delfi-core/utils/dateUtils';
 import Currency from '@/components/Currency.vue';
@@ -25,7 +24,6 @@ import AccordionPanel from 'primevue/accordionpanel';
 import AccordionHeader from 'primevue/accordionheader';
 import Knob from 'primevue/knob';
 import AttributionAvatar from '@/components/AttributionAvatar.vue';
-import { asAny } from 'delfi-core/utils/miscUtils';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -81,6 +79,8 @@ onMounted(async () => {
 			params: { month: formatMonthForUrl(state.viewingMonth) },
 		});
 	}
+
+	state.summaryData = await getSummary(state.viewingMonth);
 });
 
 // Watch for route changes to update the view
@@ -92,7 +92,6 @@ watch(
 			state.summaryData = await getSummary(state.viewingMonth);
 		}
 	},
-	{ immediate: true }
 );
 
 watch(
@@ -360,14 +359,14 @@ function budgetProgress(budgetSummary) {
 											</div>
 											<div style="flex-grow: 1"></div>
 											<div style="display: flex; align-items: center; gap: 4px">
-												<Currency :amount="childItem.tally.attributedNet" mode="transaction" />
+												<Currency :amount="childItem.rangeTally.attributedNet" mode="transaction" />
 											</div>
 											<Knob
 												v-model="
 													{
 														percent:
-															(childItem.tally.attributedNet /
-																childItem.tally.budgetedNet) *
+															(childItem.rangeTally.attributedNet /
+																childItem.rangeTally.budgetedNet) *
 															100,
 													}.percent
 												"
@@ -486,6 +485,8 @@ function budgetProgress(budgetSummary) {
 											<div class="flex align-items-center gap-2">
 												<i class="pi pi-wallet" />
 												{{ budgetSummary.budget.memo }}
+												{{ budgetSummary.attributedEvents.length }}
+												{{ budgetSummary.budgetEvents.length }}
 											</div>
 											<div class="flex-grow-1"></div>
 											<!-- <Currency :amount="budgetSummary.tally.attributedNet" mode="transaction" /> -->
@@ -653,14 +654,14 @@ function budgetProgress(budgetSummary) {
 											</div>
 											<div style="flex-grow: 1"></div>
 											<div style="display: flex; align-items: center; gap: 4px">
-												<Currency :amount="childItem.tally.attributedNet" mode="transaction" />
+												<Currency :amount="childItem.rangeTally.attributedNet" mode="transaction" />
 											</div>
 											<Knob
 												v-model="
 													{
 														percent:
-															(childItem.tally.attributedNet /
-																childItem.tally.budgetedNet) *
+															(childItem.rangeTally.attributedNet /
+																childItem.rangeTally.budgetedNet) *
 															100,
 													}.percent
 												"

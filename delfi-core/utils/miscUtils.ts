@@ -33,3 +33,29 @@ export const asAny = <T>(value: T): any => {
 export const jsonCopy = <T>(value: T): T => {
 	return JSON.parse(JSON.stringify(value));
 }
+
+
+export class PromiseQueue {
+	private queue: Array<() => Promise<any>> = [];
+
+	public add<T>(promiseFn: () => Promise<T>): Promise<T> {
+		return new Promise((resolve, reject) => {
+			this.queue.push(() => promiseFn().then(resolve).catch(reject));
+			if (this.queue.length === 1) {
+				this.processQueue();
+			}
+		});
+	}
+
+	private async processQueue() {
+		while (this.queue.length > 0) {
+			const next = this.queue[0];
+			try {
+				await next();
+			} catch (error) {
+				console.error('Error processing queue:', error);
+			}
+			this.queue.shift();
+		}
+	}
+}

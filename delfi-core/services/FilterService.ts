@@ -12,6 +12,7 @@ export type MatchingRule = {
 
 export type TransactionFilter = MatchingRule[];
 type Filterable = BudgetedTransactionDetails | ScheduledBudget | BudgetEvent | AttributionEvent;
+type Accumulatable = Filterable & { amount: number };
 
 const FilterService = {
 	matches(filter: TransactionFilter, transaction: Filterable): boolean {
@@ -56,9 +57,24 @@ const FilterService = {
 		return transactions.filter(transaction => this.matches(filter, transaction));
 	},
 
-	accumulate(transactions: Array<BudgetEvent>, filter: TransactionFilter): number {
+	accumulate(transactions: Array<Accumulatable>, filter: TransactionFilter): number {
 		const filteredTransactions = this.filter(transactions, filter);
 		return filteredTransactions.reduce((acc, transaction) => acc + transaction.amount, 0);
 	},
+
+	/**
+	 * Computes the accumulation of all transactions up to the given date BUT NOT INCLUDING, filtered by the provided filter.
+	 * @param events
+	 * @param date 
+	 * @param filter DO NOT INCLUDE DATES. These will be automatically computed.
+	 */
+	accumulateUpTo(events: Array<Accumulatable>, date: DelfiDate, filter: TransactionFilter = []) {
+		const thisFilter: TransactionFilter = [
+			...filter,
+			{ property: 'date', operator: 'lt', operand: date },
+		];
+		const matchingEvents = FilterService.filter(events, thisFilter);
+		return this.accumulate(matchingEvents, thisFilter);
+	}
 }
 export default FilterService;

@@ -12,7 +12,8 @@ import { date, type DelfiDate, instantiateDates } from "./utils/dateUtils";
 import type { TransactionFilter } from "./services/FilterService";
 import FilterService from "./services/FilterService";
 import { TransactionUtils, type AttributionEvent, type Transaction } from "./models/Transaction";
-import { BudgetSnapshot, RealityTally } from "./models/Summary";
+import { BudgetOccurrenceSummary, BudgetSnapshot, RealityTally, type BudgetEventSummary } from "./models/Summary";
+import { jsonCopy, PromiseQueue } from "./utils/miscUtils";
 
 export type DelfiConfig = {
 	readonly accounts: Account[],
@@ -32,9 +33,9 @@ export interface Delfi extends DelfiConfig {}
 
 export class Delfi {
 	public forecast!: Forecast;
-	private loadedTransactions: Array<Transaction> = [];
-	private attributedEvents: Array<AttributionEvent> = [];
-	private currentTransactionStart: DelfiDate | null = null;
+	private transactionSource!: TransactionSource;
+	private budgetOccurrenceSummaries: Map<string, BudgetOccurrenceSummary> = new Map();
+	// private budgetEventSummaries: Map<string, BudgetEventSummary> = new Map();
 
 	constructor(config?: DelfiConfig) {
 		if (config) {
@@ -43,13 +44,15 @@ export class Delfi {
 	}
 
 	public init(config: DelfiConfig) {
+		// Reset things
+		this.transactionSource = new TransactionSource(config.loadTransactions, config.end);
+		this.budgetOccurrenceSummaries = new Map();
+		// this.budgetEventSummaries = new Map();
+
 		// Copy config so that it is not connected to external state
-		this.loadTransactions = config.loadTransactions;
-		this.loadedTransactions = [];
-		this.attributedEvents = [];
-		this.currentTransactionStart = null;
-		const configCopy = instantiateDates(JSON.parse(JSON.stringify(config)));
+		const configCopy = instantiateDates(jsonCopy(config));
 		Object.assign(this, configCopy);
+		
 		// Put everything in the forecast
 		this.forecast = new Forecast({
 			budgets: this.budgets,
@@ -67,53 +70,43 @@ export class Delfi {
 		return this.forecast;
 	}
 
-	private async getAttributedEventsBetween(start: DelfiDate, end: DelfiDate, filter: TransactionFilter = []): Promise<Array<AttributionEvent>> {
-		// If we don't yet have transactions for this period, load them
-		if (!this.currentTransactionStart || start.isBefore(this.currentTransactionStart)) {
-			// Load up to either the forecast end or the last loaded start			
-			const loadEnd = this.currentTransactionStart ? this.currentTransactionStart.subtract(1, 'day') : this.end;
-			const newTransactions = await this.loadTransactions(start, loadEnd);
-			this.loadedTransactions.push(...newTransactions);
-			this.attributedEvents.push(...TransactionUtils.processAttributionEvents(newTransactions));
-			this.currentTransactionStart = start;
+
+	/*********************************
+	 * HYDRATED OCCURRENCE SUMMARIES *
+	 *********************************/
+	private async getOccurrenceSummaries(occurrences: BudgetOccurrence[]): Promise<BudgetOccurrenceSummary[]> {
+		const summaries: BudgetOccurrenceSummary[] = [];
+		for (const occurrence of occurrences) {
+			const attributedEvents = await this.transactionSource.getAttributedEventsBetween(occurrence.start, occurrence.end, [
+				{ property: 'budget_id', operator: 'eq', operand: occurrence.budget.budget_id },
+			]);
+			const summary = this.budgetOccurrenceSummaries.get(occurrence.occurrence_id) || new BudgetOccurrenceSummary(occurrence, attributedEvents);
+			this.budgetOccurrenceSummaries.set(occurrence.occurrence_id, summary);
+			// for (const event of summary.budgetEvents) {
+			// 	this.budgetEventSummaries.set(event.budget_event_id, event);
+			// }
+			summaries.push(summary);
 		}
-		// Filter the loaded transactions to the requested range
-		return FilterService.filter(this.attributedEvents, [
-			{ property: 'date', operator: 'gte', operand: start },
-			{ property: 'date', operator: 'lte', operand: end },
-			...filter,
-		]);
+		return summaries;
 	}
 
-	/**
-	 * Computes the accumulation of all transactions up to the given date BUT NOT INCLUDING, filtered by the provided filter.
-	 * Not including because it should be the balance BEFORE anything that occurs on that date.
-	 * @param date 
-	 * @param filter DO NOT INCLUDE DATES. These will be automatically computed.
-	 */
-	accumulateUpTo(date: DelfiDate, filter: TransactionFilter = []) {
-		const thisFilter: TransactionFilter = [
-			...filter,
-			{ property: 'date', operator: 'lt', operand: date },
-		];
-		const matchingEvents = FilterService.filter(this.forecast.events, thisFilter);
-		return matchingEvents.reduce((acc, event) => acc + event.amount, 0);
-	}
-
-
-	
 	async getMonthSummary(monthDate: DelfiDate) {
 		// make extra sure we have the start and end date
 		const monthStart = date(monthDate.startOf('month'));
 		const monthEnd = date(monthDate.endOf('month'));
 		const monthForecast = await this.forecast.pollMonthReady(monthStart);
-		const monthAttributionEvents = await this.getAttributedEventsBetween(monthStart, monthEnd);
-		const monthBudgetEvents = monthForecast.events;
+		const monthAttributionEvents = await this.transactionSource.getAttributedEventsBetween(monthStart, monthEnd);
+
+		const monthBudgetOccurrences = await this.getOccurrenceSummaries(monthForecast.occurrences);
+		const monthBudgetSnapshots = monthBudgetOccurrences.map(o => o.snapshot(monthStart, monthEnd));
+		const monthBudgetEvents = monthBudgetSnapshots.flatMap(snapshot => snapshot.budgetEvents);
 		const monthNet = monthBudgetEvents.reduce((acc, event) => acc + event.amount, 0);
 
 		// compute each account's balance at the beginning and end of the month
+		// TODO: compute PROJECTED balance versus real balance at the beginning and end of the month
+		// Will need to subtract real transactions from the current_balance to get to the month beginning
 		const accountSummaries = await Promise.all(this.accounts.map(async (account: Account) => {
-			const monthStartBalance = account.current_balance + this.accumulateUpTo(monthStart, [
+			const monthStartBalance = account.current_balance + FilterService.accumulateUpTo(this.forecast.events, monthStart, [
 				{ property: 'account_id', operator: 'eq', operand: account.account_id },
 			]);
 			const accountEvents = FilterService.filter(monthBudgetEvents, [
@@ -130,7 +123,7 @@ export class Delfi {
 				netChange: monthAccumulation,
 				events: accountEvents,
 				partitions: await Promise.all(account.partitions.map(async partition => {
-					const partitionStartBalance = partition.current_balance + this.accumulateUpTo(monthStart, [
+					const partitionStartBalance = partition.current_balance + FilterService.accumulateUpTo(this.forecast.events, monthStart, [
 						{ property: 'target_account_partition_id', operator: 'eq', operand: partition.account_partition_id },
 					]);
 					const partitionEvents = FilterService.filter(monthBudgetEvents, [
@@ -152,12 +145,12 @@ export class Delfi {
 			}
 		}));
 
-		const budgetEventsByBudget: Map<Budget, BudgetEvent[]> = new Map();
+		const budgetEventsByBudget: Map<Budget, BudgetEventSummary[]> = new Map();
 		monthBudgetEvents.forEach(event => {
 			const events = budgetEventsByBudget.get(event.sourceBudget) || [];
 			events.push(event);
 			budgetEventsByBudget.set(event.sourceBudget, events);
-		});
+		});``
 		const budgetSummaries = Array.from(budgetEventsByBudget.entries()).map(([budget, budgetEvents]) => {
 			const attributedEvents = monthAttributionEvents.filter(e => e.budget_id === budget.budget_id && e.date.isBetweenInclusive(monthStart, monthEnd));
 			return new BudgetSnapshot(
@@ -231,4 +224,38 @@ export class Delfi {
 			groupSummaries
 		};
 	}
+}
+
+
+class TransactionSource {
+	private getEventsQueue = new PromiseQueue();
+	private currentTransactionStart: DelfiDate | null = null
+	private loadedTransactions: Array<Transaction> = [];
+	private attributedEvents: Array<AttributionEvent> = [];
+
+	constructor(
+		private readonly loadTransactions: DelfiConfig['loadTransactions'],
+		private readonly initialEnd: DelfiDate,
+	) {}
+
+	public async getAttributedEventsBetween(start: DelfiDate, end: DelfiDate, filter: TransactionFilter = []): Promise<Array<AttributionEvent>> {
+	// use a promise queue to make sure we don't double-load transactions
+	return await this.getEventsQueue.add(async () => {
+		// If we don't yet have transactions for this period, load them
+		if (!this.currentTransactionStart || start.isBefore(this.currentTransactionStart)) {
+			// Load up to either the forecast end or the last loaded start			
+			const loadEnd = this.currentTransactionStart ? this.currentTransactionStart.subtract(1, 'day') : this.initialEnd;
+			const newTransactions = await this.loadTransactions(start, loadEnd);
+			this.loadedTransactions.push(...newTransactions);
+			this.attributedEvents.push(...TransactionUtils.processAttributionEvents(newTransactions));
+			this.currentTransactionStart = start;
+		}
+		// Filter the loaded transactions to the requested range
+		return FilterService.filter(this.attributedEvents, [
+			{ property: 'date', operator: 'gte', operand: start },
+			{ property: 'date', operator: 'lte', operand: end },
+			...filter,
+		]);
+	});
+}
 }

@@ -1,11 +1,10 @@
-import { v4 as uuid } from "uuid";
-
 import { ScheduleService, type SingleSchedule } from "./schedules/Schedule"
 import { computeTriggeredAmount, type Trigger } from "./schedules/triggers"
 import { date, toDelfiInterval, type DelfiDate } from "../utils/dateUtils";
 import FilterService from "../services/FilterService";
 import { type BudgetableTransactionDetails } from "./Transaction";
 import type { CommonEventDetails } from "./Summary";
+import { v4 as uuid } from "uuid";
 
 export enum RecurrenceType {
 	SCHEDULE = "SCHEDULE",
@@ -107,7 +106,15 @@ type BaseBudgetEventConstruction = CommonEventDetails & BudgetedTransactionDetai
 	sourceType: 'budget',
 	sourceBudget: Budget, // The budget this event is associated with
 	sourceChildItem?: BudgetChildItem, // If this event is a child item of a budget, this will be the item it came from
+
+	triggerEvent?: BudgetEventConstruction
+
 	isTransferCopy?: boolean, // If true, this event is a copy of a transfer event, i.e. the target of a transfer
+	
+	isPartial?: true, // indicates that this event is a partial event, i.e. it is not the full amount of the budget
+	budgetCap?: number, // the total cap for the budget
+	budgetSoFar?: number, // the accumulation of this and previous events for the same window
+
 }
 
 type PartialBudgetEventConstruction = BaseBudgetEventConstruction & {
@@ -124,7 +131,9 @@ type TriggeredBudgetEvent = BaseBudgetEventConstruction & {
 
 type BudgetEventConstruction = ScheduledBudgetEventConstruction | TriggeredBudgetEvent;
 
-export type BudgetEvent = BudgetEventConstruction & {
+export type BudgetEvent = BaseBudgetEventConstruction & {
+	/** NOT PERSISTENT. This ID is generated every time the forecast is computed. */
+	budget_event_id: string,
 	sourceOccurrence: BudgetOccurrence, // The occurrence this event is associated with
 };
 
@@ -137,6 +146,8 @@ export type BudgetEvent = BudgetEventConstruction & {
 // 		Problem: Do parent budgets get assigned categories? Are children budgets limited to the parent's category?
 
 export type BudgetOccurrence = {
+	/** NOT PERSISTENT. This ID is generated every time the forecast is computed. */
+	occurrence_id: string,
 	budget: Budget,
 	start: DelfiDate,
 	end: DelfiDate,
@@ -206,6 +217,7 @@ export default class BudgetUtils {
 					const currentOccurrenceEvents = computeProjectionEvents(currentOccurrence, occurrenceEnd);
 					const futureEvents = currentOccurrenceEvents.filter(event => event.date.isAfter(start));
 					const newOccurrence: BudgetOccurrence = {
+						occurrence_id: BudgetUtils.createOccurrenceId(scheduledBudget, currentOccurrence, occurrenceEnd),
 						budget: scheduledBudget,
 						start: currentOccurrence,
 						end: occurrenceEnd,
@@ -218,10 +230,12 @@ export default class BudgetUtils {
 			}
 
 			occurrences.push(...recurrenceDates.map((startDate) => {
+				const endDate = BudgetUtils.getBudgetOccurrenceEndDate(variant, startDate);
 				const occurrence: BudgetOccurrence = {
+					occurrence_id: BudgetUtils.createOccurrenceId(scheduledBudget, startDate, endDate),
 					budget: scheduledBudget,
 					start: startDate,
-					end: BudgetUtils.getBudgetOccurrenceEndDate(variant, startDate),
+					end: endDate,
 					amount: variant.amount,
 					budgetEvents: [],
 				}
@@ -245,11 +259,12 @@ export default class BudgetUtils {
 	}
 
 	private static createEventsOnOccurrence(events: BudgetEventConstruction[], occurrence: BudgetOccurrence, budget: Budget): BudgetOccurrence {
-		occurrence.budgetEvents.push(...events.map(event => ({
+		events.forEach(event => occurrence.budgetEvents.push({
 			...event,
+			budget_event_id: occurrence.occurrence_id + '-' + occurrence.budgetEvents.length,
 			sourceOccurrence: occurrence,
 			sourceBudget: budget,
-		})));
+		}));
 		return occurrence;
 	}
 
@@ -269,6 +284,7 @@ export default class BudgetUtils {
 				continue;
 			}
 			const occurrence: BudgetOccurrence = {
+				occurrence_id: BudgetUtils.createOccurrenceId(budget, transactionDate, transactionDate),
 				budget,
 				start: transactionDate,
 				end: transactionDate,
@@ -330,5 +346,9 @@ export default class BudgetUtils {
 			tag_ids: source.tag_ids,
 			group_id: source.group_id,
 		}
+	}
+
+	static createOccurrenceId(budget, start, end): string {
+		return `${budget.budget_id}-${start.toString()}-${end.toString()}`;
 	}
 }

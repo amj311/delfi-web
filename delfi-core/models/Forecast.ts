@@ -49,6 +49,7 @@ class Forecast {
 		while (monthStart < this.end) {
 			const monthEnd = monthStart.endOf('month');
 			await new Promise(resolve => setTimeout(resolve, 0)); // Yield to the event loop to avoid blocking the UI
+			// These occurrences will include any that span the month, even if the have no events for the month
 			const monthOccurrences = scheduledOccurrences.filter(o =>
 				o.start.isSameOrBefore(monthEnd, 'month') &&
 				o.end.isSameOrAfter(monthStart, 'month')
