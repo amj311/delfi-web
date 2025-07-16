@@ -1,0 +1,16 @@
+# Use Node.js as base image with specific version for better compatibility
+FROM node:20
+
+WORKDIR /app
+
+# Copy package files for dependency installation
+COPY package.json yarn.lock ./
+
+# Install dependencies
+RUN yarn
+
+# Expose the port Vite uses
+EXPOSE 5173
+
+# Command to start the Vite dev server with host set to allow external connections
+CMD ["yarn", "run", "dev", "--host", "0.0.0.0"]

@@ -1,6 +1,40 @@
-version: "3.8"
-
 services:
+  server:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.server.dev
+    container_name: delfi-server-dev
+    restart: unless-stopped
+    ports:
+      - 5000:5000
+    depends_on:
+      - db
+    volumes:
+      # Mount the source code for live reload
+      - ./:/app
+      - /app/node_modules
+      # Exclude certain directories from the volume to prevent container issues
+      - /app/chrome-data
+      - /app/dist
+    environment:
+      - NODE_ENV=development
+    
+  frontend:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.frontend.dev
+    container_name: delfi-frontend-dev
+    restart: unless-stopped
+    ports:
+      - 5173:5173
+    volumes:
+      # Mount the source code for live reload
+      - ./:/app
+      - /app/node_modules
+      - /app/chrome-data
+    environment:
+      - NODE_ENV=development
+    
   db:
     image: delfi-db:latest
     container_name: delfi-db
@@ -13,3 +47,9 @@ services:
       - POSTGRES_DB=delfi
     ports:
       - 3002:5432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
+    name: delfi-data

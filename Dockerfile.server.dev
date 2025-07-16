@@ -1,0 +1,37 @@
+# Start from the official Playwright image which already includes browsers and dependencies
+FROM mcr.microsoft.com/playwright:v1.53.0-jammy
+
+RUN apt-get update -y && apt-get install -y openssl
+
+WORKDIR /app
+
+# Copy package files for dependency installation
+COPY package.json yarn.lock ./
+
+# Install dependencies
+RUN yarn
+
+# Set up display for headed mode
+ENV DISPLAY=:99
+
+# Create a startup script
+RUN echo '#!/bin/bash\n\
+# Start Xvfb\n\
+Xvfb :99 -screen 0 1280x720x24 -ac &\n\
+\n\
+# Start a window manager\n\
+if command -v fluxbox &> /dev/null; then\n\
+  fluxbox &\n\
+elif command -v openbox &> /dev/null; then\n\
+  openbox &\n\
+fi\n\
+\n\
+# Change to app directory and start the server\n\
+cd /app\n\
+cd prisma && npx prisma generate\n\
+cd ..\n\
+yarn server:dev\n\
+' > /usr/local/bin/start-dev.sh && chmod +x /usr/local/bin/start-dev.sh
+
+# Command to start the development server
+CMD ["/usr/local/bin/start-dev.sh"]
