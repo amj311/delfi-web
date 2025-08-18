@@ -11,7 +11,10 @@ datasource db {
 }
 
 model User {
-    user_id     String      @id @default(uuid())
+    user_id    String   @id @default(uuid())
+    created_at DateTime @default(now())
+    updated_at DateTime @default(now()) @updatedAt
+
     auth_id     String      @unique
     email       String      @unique
     given_name  String
@@ -20,9 +23,12 @@ model User {
 }
 
 model Workspace {
-    workspace_id String @id @default(uuid())
-    name         String
-    Users        User[]
+    workspace_id String   @id @default(uuid())
+    created_at   DateTime @default(now())
+    updated_at   DateTime @default(now()) @updatedAt
+
+    name  String
+    Users User[]
 
     accounts                 Account[]
     Budgets                  Budget[]
@@ -32,10 +38,14 @@ model Workspace {
     PlaidItem                PlaidItem[]
     CategoryDetectionMapping CategoryDetectionMapping[]
     Group                    BudgetGroup[]
+    TransactionRule          TransactionRule[]
 }
 
 model Institution {
-    institution_id       String    @id @default(uuid())
+    institution_id String   @id @default(uuid())
+    created_at     DateTime @default(now())
+    updated_at     DateTime @default(now()) @updatedAt
+
     name                 String
     logo                 String?
     plaid_institution_id String?   @unique // e.g. plaid institution id
@@ -43,7 +53,10 @@ model Institution {
 }
 
 model PlaidItem {
-    plaid_item_id        String     @id
+    plaid_item_id String   @id
+    created_at    DateTime @default(now())
+    updated_at    DateTime @default(now()) @updatedAt
+
     plaid_institution_id String
     access_token         String
     accounts             Account[]
@@ -52,7 +65,10 @@ model PlaidItem {
 }
 
 model Account {
-    account_id          String  @id @default(uuid())
+    account_id String   @id @default(uuid())
+    created_at DateTime @default(now())
+    updated_at DateTime @default(now()) @updatedAt
+
     external_account_id String?
     display_name        String? // nickname provided by user or default to external
     external_name       String // "real" name provided by institution
@@ -72,7 +88,6 @@ model Account {
     source_id   String? // e.g. plaid account id, manual account id, imported account id
     source_data Json? // e.g. plaid account data, manual account data, imported account data
 
-    created_at           DateTime  @default(now())
     last_successful_sync DateTime? // e.g. last time the account was synced with plaid or other source
     last_failed_sync     DateTime? // e.g. last time the account sync failed
     sync_error           String? // e.g. error message from last failed sync
@@ -100,20 +115,26 @@ model BalanceAdjustment {
     // maybe only for manual accounts?
     // If they are synced externally, do we save periodic balances as sanity checks?
 
-    balance_adjustment_id String            @id @default(uuid())
-    date                  DateTime
-    amount                Float
-    balance               Float // balance after this adjustment
-    Account               Account?          @relation(fields: [account_id], references: [account_id])
-    account_id            String?
-    AccountPartition      AccountPartition? @relation(fields: [account_partition_id], references: [account_partition_id])
-    account_partition_id  String?
+    balance_adjustment_id String   @id @default(uuid())
+    created_at            DateTime @default(now())
+    updated_at            DateTime @default(now()) @updatedAt
+
+    date                 DateTime
+    amount               Float
+    balance              Float // balance after this adjustment
+    Account              Account?          @relation(fields: [account_id], references: [account_id])
+    account_id           String?
+    AccountPartition     AccountPartition? @relation(fields: [account_partition_id], references: [account_partition_id])
+    account_partition_id String?
 }
 
 model AccountPartition {
-    account_partition_id String @id @default(uuid())
-    name                 String // nickname provided by user or default to external
-    current_balance      Float
+    account_partition_id String   @id @default(uuid())
+    created_at           DateTime @default(now())
+    updated_at           DateTime @default(now()) @updatedAt
+
+    name            String // nickname provided by user or default to external
+    current_balance Float
 
     account_id   String
     Account      Account?     @relation(fields: [account_id], references: [account_id])
@@ -128,7 +149,10 @@ model AccountPartition {
 }
 
 model SavingsGoal {
-    savings_goal_id      String            @id @default(uuid())
+    savings_goal_id String   @id @default(uuid())
+    created_at      DateTime @default(now())
+    updated_at      DateTime @default(now()) @updatedAt
+
     target_balance       Float
     target_date          DateTime?
     schedule_details     Json?
@@ -149,7 +173,10 @@ enum RecurrenceType {
 }
 
 model Budget {
-    budget_id        String                @id @default(uuid())
+    budget_id  String   @id @default(uuid())
+    created_at DateTime @default(now())
+    updated_at DateTime @default(now()) @updatedAt
+
     memo             String
     transaction_type BudgetTransactionType
     recurrence_type  RecurrenceType
@@ -181,12 +208,22 @@ model Budget {
 }
 
 model BudgetScheduleVariant {
-    schedule_variant_id String @id @default(uuid())
-    Budget              Budget @relation(fields: [budget_id], references: [budget_id])
-    budget_id           String
+    schedule_variant_id String   @id @default(uuid())
+    created_at          DateTime @default(now())
+    updated_at          DateTime @default(now()) @updatedAt
 
-    // TODO CHECK THESE AT SAVE
-    amount              Float // e.g.
+    Budget    Budget @relation(fields: [budget_id], references: [budget_id])
+    budget_id String
+
+    amount_type   String @default("fixed") // e.g. "fixed", "triggered", "seasonal"
+    amount        Float? // for fixed amounts
+    month_amounts Json? // for monthly amounts
+
+    // For triggered amounts
+    trigger_filter   Json? // e.g. filter to apply to transactions, like category, amount, etc.
+    trigger_operator String? // e.g. add, subtract, multiply, divide
+    trigger_operand  Float?
+
     schedule            Json // e.g. cron expression, interval, etc.
     window_interval     String?
     window_quantity     Int?
@@ -195,9 +232,12 @@ model BudgetScheduleVariant {
 }
 
 model BudgetTriggerVariant {
-    trigger_variant_id String @id @default(uuid())
-    Budget             Budget @relation(fields: [budget_id], references: [budget_id])
-    budget_id          String
+    trigger_variant_id String   @id @default(uuid())
+    created_at         DateTime @default(now())
+    updated_at         DateTime @default(now()) @updatedAt
+
+    Budget    Budget @relation(fields: [budget_id], references: [budget_id])
+    budget_id String
 
     // TODO CHECK THESE AT SAVE
     start            String? // date only e.g. "2023-10-01"
@@ -208,9 +248,12 @@ model BudgetTriggerVariant {
 }
 
 model BudgetChildItem {
-    budget_child_item_id String @id @default(uuid())
-    budget_id            String
-    Budget               Budget @relation(fields: [budget_id], references: [budget_id])
+    budget_child_item_id String   @id @default(uuid())
+    created_at           DateTime @default(now())
+    updated_at           DateTime @default(now()) @updatedAt
+
+    budget_id String
+    Budget    Budget @relation(fields: [budget_id], references: [budget_id])
 
     amount            Float
     date              String // DATE ONLY  e.g. "2023-10-01"
@@ -245,11 +288,14 @@ enum CategoryType {
 }
 
 model Category {
-    category_id String       @id @default(uuid())
-    name        String
-    type        CategoryType
-    icon        String?
-    color       String?
+    category_id String   @id @default(uuid())
+    created_at  DateTime @default(now())
+    updated_at  DateTime @default(now()) @updatedAt
+
+    name  String
+    type  CategoryType
+    icon  String?
+    color String?
 
     Workspace    Workspace? @relation(fields: [workspace_id], references: [workspace_id])
     workspace_id String
@@ -276,7 +322,10 @@ model CategoryDetectionMapping {
 }
 
 model Tag {
-    tag_id                  String                   @id @default(uuid())
+    tag_id     String   @id @default(uuid())
+    created_at DateTime @default(now())
+    updated_at DateTime @default(now()) @updatedAt
+
     name                    String
     Workspace               Workspace?               @relation(fields: [workspace_id], references: [workspace_id])
     workspace_id            String
@@ -286,7 +335,10 @@ model Tag {
 }
 
 model BudgetGroup {
-    group_id                String                   @id @default(uuid())
+    group_id   String   @id @default(uuid())
+    created_at DateTime @default(now())
+    updated_at DateTime @default(now()) @updatedAt
+
     name                    String
     color                   String?
     Workspace               Workspace                @relation(fields: [workspace_id], references: [workspace_id])
@@ -300,7 +352,10 @@ model BudgetGroup {
 
 // Real transaction, created manually or imported from source (plaid)
 model Transaction {
-    transaction_id       String  @id @default(uuid())
+    transaction_id String   @id @default(uuid())
+    created_at     DateTime @default(now())
+    updated_at     DateTime @default(now()) @updatedAt
+
     amount               Float
     date                 String // DATE ONLY  e.g. "2023-10-01"
     date_order           String? // For sorting transaction from the same date, since time info is not always available. IE 2025-04-12-01 (e.g. 01 for the first transaction of the day)
@@ -343,9 +398,12 @@ model Transaction {
 // To keep like data all in one place, this table holds data for ALL transactions, even without splits
 // Data w/o splits just have a single entry, and splits have multiple
 model TransactionAttribution {
-    transaction_attribution_id String  @id @default(uuid())
-    amount                     Float // TODO ADD MANY CHECKS THAT THESE ALWAYS ADD UP TO THE TRANSACTION AMOUNT
-    memo                       String?
+    transaction_attribution_id String   @id @default(uuid())
+    created_at                 DateTime @default(now())
+    updated_at                 DateTime @default(now()) @updatedAt
+
+    amount Float // TODO ADD MANY CHECKS THAT THESE ALWAYS ADD UP TO THE TRANSACTION AMOUNT
+    memo   String?
 
     Transaction    Transaction @relation(fields: [transaction_id], references: [transaction_id])
     transaction_id String
@@ -364,12 +422,39 @@ model TransactionAttribution {
 }
 
 model Merchant {
-    merchant_id String  @id @default(uuid())
-    name        String
-    logo        String?
+    merchant_id String   @id @default(uuid())
+    created_at  DateTime @default(now())
+    updated_at  DateTime @default(now()) @updatedAt
+
+    name   String
+    domain String? // e.g. "starbucks.com"
+    logo   String?
 
     transaction_identifier String? // the string parsed from transactions that identifies this merchant, e.g. "Starbucks 1234"
     plaid_merchant_id      String? // e.g. plaid merchant id, manual merchant id, imported merchant id
     category_association   String? // e.g. "Food & Drink"
     Transaction            Transaction[]
+}
+
+model TransactionRule {
+    transaction_rule_id String   @id @default(uuid())
+    created_at          DateTime @default(now())
+    updated_at          DateTime @default(now()) @updatedAt
+
+    workspace_id          String?
+    Workspace             Workspace?              @relation(fields: [workspace_id], references: [workspace_id])
+    filter                Json // e.g. filter to apply to transactions, like category, amount, etc.
+    TransactionRuleAction TransactionRuleAction[]
+}
+
+model TransactionRuleAction {
+    transaction_rule_action_id String   @id @default(uuid())
+    created_at                 DateTime @default(now())
+    updated_at                 DateTime @default(now()) @updatedAt
+
+    transaction_rule_id String
+    TransactionRule     TransactionRule @relation(fields: [transaction_rule_id], references: [transaction_rule_id])
+
+    action String // e.g. "set_category", "set_tag", "set_budget", etc.
+    value  Json // e.g. { category_id: "123", tag_ids: ["456", "789"], budget_id: "101112" }
 }

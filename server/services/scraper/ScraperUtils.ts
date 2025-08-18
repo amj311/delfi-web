@@ -75,33 +75,54 @@ export async function useBrowser(operation: (usePage: UsePage) => Promise<void>)
 	}
 }
 
-type TextInputAction = {
-	action: 'type';
-	selector: string;
-	text: string;
+type PageActions = {
+	Wait: {
+		action: 'wait';
+		time: number;
+	};
+	TextInput: {
+		action: 'type';
+		selector: string;
+		text: string;
+	};
+	Click: {
+		action: 'click';
+		selector: string;
+	};
+	CloudflareCaptcha: {
+		action: 'cloudflareCaptcha';
+		selector: string;
+	};
 }
 
-type ClickAction = {
-	action: 'click';
-	selector: string;
-}
-
-export type PageAction = TextInputAction | ClickAction;
+export type PageAction = PageActions[keyof PageActions];
 
 export async function doPageActions(page: Page, actions: PageAction[]): Promise<void> {
 	for (const action of actions) {
-		const element = await page.waitForSelector(action.selector);
-		if (!element) {
-			console.warn(`Element not found for action: ${action.action} on selector: ${action.selector}`);
-			continue;
-		}
-
 		switch (action.action) {
-			case 'type':
+			case 'type': {
+				const element = await page.waitForSelector(action.selector);
+				if (action.selector && !element) {
+					console.warn(`Element not found for action: ${action.action} on selector: ${action.selector}`);
+					continue;
+				}
 				await simulateTextInput(page, element, action.text || '');
+			}
 				break;
-			case 'click':
+			case 'click': {
+				const element = await page.waitForSelector(action.selector);
+				if (action.selector && !element) {
+					console.warn(`Element not found for action: ${action.action} on selector: ${action.selector}`);
+					continue;
+				}
 				await simulateElClick(page, element);
+				break;
+			}
+			// case 'cloudflareCaptcha':
+			// 	await doCloudflareCaptcha(page, action.selector);
+			// 	break;
+			case 'wait':
+				await page.waitForTimeout(action.time);
 				break;
 			default:
 				console.warn(`Unknown action`, action);
@@ -117,7 +138,7 @@ export const DateRegex: Record<string, RegExp> = {
 
 export const stringToDate = (dateStr: string, regex?: RegExp): DelfiDate => {
 	if (!dateStr) {
-		throw new Error("stringToDate requires date. Got " + JSON.stringify({date: dateStr, regex}));
+		throw new Error("stringToDate requires date. Got " + JSON.stringify({ date: dateStr, regex }));
 	}
 
 	if (regex) {
@@ -161,14 +182,14 @@ export const numberToDollars = (number) => {
 
 // Interface for point coordinates
 interface Point {
-  x: number;
-  y: number;
+	x: number;
+	y: number;
 }
 
 // Interface for page dimensions
 interface PageDimensions {
-  width: number;
-  height: number;
+	width: number;
+	height: number;
 }
 
 // Helper function for generating random Bezier curve points for natural mouse movement
@@ -195,6 +216,35 @@ function generateBezierPoints(startX: number, startY: number, endX: number, endY
 		points.push({ x, y });
 	}
 	return points;
+}
+
+/**
+ * Moves the mouse from its current position to target coordinates using a natural bezier curve
+ * @param page The Playwright page object
+ * @param targetX The target X coordinate
+ * @param targetY The target Y coordinate
+ * @param numPoints Number of points along the bezier curve (default: 12)
+ */
+async function simulateMouseMove(page: Page, targetX: number, targetY: number, numPoints: number = 12): Promise<void> {
+	// Get current mouse position or use a default
+	const currentPosition = await page.evaluate<Point>(() => {
+		return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+	});
+
+	// Generate a natural path to the target coordinates
+	const points = generateBezierPoints(
+		currentPosition.x,
+		currentPosition.y,
+		targetX,
+		targetY,
+		numPoints
+	);
+
+	// Move along the path with variable speed
+	for (const point of points) {
+		await page.mouse.move(point.x, point.y, { steps: 1 });
+		await page.waitForTimeout(10 + Math.random() * 30);
+	}
 }
 
 // Simulate natural mouse movement across the page
@@ -248,33 +298,16 @@ async function simulateElClick(page: Page, el: ElementHandle<SVGElement | HTMLEl
 	const bounds = await el.boundingBox();
 	if (!bounds) return;
 
-	// Get current mouse position or use a default
-	const currentPosition = await page.evaluate<Point>(() => {
-		return { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-	});
-
 	// Target is center of button with slight randomness
 	const targetX = bounds.x + bounds.width / 2 + (Math.random() * 6 - 3);
 	const targetY = bounds.y + bounds.height / 2 + (Math.random() * 6 - 3);
 
-	// Generate a natural path to the button
-	const points = generateBezierPoints(
-		currentPosition.x,
-		currentPosition.y,
-		targetX,
-		targetY,
-		12
-	);
-
-	// Move along the path with variable speed
-	for (const point of points) {
-		await page.mouse.move(point.x, point.y, { steps: 1 });
-		await page.waitForTimeout(10 + Math.random() * 30);
-	}
+	// Use the extracted mouse movement function
+	await simulateMouseMove(page, targetX, targetY, 12);
 
 	// Add a slight delay before clicking (humans don't click instantly)
 	await page.waitForTimeout(300 + Math.random() * 200);
-	await el.click({ delay: 50 + Math.random() * 100 }); // Variable click duration
+	await page.mouse.click(targetX, targetY, { delay: 50 + Math.random() * 100 }); // Variable click duration
 }
 
 // Human-like typing function
@@ -327,3 +360,55 @@ async function simulateTextInput(page: Page, element: ElementHandle<SVGElement |
 	// Add a natural pause after completing typing
 	await page.waitForTimeout(500 + Math.random() * 300);
 }
+
+// async function clickCoordinates(page: Page, clickX, clickY): Promise<void> {
+// 	// Move mouse and click at the calculated position
+// 	await simulateMouseMove(page, clickX, clickY);
+// 	await page.mouse.click(clickX, clickY);
+// }
+
+// async function doCloudflareCaptcha(page: Page, selector: string): Promise<void> {
+// 	try {
+// 		// Find the iframe that contains the captcha
+// 		const iframe = await page.locator(selector).first();
+
+// 		// Get the bounding box of the iframe
+// 		const boundingBox = await iframe.boundingBox();
+
+// 		if (!boundingBox) {
+// 			throw new Error("Could not determine iframe position");
+// 		}
+
+// 		// Approximate checkbox location
+// 		const offsetX = 35;
+// 		const offsetY = 35;
+
+// 		// Calculate absolute coordinates
+// 		const clickX = boundingBox.x + offsetX;
+// 		const clickY = boundingBox.y + offsetY;
+
+// 		page.evaluate((...args) => {
+// 			document.body.insertAdjacentHTML('beforeEnd' as any, `<div style=\`border: 5px solid red; position: fixed; left: ${35}px; top: ${35}px;'></div>`);
+// 		}, [ clickX, clickY ]);
+
+// 		// Move mouse and click at the calculated position
+// 		await simulateMouseMove(page, clickX, clickY);
+// 		await page.mouse.click(clickX, clickY);
+
+// 		console.log(`Clicked captcha at (${clickX}, ${clickY})`);
+// 		// Wait to see if captcha is solved
+// 		await page.waitForTimeout(2000);
+// 	} catch (error) {
+// 		console.error("Error clicking captcha by coordinates:", error);
+// 	}
+// }
+
+export async function find(locator, selector, options = {}) {
+	const count = await locator.locator(selector, options).count();
+	if (count > 0) {
+		return await locator.locator(selector, options).first();
+	}
+	return null;
+}
+
+	

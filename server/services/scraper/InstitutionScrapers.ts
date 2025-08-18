@@ -1,7 +1,7 @@
 import type { Page } from "playwright";
 import type { InstitutionScraper, ScrapedAccount, ScrapedTransaction } from "./ScraperService";
 import { AccountSubtype, AccountType, type AccountDetails } from "delfi-core/models/Account";
-import { dollarsToNumber, stringToDate } from "./ScraperUtils";
+import { dollarsToNumber, find, stringToDate } from "./ScraperUtils";
 import { TransactionUtils } from "delfi-core/models/Transaction";
 
 export const InstitutionScrapers: Record<string, InstitutionScraper> = {
@@ -135,16 +135,7 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 
 			return TransactionUtils.assignDateOrders(transactions.reverse()); // the list is most recent first, so reverse it to be chronological
 		},
-
 		
 		
-	}
-}
-
-async function find(locator, selector, options = {}) {
-	const count = await locator.locator(selector, options).count();
-	if (count > 0) {
-		return await locator.locator(selector, options).first();
-	}
-	return null;
+	},
 }

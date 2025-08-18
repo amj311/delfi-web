@@ -10,10 +10,13 @@ export const MerchantDao = {
         });
     },
 
-	// gets all parent merchants for user, with children nested
-    async getAllMerchants(): Promise<Merchant[]>  {
-        const merchants: any[] = await prisma.merchant.findMany();
-		// return merchants.concat(Object.values(my_merchants))
+	// TODO: implement workspace-only merchants for multiple workspaces
+    async getAllMerchants(workspace_id: string): Promise<Merchant[]>  {
+        const merchants: any[] = await prisma.merchant.findMany({
+			orderBy: {
+				name: 'asc',
+			},
+		});
 		return merchants;
     },
 
@@ -24,6 +27,31 @@ export const MerchantDao = {
             },
         });
     },
+
+	async getMerchantCategory(workspace_id: string, merchant_id: string) {
+		const merchant = await prisma.merchant.findUnique({
+			where: {
+				merchant_id, // could be either global or workspace
+			},
+		});
+
+		if (!merchant) {
+			throw new Error(`Merchant with ID ${merchant_id} not found`);
+		}
+
+		const categoryAssociation = merchant.category_association;
+		return await prisma.categoryDetectionMapping.findUnique({
+			where: {
+				workspace_id_detection_key: {
+					workspace_id,
+					detection_key: categoryAssociation || '',
+				},
+			},
+			include: {
+				Category: true, // Include the category details
+			},
+		});
+	},
 
     async updateMerchant(merchantId: string, merchantData: Merchant) {
 		return await prisma.merchant.update({

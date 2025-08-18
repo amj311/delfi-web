@@ -771,7 +771,8 @@ const defaultCategories = {
 		name: "Clothing",
 		category_id: "b83f3fad-f06b-4052-b35b-01d261009c50",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Shopping"].category_id
+		parent_category_id: parentCategories["Shopping"].category_id,
+		icon: 'shirt',
 	},
 	"Electronics & Software": {
 		name: "Electronics & Software",

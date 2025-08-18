@@ -1,7 +1,7 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
-  "include": ["env.d.ts", "src/**/*", "src/**/*.vue", "delfi-core", "models", "server", "prisma"],
-  "exclude": ["src/**/__tests__/*"],
+  "include": ["env.d.ts", "app/**/*", "app/**/*.vue", "delfi-core", "models", "server", "prisma"],
+  "exclude": ["app/**/__tests__/*"],
   "compilerOptions": {
     "composite": true,
     "baseUrl": ".",
@@ -9,7 +9,7 @@
     "esModuleInterop": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
 	"paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["./app/*"],
       "delfi-core": ["./delfi-core"],
       "delfi-core/*": ["./delfi-core/*"],
       "server/*": ["./server/*"],

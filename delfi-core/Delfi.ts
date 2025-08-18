@@ -213,7 +213,7 @@ export class Delfi {
 			netGrowth: monthNet,
 			budgetEvents: monthBudgetEvents,
 			attributionEvents: monthAttributionEvents,
-			budgetSummaries: budgetSummaries,
+			budgetSummaries: monthBudgetSnapshots,
 			totalTally: new RealityTally(monthBudgetEvents, monthAttributionEvents),
 			allUnbudgeted: new RealityTally([], monthAttributionEvents.filter(t => !t.budget_id && (!t.category_id || t.Category?.type === 'EXPENSE'))),
 			accountSummaries,

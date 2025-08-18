@@ -9,6 +9,7 @@ import { WorkspaceDao } from "server/data/WorkspaceDao";
 import type { User } from "./UserService";
 import type { BudgetGroup, Tag } from "delfi-core/models/Transaction";
 import { CategoryDao } from "server/data/CategoryDao";
+import type { TransactionRule } from "delfi-core/models/TransactionRule";
 
 export class TestDataService {
 	public static get userId(): string {
@@ -128,6 +129,12 @@ export class TestDataService {
 			name: 'Montreal 2025',
 			workspace_id: this.workspaceId,
 			color: TagColor.yellow2,
+		},
+		{
+			group_id: 'test-wyoming-2025',
+			name: 'Wyoming 2025',
+			workspace_id: this.workspaceId,
+			color: TagColor.yellow2,
 		}
 	]
 
@@ -162,7 +169,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-05', frequency: 'MONTHLY', byDayOfMonth: [5] },
-					amount: -300,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -300,
+					}
 				}],
 				category_id: categoryByName("Life Insurance").category_id,
 				Category: categoryByName("Life Insurance"),
@@ -176,7 +186,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-05', frequency: 'MONTHLY', byDayOfMonth: [5] },
-					amount: -70,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -70,
+					}
 				}],
 				category_id: categoryByName("Life Insurance").category_id,
 				Category: categoryByName("Life Insurance"),
@@ -190,7 +203,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-08', frequency: 'MONTHLY', byDayOfMonth: [8] },
-					amount: -81,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -81,
+					}
 				}],
 				category_id: categoryByName("Auto Insurance").category_id,
 				Category: categoryByName("Auto Insurance"),
@@ -205,7 +221,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-08', frequency: 'MONTHLY', byDayOfMonth: [14, 27] },
-					amount: 3594,
+					amountTemplate: {
+						type: 'fixed',
+						amount: 3594,
+					}
 				}],
 				category_id: categoryByName("Paycheck").category_id,
 				Category: categoryByName("Paycheck"),
@@ -243,7 +262,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-05-07', frequency: 'MONTHLY', byDayOfMonth: [7] },
-					amount: -100,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -100,
+					}
 				}],
 			},
 
@@ -256,8 +278,11 @@ export class TestDataService {
 				Category: categoryByName("Mortgage & Rent"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] },
-					amount: -2725,
+					schedule: { start: '2022-06-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					amountTemplate: {
+						type: 'fixed',
+						amount: -2725,
+					}
 				}],
 			},
 			{
@@ -270,7 +295,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-06-18', frequency: 'MONTHLY', byDayOfMonth: [18] },
-					amount: -240,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -240,
+					}
 				}],
 			},
 			{
@@ -283,7 +311,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-06-18', frequency: 'MONTHLY', byDayOfMonth: [18] },
-					amount: -50,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -50,
+					}
 				}],
 			},
 			{
@@ -296,7 +327,23 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] },
-					amount: -30,
+					amountTemplate: {
+						type: 'seasonal',
+						monthAmounts: {
+							1: -56,
+							2: -42,
+							3: -40,
+							4: -37,
+							5: -45,
+							6: -74,
+							7: -100,
+							8: -86,
+							9: -107,
+							10: -46,
+							11: -49,
+							12: -54,
+						},
+					}
 				}],
 			},
 			{
@@ -309,7 +356,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] },
-					amount: -50,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -50,
+					}
 				}],
 			},
 
@@ -323,7 +373,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2024-09-01', end: '2025-05-31', frequency: 'MONTHLY', byDayOfMonth: [1] },
-					amount: -170,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -170,
+					}
 				}],
 			},
 
@@ -337,7 +390,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
-					amount: -60,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -60,
+					}
 				}],
 			},
 
@@ -353,7 +409,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
-					amount: 300,
+					amountTemplate: {
+						type: 'fixed',
+						amount: 300,
+					}
 				}],
 				category_id: categoryByName("Transfer").category_id,
 				Category: categoryByName("Transfer"),
@@ -368,7 +427,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
-					amount: 500,
+					amountTemplate: {
+						type: 'fixed',
+						amount: 500,
+					}
 				}],
 				category_id: categoryByName("Transfer").category_id,
 				Category: categoryByName("Transfer"),
@@ -385,7 +447,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
-					amount: -300,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -350,
+					},
 					projectionInterval: {
 						interval: 'week',
 						quantity: 2,
@@ -401,7 +466,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
-					amount: -50,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -50,
+					}
 				}],
 				account_id: getAccountByName('Checking').account_id,
 				num_months: 1,
@@ -415,7 +483,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
-					amount: -50,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -50,
+					}
 				}],
 				account_id: getAccountByName('Checking').account_id,
 				num_months: 1,
@@ -428,7 +499,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
-					amount: -50,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -50,
+					}
 				}],
 				account_id: getAccountByName('Checking').account_id,
 				num_months: 1,
@@ -441,7 +515,10 @@ export class TestDataService {
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
-					amount: -50,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -50,
+					}
 				}],
 				account_id: getAccountByName('Checking').account_id,
 				num_months: 1,
@@ -474,7 +551,10 @@ export class TestDataService {
 				account_id: getAccountByName('Checking').account_id,
 				scheduleVariants: [{
 					schedule: { start: '2022-01-01', frequency: 'YEARLY' },
-					amount: -2000,
+					amountTemplate: {
+						type: 'fixed',
+						amount: -2000,
+					},
 					projectionInterval: {
 						interval: 'month',
 						quantity: 3,
@@ -524,6 +604,102 @@ export class TestDataService {
 				]
 			},
 		];
+	}
+
+	static get transactionRules(): Array<TransactionRule> {
+		return [
+			{
+				transaction_rule_id: 'rule-1',
+				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: 'AMAZON MKTPL' } ],
+				changes: [
+					{ target: 'merchant_id', value: '9fd5faaa-c305-4df8-98e5-2af0f6bdb3a6' }
+				]
+			},
+			{
+				transaction_rule_id: 'rule-2',
+				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "RIDLEY'S" } ],
+				changes: [
+					{ target: 'merchant_id', value: 'dec45eae-1d76-405e-be2f-710e55bc2215' }
+				]
+			},
+			{
+				transaction_rule_id: 'rule-3',
+				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "WINCO FOODS" } ],
+				changes: [
+					{ target: 'merchant_id', value: '7d811758-d002-4108-89cc-62b4b8516db5' }
+				]
+			},
+			{
+				transaction_rule_id: 'rule-4',
+				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "STATE FARM" } ],
+				changes: [
+					{ target: 'merchant_id', value: '3af7197b-95bc-41ac-b900-6edd277f744e' }
+				]
+			},
+			{
+				transaction_rule_id: 'rule-5',
+				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "OLIVE GARDEN" } ],
+				changes: [
+					{ target: 'merchant_id', value: '0e98e918-9fb7-4e76-b8d4-2be328938bce' }
+				]
+			},
+			{
+				transaction_rule_id: 'rule-6',
+				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "COSTCO" } ],
+				changes: [
+					{ target: 'merchant_id', value: '211815cf-6651-4b6e-af94-9821afd1a672' }
+				]
+			},
+			{
+				transaction_rule_id: 'rule-7',
+				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "CHEVRON" } ],
+				changes: [
+					{ target: 'merchant_id', value: 'dc463616-53ef-4b58-8a32-43e86c148ff4' }
+				]
+			},
+			{
+				transaction_rule_id: 'rule-8',
+				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "MAVERIK" } ],
+				changes: [
+					{ target: 'merchant_id', value: 'f01f8a23-85d1-43ba-a6e9-30208d1a48dd' }
+				]
+			},
+			{
+				transaction_rule_id: 'rule-9',
+				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "HOME DEPOT" } ],
+				changes: [
+					{ target: 'merchant_id', value: '5cfa3fb0-16bd-4140-a0ee-a1029e53e44a' }
+				]
+			},
+
+			// MERCHANT and CATEGORY pair, for workspace-only rules (they assign merchants directly to their categories)
+			{
+				transaction_rule_id: 'rule-10',
+				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "RIDLEY'S" } ],
+				changes: [
+					{ target: 'merchant_id', value: 'dec45eae-1d76-405e-be2f-710e55bc2215' }
+				]
+			},
+			{
+				transaction_rule_id: 'rule-11',
+				workspace_id: TestDataService.workspaceId,
+				filter: [ { property: 'sourceTransaction.merchant_id', operator: 'eq', operand: "dec45eae-1d76-405e-be2f-710e55bc2215" } ],
+				changes: [
+					{ target: 'category_id', value: categoryByName("Groceries").category_id }
+				]
+			},
+
+			// MERCHANT CATEGORY ASSOCIATION, for global associations that lookup a relevant workspace category
+			// This rule applies the merchant, and the merchant record ties it to the Fast Food detection_key.
+			// The workspace will need to have a category with the same detection_key.
+			{
+				transaction_rule_id: 'rule-12',
+				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "WENDY'S" } ],
+				changes: [
+					{ target: 'merchant_id', value: 'd1a7ff54-1234-450b-b7c8-cb02828a7efe' }
+				]
+			},
+		]
 	}
 
 }

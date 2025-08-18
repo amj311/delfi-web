@@ -22,12 +22,14 @@ const useStore = defineStore('NavTrigger', () => {
 			router.push({
 				query: { ...router.currentRoute.value.query, v: viewKey },
 			});
+			document.body.classList.add('prevent-scroll');
 		} catch (error) {
 			console.error('Error opening NavTrigger:', error);
 		}
 	}
-	function close() {
+	function close(cb?: () => void) {
 		router.back();
+		cb?.();
 	}
 
 	watch(
@@ -44,6 +46,8 @@ const useStore = defineStore('NavTrigger', () => {
 					document.title,
 					router.currentRoute.value.path
 				);
+				// also restore scroll
+				document.body.classList.remove('prevent-scroll');
 			}
 		},
 		{ immediate: true }
@@ -65,16 +69,23 @@ export default {
 			type: String,
 			required: true,
 		},
+		onClose: {
+			type: Function,
+			required: false,
+		},
 	},
 	setup(props) {
 		const store = useStore();
+		const trueKey = computed(() => {
+			return props.triggerKey + '-' + Math.random().toString(36).substring(2, 8);
+		});
 
 		return {
 			show: computed(() => {
-				return store.viewStack.includes(props.triggerKey);
+				return store.viewStack.includes(trueKey.value);
 			}),
-			open: () => store.open(props.triggerKey),
-			close: store.close,
+			open: () => store.open(trueKey.value),
+			close: () => store.close(props.onClose),
 		};
 	},
 };
@@ -84,4 +95,8 @@ export default {
 	<slot :show="show"></slot>
 </template>
 
-<style scoped></style>
+<style>
+body.prevent-scroll {
+	overflow: hidden;
+}
+</style>

@@ -19,7 +19,7 @@ const props = defineProps<{
 			} | null;
 		} | null;
 	};
-	image?: string;
+	image?: string | null;
 	icon?: IconName;
 	background?: string;
 	category?: Category | null;

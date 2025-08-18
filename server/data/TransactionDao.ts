@@ -130,13 +130,14 @@ export const TransactionDao = {
 			},
 			orderBy: [
 				{ pending: 'desc' }, // Show pending transactions first
-				{ date: 'desc' },
+				{ date: 'desc' }, // fallback on date sorting
+				{ date_order: 'asc' }, // Sort by date order for transactions on the same date
 			]
 		});
 		return transactions.map(this.dbToTransaction);
 	},
 
-	async getTransactionsInRange(workspace_id: string, startDate: string, endDate: string): Promise<Transaction[]> {
+	async getTransactionsInRange(workspace_id: string, startDate: string, endDate: string, includePending = false): Promise<Transaction[]> {
 		const transactions = await prisma.transaction.findMany({
 			where: {
 				workspace_id,
@@ -144,6 +145,7 @@ export const TransactionDao = {
 					gte: startDate,
 					lte: endDate,
 				},
+				pending: includePending ? undefined : false,
 				done_pending: false,
 			},
 			include: {
@@ -164,7 +166,8 @@ export const TransactionDao = {
 			},
 			orderBy: [
 				{ pending: 'desc' }, // Show pending transactions first
-				{ date: 'desc' },
+				{ date: 'desc' }, // fallback on date sorting
+				{ date_order: 'asc' }, // Sort by date order for transactions on the same date
 			]
 		});
 		return transactions.map(this.dbToTransaction);
@@ -191,6 +194,7 @@ export const TransactionDao = {
 		if (!transactionData.Attributions || transactionData.Attributions.length === 0) {
 			throw new Error("Transaction must have attributions");
 		}
+		await this.verifyAttributionsTotal(transactionData, transactionData.Attributions);
 
 		const created = await prisma.transaction.create({
             data: {
@@ -228,19 +232,6 @@ export const TransactionDao = {
 					},
 				} : undefined,
 
-
-				Attributions: {
-					create: transactionData.Attributions.map(attr => ({
-						amount: attr.amount,
-						target_account_partition_id: attr.target_account_partition_id || undefined,
-						category_id: attr.category_id || null,
-						memo: attr.memo || null,
-						budget_id: attr.budget_id || null,
-						Tags: attr.Tags ? {
-							connect: attr.Tags.map(tag => ({ tag_id: tag.tag_id })),
-						} : undefined,
-					})),
-				},
 				Workspace: {
 					connect: {
 						workspace_id,
@@ -249,10 +240,18 @@ export const TransactionDao = {
             },
         });
 
-		return this.dbToTransaction(created);
+		await this.setAllAttributionsForTransaction(created.transaction_id, transactionData.Attributions);
+
+		return this.dbToTransaction((await this.getTransactionById(created.transaction_id))!);
     },
 
 	async updateTransaction(workspace_id: string, transaction_id: string, transactionData: Partial<Transaction>): Promise<Transaction> {
+		// Update attributions
+		if (transactionData.Attributions) {
+			await this.verifyAttributionsTotal(transactionData, transactionData.Attributions || []);
+			await this.setAllAttributionsForTransaction(transaction_id, transactionData.Attributions);
+		}
+
 		await prisma.transaction.update({
 			where: {
 				transaction_id,
@@ -277,17 +276,32 @@ export const TransactionDao = {
 			},
 		});
 
-		// Update attributions
-		if (transactionData.Attributions) {
-			await this.setAllAttributionsForTransaction(transaction_id, transactionData.Attributions);
-		}
 
 		const updated = await this.getTransactionById(transaction_id);
 		return updated!;
 	},
 
-	async setAllAttributionsForTransaction(transaction_id: string, attributions: Transaction["Attributions"]) {
-	// delete all prior attributions
+	async verifyAttributionsTotal(transactionData: { amount?: number, transaction_id?: string }, attributions: NonNullable<CreateTransaction["Attributions"]>) {
+		let amount = transactionData.amount;
+		if (!amount) {
+			if (!transactionData.transaction_id) {
+				throw new Error("Transaction amount is required to verify attributions total");
+			}
+			// Fetch the transaction to get the amount
+			const transaction = await this.getTransactionById(transactionData.transaction_id);
+			if (!transaction) {
+				throw new Error("Transaction not found for ID: " + transactionData.transaction_id);
+			}
+			amount = transaction.amount;
+		}
+		const attributionTotal = attributions.reduce((sum, attr) => sum + attr.amount, 0);
+		if (attributionTotal !== amount) {
+			throw new Error("Attributions must total the transaction amount");
+		}
+	},
+
+	async setAllAttributionsForTransaction(transaction_id: string, attributions: NonNullable<CreateTransaction["Attributions"]>) {
+		// delete all prior attributions
 		await prisma.transactionAttribution.deleteMany({
 			where: {
 				transaction_id,

@@ -1,6 +1,7 @@
-import type { CreateTransaction, Transaction } from "delfi-core/models/Transaction";
+import { type CreateTransaction, type Transaction } from "delfi-core/models/Transaction";
 import { date, type DelfiDate } from "delfi-core/utils/dateUtils";
 import { TransactionDao } from "server/data/TransactionDao";
+import { TransactionRuleService } from "./TransactionRuleService";
 
 export class TransactionService {
 	private static async createTransaction(workspace_id: string, transactionData: CreateTransaction) {
@@ -26,12 +27,19 @@ export class TransactionService {
 
 	public static upsertTransaction = async (workspace_id: string, transactionData: CreateTransaction) => {
 		const existingTransaction = await TransactionDao.getMatchingTransaction(workspace_id, transactionData);
+		let upsertedTransaction: Transaction | null = null;
+		let created = false;
 		if (existingTransaction) {
 			// Update existing transaction
-			return await TransactionDao.updateTransaction(workspace_id, existingTransaction.transaction_id, transactionData);
+			upsertedTransaction = await TransactionDao.updateTransaction(workspace_id, existingTransaction.transaction_id, { ...transactionData, transaction_id: existingTransaction.transaction_id } as Transaction);
 		} else {
 			// Create new transaction
-			return await this.createTransaction(workspace_id, transactionData);
+			upsertedTransaction = await this.createTransaction(workspace_id, transactionData);
+			created = true;
+		}
+		return {
+			transaction: upsertedTransaction,
+			created,
 		}
 	}
 
@@ -66,7 +74,8 @@ export class TransactionService {
 		));
 
 		// Don't create new pending transactions if they already exist
-		const newTransactions = incomingTransactions.filter(t =>
+		// This MAY still include transactions which we have already processed! We'll just upsert them.
+		const filteredIncoming = incomingTransactions.filter(t =>
 			!oldPendingTransactions.some(oldTransaction =>
 				TransactionService.comparePendingTransactions(t, oldTransaction)
 			)
@@ -81,19 +90,21 @@ export class TransactionService {
 		}
 
 		// THEN UPSERT NEW TRANSACTIONS
-		const results: Transaction[] = [];
-		for (const transaction of newTransactions) {
+		const results = await Promise.all(filteredIncoming.map(async (transaction) => {
 			transaction.account_id = account_id;
-
-			// Only look through no-longer-pending transactions for matches
+			// See if this transaction matches any old pending transactions (not any still pending)
 			const matchingOldPendingTransaction = noLongerPendingTransactions.find(t =>
 				TransactionService.transactionMatchesOldPending(transaction, t)
 			);
 			if (matchingOldPendingTransaction) {
 				// TODO copy attributions from pending
 			}
-			results.push(await this.upsertTransaction(workspace_id, transaction));
-		}
+			return await this.upsertTransaction(workspace_id, transaction);
+		}));
+
+		// Apply rules to all NEW transactions
+		const createdTransactions = results.filter(result => result.created).map(result => result.transaction);
+		await TransactionRuleService.applyRulesToTransactions(workspace_id, createdTransactions);
 		return results;
 	}
 

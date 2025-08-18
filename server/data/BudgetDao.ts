@@ -1,4 +1,4 @@
-import { RecurrenceType, type Budget, type BudgetChildItem, type ScheduledBudget, type TriggeredBudget } from "delfi-core/models/Budget";
+import { RecurrenceType, type Budget, type BudgetChildItem, type FixedAmount, type ScheduledBudget, type SeasonalAmount, type TriggeredAmount, type TriggeredBudget } from "delfi-core/models/Budget";
 import { prisma } from "../../prisma/client";
 import { TestDataService } from "../services/TestDataService";
 import { asAny } from "delfi-core/utils/miscUtils";
@@ -55,7 +55,18 @@ export class BudgetDao {
 			Tags: budget.Tags as any,
 
 			scheduleVariants: budget.scheduleVariants?.map((variant: any) => ({
-				amount: variant.amount,
+				amountTemplate: {
+					type: variant.amount_type as 'fixed' | 'triggered' | 'seasonal',
+					amount: variant.amount,
+					monthAmounts: variant.month_amounts,
+					trigger: variant.amount_type === 'triggered' ? {
+						filter: variant.trigger_filter as any,
+						computation: {
+							operator: variant.trigger_operator as any,
+							operand: variant.trigger_operand as any,
+						}
+					} : undefined
+				},
 				schedule: variant.schedule as any,
 				window: variant.window_interval ? {
 					interval: variant.window_interval as any,
@@ -65,18 +76,6 @@ export class BudgetDao {
 					interval: variant.projection_interval as any,
 					quantity: variant.projection_quantity as any,
 				} : undefined,
-			})),
-			// triggerVariants: [],
-			triggerVariants: budget.triggerVariants?.map((variant: any) => ({
-				start: variant.start ? new Date(variant.start) : undefined,
-				end: variant.end ? new Date(variant.end) : undefined,
-				trigger: {
-					filter: variant.trigger_filter as any,
-					computation: {
-						operator: variant.trigger_operator as any,
-						operand: variant.trigger_operand as any,
-					}
-				}
 			})),
 			childItems: budget.childItems?.map(BudgetDao.dbToBudgetChildItem),
 			// childItems: budget.childItems?.map((item: any) => ({
@@ -89,12 +88,12 @@ export class BudgetDao {
 		return budgetData as Budget;
 	}
 
-	private static dbToBudgetChildItem(budget: NonNullable<{[key: string]: any}>): BudgetChildItem {
+	private static dbToBudgetChildItem(childItem: NonNullable<{[key: string]: any}>): BudgetChildItem {
 		return {
-			...BudgetDao.dbToBudget(budget),
-			budget_child_item_id: budget.budget_child_item_id,
-			amount: budget.amount,
-			date: date(budget.date),
+			...BudgetDao.dbToBudget(childItem),
+			budget_child_item_id: childItem.budget_child_item_id,
+			amount: childItem.amount,
+			date: date(childItem.date),
 		}
 	}
 
@@ -183,11 +182,6 @@ export class BudgetDao {
 		if (asAny(budgetData).scheduleVariants) {
 			await BudgetDao.setAllScheduleVariantsForBudget(budgetData.budget_id, asAny(budgetData).scheduleVariants);
 		}
-
-		// set trigger variants
-		if (asAny(budgetData).triggerVariants) {
-			await BudgetDao.setAllTriggerVariantsForBudget(budgetData.budget_id, asAny(budgetData).triggerVariants);
-		}
 	}
 
 
@@ -221,12 +215,6 @@ export class BudgetDao {
 		if (asAny(budgetData).scheduleVariants) {
 			await BudgetDao.setAllScheduleVariantsForBudget(budget_id, asAny(budgetData).scheduleVariants);
 		}
-
-		// Update trigger variants
-		if (asAny(budgetData).triggerVariants) {
-			await BudgetDao.setAllTriggerVariantsForBudget(budget_id, asAny(budgetData).triggerVariants);
-		}
-
 	}
 
 	public static async setAllScheduleVariantsForBudget(budget_id: string, scheduleVariants: ScheduledBudget["scheduleVariants"]) {
@@ -241,32 +229,19 @@ export class BudgetDao {
 		await prisma.budgetScheduleVariant.createMany({
 			data: scheduleVariants.map(variant => ({
 				budget_id,
-				amount: variant.amount,
+				
+				amount_type: variant.amountTemplate?.type,
+				amount: (variant.amountTemplate as FixedAmount).amount || null,
+				month_amounts: (variant.amountTemplate as SeasonalAmount).monthAmounts || null,
+				trigger_filter: (variant.amountTemplate as TriggeredAmount).trigger?.filter as any,
+				trigger_operand: (variant.amountTemplate as TriggeredAmount).trigger?.computation.operand,
+				trigger_operator: (variant.amountTemplate as TriggeredAmount).trigger?.computation.operator,
+
 				schedule: variant.schedule as any,
 				window_interval: variant.window?.interval,
 				window_quantity: variant.window?.quantity,
 				projection_interval: variant.projectionInterval?.interval,
 				projection_quantity: variant.projectionInterval?.quantity,
-			})),
-		});
-	}
-
-	public static async setAllTriggerVariantsForBudget(budget_id: string, triggerVariants: TriggeredBudget["triggerVariants"]) {
-		// delete all prior attributions
-		await prisma.budgetTriggerVariant.deleteMany({
-			where: {
-				budget_id,
-			}
-		});
-
-		// create new attributions
-		await prisma.budgetTriggerVariant.createMany({
-			data: triggerVariants.map(variant => ({
-				budget_id,
-				end: variant.end?.toString(),
-				trigger_filter: variant.trigger.filter as any,
-				trigger_operand: variant.trigger.computation.operand,
-				trigger_operator: variant.trigger.computation.operator,
 			})),
 		});
 	}

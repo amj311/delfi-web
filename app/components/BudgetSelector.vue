@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import Drawer from 'primevue/drawer';
-import NavTrigger from './utils/NavTrigger.vue';
+import NavTrigger from './utils/NavTrigger/NavTrigger.vue';
 import Button from 'primevue/button';
 import { useBudgetStore } from '@/stores/budget.store';
 
@@ -74,7 +74,17 @@ const budgets = useBudgetStore().budgets;
 	</div>
 
 	<div v-else class="flex flex-column">
-		<h4 class="p-2">Select a Child Item</h4>
+		<div class="flex align-items-center gap-2">
+			<h4 class="p-2">Select a Child Item</h4>
+			<div class="flex-grow-1"></div>
+			<Button
+				text
+				@click="selectChildItem(null)"
+			>
+				Skip
+				<i class="pi pi-angle-right" />
+			</Button>
+		</div>
 		<div
 			v-for="childItem in selectedBudget?.childItems || []"
 			:key="childItem.budget_child_item_id"

@@ -1,0 +1,8 @@
+body {
+	--p-accordion-header-padding: 0.5rem;
+}
+
+.p-inputnumber-input {
+    max-width: 100%;
+    text-align: inherit;
+}

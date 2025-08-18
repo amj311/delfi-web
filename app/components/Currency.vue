@@ -2,26 +2,32 @@
 import { computed, reactive, toRefs } from 'vue';
 
 const _props = defineProps<{
-	amount: number,
+	amount: number | string,
 	mode?: 'balance' | 'balance_reverse' | 'net_change' | 'transaction',
 	hideCurrency?: boolean
 }>();
 const props = reactive(_props);
+const numAmount = computed(() => {
+	if (typeof props.amount === 'string') {
+		return parseFloat(props.amount);
+	}
+	return props.amount;
+});
 
 const formatted = computed(() => {
 
 	let signDisplay: any = 'never';
 	if (props.mode === 'balance') {
-		signDisplay = props.amount < 0 ? 'always' : 'never';
+		signDisplay = numAmount.value < 0 ? 'always' : 'never';
 	}
 	if (props.mode === 'balance_reverse') {
-		signDisplay = props.amount > 0 ? 'always' : 'never';
+		signDisplay = numAmount.value > 0 ? 'always' : 'never';
 	}
 	if (props.mode === 'net_change') {
 		signDisplay = 'exceptZero';
 	}
 	if (props.mode === 'transaction') {
-		signDisplay = props.amount > 0 ? 'always' : 'never';
+		signDisplay = numAmount.value > 0 ? 'always' : 'never';
 	}
 
 	const formatter = new Intl.NumberFormat('en-US', {
@@ -30,16 +36,16 @@ const formatted = computed(() => {
 		signDisplay,
 	});
 
-	return formatter.format(Number(props.amount))
+	return formatter.format(Number(numAmount.value))
 });
 const color = computed(() => {
-	if (props.mode === 'balance' && props.amount < 0) {
+	if (props.mode === 'balance' && numAmount.value < 0) {
 		return '#c72850';
 	}
-	if (props.mode === 'balance_reverse' && props.amount > 0) {
+	if (props.mode === 'balance_reverse' && numAmount.value > 0) {
 		return '#4ccd8d';
 	}
-	if (props.mode === 'transaction' && props.amount > 0) {
+	if (props.mode === 'transaction' && numAmount.value > 0) {
 		return '#4ccd8d';
 	}
 });

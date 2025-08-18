@@ -1,6 +1,6 @@
 import { type Budget, type BudgetChildItem, type BudgetEvent, type BudgetOccurrence } from "delfi-core/models/Budget";
 import type { AttributionEvent, BudgetableTransactionDetails, Merchant } from "delfi-core/models/Transaction";
-import type { DelfiDate } from "../utils/dateUtils";
+import { date, type DelfiDate } from "../utils/dateUtils";
 import type { Category } from "./Category";
 import type { Delfi } from "delfi-core/Delfi";
 import type { TransactionFilter } from "delfi-core/services/FilterService";
@@ -90,14 +90,15 @@ export class BudgetSnapshot {
 		/** Always just the events applicable to the snapshot (date range or other common attribute) */
 		readonly budgetEvents: BudgetEventSummary[],
 		readonly attributedEvents: AttributionEvent[],
+		readonly asFullContext: boolean = false,
 	) {}
 
 	/** Set of occurrences from which the budget events are drawn */
-	get occurrences(): BudgetOccurrence[] {
-		const presentOccurrences = new Set<BudgetOccurrence>();
+	private get occurrences(): BudgetOccurrenceSummary[] {
+		const presentOccurrences = new Set<BudgetOccurrenceSummary>();
 		this.budgetEvents.forEach(event => {
 			if (event.sourceOccurrence) {
-				presentOccurrences.add(event.sourceOccurrence);
+				presentOccurrences.add(event.occurrenceSummary);
 			}
 		});
 		return Array.from(presentOccurrences);
@@ -109,6 +110,10 @@ export class BudgetSnapshot {
 			return {
 				...e,
 				sourceChildItem: e.sourceChildItem as NonNullable<BudgetChildItem>,
+				/**
+				 * Only events attributed to this child item within the snapshot range. There may be others.
+				 */
+				rangeAttributedEvents: attributedEvents,
 				rangeTally: new RealityTally([e], attributedEvents),
 			};
 		});
@@ -118,41 +123,130 @@ export class BudgetSnapshot {
 		return this.attributedEvents.filter(e => !e.budget_child_item_id);
 	}
 
-	// private totalBefore(events: CommonEvent[]): number {
-	// 	return netChange(events.filter(e => e.date < this.rangeStart));
-	// }
-
-	// get budgetedBefore(): number {
-	// 	return this.totalBefore(this.budgetEvents);
-	// }
-	// get attributedBefore(): number {
-	// 	return this.totalBefore(this.attributedEvents);
-	// }
-
 	get tally(): RealityTally {
 		return new RealityTally(this.budgetEvents, this.attributedEvents);
 	}
 
 
-	// get budgetedAtEnd(): number {
-	// 	return this.budgetedBefore + this.tally.budgetedNet;
-	// }
-	// get attributedAtEnd(): number {
-	// 	return this.attributedBefore + this.tally.attributedNet;
-	// }
+	/**
+	 * Represents the full context that this snapshot window is a part of as "snapshot" of the whole.
+	 * It is MOST often equivalent to a single monthly or yearly occurrence, but could potentially be
+	 * multiple one-offs or a high-level view of multiple recurring.
+	 */
+	private get context(): BudgetSnapshot {
+		if (this.asFullContext) return this;
 
-	// get rangeBudgetRemaining(): number {
-	// 	return this.budgetedAtEnd - this.attributedAtEnd;
-	// }
+		const start = Math.min(...this.occurrences.map(o => o.start.millisecond()));
+		const end = Math.max(...this.occurrences.map(o => o.end.millisecond()));
+		const allBudgetEvents = this.occurrences.flatMap(o => o.budgetEvents);
+		const allAttributedEvents = this.occurrences.flatMap(o => o.attributedEvents);
+
+		return new BudgetSnapshot(
+			date(start),
+			date(end),
+			this.budget,
+			allBudgetEvents,
+			allAttributedEvents
+		);
+	}
+
+	/**
+	 * A tally representing the state of the budget BEFORE this snapshot range.
+	 */
+	private get beginningTally(): RealityTally {
+		const budgetedEvents = this.budgetEvents.filter(e => e.date.isBefore(this.rangeStart!));
+		const attributedEvents = this.attributedEvents.filter(e => e.date.isBefore(this.rangeStart!));
+		return new RealityTally(budgetedEvents, attributedEvents);
+	}
+
+	/**
+	 * Total of budgeted events prior to the start of the snapshot range.
+	 */
+	get budgetedBefore(): number {
+		return this.beginningTally.budgetedNet;
+	}
+	/**
+	 * Total of attributed events prior to the start of the snapshot range.
+	 */
+	get attributedBefore(): number {
+		return this.beginningTally.attributedNet;
+	}
+
+	/**
+	 * The budgeted amount for the TOTAL OCCURRENCE at the end of the snapshot range
+	 */
+	get budgetedAtEnd(): number {
+		return this.budgetedBefore + this.tally.budgetedNet;
+	}
+	/**
+	 * The attributed amount for the TOTAL OCCURRENCE at the end of the snapshot range
+	 */
+	get attributedAtEnd(): number {
+		return this.attributedBefore + this.tally.attributedNet;
+	}
+
+	/**
+	 * The remaining budget for this snapshot range
+	 */
+	get rangeBudgetRemaining(): number {
+		return this.budgetedAtEnd - this.attributedAtEnd;
+	}
 
 
-	// get totalOccurrencesNet(): number {
-	// 	return netChange(this.occurrences);
-	// }
+	get totalOccurrenceBudgeted(): number {
+		return this.context.tally.budgetedNet;
+	}
 
-	// get totalBudgetRemaining(): number {
-	// 	return this.totalOccurrencesNet - this.attributedAtEnd;
-	// }
+	/**
+	 * The remaining budget for the entire occurrence, not just the snapshot range.
+	 * This is the total budgeted minus the total attributed at the end of the occurrence.
+	 */
+	get totalBudgetRemaining(): number {
+		return this.totalOccurrenceBudgeted - this.attributedAtEnd;
+	}
+
+
+	progress(onDate?: DelfiDate) {
+		const res = {
+			percent: 0,
+			dialPercent: 0, // modified to render within a dial component
+			pace: 0,
+			status: 'good', // 'good', 'warning', 'danger'
+		};
+		if (!this.tally.budgetedNet) {
+			res.percent = 101;
+			res.pace = 0;
+		} else {
+			// allow the budget target to be either positive or negative
+			// compute percentages with the absolute value, then adjust the sign if needed
+			const budgetedNet = Math.abs(this.tally.budgetedNet);
+			const attributedNet = Math.abs(this.tally.attributedNet);
+			res.percent = (attributedNet / budgetedNet) * 100;
+			// If the spent is NOT the same sign as the budgeted, use the sign to show it in the opposite direction
+			if (Math.sign(this.tally.budgetedNet) !== Math.sign(this.tally.attributedNet)) {
+				res.percent = -res.percent;
+			}
+			res.pace = this.tally.budgetedNet > 0 ? attributedNet / budgetedNet : 0;
+		}
+		res.dialPercent = Math.min(Math.abs(res.percent), 101);
+
+		if (onDate && this.tally.budgetedNet !== 0) {
+			const budgetedByDate = this.budgetEvents.filter(e => e.date.isSameOrBefore(onDate)).reduce((acc, e) => acc + e.amount, 0);
+			res.pace = budgetedByDate / this.tally.budgetedNet * 100;
+		}
+
+		// determine color. Green = good pace. Yellow = over pace. Red = over max.
+		if (res.percent > 100) {
+			res.status = 'danger';
+		}
+		else if (res.percent > res.pace) {
+			res.status = 'warning';
+		}
+		else {
+			res.status = 'good';
+		}
+		return res;
+	}
 }
 
 
@@ -191,7 +285,7 @@ export class RealityTally<Grouper = any> {
 	 * NOTE This ALWAYS excludes transfer copies. I don't yet know of a situation where we would want to include them in the budgeted net.
 	 */
 	get budgetedNet(): number {
-		return netChange(this.budgetEvents.filter(e => !e.isTransferCopy));
+		return netChange(this.budgetEventsWithoutTransferCopies);
 	}
 
 	get attributedNet(): number {

@@ -43,31 +43,33 @@ const groups = computed(() => useCategoryStore().categoriesByGroup
 </script>
 
 <template>
-	<div class="searchbar">
-		<InputText
-			v-model="search"
-			placeholder="Search..."
-			class="w-full"
-		/>
-		<i class="pi pi-search"></i>
-	</div>
-	<div class="flex flex-column gap-3">
-		<div v-for="group in groups" :key="group.name" class="flex flex-column gap-2">
-			<h4 :id="`group_${group.name}`" class="group">{{ group.name }}</h4>
-			<div class="flex flex-column">
-				<div
-					v-for="category in group.categories"
-					:key="category.category_id"
-					class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round"
-					@click="() => $emit('select', category.category_id)"
-				>
-					<CategoryAvatar
-						:category="category"
-						:groupColor="group.color"
-						style="width: 2rem; height: 2rem;"
-					/>
-					<div class="flex-grow-1">{{  category.name }}</div>
-					<i class="pi pi-check" v-if="currentCategoryId === category.category_id" />
+	<div class="flex flex-column h-full">
+		<div class="searchbar">
+			<InputText
+				v-model="search"
+				placeholder="Search..."
+				class="w-full"
+			/>
+			<i class="pi pi-search"></i>
+		</div>
+		<div class="flex flex-column gap-3 overflow-y-auto">
+			<div v-for="group in groups" :key="group.name" class="flex flex-column gap-2">
+				<h4 :id="`group_${group.name}`" class="group">{{ group.name }}</h4>
+				<div class="flex flex-column">
+					<div
+						v-for="category in group.categories"
+						:key="category.category_id"
+						class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round"
+						@click="() => $emit('select', category.category_id)"
+					>
+						<CategoryAvatar
+							:category="category"
+							:groupColor="group.color"
+							style="width: 2rem; height: 2rem;"
+						/>
+						<div class="flex-grow-1">{{  category.name }}</div>
+						<i class="pi pi-check" v-if="currentCategoryId === category.category_id" />
+					</div>
 				</div>
 			</div>
 		</div>
@@ -76,15 +78,14 @@ const groups = computed(() => useCategoryStore().categoriesByGroup
 
 <style scoped lang="scss">
 .searchbar {
-	position: sticky;
-	top: 0;
+	position: relative;
 	padding: 0.5rem 0;
 	background: var(--color-background);
 	z-index: 2;
 
 	> i.pi {
 		position: absolute;
-		right: 0.5rem;
+		right: 0.7rem;
 		top: 50%;
 		transform: translateY(-50%);
 		color: var(--p-text-color);

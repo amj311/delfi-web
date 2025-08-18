@@ -47,7 +47,7 @@ export class SyncService {
 
 		}));
 
-		await PlaidService.searchForPlaidTransactionData(workspace_id);
+		// await PlaidService.searchForPlaidTransactionData(workspace_id);
 	}
 
 	public static async syncAllWorkspacesAccounts(): Promise<void> {

@@ -3,12 +3,17 @@ import { Icons, type IconName, colors, type Icon } from 'delfi-core/utils/consta
 import { computed } from 'vue';
 
 const props = defineProps<{
-	name: IconName;
+	name?: IconName;
+	source?: string;
+	source_id?: string;
 	fill?: boolean;
 	color?: string;
 }>();
 
-const icon = computed<Icon>(() => Icons[props.name]);
+const icon = computed<Icon>(() => Icons[props.name || ''] || {
+	source: props.source || 'material-symbols',
+	source_id: props.source_id || '',
+});
 const color = computed(() => colors[props.color || ''] || props.color || 'inherit');
 </script>
 

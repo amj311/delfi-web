@@ -3,20 +3,31 @@ import type { Category } from "./Category"
 import type { TagColor } from "delfi-core/utils/constants"
 import type { CommonEventDetails } from "./Summary"
 import type { Budget, BudgetChildItem } from "./Budget"
+import type { PlaidCategory } from "server/services/PlaidService"
 
 
 /**
  * GROUPS AND TAGS
  * These are VERY similar, but they need to be separate because they have different purposes.
- * Groups highlight and track a subset group of transaction, usually in a fixed period of time, like a particular vacation.
+ * Groups highlight and track a subset group of transactions, usually in a fixed period of time, like a particular vacation.
  * A transaction might only ever need one group.
  * 
  * Tags are more generally applied to any transaction at any time. They don't have any particular use for the system, but users can filter by them.
  * 
- * These need to be different, because I wouldn't want to show a whole "group" on a budget view just because a single transaction ad a vague tag on it.
+ * These need to be different, because I wouldn't want to show a whole "group" on a budget view just because a single transaction had a vague tag on it.
+ * 
+ * Ooooor, maybe they can just be the same thing. Artificial restrictions on how they are used just complicates the app.
+ * Instead of making a whole special UI element for each one like a Big Group, maybe list each tag with a tally on it, and clicking 
+ * will show you extra detail. That gives visibility into all tags in a non-intrusive way.
+ * It also easier to dissect the info in multiple ways, with different combinations of tags.
+ * 
+ * I think the biggest practical distinction is how a group is very time-boxed around a specific event, while tags are more general.
+ * But is that just a user;s choice?
+ * 
+ * I would like UI that shows the whole budget from start to end of a group, like for a vacation, even if it goes over multiple months.
+ * What would that look like if it were a tag with no real start or end date?
  */
 
-//
 export type Tag = {
 	// details
 	name: string,
@@ -72,7 +83,7 @@ type AttributionEventDetails = {
 	budget_child_item_id?: string | null,
 	BudgetChildItem?: BudgetChildItem | null,
 }
-type TransactionAttribution = AttributionBudgetableDetails & AttributionEventDetails & {
+export type TransactionAttribution = AttributionBudgetableDetails & AttributionEventDetails & {
 	transaction_attribution_id: string,
 	transaction_id: string,
 	amount: number,
@@ -143,6 +154,7 @@ export type CreateTransaction = Omit<Transaction, 'transaction_id' | 'Attributio
  */
 export type AttributionEvent = CommonEventDetails & TransactionAttribution & {
 	sourceTransaction: Transaction,
+	isSplit: boolean, // If this event is a split of a transaction
 }
 
 export type Merchant = {
@@ -150,6 +162,7 @@ export type Merchant = {
 	name: string,
 	logo?: string | null,
 	plaid_merchant_id?: string | null, // The Plaid merchant ID, if available
+	detection_key?: PlaidCategory | null, // A key used to detect the merchant, if applicable
 }
 
 
@@ -159,26 +172,31 @@ export class TransactionUtils {
 
 		for (const transaction of transactions) {
 			for (const attribution of transaction.Attributions) {
-				const BudgetChildItem = attribution.Budget?.childItems?.find(item => item.budget_child_item_id === attribution.budget_child_item_id) || null;
-				attributedEvents.push({
-					sourceType: 'attribution',
-					sourceTransaction: transaction,
-					date: transaction.date,
-					day: transaction.date.day(),
-					year: transaction.date.year(),
-					month: transaction.date.month(),
-
-					account_id: transaction.account_id,
-					Merchant: transaction.Merchant || null,
-					BudgetChildItem,
-
-					displayName: attribution.memo || transaction.original_description,
-					...attribution,
-				});
+				attributedEvents.push(this.createEventFromAttribution(attribution, transaction));
 			}
 		}
 
 		return attributedEvents;
+	}
+
+	public static createEventFromAttribution(attribution: TransactionAttribution, transaction: Transaction): AttributionEvent {
+		const BudgetChildItem = attribution.Budget?.childItems?.find(item => item.budget_child_item_id === attribution.budget_child_item_id) || null;
+		return {
+			sourceType: 'attribution',
+			isSplit: transaction.Attributions.length > 1,
+			sourceTransaction: transaction,
+			date: transaction.date,
+			day: transaction.date.day(),
+			year: transaction.date.year(),
+			month: transaction.date.month(),
+
+			account_id: transaction.account_id,
+			Merchant: transaction.Merchant || null,
+			BudgetChildItem,
+
+			displayName: attribution.memo || transaction.original_description,
+			...attribution,
+		};
 	}
 
 	/**
@@ -201,4 +219,173 @@ export class TransactionUtils {
 			};
 		});
 	}
+
+
+	/**
+	 * Extracts the best merchant identifying information from a transaction description.
+	 * Each possible extraction is based on a common description format.
+	 */
+	public static getSimplifiedIdentifier(description: string): { identifier: string, format: string } | null {
+		const descriptionInfo = TransactionUtils.extractDescriptionInfo(description);
+		if (!descriptionInfo) return null;
+
+		return {
+			identifier: descriptionInfo.identifier_full,
+			format: descriptionInfo.format,
+		};
+	}
+
+	/**
+	 * Finds a format that matches the description and extracts the applicable pieces
+	 */
+	public static extractDescriptionInfo(description: string): DescriptionBreakdown | null {
+		for (const key in DescriptionFormats) {
+			const matcher = DescriptionFormats[key];
+			const match = matcher(description) as DescriptionBreakdown | null;
+			if (match) {
+				return match;
+			}
+		}
+
+		return null; // No merchant information found
+	}
 }
+
+const ACH_SEC_CODES = [
+	'WEB', // Internet-Initiated Entry (e.g. online bill payments)
+	'PPD', //Prearranged Payment and Deposit (most common for recurring payments)
+	'TEL', //Telephone-Initiated Entry (authorized over the phone)
+	'CCD', //Corporate Credit or Debit (business transactions)
+	'CTX', //Corporate Trade Exchange (complex business payments)
+	'TRX', //Truncated Check Entry (electronic check processing)
+	'ARC', //Accounts Receivable Entry (converted paper checks)
+	'POP', //Point-of-Purchase Entry (converted checks at retail)
+	'RCK', //Re-presented Check Entry (bounced check retry)
+] as const;
+export type AchSecCode = (typeof ACH_SEC_CODES)[number];
+
+const ACH_ENTRY_TYPES = [
+	'S', // Single Entry
+	'R', // Recurring Entry
+] as const;
+export type AchEntryType = (typeof ACH_ENTRY_TYPES)[number];
+
+export type DescriptionBreakdown = {
+	format: DescriptionFormat,
+
+	identifier_full: string, // It must at LEAST extract some sort of identifier
+	identifier_name?: string,
+	identifier_number?: string,
+
+	date?: DelfiDate, // If the description includes a date, it will be parsed here
+
+	ach_type?: string, // e.g. "AUTOMATIC WITHDRAWAL"
+	ach_sec_code?: AchSecCode,
+	ach_entry_type?: AchEntryType,
+
+	card_network?: string, // e.g. "VISA", "MASTERCARD"
+	phone_number?: string, // e.g. "123-456-7890"
+
+	location_full?: string,
+	location_broad?: string, // country, city, state, no street. Possible because POS puts the street address separately
+	location_city?: string,
+	location_region?: string,
+	location_country?: string,
+	location_street_address?: string,
+}
+
+export const DescriptionFormats = {
+	ACH_X_COMMA_SEC: (description: string): DescriptionBreakdown | null => {
+		const regexp = new RegExp(`^(?<type>[^,]+), (?<identifier>.+) (?<sec>(${ACH_SEC_CODES.join('|')}))( \\((?<entry>[A-Z]{1})\\))?$`);
+		const match = regexp.exec(description);
+		if (!match?.groups) return null;
+		return {
+			format: 'ACH_X_COMMA_SEC',
+			identifier_full: match.groups.identifier?.trim(),
+			ach_type: match.groups.type?.trim(),
+			ach_sec_code: match.groups.sec as AchSecCode,
+			ach_entry_type: match.groups.entry as AchEntryType,
+		};
+	},
+
+	CARD_DASH_DATE_X_REGION: (description: string): DescriptionBreakdown | null => {
+		const regexp = /^(?<network>[^,]+) - (?<date>\d{2}\/\d{2}) (?<identifier>.+?) (?<region>[A-Z]{2}) (?<code>\d+)$/;
+		const match = regexp.exec(description);
+		if (!match?.groups) return null;
+
+		const fullIdentifier = match.groups.identifier?.trim();
+
+		// Extract the store number if it exists
+		// Pad the front with a space to ensure it matches the regex if the store number is at the start
+		let storeNumber = (" " + fullIdentifier).match(/( #?\d{2,10} )/)?.[1]?.trim() || undefined;
+		const phone = fullIdentifier.match(/(\d{3}-\d{3}-\d{4})/)?.[1]?.trim() || undefined; // Extract the phone number if it exists
+
+		// If neither phone nor store number were detected, there may still be a store number of a different format
+		// Look for any string of numbers and dashes longer than a few characters. These tend to be very long
+		// THANKSGIVING POINT 180-1766503 ==> [THANKSGIVING POINT, '180-1766503']
+		if (!storeNumber && !phone) {
+			storeNumber = fullIdentifier.match(/([-\d]{5,})/)?.[1]?.trim() || undefined;
+		}
+		
+		// If store number or phone are in the middle of the identifier, they will separate the merchant name and the city
+		// But if it starts with the store number, the two will likely be inseparable
+		// DOMINO'S 9102 123-456-7890 ==> [DOMINO'S, undefined]
+		// MAVERIK #380 EAGLE MOUNTAI ==> [MAVERIK, EAGLE MOUNTAI]
+		// 138 ARCTIC CIRCLE EAGLE MOUNTAI ==> [ARCTIC CIRCLE EAGLE MOUNTAI, '']
+		let name;
+		let city;
+		const merchantNameSource = (storeNumber && fullIdentifier.startsWith(storeNumber))
+			? fullIdentifier.slice(storeNumber.length).trim()
+			: fullIdentifier;
+		if (phone || storeNumber) {
+			([name, city] = merchantNameSource.split((storeNumber || '') + ' ' + (phone || '')).map(s => s.trim()));
+		}
+		else {
+			name = merchantNameSource;
+		}
+
+		return {
+			format: 'CARD_DASH_DATE_X_REGION',
+			identifier_full: match.groups.identifier?.trim(),
+			identifier_name: name,
+			identifier_number: storeNumber,
+			phone_number: phone,
+			location_city: city,
+			location_region: match.groups.region?.trim(),
+		};	
+	},
+
+	POS_REGION_COMMA_X_CODE: (description: string): DescriptionBreakdown | null => {
+		const regexp = /^POINT OF SALE PURCHASE (?<country>[^\s]+) (?<region>[^\s]+) (?<city>[^,]+), (?<identifier>.+) - \d{12}/;
+		const match = regexp.exec(description);
+		if (!match?.groups) return null;
+
+		// These often have a store number as #NNNN
+		const number = match.groups.identifier.match(/ (#\d+)/)?.[1]?.trim() || undefined;
+		// Addresses are often included at the very end. The must start with a number, followed by multiple words of letters and numbers
+		const address = match.groups.identifier.match(/( \d{2,8} [\d\w\s]+)$/)?.[1]?.trim() || undefined;
+
+		// If there is a number or an address, we can take everything before that as the merchant name
+		let identifier_name = match.groups.identifier;
+		if (number) {
+			identifier_name = identifier_name.split(` ${number}`)[0]?.trim();
+		}
+		else if (address) {
+			identifier_name = identifier_name.split(address)[0]?.trim();
+		}
+
+		return {
+			format: 'POS_REGION_COMMA_X_CODE',
+			identifier_full: match.groups.identifier?.trim(),
+			identifier_name,
+			identifier_number: number,
+			location_country: match.groups.country?.trim(),
+			location_region: match.groups.region?.trim(),
+			location_city: match.groups.city?.trim(),
+			location_street_address: address,
+		}
+	},
+} as const;
+export type DescriptionFormat = keyof typeof DescriptionFormats;
+
+// console.log(TransactionUtils.extractDescriptionInfo("POINT OF SALE PURCHASE USA ID CHUBBUCK, MAVERIK #489 - 000000455113"));

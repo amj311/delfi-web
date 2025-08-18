@@ -18,9 +18,9 @@ export interface IRuleOptions {
 	byDayOfWeek?: RuleOption.ByDayOfWeek[];
 	byDayOfMonth?: RuleOption.ByDayOfMonth[];
 	byMonthOfYear?: RuleOption.ByMonthOfYear[];
-  }
-  
-  export namespace RuleOption {
+}
+
+export namespace RuleOption {
 	// Either a date object or a date adapter object.
 	export type Start = any;
 	// Either a date object or a date adapter object.
@@ -31,15 +31,15 @@ export interface IRuleOptions {
 	export type Count = number;
 	export type WeekStart = 'SU' | 'MO' | 'TU' | 'WE' | 'TH' | 'FR' | 'SA';
 	export type Frequency =
-	  | 'MILLISECONDLY'
-	  | 'SECONDLY'
-	  | 'MINUTELY'
-	  | 'HOURLY'
-	  | 'DAILY'
-	  | 'WEEKLY'
-	  | 'MONTHLY'
-	  | 'YEARLY';
-  
+		| 'MILLISECONDLY'
+		| 'SECONDLY'
+		| 'MINUTELY'
+		| 'HOURLY'
+		| 'DAILY'
+		| 'WEEKLY'
+		| 'MONTHLY'
+		| 'YEARLY';
+
 	/**
 	 * The ByDayOfWeek type corresponds to either a two letter string for the weekday
 	 * (i.e. 'SU', 'MO', etc) or an array of length two containing a weekday string
@@ -50,14 +50,14 @@ export interface IRuleOptions {
 	 * the month / year.
 	 */
 	export type ByDayOfWeek =
-	  | 'SU'
-	  | 'MO'
-	  | 'TU'
-	  | 'WE'
-	  | 'TH'
-	  | 'FR'
-	  | 'SA'
-	  | ['SU' | 'MO' | 'TU' | 'WE' | 'TH' | 'FR' | 'SA', number];
+		| 'SU'
+		| 'MO'
+		| 'TU'
+		| 'WE'
+		| 'TH'
+		| 'FR'
+		| 'SA'
+		| ['SU' | 'MO' | 'TU' | 'WE' | 'TH' | 'FR' | 'SA', number];
 	export type ByMillisecondOfSecond = number;
 	export type BySecondOfMinute = number;
 	export type ByMonthOfYear = number;
@@ -65,20 +65,32 @@ export interface IRuleOptions {
 	export type ByHourOfDay = number;
 	export type ByDayOfMonth = number;
 	export type ByWeekOfMonth = number;
-  }
+}
 
 export type SingleSchedule = IRuleOptions;
 export type Schedule = SingleSchedule | Array<SingleSchedule>;
 
 export class ScheduleService {
-	static getOccurrences(schedule: Schedule, options: IOccurrencesArgs): Array<Dayjs> {
+	/**
+	 * Computes all occurrences of a schedule within the given options, including any ongoing ones at the time of the start date.
+	 * @returns 
+	 */
+	static getOccurrences(schedule: Schedule, options: IOccurrencesArgs, includeOngoing: boolean = false): Array<Dayjs> {
 		const arraySchedule = Array.isArray(schedule) ? schedule : [schedule];
 		let rrules = JSON.parse(JSON.stringify(arraySchedule)) as IRuleOptions[];
 		for (const rule of rrules) {
 			rule.start && (rule.start = dayjs(rule.start));
 			rule.end && (rule.end = dayjs(rule.end));
 		}
-		return new rSchedule<null>({ rrules }).occurrences(options).toArray().map(d => dayjs(d));
+		const recurrenceDates = new rSchedule<null>({ rrules }).occurrences(options).toArray().map(d => dayjs(d));
+		// check for ongoing occurrence and include it
+		if (includeOngoing) {
+			const ongoingOccurrence = ScheduleService.delfi.getPreviousOccurrence(schedule, options.start);
+			if (ongoingOccurrence && !ongoingOccurrence.isSame(recurrenceDates[0], 'day')) {
+				recurrenceDates.unshift(ongoingOccurrence);
+			}
+		}
+		return recurrenceDates;
 	}
 
 	static getNextOccurrence(schedule: Schedule, asOfDate: Dayjs = dayjs()): Dayjs | undefined {
@@ -90,15 +102,15 @@ export class ScheduleService {
 	}
 
 	static delfi = {
-		getOccurrences(schedule: Schedule, options: IOccurrencesArgs): DelfiDate[] {
-			return ScheduleService.getOccurrences(schedule, options).map(d => date(d));
+		getOccurrences(...args: Parameters<typeof ScheduleService.getOccurrences>): DelfiDate[] {
+			return ScheduleService.getOccurrences(...args).map(d => date(d));
 		},
-		getNextOccurrence(schedule: Schedule, asOfDate: DelfiDate = date()): DelfiDate | undefined {
-			const nextOccurrence = ScheduleService.getNextOccurrence(schedule, asOfDate);
+		getNextOccurrence(...args: Parameters<typeof ScheduleService.getNextOccurrence>): DelfiDate | undefined {
+			const nextOccurrence = ScheduleService.getNextOccurrence(...args);
 			return nextOccurrence ? date(nextOccurrence) : undefined;
 		},
-		getPreviousOccurrence(schedule: Schedule, asOfDate: DelfiDate = date()): DelfiDate | undefined {
-			const previousOccurrence = ScheduleService.getPreviousOccurrence(schedule, asOfDate);
+		getPreviousOccurrence(...args: Parameters<typeof ScheduleService.getPreviousOccurrence>): DelfiDate | undefined {
+			const previousOccurrence = ScheduleService.getPreviousOccurrence(...args);
 			return previousOccurrence ? date(previousOccurrence) : undefined;
 		}
 	}
