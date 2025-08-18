@@ -66,6 +66,8 @@ export const useCategoryStore = defineStore('category', () => {
 		}));
 	});
 
+	const orderedCategories = computed(() => categoriesByGroup.value.flatMap(g => g.categories));
+
 	return {
 		allCategories,
 		workspaceCategories,
@@ -73,5 +75,6 @@ export const useCategoryStore = defineStore('category', () => {
 		loadCategories,
 		getCategoryById,
 		categoriesByGroup,
+		orderedCategories,
 	};
 })

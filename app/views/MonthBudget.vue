@@ -25,6 +25,7 @@ import AccordionHeader from 'primevue/accordionheader';
 import Knob from 'primevue/knob';
 import AttributionAvatar from '@/components/AttributionAvatar.vue';
 import Select from 'primevue/select';
+import type { BudgetSnapshot } from 'delfi-core/models/Summary';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -170,42 +171,6 @@ const dailyEvents = computed(() => {
 	);
 });
 
-// function budgetProgress(budgetSummary) {
-// 	const res = {
-// 		percent: 0,
-// 		dialPercent: 0, // modified to render within a dial component
-// 		pace: 0,
-// 		color: colors.lime2,
-// 	};
-// 	if (!budgetSummary.tally.budgetedNet) {
-// 		res.percent = 101;
-// 		res.pace = 0;
-// 	} else {
-// 		// allow the budget target to be either positive or negative
-// 		// compute percentages with the absolute value, then adjust the sign if needed
-// 		const budgetedNet = Math.abs(budgetSummary.tally.budgetedNet);
-// 		const attributedNet = Math.abs(budgetSummary.tally.attributedNet);
-// 		res.percent = (attributedNet / budgetedNet) * 100;
-// 		// If the spent is NOT the same sign as the budgeted, use the sign to show it in the opposite direction
-// 		if (Math.sign(budgetSummary.tally.budgetedNet) !== Math.sign(budgetSummary.tally.attributedNet)) {
-// 			res.percent = -res.percent;
-// 		}
-// 		res.pace = budgetSummary.tally.budgetedNet > 0 ? attributedNet / budgetedNet : 0;
-// 	}
-// 	res.dialPercent = Math.min(Math.abs(res.percent), 101);
-// 	// determine color. Green = good pace. Yellow = over pace. Red = over max.
-// 	if (res.percent > 100) {
-// 		res.color = colors.cherry2;
-// 	}
-// 	// else if (res.percent > res.percent) {
-// 	// 	res.color = colors.yellow2;
-// 	// }
-// 	else {
-// 		res.color = colors.lime2;
-// 	}
-// 	return res;
-// }
-
 const progressColor = {
 	'good': colors.lime2,
 	'warning': colors.yellow2,
@@ -217,7 +182,6 @@ const progressColor = {
 	}
 }
 
-
 const openAccordions = ref<Set<string>>(new Set());
 const isAccordionOpen = (key: string) => {
 	return openAccordions.value.has(key);
@@ -227,6 +191,18 @@ const transactionDetailsDrawer = ref<InstanceType<typeof TransactionDetailsDrawe
 function viewTransaction(transaction: Transaction) {
 	transactionDetailsDrawer.value?.open(transaction);
 }
+
+const orderedBudgets = computed(() => {
+	const budgetSnapshots: Array<BudgetSnapshot> = state.summaryData?.spendingSummary.budgets as Array<BudgetSnapshot> || [];
+	const orderedCategories = useCategoryStore().orderedCategories;
+	const output = [] as BudgetSnapshot[];
+	for (const category of orderedCategories) {
+		output.push(
+			...budgetSnapshots.filter(b => b.budget.category_id === category.category_id).sort((a, b) => a.budget.memo.localeCompare(b.budget.memo)) || [],
+		);
+	}
+	return output;
+});
 
 </script>
 
@@ -643,7 +619,7 @@ function viewTransaction(transaction: Transaction) {
 								</template>
 							</AccordionContent>
 						</AccordionPanel>
-						<template v-for="budgetSnapshot of state.summaryData.spendingSummary.budgets">
+						<template v-for="budgetSnapshot of orderedBudgets">
 							<AccordionPanel :value="budgetSnapshot.budget.budget_id">
 								<AccordionHeader class="budget-header flex align-items-center gap-2" :class="{ open: isAccordionOpen(budgetSnapshot.budget.budget_id) }">
 									<AttributionAvatar :category="budgetSnapshot.budget.Category" :size="2" />
