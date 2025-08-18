@@ -5,6 +5,7 @@ import Registration from './views/Registration.vue';
 import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
 import LoggedIn from './views/LoggedIn.vue';
 import PromptModal from './components/utils/PromptModal.vue';
+import Toast from 'primevue/toast';
 
 const userStore = useUserStore();
 const sessionInterval = setInterval(userStore.loadSessionData, 60000);
@@ -40,6 +41,7 @@ onBeforeUnmount(() => {
     
     <!-- Global Prompt Modal -->
     <PromptModal />
+	<Toast />
 </template>
 
 <style scoped></style>

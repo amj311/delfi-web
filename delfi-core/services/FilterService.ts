@@ -151,7 +151,7 @@ const CustomGetters: Record<string, (obj: Filterable, property: any) => any> = {
 		}
 		return getPropertyByPath(breakdown, property);
 	},
-};
+} as const;
 
 type Operation<T> = (operand: T, value: T) => boolean;
 const Operators: Record<string, Operation<any>> = {

@@ -2,106 +2,223 @@
  * Company search service - Utility for finding company websites
  */
 import axios from 'axios';
-import { calculateRelevanceScore } from '../utils/textSimilarity';
+import { norm, similarityScore } from 'server/utils/textSimilarity';
 
 interface CompanySearchResult {
-  url: string;
-  domain: string;
-  hostname: string;
-  score: number;
-  title: string;
-  snippet: string;
+	url: string;
+	origin: string;
+	hostname: string;
+	score: number;
+	title: string;
+	snippet: string;
 }
 
-/**
- * Searches for a company's website using the LangSearch API
- * @param companyName The name of the company to search for
- * @param numResults Number of search results to analyze
- * @returns An array of scored search results, sorted by relevance
- */
-export async function findCompanyWebsite(companyName: string, numResults = 5): Promise<CompanySearchResult[] | null> {
-  try {
-    const apiKey = process.env.LANGSEARCH_API_KEY;
-    
-    if (!apiKey) {
-      console.log('❌ LANGSEARCH_API_KEY not found in environment variables');
-      return null;
-    }
-    
-    console.log(`🔍 Searching for company website: "${companyName}"...`);
-    
-    // Make search request to LangSearch API
-    const response = await axios.post('https://api.langsearch.com/v1/web-search', {
-      query: `Please find the website for this company: ${companyName}`,
-      num_results: numResults
-    }, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      }
-    });
-    
-    // Extract and score the search results
-    const webPages = response.data.data.webPages.value;
-    const scoredResults = webPages.map(page => {
-      const url = page.url;
-      const domain = new URL(url).origin;
-      const hostname = new URL(url).hostname;
+export default class CompanySearchService {
+	/**
+	 * Searches for a company's website using the LangSearch API
+	 * @param searchString The best identifier we have for the company name, usually parsed from a transaction
+	 * @param numResults Number of search results to analyze
+	 * @returns An array of scored search results, sorted by relevance
+	 */
+	public static async doCompanySearch(searchString: string, numResults = 5): Promise<CompanySearchResult | null> {
+		try {
+			const apiKey = process.env.LANGSEARCH_API_KEY;
 
-      // Calculate relevance score between company name and URL
-      const score = calculateRelevanceScore(companyName, hostname);
-      
-      return {
-        url,
-        domain,
-        hostname,
-        score,
-        title: page.name,
-        snippet: page.snippet
-      };
-    });
-    
-    // Sort results by score (highest first)
-    return scoredResults.sort((a, b) => b.score - a.score);
-    
-  } catch (error) {
-    console.error('❌ Company search failed:');
-    if (axios.isAxiosError(error)) {
-      console.error(`Status: ${error.response?.status}`);
-      console.error(`Error message: ${error.message}`);
-    } else {
-      console.error(error);
-    }
-    return null;
-  }
-}
+			if (!apiKey) {
+				console.log('❌ LANGSEARCH_API_KEY not found in environment variables');
+				return null;
+			}
 
-/**
- * Prints the search results to the console in a readable format
- */
-export function printCompanySearchResults(results: CompanySearchResult[]): void {
-  console.log('📊 Ranked Results:');
-  
-  results.forEach((result, index) => {
-    console.log(`\n[${index + 1}] Score: ${result.score}/100 - ${result.hostname}`);
-    console.log(`    URL: ${result.url}`);
-    console.log(`    Title: ${result.title}`);
-    console.log(`    Snippet: ${result.snippet.substring(0, 100)}...`);
-  });
-  
-  // Identify the most likely company website
-  const mostLikelyCompanyWebsite = results[0];
-  console.log('\n🏆 Most likely company website:');
-  console.log(`    Domain: ${mostLikelyCompanyWebsite.domain}`);
-  console.log(`    Score: ${mostLikelyCompanyWebsite.score}/100`);
-}
+			console.log(`🔍 Searching for company website: "${searchString}"...`);
 
-/**
- * Get the most likely company website domain from search results
- */
-export function getMostLikelyCompanyDomain(results: CompanySearchResult[]): string | null {
-  if (!results || results.length === 0) {
-    return null;
-  }
-  return results[0].domain;
+			// Make search request to LangSearch API
+			const response = await axios.post('https://api.langsearch.com/v1/web-search', {
+				query: `Please find the website for this company: ${searchString}`,
+				num_results: numResults
+			}, {
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${apiKey}`
+				}
+			});
+
+			// Extract and score the search results
+			const webPages = response.data.data.webPages.value;
+			const scoredResults: CompanySearchResult[] = webPages.map(page => {
+				const url = page.url;
+				const origin = new URL(url).origin;
+				const hostname = new URL(url).hostname;
+
+				// Calculate relevance score between company name and hostname
+				const score = CompanySearchService.calculateRelevanceScore(searchString, hostname);
+
+				const result: CompanySearchResult = {
+					url,
+					origin,
+					hostname,
+					score,
+					title: page.name,
+					snippet: page.snippet
+				};
+				return result;
+			});
+
+			// Sort results by score (highest first)
+			return scoredResults.sort((a, b) => b.score - a.score)[0];
+
+		} catch (error) {
+			console.error('❌ Company search failed:');
+			if (axios.isAxiosError(error)) {
+				console.error(`Status: ${error.response?.status}`);
+				console.error(`Error message: ${error.message}`);
+			} else {
+				console.error(error);
+			}
+			return null;
+		}
+	}
+
+
+	/**
+	 * Calculate a weighted relevance score between a company name and a URL
+	 * Takes into account multiple factors including:
+	 * - Exact match of company name in hostname
+	 * - Partial match with domain segments
+	 * - Similarity between company name and domain parts
+	 * 
+	 * @param companySearch The company name to search for
+	 * @param hostname The hostname to evaluate against the company name
+	 * @returns A score from 0-100 where higher means more relevant
+	 */
+	private static calculateRelevanceScore(companySearch: string, hostname: string): number {
+		// Create normalized versions for comparison
+		const searchParts = companySearch.toLowerCase().split(/\s+/);
+		const normalizedCompany = companySearch.toLowerCase().replace(/[^a-z0-9]/g, '');
+		// don't consider any subdomains, we only want a confident match with the main domain
+		// BUG! This will not work for hostnames with suffixes like .co.uk or .com.au
+		const rootDomain = hostname.split('.').slice(-2).join('.'); // e.g. "example.com"
+		const normalizedDomain = rootDomain.toLowerCase().replace(/[^a-z0-9.]/g, '');
+		const normalizedDomainWithoutTLD = normalizedDomain
+			.replace(/^www\./, '')
+			.replace(/\.(com|org|net|io|co|gov|edu)$/, '');
+
+		// Base score components
+		let score = similarityScore(normalizedCompany, normalizedDomainWithoutTLD);
+
+		// 1. Exact match between company name and domain (highest weight)
+		if (normalizedDomainWithoutTLD === normalizedCompany) {
+			score += 60; // High score for exact match
+		}
+
+		// 2. Check if company name is contained in the domain or vice versa
+		else if (normalizedDomainWithoutTLD.includes(normalizedCompany)) {
+			score += 40; // Good score for domain containing company name
+		}
+		else if (normalizedCompany.includes(normalizedDomainWithoutTLD)) {
+			score += 35; // Slightly lower but still good
+		}
+
+		// add points for each full word match in the domain
+		for (const part of searchParts) {
+			if (normalizedDomainWithoutTLD.includes(part)) {
+				score += 5; // Add points for each full word match
+			}
+		}
+
+		// Return capped score between 0-100
+		return Math.min(100, Math.max(0, score));
+	}
+
+	public static extractLogoFromHtml(html: string): string | null {
+		// Icon link rels
+		type IconMatch = {
+			source: string, // Source of the icon (e.g., og:image)
+			path: string,
+			size?: number,
+		}
+		const iconUrls: Array<IconMatch> = [];
+
+		const iconLinkRels = ['icon', 'shortcut icon', 'apple-touch-icon', 'apple-touch-icon-precomposed'];			
+		iconLinkRels.forEach(rel => {
+			const regex = new RegExp(`<link[^>]+rel=["']${rel}["'][^>]+>`, 'gi');
+			let match;
+			while ((match = regex.exec(html)) !== null) {
+				const fullLink = match[0];
+				const sizeMatch = fullLink.match(/sizes=["'](\d+x\d+)["']/);
+				const size = sizeMatch ? parseInt(sizeMatch[1].split('x')[0], 10) : undefined; // Get width if available
+				const iconPath = fullLink.match(/href=["']([^"']+)["']/)?.[1];
+				if (!iconPath) continue; // Skip if no href found
+				// If path does not start with http, prepend the base URL.
+				iconUrls.push({
+					source: rel,
+					// path: iconPath.startsWith('http') ? iconPath : new URL(iconPath, mostLikelyWebsite.url).href,
+					path: iconPath,
+					size: size,
+				});
+			}
+		});
+		const metaIconProperties = ['og:image'];
+		metaIconProperties.forEach(property => {
+			const regex = new RegExp(`<meta[^>]{1,100}property=["']${property}["'][^>]{1,100}>`, 'gi');
+			let match;
+			while ((match = regex.exec(html)) !== null) {
+				const fullMeta = match[0];
+				const iconPath = fullMeta.match(/content=["']([^"']{1,100})["']/)?.[1];
+				if (!iconPath) continue; // Skip if no content found
+				iconUrls.push({
+					source: property,
+					path: iconPath,
+				});
+			}
+		});
+
+		iconUrls.sort((a, b) => {
+			// Apple icons come first
+			if (a.source.includes('apple') && !b.source.includes('apple')) {
+				return -1;
+			}
+			if (!a.source.includes('apple') && b.source.includes('apple')) {
+				return 1;
+			}
+
+			// If it has no size, prefer the other
+			if (!a.size && b.size) {
+				return 1; 
+			}
+			if (!b.size && a.size) {
+				return -1;
+			}
+			
+			if (a.size && b.size) {
+				return b.size - a.size; // Sort by size descending
+			}
+			return 0; // If sizes are not available, keep original order
+		});
+
+		console.log("Extracted icon URLs:", iconUrls);
+
+		return iconUrls.length > 0 ? iconUrls[0].path : null;
+	}
+
+	public static extractNameFromHtml(html: string, knownIdentifier: string): string | null {
+		// Extract name from og:site_name
+		const metaNameMatch = html.match(/<meta[^>]{1,100}property=["']og:site_name["'][^>]{1,100}>/i)?.[0].match(/content=["']([^"']{1,100})["']/)?.[1];
+		const pagTitle = html.match(/<title>(.{1,100}?)<\/title>/i)?.[1];
+
+		// Split title or site_name into parts
+		const nameCandidates = [metaNameMatch, pagTitle].flatMap(str => {
+			const parts: Array<string> = [];
+			if (str) {
+				const isStr = str.toString();
+				parts.push(...isStr.split(' - ').map(p => p.split(' | ')).flat().map(p => p.split(', ')).flat().map(p => p.trim()));
+			}
+			return parts;
+		}).map(part => part.trim()).filter(Boolean).map(part => ({
+			part,
+			score: similarityScore(norm(part), norm(knownIdentifier)),
+		})).sort((a, b) => b.score - a.score);
+
+		return nameCandidates.length > 0 ? nameCandidates[0].part : null;
+	}
+
 }

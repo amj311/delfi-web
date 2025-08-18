@@ -5,6 +5,9 @@ import AttributionAvatar from './AttributionAvatar.vue';
 import NavTriggerDrawer from './utils/NavTrigger/NavTriggerDrawer.vue';
 import { useMerchantStore } from '@/stores/merchant.store';
 import InputText from 'primevue/inputtext';
+import Button from 'primevue/button';
+import request from '@/services/request';
+import { useToast } from 'primevue/usetoast';
 
 const triggerRef = ref<InstanceType<typeof NavTriggerDrawer> | null>(null);
 let resolvePromise: ((merchant: Merchant | null) => void) | null = null;
@@ -12,12 +15,14 @@ const selectedMerchantId = ref<string>('');
 const selectedMerchant = computed(() => {
 	return useMerchantStore().getMerchantById(selectedMerchantId.value);
 });
+const transactionId = ref<string | null>(null);
 
 defineExpose({
-	selectMerchant: (currentMerchantId?: string | null) => {
+	selectMerchant: (currentMerchantId?: string | null, currentTransactionId?: string) => {
 		return new Promise<Merchant | null>((resolve) => {
 			resolvePromise = resolve;
 			selectedMerchantId.value = currentMerchantId || '';
+			transactionId.value = currentTransactionId || null;
 			triggerRef.value?.trigger()?.open();
 		});
 	}
@@ -43,6 +48,26 @@ const search = ref<string>('');
 const merchants = computed(() => useMerchantStore().merchants.filter(m => {
 	return !search.value.trim() || m.name.toLowerCase().includes(search.value.trim().toLowerCase());
 }));
+
+
+const webSearchedMerchant = ref<Merchant | null>(null);
+const isSearchingForWebMerchant = ref(false);
+async function searchMerchant() {
+	if (!transactionId.value) return;
+	isSearchingForWebMerchant.value = true;
+	try {
+		const { data } = await request.get('/merchant/findTransactionMerchant/' + transactionId.value);
+		webSearchedMerchant.value = data.data;
+	} catch (error) {
+		useToast().add({
+			severity: 'error',
+			summary: 'Error',
+			detail: 'Failed to search for merchant on the web. Please try again later.'
+		});
+	} finally {
+		isSearchingForWebMerchant.value = false;
+	}
+}
 
 </script>
 
@@ -71,6 +96,41 @@ const merchants = computed(() => useMerchantStore().merchants.filter(m => {
 				/>
 				<div class="flex-grow-1">{{  selectedMerchant.name }}</div>
 				<i class="pi pi-check" v-if="selectedMerchantId === selectedMerchant.merchant_id" />
+			</div>
+
+			<div v-if="transactionId">
+				<Button v-if="!webSearchedMerchant"
+					icon="pi pi-plus"
+					:label="isSearchingForWebMerchant ? 'Searching...' : 'Search web for merchant'"
+					:disabled="isSearchingForWebMerchant"
+					severity="secondary"
+					class="mt-2 mb-2"
+					@click="searchMerchant"
+				/>
+
+				<div v-else>
+					<div class="flex align-items-center gap-3">
+						Web result:
+						<div class="flex-grow-1" />
+						<Button
+							size="small"
+							icon="pi pi-times"
+							severity="secondary"
+							class="p-button-rounded p-button-text"
+							@click="webSearchedMerchant = null"
+						/>
+					</div>
+					<div
+						class="flex align-items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 border-round"
+						@click="() => selectMerchant(webSearchedMerchant!)"
+					>
+						<AttributionAvatar
+							:image="webSearchedMerchant.logo"
+							style="width: 2rem; height: 2rem;"
+						/>
+						<div class="flex-grow-1">{{ webSearchedMerchant.name }}</div>
+					</div>
+				</div>
 			</div>
 
 			<div class="searchbar">

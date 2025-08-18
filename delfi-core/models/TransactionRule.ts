@@ -5,15 +5,15 @@ import type { TransactionFilter } from "delfi-core/services/FilterService";
 
 export type TransactionRule = {
 	transaction_rule_id: string,
-	workspace_id?: string, // If not set, this rule applies globally
+	workspace_id?: string | null, // If not set, this rule applies globally
 	filter: TransactionFilter,
-	changes: Array<Action>,
+	actions: Array<Action>,
 }
 
 type Action = {
 	/** Either a Transaction property or more complicated action */
 	/** Can be path to nested property, i.e. a Transaction Memo */
-	target: string,
+	action: string,
 	/** Either the value to set or a more complex configuration for the action */
-	value: any,
+	value: string,
 }

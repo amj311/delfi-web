@@ -426,14 +426,13 @@ model Merchant {
     created_at  DateTime @default(now())
     updated_at  DateTime @default(now()) @updatedAt
 
-    name   String
-    domain String? // e.g. "starbucks.com"
-    logo   String?
+    name     String
+    hostname String? @unique // e.g. "starbucks.com" no https
+    logo     String?
 
-    transaction_identifier String? // the string parsed from transactions that identifies this merchant, e.g. "Starbucks 1234"
-    plaid_merchant_id      String? // e.g. plaid merchant id, manual merchant id, imported merchant id
-    category_association   String? // e.g. "Food & Drink"
-    Transaction            Transaction[]
+    plaid_merchant_id    String? // e.g. plaid merchant id, manual merchant id, imported merchant id
+    category_association String? // e.g. "Food & Drink"
+    Transaction          Transaction[]
 }
 
 model TransactionRule {
@@ -441,10 +440,10 @@ model TransactionRule {
     created_at          DateTime @default(now())
     updated_at          DateTime @default(now()) @updatedAt
 
-    workspace_id          String?
-    Workspace             Workspace?              @relation(fields: [workspace_id], references: [workspace_id])
-    filter                Json // e.g. filter to apply to transactions, like category, amount, etc.
-    TransactionRuleAction TransactionRuleAction[]
+    workspace_id String?
+    Workspace    Workspace?              @relation(fields: [workspace_id], references: [workspace_id])
+    filter       Json // e.g. filter to apply to transactions, like category, amount, etc.
+    actions      TransactionRuleAction[]
 }
 
 model TransactionRuleAction {
@@ -456,5 +455,5 @@ model TransactionRuleAction {
     TransactionRule     TransactionRule @relation(fields: [transaction_rule_id], references: [transaction_rule_id])
 
     action String // e.g. "set_category", "set_tag", "set_budget", etc.
-    value  Json // e.g. { category_id: "123", tag_ids: ["456", "789"], budget_id: "101112" }
+    value  String // Either a specific value or a JSON string
 }

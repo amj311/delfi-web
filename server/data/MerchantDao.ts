@@ -1,8 +1,8 @@
-import type { Merchant } from "delfi-core/models/Transaction";
+import type { Merchant, MerchantDraft } from "delfi-core/models/Transaction";
 import { prisma } from "../../prisma/client";
 
 export const MerchantDao = {
-    async createMerchant(workspace_id: string, merchantData: Merchant) {
+    async createMerchant(merchantData: MerchantDraft) {
         return await prisma.merchant.create({
             data: {
                 ...merchantData,
@@ -27,6 +27,14 @@ export const MerchantDao = {
             },
         });
     },
+
+	async getMerchantByHostname(hostname: string) {
+		return await prisma.merchant.findUnique({
+			where: {
+				hostname,
+			},
+		});
+	},
 
 	async getMerchantCategory(workspace_id: string, merchant_id: string) {
 		const merchant = await prisma.merchant.findUnique({

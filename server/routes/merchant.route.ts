@@ -1,4 +1,5 @@
-import { MerchantService } from "../services/MerchantService";
+import { TransactionDao } from "server/data/TransactionDao";
+import MerchantService from "../services/MerchantService";
 
 export default (fastify, _, done) => {
 
@@ -20,6 +21,20 @@ export default (fastify, _, done) => {
         };
     });
 
+	// Search for merchant to match transaction
+	fastify.get('/findTransactionMerchant/:transaction_id', async function handler (request, reply) {
+		const transaction_id = request.params.transaction_id;
+		const transaction = await TransactionDao.getTransactionById(transaction_id);
+		if (!transaction) {
+			throw new Error(`Transaction with ID ${transaction_id} not found`);
+		}
+		const results = await MerchantService.searchForTransactionMerchants([transaction]);
+		return {
+			success: true,
+			data: results[0]?.merchant || null,
+		};
+	});
+
     fastify.get('/:id', async function handler (request, reply) {
 		const workspace_id = request.sessionUser.workspace_id;
 		const merchant_id = request.params.id;
@@ -29,6 +44,8 @@ export default (fastify, _, done) => {
             data,
         };
     });
+
+
 
     // fastify.put('/:id', async function handler (request, reply) {
     //     const merchant_id = request.params.id;

@@ -610,82 +610,82 @@ export class TestDataService {
 		return [
 			{
 				transaction_rule_id: 'rule-1',
-				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: 'AMAZON MKTPL' } ],
-				changes: [
-					{ target: 'merchant_id', value: '9fd5faaa-c305-4df8-98e5-2af0f6bdb3a6' }
+				filter: [ { property: 'Transaction.original_description', operator: 'inc', operand: 'AMAZON MKTPL' } ],
+				actions: [
+					{ action: 'merchant_id', value: '9fd5faaa-c305-4df8-98e5-2af0f6bdb3a6' }
 				]
 			},
 			{
 				transaction_rule_id: 'rule-2',
-				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "RIDLEY'S" } ],
-				changes: [
-					{ target: 'merchant_id', value: 'dec45eae-1d76-405e-be2f-710e55bc2215' }
+				filter: [ { property: 'Transaction.original_description', operator: 'inc', operand: "RIDLEY'S" } ],
+				actions: [
+					{ action: 'merchant_id', value: 'dec45eae-1d76-405e-be2f-710e55bc2215' }
 				]
 			},
 			{
 				transaction_rule_id: 'rule-3',
-				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "WINCO FOODS" } ],
-				changes: [
-					{ target: 'merchant_id', value: '7d811758-d002-4108-89cc-62b4b8516db5' }
+				filter: [ { property: 'Transaction.original_description', operator: 'inc', operand: "WINCO FOODS" } ],
+				actions: [
+					{ action: 'merchant_id', value: '7d811758-d002-4108-89cc-62b4b8516db5' }
 				]
 			},
 			{
 				transaction_rule_id: 'rule-4',
-				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "STATE FARM" } ],
-				changes: [
-					{ target: 'merchant_id', value: '3af7197b-95bc-41ac-b900-6edd277f744e' }
+				filter: [ { property: 'Transaction.original_description', operator: 'inc', operand: "STATE FARM" } ],
+				actions: [
+					{ action: 'merchant_id', value: '3af7197b-95bc-41ac-b900-6edd277f744e' }
 				]
 			},
 			{
 				transaction_rule_id: 'rule-5',
-				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "OLIVE GARDEN" } ],
-				changes: [
-					{ target: 'merchant_id', value: '0e98e918-9fb7-4e76-b8d4-2be328938bce' }
+				filter: [ { property: 'Transaction.original_description', operator: 'inc', operand: "OLIVE GARDEN" } ],
+				actions: [
+					{ action: 'merchant_id', value: '0e98e918-9fb7-4e76-b8d4-2be328938bce' }
 				]
 			},
 			{
 				transaction_rule_id: 'rule-6',
-				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "COSTCO" } ],
-				changes: [
-					{ target: 'merchant_id', value: '211815cf-6651-4b6e-af94-9821afd1a672' }
+				filter: [ { property: 'Transaction.original_description', operator: 'inc', operand: "COSTCO" } ],
+				actions: [
+					{ action: 'merchant_id', value: '211815cf-6651-4b6e-af94-9821afd1a672' }
 				]
 			},
 			{
 				transaction_rule_id: 'rule-7',
-				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "CHEVRON" } ],
-				changes: [
-					{ target: 'merchant_id', value: 'dc463616-53ef-4b58-8a32-43e86c148ff4' }
+				filter: [ { property: 'Transaction.original_description', operator: 'inc', operand: "CHEVRON" } ],
+				actions: [
+					{ action: 'merchant_id', value: 'dc463616-53ef-4b58-8a32-43e86c148ff4' }
 				]
 			},
 			{
 				transaction_rule_id: 'rule-8',
-				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "MAVERIK" } ],
-				changes: [
-					{ target: 'merchant_id', value: 'f01f8a23-85d1-43ba-a6e9-30208d1a48dd' }
+				filter: [ { property: 'Transaction.original_description', operator: 'inc', operand: "MAVERIK" } ],
+				actions: [
+					{ action: 'merchant_id', value: 'f01f8a23-85d1-43ba-a6e9-30208d1a48dd' }
 				]
 			},
 			{
 				transaction_rule_id: 'rule-9',
-				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "HOME DEPOT" } ],
-				changes: [
-					{ target: 'merchant_id', value: '5cfa3fb0-16bd-4140-a0ee-a1029e53e44a' }
+				filter: [ { property: 'Transaction.original_description', operator: 'inc', operand: "HOME DEPOT" } ],
+				actions: [
+					{ action: 'merchant_id', value: '5cfa3fb0-16bd-4140-a0ee-a1029e53e44a' }
 				]
 			},
 
 			// MERCHANT and CATEGORY pair, for workspace-only rules (they assign merchants directly to their categories)
 			{
 				transaction_rule_id: 'rule-10',
-				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "RIDLEY'S" } ],
-				changes: [
-					{ target: 'merchant_id', value: 'dec45eae-1d76-405e-be2f-710e55bc2215' }
+				filter: [ { property: 'Transaction.original_description', operator: 'inc', operand: "RIDLEY'S" } ],
+				actions: [
+					{ action: 'merchant_id', value: 'dec45eae-1d76-405e-be2f-710e55bc2215' }
 				]
 			},
 			{
 				transaction_rule_id: 'rule-11',
 				workspace_id: TestDataService.workspaceId,
 				filter: [ { property: 'sourceTransaction.merchant_id', operator: 'eq', operand: "dec45eae-1d76-405e-be2f-710e55bc2215" } ],
-				changes: [
-					{ target: 'category_id', value: categoryByName("Groceries").category_id }
+				actions: [
+					{ action: 'category_id', value: categoryByName("Groceries").category_id }
 				]
 			},
 
@@ -694,9 +694,9 @@ export class TestDataService {
 			// The workspace will need to have a category with the same detection_key.
 			{
 				transaction_rule_id: 'rule-12',
-				filter: [ { property: 'sourceTransaction.original_description', operator: 'inc', operand: "WENDY'S" } ],
-				changes: [
-					{ target: 'merchant_id', value: 'd1a7ff54-1234-450b-b7c8-cb02828a7efe' }
+				filter: [ { property: 'Transaction.original_description', operator: 'inc', operand: "WENDY'S" } ],
+				actions: [
+					{ action: 'merchant_id', value: 'd1a7ff54-1234-450b-b7c8-cb02828a7efe' }
 				]
 			},
 		]

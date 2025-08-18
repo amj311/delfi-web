@@ -98,7 +98,10 @@ export const diff = (objA: any, objB: any, maxDepth: number = 10): any => {
 
 		for (const key in a) {
 			const newPath = path ? `${path}.${key}` : key;
-			if (typeof a[key] === 'object' && typeof b[key] === 'object') {
+			if (!a[key] && !b[key]) {
+				continue; // Ignore null to undefined changes
+			}
+			else if (typeof a[key] === 'object' && typeof b[key] === 'object') {
 				// If both are arrays or objects, recurse into them
 				populateChanges(a[key], b[key], path ? `${path}.${key}` : key, depth + 1);
 			}

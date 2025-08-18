@@ -27,6 +27,7 @@ const transaction = ref<Transaction>({} as Transaction);
 defineExpose({
 	open: (_transaction: Transaction) => {
 		transaction.value = _transaction;
+		notesDraft.value = transaction.value.notes;
 		triggerRef.value?.trigger()?.open();
 	},
 });
@@ -51,6 +52,7 @@ watch(
 			await TransactionService.updateTransaction(transaction.value.transaction_id, newTransaction);
 			lastSaved.value = new Date();
 			const diffKeys = Object.keys(diff(oldValue, newTransaction) || {});
+			console.log('Transaction saved:', transaction.value.transaction_id, 'Changes:', diff(oldValue, newTransaction));
 			const shouldCompute = diffKeys.reduce((acc, key) => {
 				return acc || !computeExclusions.includes(key);
 			}, false);
@@ -128,7 +130,7 @@ async function promptForMemo(attribution: Transaction['Attributions'][number]) {
 const merchantSelectionDrawer = ref<InstanceType<typeof MerchantSelectionDrawer> | null>(null);
 async function selectMerchant() {
 	if (merchantSelectionDrawer.value) {
-		const selection = await merchantSelectionDrawer.value.selectMerchant(transaction.value.Merchant?.merchant_id || null);
+		const selection = await merchantSelectionDrawer.value.selectMerchant(transaction.value.Merchant?.merchant_id || null, transaction.value.transaction_id);
 		transaction.value.Merchant = selection || null;
 		transaction.value.merchant_id = selection?.merchant_id || null;
 	}
@@ -360,14 +362,16 @@ function closeSplitModal() {
 				<div class="details-rows">
 					<div class="row">
 						<label>Merchant</label>
-						<Button
-							text
-							:severity="transaction.Merchant ? 'contrast' : 'secondary'"
-							class="flex align-items-center gap-2"
-							@click="selectMerchant"
-						>
-							{{ transaction.Merchant?.name || 'Unknown' }}
-						</Button>
+						<div class="flex align-items-center gap-2">
+							<Button
+								text
+								:severity="transaction.Merchant ? 'contrast' : 'secondary'"
+								class="flex align-items-center gap-2"
+								@click="selectMerchant"
+							>
+								{{ transaction.Merchant?.name || 'Unknown' }}
+							</Button>
+						</div>
 					</div>
 
 					<div class="row">
@@ -473,7 +477,7 @@ function closeSplitModal() {
 	</DrawerModal>
 
 	<TransactionAttributionDrawer ref="transactionAttributionDrawer" />
-	<MerchantSelectionDrawer ref="merchantSelectionDrawer" />
+	<MerchantSelectionDrawer ref="merchantSelectionDrawer" :key="transaction.transaction_id" />
 </template>
 
 <style scoped lang="scss">

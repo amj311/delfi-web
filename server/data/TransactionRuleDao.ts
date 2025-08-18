@@ -5,7 +5,15 @@ import { TestDataService } from "server/services/TestDataService";
 export const TransactionRuleDao = {
 	async createTransactionRule(data: Omit<TransactionRule, 'transaction_rule_id'>) {
 		return await prisma.transactionRule.create({
-			data,
+			data: {
+				filter: data.filter,
+				actions: {
+					create: data.actions.map(action => ({
+						action: action.action,
+						value: action.value,
+					})),
+				}
+			},
 		});
 	},
 
@@ -36,12 +44,12 @@ export const TransactionRuleDao = {
 	},
 
 	async updateTransactionRule(transactionruleId: string, data: Partial<TransactionRule>) {
-		return await prisma.transactionRule.update({
-			where: {
-				transaction_rule_id: transactionruleId,
-			},
-			data,
-		});
+		// return await prisma.transactionRule.update({
+		// 	where: {
+		// 		transaction_rule_id: transactionruleId,
+		// 	},
+		// 	data,
+		// });
 	},
 
 	async deleteTransactionRule(transactionruleId: string) {

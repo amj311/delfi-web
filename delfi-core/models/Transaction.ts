@@ -160,10 +160,12 @@ export type AttributionEvent = CommonEventDetails & TransactionAttribution & {
 export type Merchant = {
 	merchant_id: string,
 	name: string,
+	hostname?: string | null, // e.g. "starbucks.com" no https
 	logo?: string | null,
 	plaid_merchant_id?: string | null, // The Plaid merchant ID, if available
 	detection_key?: PlaidCategory | null, // A key used to detect the merchant, if applicable
 }
+export type MerchantDraft = Omit<Merchant, 'merchant_id'>;
 
 
 export class TransactionUtils {

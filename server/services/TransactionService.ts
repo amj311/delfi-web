@@ -2,6 +2,7 @@ import { type CreateTransaction, type Transaction } from "delfi-core/models/Tran
 import { date, type DelfiDate } from "delfi-core/utils/dateUtils";
 import { TransactionDao } from "server/data/TransactionDao";
 import { TransactionRuleService } from "./TransactionRuleService";
+import MerchantService from "./MerchantService";
 
 export class TransactionService {
 	private static async createTransaction(workspace_id: string, transactionData: CreateTransaction) {
@@ -105,6 +106,21 @@ export class TransactionService {
 		// Apply rules to all NEW transactions
 		const createdTransactions = results.filter(result => result.created).map(result => result.transaction);
 		await TransactionRuleService.applyRulesToTransactions(workspace_id, createdTransactions);
+
+		// Find any missing merchants for new transactions.
+		// NOTE! This expects that createdTransactions have been updated with a merchant_id if applicable by the rules.
+		const transactionsWithoutMerchants = createdTransactions.filter(tx => !tx.merchant_id);
+		if (transactionsWithoutMerchants.length > 0) {
+			const merchantResults = await MerchantService.searchForTransactionMerchants(transactionsWithoutMerchants);
+			await Promise.all(merchantResults.map(async ({ merchant, transactions }) => {
+				// Update all transactions with the new merchant
+				await Promise.all(transactions.map(tx => {
+					tx.merchant_id = merchant.merchant_id;
+					return TransactionDao.updateTransaction(workspace_id, tx.transaction_id, tx);
+				}));
+			}));
+		}
+
 		return results;
 	}
 

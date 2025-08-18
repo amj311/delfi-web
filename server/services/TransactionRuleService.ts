@@ -7,7 +7,6 @@ import { BudgetDao } from "server/data/BudgetDao";
 import { MerchantDao } from "server/data/MerchantDao";
 import { TransactionDao } from "server/data/TransactionDao";
 import { TransactionRuleDao } from "server/data/TransactionRuleDao";
-import { TestDataService } from "./TestDataService";
 
 export class TransactionRuleService {
 	public static async applyRulesToTransactions(workspace_id: string, transactions: Transaction[]) {
@@ -18,8 +17,8 @@ export class TransactionRuleService {
 		// properties set by the global rules.
 		// EG workspace rules could set both a merchant and a category. The merchant target maps to a custom rule which tries to set a category.
 		// The category rule/action should apply last, so it can override the category set by the merchant rule.
-		[workspaceRules, globalRules].forEach(rules => rules.sort((a, b) => a.changes.some(c => c.target in CustomActions) ? -1 : 1).forEach(rule => {
-			rule.changes.sort((a, b) => a.target in CustomActions ? -1 : 1);
+		[workspaceRules, globalRules].forEach(rules => rules.sort((a, b) => a.actions.some(c => c.action in CustomActions) ? -1 : 1).forEach(rule => {
+			rule.actions.sort((a, b) => a.action in CustomActions ? -1 : 1);
 		}));
 
 		await Promise.all(transactions.map(async (transaction) => {
@@ -46,7 +45,7 @@ export class TransactionRuleService {
 						continue; // Rule does not match this attribution
 					}
 
-					await Promise.all(rule.changes.map(async (change) => {
+					await Promise.all(rule.actions.map(async (change) => {
 						changed = await TransactionRuleService.applyAction(attribution, transaction, change) || changed;
 					}));
 				}
@@ -57,21 +56,21 @@ export class TransactionRuleService {
 		return transaction;
 	}
 
-	private static async applyAction(attribution: TransactionAttribution, transaction: Transaction, change: TransactionRule["changes"][number]): Promise<boolean> {
+	private static async applyAction(attribution: TransactionAttribution, transaction: Transaction, change: TransactionRule["actions"][number]): Promise<boolean> {
 		let changed = false;
 		// handle custom actions first, otherwise set property
-		if (change.target in CustomActions) {
+		if (change.action in CustomActions) {
 			// the action will determine if it has changed the attribution
-			await CustomActions[change.target](attribution, transaction, change.value);
+			await CustomActions[change.action](attribution, transaction, change.value);
 		}
 		// attempt to set property on attribution or transaction
-		else if (change.target in attribution) {
+		else if (change.action in attribution) {
 			changed = true;
-			attribution[change.target] = change.value;
+			attribution[change.action] = change.value;
 		}
-		else if (change.target in transaction) {
+		else if (change.action in transaction) {
 			changed = true;
-			transaction[change.target] = change.value;
+			transaction[change.action] = change.value;
 		}
 		return changed;
 	}
