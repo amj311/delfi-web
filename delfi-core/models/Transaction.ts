@@ -1,9 +1,11 @@
-import type { DelfiDate } from "delfi-core/utils/dateUtils"
+import { ddate, type DelfiDate } from "delfi-core/utils/dateUtils"
 import type { Category } from "./Category"
 import type { TagColor } from "delfi-core/utils/constants"
 import type { CommonEventDetails } from "./Summary"
 import type { Budget, BudgetChildItem } from "./Budget"
 import type { PlaidCategory } from "server/services/PlaidService"
+import type { CategoryKey } from "./systemCategories"
+import { AccountUtils, type AccountSubtype } from "./Account"
 
 
 /**
@@ -114,7 +116,9 @@ type TrueEventDetails = {
 		lon?: number | null,
 	} | null,
 
-	account_balance?: number | null, // The account balance at the time of the transaction, if available
+	account_balance?: number | null, // The account balance at the time of the transaction. REQUIRED WHEN NOT PENDING!!!!!!
+	transfer_pair_id?: string | null, // The ID of the transfer pair, if applicable
+	TransferPair?: Transaction | null,
 
     source:      string, // e.g. "plaid", "manual", "imported"
     source_id?:   string | null, // e.g. plaid transaction id, manual transaction id, imported transaction id
@@ -130,7 +134,7 @@ export type TransactionUniqueFields = {
 	original_description: string,
 	amount: number,
 	date: DelfiDate,
-	date_order?: string | null,
+	date_order?: string | null, // ensures uniqueness of transactions on the same date
 }
 
 export type TransactionDetails = TrueBudgetableDetails & TrueEventDetails;
@@ -155,6 +159,9 @@ export type CreateTransaction = Omit<Transaction, 'transaction_id' | 'Attributio
 export type AttributionEvent = CommonEventDetails & TransactionAttribution & {
 	sourceTransaction: Transaction,
 	isSplit: boolean, // If this event is a split of a transaction
+	softDescription: string,
+	isTransferPair: boolean,
+	isTransferCopy: boolean,
 }
 
 export type Merchant = {
@@ -163,7 +170,7 @@ export type Merchant = {
 	hostname?: string | null, // e.g. "starbucks.com" no https
 	logo?: string | null,
 	plaid_merchant_id?: string | null, // The Plaid merchant ID, if available
-	detection_key?: PlaidCategory | null, // A key used to detect the merchant, if applicable
+	detection_key?: string | null,
 }
 export type MerchantDraft = Omit<Merchant, 'merchant_id'>;
 
@@ -183,6 +190,8 @@ export class TransactionUtils {
 
 	public static createEventFromAttribution(attribution: TransactionAttribution, transaction: Transaction): AttributionEvent {
 		const BudgetChildItem = attribution.Budget?.childItems?.find(item => item.budget_child_item_id === attribution.budget_child_item_id) || null;
+		const breakdown = TransactionUtils.extractDescriptionInfo(transaction.original_description);
+
 		return {
 			sourceType: 'attribution',
 			isSplit: transaction.Attributions.length > 1,
@@ -196,7 +205,10 @@ export class TransactionUtils {
 			Merchant: transaction.Merchant || null,
 			BudgetChildItem,
 
-			displayName: attribution.memo || transaction.original_description,
+			displayName: attribution.memo || breakdown?.simple_description || transaction.original_description,
+			softDescription: breakdown?.simple_description || transaction.original_description,
+			isTransferPair: Boolean(transaction.transfer_pair_id),
+			isTransferCopy: Boolean(transaction.transfer_pair_id) && transaction.amount > 0,
 			...attribution,
 		};
 	}
@@ -232,7 +244,7 @@ export class TransactionUtils {
 		if (!descriptionInfo) return null;
 
 		return {
-			identifier: descriptionInfo.identifier_full,
+			identifier: descriptionInfo.simple_description || description,
 			format: descriptionInfo.format,
 		};
 	}
@@ -274,10 +286,11 @@ export type AchEntryType = (typeof ACH_ENTRY_TYPES)[number];
 
 export type DescriptionBreakdown = {
 	format: DescriptionFormat,
+	designation?: 'transfer' | 'loan_payment' | 'cash_advance',
 
-	identifier_full: string, // It must at LEAST extract some sort of identifier
-	identifier_name?: string,
-	identifier_number?: string,
+	simple_description?: string,
+	merchant_name?: string,
+	merchant_number?: string,
 
 	date?: DelfiDate, // If the description includes a date, it will be parsed here
 
@@ -294,6 +307,17 @@ export type DescriptionBreakdown = {
 	location_region?: string,
 	location_country?: string,
 	location_street_address?: string,
+
+	transfer_from_account_name?: string, // Not guaranteed to match account name exactly
+	transfer_from_account_type?: AccountSubtype,
+	transfer_to_account_name?: string, // Not guaranteed to match account name exactly
+	transfer_to_account_type?: AccountSubtype,
+
+	p2p_service?: string,
+	p2p_recipient?: string,
+	p2p_identifier?: string,
+	p2p_transaction_id?: string,
+	p2p_type?: 'CR' | 'DR',
 }
 
 export const DescriptionFormats = {
@@ -303,7 +327,7 @@ export const DescriptionFormats = {
 		if (!match?.groups) return null;
 		return {
 			format: 'ACH_X_COMMA_SEC',
-			identifier_full: match.groups.identifier?.trim(),
+			simple_description: match.groups.identifier?.trim(),
 			ach_type: match.groups.type?.trim(),
 			ach_sec_code: match.groups.sec as AchSecCode,
 			ach_entry_type: match.groups.entry as AchEntryType,
@@ -348,9 +372,9 @@ export const DescriptionFormats = {
 
 		return {
 			format: 'CARD_DASH_DATE_X_REGION',
-			identifier_full: match.groups.identifier?.trim(),
-			identifier_name: name,
-			identifier_number: storeNumber,
+			simple_description: match.groups.identifier?.trim(),
+			merchant_name: name,
+			merchant_number: storeNumber,
 			phone_number: phone,
 			location_city: city,
 			location_region: match.groups.region?.trim(),
@@ -378,16 +402,90 @@ export const DescriptionFormats = {
 
 		return {
 			format: 'POS_REGION_COMMA_X_CODE',
-			identifier_full: match.groups.identifier?.trim(),
-			identifier_name,
-			identifier_number: number,
+			simple_description: match.groups.identifier?.trim(),
+			merchant_name: identifier_name,
+			merchant_number: number,
 			location_country: match.groups.country?.trim(),
 			location_region: match.groups.region?.trim(),
 			location_city: match.groups.city?.trim(),
 			location_street_address: address,
 		}
 	},
+
+
+	FUNDS_XFER_FROM_TO: (description: string): DescriptionBreakdown | null => {
+		/**
+		 * AFCU
+		 * Starts with "FUNDS TRANSFER FROM"
+		 * May start with "POINT OF SALE "
+		 * Only observed as cash advance from line of credit
+		 * 
+		 * These appear to be account types rather than names
+		 * 
+		 * FUNDS TRANSFER FROM LINE OF CREDIT TO CHECKING
+		 * MOBILE BANKING FUNDS TRANSFER TO LINE OF CREDIT
+		 * MOBILE BANKING FUNDS TRANSFER FROM CHECKING
+		 * POINT OF SALE FUNDS TRANSFER FROM LINE OF CREDIT TO CHECKING
+		 */
+		const regexp = /^(?:MOBILE BANKING |POINT OF SALE )?FUNDS TRANSFER(?:\s+FROM\s+(?<from>.+?))?\s*(?:\s+TO\s+(?<to>.*))?$/;
+		const match = regexp.exec(description);
+		if (!match?.groups) return null;
+
+		const { from, to } = match.groups;
+
+		return {
+			format: 'FUNDS_XFER_FROM_TO',
+			designation: 'transfer',
+			simple_description: `Transfer${from ? ' from ' + from : ''}${to ? ' to ' + to : ''}`,
+			transfer_from_account_type: from ? AccountUtils.matchAccountType(from.trim())?.subtype : undefined,
+			transfer_to_account_type: to ? AccountUtils.matchAccountType(match.groups.to.trim())?.subtype : undefined,
+		}
+	},
+
+
+	MOBILE_BANKING_PAYMENT_FROM: (description: string): DescriptionBreakdown | null => {
+		/**
+		 * AFCU
+		 * Only observed as payment into credit accounts
+		 * 
+		 * These appear to be account types rather than names
+		 * 
+		 * MOBILE BANKING PAYMENT FROM MONEY MARKET
+		 */
+		const regexp = /^MOBILE BANKING PAYMENT FROM (?<from>.+?)$/;
+		const match = regexp.exec(description);
+		if (!match?.groups) return null;
+
+		return {
+			format: 'MOBILE_BANKING_PAYMENT_FROM',
+			designation: 'transfer',
+			simple_description: "Payment From " + match.groups.from.trim(),
+			transfer_from_account_type: AccountUtils.matchAccountType(match.groups.from.trim())?.subtype,
+		}
+	},
+
+	P2P_PAYMENT: (description: string): DescriptionBreakdown | null => {
+		const regexp = /^(?<service>ZELLE|VENMO|PAYPAL|CASH APP|APPLE PAY) (?<recipient>[\w\s]+) (?<identifier>[^;]+);(?<transaction_id>[^;]+);(?<date>\d{4}-\d{2}-\d{2})(?:;)?(?<type>CR|DR)/;
+		const match = regexp.exec(description);
+		if (!match?.groups) return null;
+
+		return {
+			format: 'P2P_PAYMENT',
+			simple_description: `${match.groups.service} Payment to ${match.groups.recipient.trim()}`,
+			p2p_service: match.groups.service,
+			p2p_recipient: match.groups.recipient.trim(),
+			p2p_identifier: match.groups.identifier.trim(),
+			p2p_transaction_id: match.groups.transaction_id.trim(),
+			date: ddate(match.groups.date.trim()),
+			p2p_type: match.groups.type.trim() as 'CR' | 'DR',
+		}
+	}
 } as const;
 export type DescriptionFormat = keyof typeof DescriptionFormats;
 
 // console.log(TransactionUtils.extractDescriptionInfo("POINT OF SALE PURCHASE USA ID CHUBBUCK, MAVERIK #489 - 000000455113"));
+// FUNDS TRANSFER FROM LINE OF CREDIT TO CHECKING
+// MOBILE BANKING FUNDS TRANSFER TO LINE OF CREDIT
+// MOBILE BANKING FUNDS TRANSFER FROM CHECKING
+// POINT OF SALE FUNDS TRANSFER FROM LINE OF CREDIT TO CHECKING
+// MOBILE BANKING PAYMENT FROM MONEY MARKET

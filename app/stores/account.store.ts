@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import request from '@/services/request';
 import type { Account, Account as DelfiAccount } from '../../delfi-core/models/Account';
 import { useDelfiStore } from './delfi.store';
-import { date } from '../../delfi-core/utils/dateUtils';
+import { ddate } from '../../delfi-core/utils/dateUtils';
 
 export const useAccountStore = defineStore('account', () => {
 	const delfiStore = useDelfiStore();

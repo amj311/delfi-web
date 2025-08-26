@@ -2,7 +2,7 @@ import { RecurrenceType, type Budget, type BudgetChildItem, type FixedAmount, ty
 import { prisma } from "../../prisma/client";
 import { TestDataService } from "../services/TestDataService";
 import { asAny } from "delfi-core/utils/miscUtils";
-import { date } from "delfi-core/utils/dateUtils";
+import { ddate } from "delfi-core/utils/dateUtils";
 import { BudgetGroupDao } from "./GroupDao";
 
 export class BudgetDao {
@@ -93,7 +93,7 @@ export class BudgetDao {
 			...BudgetDao.dbToBudget(childItem),
 			budget_child_item_id: childItem.budget_child_item_id,
 			amount: childItem.amount,
-			date: date(childItem.date),
+			date: ddate(childItem.date),
 		}
 	}
 
@@ -141,7 +141,7 @@ export class BudgetDao {
 			...sharedInsertData,
 			budget_id,
 			amount: budgetData.amount,
-			date: date(budgetData.date).toString(),
+			date: ddate(budgetData.date).toString(),
 		};
 	}
 
@@ -254,7 +254,7 @@ export class BudgetDao {
 				budget_id,
 				budget_child_item_id: item.budget_child_item_id || undefined,
 				amount: item.amount,
-				date: date(item.date).toString(),
+				date: ddate(item.date).toString(),
 			}
 		});
 	}
@@ -270,7 +270,7 @@ export class BudgetDao {
 			data: {
 				...insertInstructions,
 				amount: item.amount,
-				date: date(item.date).toString(),
+				date: ddate(item.date).toString(),
 			}
 		});
 	}

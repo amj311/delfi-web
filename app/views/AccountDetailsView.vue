@@ -6,9 +6,6 @@ import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
 import Currency from '@/components/Currency.vue';
 import { TransactionService } from '@/services/transaction.service';
 import { TransactionUtils, type Transaction } from 'delfi-core/models/Transaction';
-import Icon from '@/components/Icon.vue';
-import { colors } from 'delfi-core/utils/constants';
-import CategoryAvatar from '@/components/CategoryAvatar.vue';
 import AttributionAvatar from '@/components/AttributionAvatar.vue';
 import { instantiateDates } from 'delfi-core/utils/dateUtils';
 

@@ -8,7 +8,7 @@ import { type Account } from "./models/Account";
 import { type Budget, type BudgetEvent, type BudgetOccurrence } from "./models/Budget";
 import Forecast from "./models/Forecast";
 import { type Category } from "./models/Category";
-import { date, type DelfiDate, instantiateDates } from "./utils/dateUtils";
+import { ddate, type DelfiDate, instantiateDates } from "./utils/dateUtils";
 import type { TransactionFilter } from "./services/FilterService";
 import FilterService from "./services/FilterService";
 import { TransactionUtils, type AttributionEvent, type Transaction } from "./models/Transaction";
@@ -24,7 +24,7 @@ export type DelfiConfig = {
 	 * This will request a period (start to end) that is immediately before the earliest transaction currently loaded.
 	 * Remember that end date is INCLUSIVE.
 	 */
-	loadTransactions: (start: DelfiDate, end: DelfiDate) => Promise<Transaction[]>,
+	loadTransactions: (start: DelfiDate, end: DelfiDate, accounts?: Array<string>) => Promise<Transaction[]>,
 	readonly start: DelfiDate,
 	readonly end: DelfiDate,
 }
@@ -92,65 +92,21 @@ export class Delfi {
 
 	async getMonthSummary(monthDate: DelfiDate) {
 		// make extra sure we have the start and end date
-		const monthStart = date(monthDate.startOf('month'));
-		const monthEnd = date(monthDate.endOf('month'));
+		const monthStart = ddate(monthDate.startOf('month'));
+		const monthEnd = ddate(monthDate.endOf('month'));
 		const monthForecast = await this.forecast.pollMonthReady(monthStart);
 		const monthAttributionEvents = await this.transactionSource.getAttributedEventsBetween(monthStart, monthEnd);
 
 		const monthBudgetOccurrences = await this.getOccurrenceSummaries(monthForecast.occurrences);
 		const monthBudgetSnapshots = monthBudgetOccurrences.map(o => o.snapshot(monthStart, monthEnd));
 		const monthBudgetEvents = monthBudgetSnapshots.flatMap(snapshot => snapshot.budgetEvents);
-		const monthNet = monthBudgetEvents.reduce((acc, event) => acc + event.amount, 0);
-
-		// compute each account's balance at the beginning and end of the month
-		// TODO: compute PROJECTED balance versus real balance at the beginning and end of the month
-		// Will need to subtract real transactions from the current_balance to get to the month beginning
-		const accountSummaries = await Promise.all(this.accounts.map(async (account: Account) => {
-			const monthStartBalance = account.current_balance + FilterService.accumulateUpTo(this.forecast.events, monthStart, [
-				{ property: 'account_id', operator: 'eq', operand: account.account_id },
-			]);
-			const accountEvents = FilterService.filter(monthBudgetEvents, [
-				{ property: 'account_id', operator: 'eq', operand: account.account_id },
-				{ property: 'year', operator: 'eq', operand: monthEnd.year() },
-				{ property: 'month', operator: 'eq', operand: monthEnd.month() },
-			]);
-			const monthAccumulation = accountEvents.reduce((acc, event) => acc + event.amount, 0);
-			const monthEndBalance = monthStartBalance + monthAccumulation;
-			return {
-				account_id: account.account_id,
-				startingBalance: monthStartBalance,
-				endingBalance: monthEndBalance,
-				netChange: monthAccumulation,
-				events: accountEvents,
-				partitions: await Promise.all(account.partitions.map(async partition => {
-					const partitionStartBalance = partition.current_balance + FilterService.accumulateUpTo(this.forecast.events, monthStart, [
-						{ property: 'target_account_partition_id', operator: 'eq', operand: partition.account_partition_id },
-					]);
-					const partitionEvents = FilterService.filter(monthBudgetEvents, [
-						{ property: 'target_account_partition_id', operator: 'eq', operand: partition.account_partition_id },
-						{ property: 'year', operator: 'eq', operand: monthEnd.year() },
-						{ property: 'month', operator: 'eq', operand: monthEnd.month() },
-					]);
-					const partitionAccumulation = partitionEvents.reduce((acc, event) => acc + event.amount, 0);
-					const partitionEndBalance = partitionStartBalance + partitionAccumulation;
-					return {
-						account_partition_id: partition.account_partition_id,
-						name: partition.name,
-						startingBalance: partitionStartBalance,
-						endingBalance: partitionEndBalance,
-						netChange: partitionAccumulation,
-						events: partitionEvents,
-					};
-				})),
-			}
-		}));
 
 		const budgetEventsByBudget: Map<Budget, BudgetEventSummary[]> = new Map();
 		monthBudgetEvents.forEach(event => {
 			const events = budgetEventsByBudget.get(event.sourceBudget) || [];
 			events.push(event);
 			budgetEventsByBudget.set(event.sourceBudget, events);
-		});``
+		});
 		const budgetSummaries = Array.from(budgetEventsByBudget.entries()).map(([budget, budgetEvents]) => {
 			const attributedEvents = monthAttributionEvents.filter(e => e.budget_id === budget.budget_id && e.date.isBetweenInclusive(monthStart, monthEnd));
 			return new BudgetSnapshot(
@@ -209,8 +165,62 @@ export class Delfi {
 			};
 		});
 
+
+		// compute each account's balance at the beginning and end of the month
+		// TODO: My current approach to get the account balance is WAY off! It pulls the account balance from the DB, but then aggregates ALL budget events in the entire forecast.
+		// If I can confidently save the current account balance with each transaction, then I can pull the balance from the first transaction of this month.
+		// That transaction may already be here, unless we're looking into the future. Then I just need a way to get the most recent transaction of all.
+		const accountSummaries = await Promise.all(this.accounts.map(async (account: Account) => {
+			// const monthStartBalance = account.current_balance + FilterService.accumulateUpTo(this.forecast.events, monthStart, [
+			// 	{ property: 'account_id', operator: 'eq', operand: account.account_id },
+			// ]);
+
+			// Budgets with this account_id could be direct debits or credits, or a transfer INTO this account.
+			const budgetSnapshots = monthBudgetSnapshots.filter(s => s.budget.account_id === account.account_id);
+			const directAccumulation = budgetSnapshots.reduce((acc, snap) => acc + snap.budgetedAtEnd, 0);
+
+			const budgetedTransfersOut = monthBudgetSnapshots.filter(s => s.budget.origin_account_id === account.account_id);
+			const transferOutAccumulation = -1 * budgetedTransfersOut.reduce((acc, snap) => acc + snap.budgetedAtEnd, 0); // invert the value
+			const monthAccumulation = directAccumulation + transferOutAccumulation;
+			// const projectedEndBalance = monthStartBalance + monthAccumulation;
+
+			const attributedEvents = monthAttributionEvents.filter(e => e.account_id === account.account_id);
+			const attributedAccumulation = attributedEvents.reduce((acc, event) => acc + event.amount, 0);
+			
+			return {
+				account_id: account.account_id,
+				// startingBalance: monthStartBalance,
+				// endingBalance: projectedEndBalance,
+				budgetedChange: monthAccumulation,
+				attributedChange: attributedAccumulation,
+				// events: accountBudgetEvents,
+				// partitions: await Promise.all(account.partitions.map(async partition => {
+				// 	const partitionStartBalance = partition.current_balance + FilterService.accumulateUpTo(this.forecast.events, monthStart, [
+				// 		{ property: 'target_account_partition_id', operator: 'eq', operand: partition.account_partition_id },
+				// 	]);
+				// 	const partitionEvents = FilterService.filter(monthBudgetEvents, [
+				// 		{ property: 'target_account_partition_id', operator: 'eq', operand: partition.account_partition_id },
+				// 		{ property: 'year', operator: 'eq', operand: monthEnd.year() },
+				// 		{ property: 'month', operator: 'eq', operand: monthEnd.month() },
+				// 	]);
+				// 	const partitionAccumulation = partitionEvents.reduce((acc, event) => acc + event.amount, 0);
+				// 	const partitionEndBalance = partitionStartBalance + partitionAccumulation;
+				// 	return {
+				// 		account_partition_id: partition.account_partition_id,
+				// 		name: partition.name,
+				// 		startingBalance: partitionStartBalance,
+				// 		endingBalance: partitionEndBalance,
+				// 		netChange: partitionAccumulation,
+				// 		events: partitionEvents,
+				// 	};
+				// })),
+			}
+		}));
+
 		return {
-			netGrowth: monthNet,
+			// Net growth = income + spending (negative). Ignore Transfers!
+			budgetedNet: incomeSummary.tally.budgetedNet + spendingSummary.tally.budgetedNet,
+			attributedNet: incomeSummary.tally.attributedNet + spendingSummary.tally.attributedNet,
 			budgetEvents: monthBudgetEvents,
 			attributionEvents: monthAttributionEvents,
 			budgetSummaries: monthBudgetSnapshots,
@@ -229,9 +239,9 @@ export class Delfi {
 
 class TransactionSource {
 	private getEventsQueue = new PromiseQueue();
-	private currentTransactionStart: DelfiDate | null = null
-	private loadedTransactions: Array<Transaction> = [];
-	private attributedEvents: Array<AttributionEvent> = [];
+	private loadedTransactionStart: DelfiDate | null = null
+	private loadedTransactions: Map<string, Transaction> = new Map();
+	private attributedEvents: Map<string, AttributionEvent> = new Map();
 
 	constructor(
 		private readonly loadTransactions: DelfiConfig['loadTransactions'],
@@ -242,16 +252,16 @@ class TransactionSource {
 	// use a promise queue to make sure we don't double-load transactions
 	return await this.getEventsQueue.add(async () => {
 		// If we don't yet have transactions for this period, load them
-		if (!this.currentTransactionStart || start.isBefore(this.currentTransactionStart)) {
+		if (!this.loadedTransactionStart || start.isBefore(this.loadedTransactionStart)) {
 			// Load up to either the forecast end or the last loaded start			
-			const loadEnd = this.currentTransactionStart ? this.currentTransactionStart.subtract(1, 'day') : this.initialEnd;
+			const loadEnd = this.loadedTransactionStart ? this.loadedTransactionStart.subtract(1, 'day') : this.initialEnd;
 			const newTransactions = await this.loadTransactions(start, loadEnd);
-			this.loadedTransactions.push(...newTransactions);
-			this.attributedEvents.push(...TransactionUtils.processAttributionEvents(newTransactions));
-			this.currentTransactionStart = start;
+			newTransactions.forEach(tx => this.loadedTransactions.set(tx.transaction_id, tx));
+			TransactionUtils.processAttributionEvents(newTransactions).forEach(event => this.attributedEvents.set(event.transaction_attribution_id, event));
+			this.loadedTransactionStart = start;
 		}
 		// Filter the loaded transactions to the requested range
-		return FilterService.filter(this.attributedEvents, [
+		return FilterService.filter(Array.from(this.attributedEvents.values()), [
 			{ property: 'date', operator: 'gte', operand: start },
 			{ property: 'date', operator: 'lte', operand: end },
 			...filter,

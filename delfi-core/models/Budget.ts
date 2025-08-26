@@ -1,6 +1,6 @@
 import { ScheduleService, type SingleSchedule } from "./schedules/Schedule"
 import { computeTriggeredAmount, type Trigger } from "./schedules/triggers"
-import { date, toDelfiInterval, type DelfiDate } from "../utils/dateUtils";
+import { ddate, toDelfiInterval, type DelfiDate } from "../utils/dateUtils";
 import FilterService from "../services/FilterService";
 import { type BudgetableTransactionDetails } from "./Transaction";
 import type { CommonEventDetails } from "./Summary";
@@ -222,12 +222,12 @@ export default class BudgetUtils {
 		const interval = occurrence.sourceSchedule.projectionInterval!.interval;
 		const projectionEvents: BudgetEvent[] = [];
 		// Get child items within this window
-		const childItems = occurrence.budget.childItems?.filter(item => date(item.date).isBetweenInclusive(windowStart, windowEnd)) || [];
+		const childItems = occurrence.budget.childItems?.filter(item => ddate(item.date).isBetweenInclusive(windowStart, windowEnd)) || [];
 
 		let budgetUsedSoFar = 0;
 		// Process child items into events
 		for (const child of childItems) {
-			const childEvents = BudgetUtils.createDateEventsFromOccurrenceDetails(date(child.date), child.amount, child, occurrence);
+			const childEvents = BudgetUtils.createDateEventsFromOccurrenceDetails(ddate(child.date), child.amount, child, occurrence);
 			childEvents.forEach(event => {
 				event.isPartial = true;
 				event.budgetCap = windowAmount;
@@ -250,7 +250,7 @@ export default class BudgetUtils {
 			const eventAmount = remainingAmount / totalIntervals;
 
 			for (let i = 0; i < totalIntervals; i++) {
-				const intervalDate = date(windowStart.add(i * intervalQty, interval));
+				const intervalDate = ddate(windowStart.add(i * intervalQty, interval));
 				budgetUsedSoFar += eventAmount;
 				projectionEvents.push(...BudgetUtils.createDateEventsFromOccurrenceDetails(intervalDate, eventAmount, occurrence.budget, occurrence).map(event => ({
 					...event,
@@ -334,16 +334,16 @@ export default class BudgetUtils {
 		}
 		const events: BudgetEvent[] = [];
 		// Origin transaction for Transfer
-		if (details.budgetType === BudgetType.TRANSFER && details.origin_account_id) {
-			// TODO don't allow transfers without origin account
-			events.push({
-				...base,
-				amount: -amount,
-				account_id: details.origin_account_id,
-				target_account_partition_id: details.origin_account_partition_id,
-				isTransferCopy: true,
-			});
-		}
+		// if (details.budgetType === BudgetType.TRANSFER && details.origin_account_id) {
+		// 	// TODO don't allow transfers without origin account
+		// 	events.push({
+		// 		...base,
+		// 		amount: -amount,
+		// 		account_id: details.origin_account_id,
+		// 		target_account_partition_id: details.origin_account_partition_id,
+		// 		isTransferCopy: true,
+		// 	});
+		// }
 
 		// Standard 1:1 schedule, or target for transfer
 		events.push({
@@ -359,6 +359,8 @@ export default class BudgetUtils {
 			budgetType: source.budgetType,
 			account_id: source.account_id,
 			target_account_partition_id: source.target_account_partition_id,
+			origin_account_id: source.origin_account_id,
+			origin_account_partition_id: source.origin_account_partition_id,
 			category_id: source.category_id,
 			Category: source.Category,
 			tag_ids: source.tag_ids,

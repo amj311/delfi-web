@@ -1,6 +1,30 @@
 import type { CreateTransaction, Transaction, TransactionUniqueFields } from "delfi-core/models/Transaction";
 import { prisma } from "../../prisma/client";
-import { date } from "delfi-core/utils/dateUtils";
+import { ddate } from "delfi-core/utils/dateUtils";
+import { v4 as uuid } from "uuid";
+
+const commonInclude = {
+	Attributions: {
+		include: {
+			Category: {
+				include: {
+					ParentCategory: true, // Include category group details
+				},
+			}, // Include category details
+			Budget: true,
+			BudgetChildItem: true, // Include budget child item details
+			Tags: true, // Include tags
+			Group: true, // Include group details
+		},
+	},
+	Merchant: true,
+	TransferPair: true,
+};
+const commonOrder: any = [
+	{ pending: 'desc' }, // Show pending transactions first
+	{ date: 'desc' }, // fallback on date sorting
+	{ date_order: 'asc' }, // Sort by date order for transactions on the same date
+];
 
 export const TransactionDao = {
 	dbToTransaction(dbTransaction: NonNullable<Record<string, any>>): Transaction {
@@ -8,9 +32,9 @@ export const TransactionDao = {
 			...dbTransaction, // Spread the base transaction fields
 
 			transaction_id: dbTransaction.transaction_id,
-			date: date(dbTransaction.date),
+			date: ddate(dbTransaction.date),
 			date_order: dbTransaction.date_order,
-			authorized_date: dbTransaction.authorized_date ? date(dbTransaction.authorized_date) : null,
+			authorized_date: dbTransaction.authorized_date ? ddate(dbTransaction.authorized_date) : null,
 			amount: dbTransaction.amount,
 			original_description: dbTransaction.original_description,
 			pending: dbTransaction.pending || false,
@@ -35,6 +59,9 @@ export const TransactionDao = {
 
 			merchant_id: dbTransaction.merchant_id || null,
 			Merchant: dbTransaction.Merchant || null,
+
+			transfer_pair_id: dbTransaction.transfer_pair_id || null,
+			TransferPair: dbTransaction.TransferPair || null,
 
 			Attributions: dbTransaction.Attributions?.map(attr => ({
 				...attr, // Spread the base attribution fields
@@ -61,7 +88,7 @@ export const TransactionDao = {
 				account_id: search.account_id,
 				original_description: search.original_description,
 				amount: search.amount,
-				date: date(search.date).toString(),
+				date: ddate(search.date).toString(),
 				date_order: search.date_order, // Crucial for catching transactions that look the same otherwise!
 			},
 		});
@@ -88,18 +115,7 @@ export const TransactionDao = {
 			where: {
 				transaction_id,
 			},
-			include: {
-				Attributions: {
-					include: {
-						Category: {
-							include: {
-								ParentCategory: true, // Include category group details
-							},
-						}, // Include category details
-					},
-				},
-				Merchant: true,
-			},
+			include: commonInclude,
 		});
 		return found ? this.dbToTransaction(found) : null;
 	},
@@ -111,28 +127,8 @@ export const TransactionDao = {
 				account_id,
 				done_pending: false,
 			},
-			include: {
-				Attributions: {
-					include: {
-						Category: {
-							include: {
-								ParentCategory: true, // Include category group details
-							},
-						}, // Include category details
-						Budget: true,
-						BudgetChildItem: true, // Include budget child item details
-						Tags: true, // Include tags
-						Group: true, // Include group details
-
-					},
-				},
-				Merchant: true,
-			},
-			orderBy: [
-				{ pending: 'desc' }, // Show pending transactions first
-				{ date: 'desc' }, // fallback on date sorting
-				{ date_order: 'asc' }, // Sort by date order for transactions on the same date
-			]
+			include: commonInclude,
+			orderBy: commonOrder,
 		});
 		return transactions.map(this.dbToTransaction);
 	},
@@ -148,27 +144,8 @@ export const TransactionDao = {
 				pending: includePending ? undefined : false,
 				done_pending: false,
 			},
-			include: {
-				Attributions: {
-					include: {
-						Category: {
-							include: {
-								ParentCategory: true, // Include category group details
-							},
-						}, // Include category details
-						Budget: true,
-						BudgetChildItem: true, // Include budget child item details
-						Tags: true, // Include tags
-						Group: true, // Include group details
-					},
-				},
-				Merchant: true,
-			},
-			orderBy: [
-				{ pending: 'desc' }, // Show pending transactions first
-				{ date: 'desc' }, // fallback on date sorting
-				{ date_order: 'asc' }, // Sort by date order for transactions on the same date
-			]
+			include: commonInclude,
+			orderBy: commonOrder,
 		});
 		return transactions.map(this.dbToTransaction);
 	},
@@ -181,10 +158,7 @@ export const TransactionDao = {
 				pending: true,
 				done_pending: false,
 			},
-			include: {
-				Attributions: true,
-				Merchant: true,
-			},
+			include: commonInclude,
 		});
 		return transactions.map(this.dbToTransaction);
 	},
@@ -245,7 +219,12 @@ export const TransactionDao = {
 		return this.dbToTransaction((await this.getTransactionById(created.transaction_id))!);
     },
 
-	async updateTransaction(workspace_id: string, transaction_id: string, transactionData: Partial<Transaction>): Promise<Transaction> {
+	async patchTransaction(workspace_id: string, transaction_id: string, transactionData: Partial<Transaction>): Promise<Transaction> {
+		const transaction = await this.getTransactionById(transaction_id);
+		if (!transaction) {
+			throw new Error("Transaction not found");
+		}
+
 		// Update attributions
 		if (transactionData.Attributions) {
 			await this.verifyAttributionsTotal(transactionData, transactionData.Attributions || []);
@@ -296,6 +275,7 @@ export const TransactionDao = {
 		}
 		const attributionTotal = attributions.reduce((sum, attr) => sum + attr.amount, 0);
 		if (attributionTotal !== amount) {
+			console.error(`Attributions do not add to ${amount}`, attributions.map(a => a.amount), "total:", attributionTotal);
 			throw new Error("Attributions must total the transaction amount");
 		}
 	},
@@ -339,7 +319,106 @@ export const TransactionDao = {
 				category_id: attributionUpdates.category_id,
 			},
 		});
+	},
 
+	async setTransferPair(workspace_id: string, t1_id: string, t2_id: string) {
+		// First make sure they are compatible!
+		const t1 = await prisma.transaction.findUnique({
+			where: {
+				transaction_id: t1_id,
+				workspace_id,
+			},
+			include: {
+				Attributions: true,
+			},
+		});
+		const t2 = await prisma.transaction.findUnique({
+			where: {
+				transaction_id: t2_id,
+				workspace_id,
+			},
+		});
+
+		if (!t1 || !t2) {
+			throw new Error("One or both transactions not found");
+		}
+		if (t1.amount !== -t2.amount) {
+			throw new Error("Transaction amounts must be equal and opposite");
+		}
+		if (t1.account_id === t2.account_id) {
+			throw new Error("Transactions must be from different accounts");
+		}
+
+		await prisma.transaction.update({
+			where: {
+				transaction_id: t1_id,
+			},
+			data: {
+				TransferPair: {
+					connect: { transaction_id: t2_id },
+				},
+			},
+		});
+		
+		await prisma.transaction.update({
+			where: {
+				transaction_id: t2_id,
+			},
+			data: {
+				TransferPair: {
+					connect: { transaction_id: t1_id },
+				},
+			},
+		});
+
+
+		// let there be only one attribution
+		const attrAttrs = {
+			category_id: t1.Attributions[0].category_id,
+			memo: t1.Attributions[0].memo,
+			budget_id: t1.Attributions[0].budget_id,
+			budget_child_item_id: t1.Attributions[0].budget_child_item_id,
+			group_id: t1.Attributions[0].group_id,
+		};
+		await this.setAllAttributionsForTransaction(t1_id, [{
+			...attrAttrs as any,
+			amount: t1.amount,
+		}]);
+		await this.setAllAttributionsForTransaction(t2_id, [{
+			...attrAttrs as any,
+			amount: t2.amount,
+		}]);
+	},
+
+	async breakTransferPair(workspace_id: string, t1_id: string, t2_id: string): Promise<void> {
+		// Break the transfer pair
+		await prisma.transaction.update({
+			where: {
+				transaction_id: t1_id,
+				workspace_id,
+			},
+			data: {
+				TransferPair: {
+					disconnect: {
+						transaction_id: t2_id,
+					},
+				},
+			},
+		});
+
+		await prisma.transaction.update({
+			where: {
+				transaction_id: t2_id,
+				workspace_id,
+			},
+			data: {
+				TransferPair: {
+					disconnect: {
+						transaction_id: t1_id,
+					},
+				},
+			},
+		});
 	},
 
 	async deleteTransaction(workspace_id: string, transaction_id: string): Promise<void> {

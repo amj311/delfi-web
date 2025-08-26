@@ -1,5 +1,5 @@
 import { type CreateTransaction, type Transaction } from "delfi-core/models/Transaction";
-import { date, type DelfiDate } from "delfi-core/utils/dateUtils";
+import { ddate, type DelfiDate } from "delfi-core/utils/dateUtils";
 import { TransactionDao } from "server/data/TransactionDao";
 import { TransactionRuleService } from "./TransactionRuleService";
 import MerchantService from "./MerchantService";
@@ -32,11 +32,21 @@ export class TransactionService {
 		let created = false;
 		if (existingTransaction) {
 			// Update existing transaction
-			upsertedTransaction = await TransactionDao.updateTransaction(workspace_id, existingTransaction.transaction_id, { ...transactionData, transaction_id: existingTransaction.transaction_id } as Transaction);
+			upsertedTransaction = await TransactionDao.patchTransaction(workspace_id, existingTransaction.transaction_id, { ...transactionData, transaction_id: existingTransaction.transaction_id } as Transaction);
+			if (existingTransaction.transfer_pair_id && transactionData.transfer_pair_id !== existingTransaction.transfer_pair_id) {
+				// If we're not setting a new transfer pair, we need to remove the old one
+				await TransactionDao.breakTransferPair(workspace_id, existingTransaction.transfer_pair_id, existingTransaction.transaction_id);
+			}
 		} else {
 			// Create new transaction
 			upsertedTransaction = await this.createTransaction(workspace_id, transactionData);
 			created = true;
+		}
+
+		// Do transfer pairing
+		if (transactionData.transfer_pair_id) {
+			await TransactionDao.setTransferPair(workspace_id, upsertedTransaction.transaction_id, transactionData.transfer_pair_id);
+			upsertedTransaction = (await TransactionDao.getTransactionById(upsertedTransaction.transaction_id))!;
 		}
 		return {
 			transaction: upsertedTransaction,
@@ -84,7 +94,7 @@ export class TransactionService {
 
 		// Update all no-longer-pending transactions
 		for (const oldTransaction of noLongerPendingTransactions) {
-			TransactionDao.updateTransaction(workspace_id, oldTransaction.transaction_id, {
+			TransactionDao.patchTransaction(workspace_id, oldTransaction.transaction_id, {
 				pending: true,
 				done_pending: true,
 			});
@@ -111,49 +121,75 @@ export class TransactionService {
 		// NOTE! This expects that createdTransactions have been updated with a merchant_id if applicable by the rules.
 		const transactionsWithoutMerchants = createdTransactions.filter(tx => !tx.merchant_id);
 		if (transactionsWithoutMerchants.length > 0) {
-			const merchantResults = await MerchantService.searchForTransactionMerchants(transactionsWithoutMerchants);
-			await Promise.all(merchantResults.map(async ({ merchant, transactions }) => {
-				// Update all transactions with the new merchant
-				await Promise.all(transactions.map(tx => {
-					tx.merchant_id = merchant.merchant_id;
-					return TransactionDao.updateTransaction(workspace_id, tx.transaction_id, tx);
-				}));
+			const merchantResults = await MerchantService.searchForTransactionMerchants(transactionsWithoutMerchants, true);
+			await Promise.all(merchantResults.map(async ({ createdMerchant, transactions }) => {
+				if (createdMerchant) {
+					// Update all transactions with the new merchant
+					await Promise.all(transactions.map(tx => {
+						tx.merchant_id = createdMerchant.merchant_id;
+						return TransactionDao.patchTransaction(workspace_id, tx.transaction_id, tx);
+					}));
+				}
 			}));
 		}
 
 		return results;
 	}
 
-	private static determineAuthorizedDate(transaction: CreateTransaction): DelfiDate | undefined {
+	private static determineAuthorizedDate(transaction: CreateTransaction): DelfiDate | null {
 		if (transaction.authorized_date) {
 			return transaction.authorized_date;
 		}
 
 		// Determine authorized date from description if possible
-		const dateInDescriptionRegex = /(?<month>\d{2})\/(?<date>\d{2})/g;
-		const match = dateInDescriptionRegex.exec(transaction.original_description);
-		if (match?.groups) {
-			const month = parseInt(match.groups.month!, 10) - 1; // Convert to zero-based month
-			const dayOfMonth = parseInt(match.groups.date!, 10);
+		const patterns = [
+			// MM/DD
+			() => {
+				const dateInDescriptionRegex = /(?<month>\d{2})\/(?<date>\d{2})/g;
+				const match = dateInDescriptionRegex.exec(transaction.original_description);
+				if (match?.groups) {
+					const month = parseInt(match.groups.month!, 10) - 1; // Convert to zero-based month
+					const dayOfMonth = parseInt(match.groups.date!, 10);
 
-			const validNumbers = month >= 1 && month <= 12 && dayOfMonth >= 1 && dayOfMonth <= 31;
-			if (!validNumbers) {
-				return undefined; // Invalid date in description
+					const validNumbers = month >= 1 && month <= 12 && dayOfMonth >= 1 && dayOfMonth <= 31;
+					if (!validNumbers) {
+						return undefined; // Invalid date in description
+					}
+
+					// if extracted is december and true is january and extracted date is greater than true date, then we can assume the year is previous
+					const isPreviousYear = month === 11 && transaction.date.month() === 0 && dayOfMonth > transaction.date.date();
+					const year = isPreviousYear ? transaction.date.year() - 1 : transaction.date.year();
+					const extractedDate = ddate(new Date(year, month, dayOfMonth));
+					const isInSaneRange = extractedDate.isBetweenInclusive(
+						transaction.date.subtract(1, 'week'),
+						transaction.date
+					)
+
+					if (isInSaneRange) {
+						return extractedDate;
+					}
+				}
+			},
+
+			// YYYY-MM-DD
+			() => {
+				const dateInDescriptionRegex = /(?<year>\d{4})-(?<month>\d{2})-(?<date>\d{2})/g;
+				const match = dateInDescriptionRegex.exec(transaction.original_description);
+				if (match?.groups) {
+					return ddate(match[0]);
+				}
 			}
+		]
 
-			// if extracted is december and true is january and extracted date is greater than true date, then we can assume the year is previous
-			const isPreviousYear = month === 11 && transaction.date.month() === 0 && dayOfMonth > transaction.date.date();
-			const year = isPreviousYear ? transaction.date.year() - 1 : transaction.date.year();
-			const extractedDate = date(new Date(year, month, dayOfMonth));
-			const isInSaneRange = extractedDate.isBetweenInclusive(
-				transaction.date.subtract(1, 'week'),
-				transaction.date
-			)
-
-			if (isInSaneRange) {
+		for (const pattern of patterns) {
+			const extractedDate = pattern();
+			if (extractedDate) {
 				transaction.authorized_date = extractedDate;
+				return extractedDate;
 			}
 		}
+
+		return null;
 	}
 
 	public static async getTransactionsForAccount(workspace_id: string, account_id: string): Promise<Transaction[]> {

@@ -1,7 +1,7 @@
 import { computed, reactive, ref, type Reactive, type Ref } from 'vue'
 import { defineStore } from 'pinia'
 import { Delfi, type DelfiConfig } from '../../delfi-core/Delfi';
-import { date, type DelfiDate } from 'delfi-core/utils/dateUtils';
+import { ddate, type DelfiDate } from 'delfi-core/utils/dateUtils';
 import { TransactionService } from '@/services/transaction.service';
 import { useAccountStore } from './account.store';
 import { useBudgetStore } from './budget.store';
@@ -13,8 +13,8 @@ export const useDelfiStore = defineStore('delfi', () => {
 	const isGeneratingForecast: Ref<boolean> = ref(false);
 
 	// begin with the previous month as hindsight
-	const projectionStart = ref<DelfiDate>(date().startOf('month').subtract(1, 'month'));
-	const projectionEnd = ref<DelfiDate>(date().startOf('month').add(5, 'year'));
+	const projectionStart = ref<DelfiDate>(ddate().startOf('month').subtract(1, 'month'));
+	const projectionEnd = ref<DelfiDate>(ddate().startOf('month').add(5, 'year'));
 
 	const reComputed = ref(0);
 

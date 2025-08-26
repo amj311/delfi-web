@@ -5,6 +5,7 @@ const _props = defineProps<{
 	amount: number | string,
 	mode?: 'balance' | 'balance_reverse' | 'net_change' | 'transaction',
 	hideCurrency?: boolean
+	round?: boolean
 }>();
 const props = reactive(_props);
 const numAmount = computed(() => {
@@ -15,7 +16,6 @@ const numAmount = computed(() => {
 });
 
 const formatted = computed(() => {
-
 	let signDisplay: any = 'never';
 	if (props.mode === 'balance') {
 		signDisplay = numAmount.value < 0 ? 'always' : 'never';
@@ -31,12 +31,19 @@ const formatted = computed(() => {
 	}
 
 	const formatter = new Intl.NumberFormat('en-US', {
-		style: props.hideCurrency ? 'decimal' : 'currency',
+		style: 'currency',
 		currency: 'USD',
 		signDisplay,
+		maximumFractionDigits: props.round ? 0 : 2
 	});
 
-	return formatter.format(Number(numAmount.value))
+	let val = formatter.format(Number(numAmount.value));
+
+	if (props.hideCurrency) {
+		val = val.replaceAll(/[^+-\d.,]/g, '');
+	}
+
+	return val;
 });
 const color = computed(() => {
 	if (props.mode === 'balance' && numAmount.value < 0) {

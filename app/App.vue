@@ -41,7 +41,7 @@ onBeforeUnmount(() => {
     
     <!-- Global Prompt Modal -->
     <PromptModal />
-	<Toast />
+	<Toast></Toast>
 </template>
 
 <style scoped></style>

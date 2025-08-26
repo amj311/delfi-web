@@ -58,3 +58,28 @@ a,
 .square {
 	aspect-ratio: 1;
 }
+
+
+
+/* FORM ROWS */
+.details-rows {
+	.row {
+		display: flex;
+		align-items: top;
+		gap: 1rem;
+
+		> label {
+			--width: 7em;
+			--min-height: 2.5rem;
+			min-height: var(--min-height);
+			line-height: var(--min-height);
+			opacity: 0.75;
+			min-width: var(--width);
+			max-width: var(--width);
+		}
+	}
+}
+
+.fill-split-button {
+	transition: max-width 0.2s ease-in-out;
+}

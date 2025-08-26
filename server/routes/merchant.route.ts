@@ -1,5 +1,7 @@
 import { TransactionDao } from "server/data/TransactionDao";
 import MerchantService from "../services/MerchantService";
+import { MerchantDao } from "server/data/MerchantDao";
+import type { Merchant, MerchantDraft } from "delfi-core/models/Transaction";
 
 export default (fastify, _, done) => {
 
@@ -21,6 +23,27 @@ export default (fastify, _, done) => {
         };
     });
 
+    fastify.post('/', async function handler (request, reply) {
+		const workspace_id = request.sessionUser.workspace_id;
+		const merchantData = request.body as MerchantDraft;
+		const data = await MerchantDao.createMerchant(workspace_id, merchantData);
+        return {
+            success: true,
+            data,
+        };
+    });
+
+    fastify.post('/:id', async function handler (request, reply) {
+        const merchant_id = request.params.id;
+        const merchantData = request.body as Merchant;
+		const workspace_id = request.sessionUser.workspace_id;
+		const data = await MerchantService.updateMerchant(workspace_id, merchant_id, merchantData);
+        return {
+            success: true,
+            data,
+        };
+    });
+
 	// Search for merchant to match transaction
 	fastify.get('/findTransactionMerchant/:transaction_id', async function handler (request, reply) {
 		const transaction_id = request.params.transaction_id;
@@ -35,28 +58,6 @@ export default (fastify, _, done) => {
 		};
 	});
 
-    fastify.get('/:id', async function handler (request, reply) {
-		const workspace_id = request.sessionUser.workspace_id;
-		const merchant_id = request.params.id;
-        const data = await MerchantService.getMerchantById(workspace_id, merchant_id);
-        return {
-            success: true,
-            data,
-        };
-    });
-
-
-
-    // fastify.put('/:id', async function handler (request, reply) {
-    //     const merchant_id = request.params.id;
-    //     const merchantData = request.body as BaseMerchantDetails;
-	// 	const workspace_id = request.sessionUser.workspace_id;
-	// 	const data = await MerchantService.updateMerchant(workspace_id, merchant_id, merchantData);
-    //     return {
-    //         success: true,
-    //         data,
-    //     };
-    // });
 
     // fastify.delete('/:id', async function handler (request, reply) {
 	// 	const workspace_id = request.sessionUser.workspace_id;

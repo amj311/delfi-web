@@ -54,7 +54,7 @@ export const asAny = <T>(value: T): any => {
 }
 
 export const jsonCopy = <T>(value: T): T => {
-	return JSON.parse(JSON.stringify(value));
+	return JSON.parse(JSON.stringify(value)) as T;
 }
 
 

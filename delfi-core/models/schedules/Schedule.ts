@@ -1,5 +1,5 @@
 import type { Dayjs } from "dayjs";
-import { date, type DelfiDate } from "../../utils/dateUtils";
+import { ddate, type DelfiDate } from "../../utils/dateUtils";
 import { Schedule as rSchedule, type IOccurrencesArgs } from "./rSchedule";
 import dayjs from "dayjs";
 
@@ -103,15 +103,15 @@ export class ScheduleService {
 
 	static delfi = {
 		getOccurrences(...args: Parameters<typeof ScheduleService.getOccurrences>): DelfiDate[] {
-			return ScheduleService.getOccurrences(...args).map(d => date(d));
+			return ScheduleService.getOccurrences(...args).map(d => ddate(d));
 		},
 		getNextOccurrence(...args: Parameters<typeof ScheduleService.getNextOccurrence>): DelfiDate | undefined {
 			const nextOccurrence = ScheduleService.getNextOccurrence(...args);
-			return nextOccurrence ? date(nextOccurrence) : undefined;
+			return nextOccurrence ? ddate(nextOccurrence) : undefined;
 		},
 		getPreviousOccurrence(...args: Parameters<typeof ScheduleService.getPreviousOccurrence>): DelfiDate | undefined {
 			const previousOccurrence = ScheduleService.getPreviousOccurrence(...args);
-			return previousOccurrence ? date(previousOccurrence) : undefined;
+			return previousOccurrence ? ddate(previousOccurrence) : undefined;
 		}
 	}
 }

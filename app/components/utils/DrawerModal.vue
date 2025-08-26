@@ -13,6 +13,7 @@ const isMobile = ref(false);
 
 defineProps<{
 	title?: string;
+	width?: string;
 }>();
 
 /**
@@ -52,6 +53,7 @@ defineExpose({
 					:visible="show"
 					:header="title"
 					:modal="true"
+					:style="{ width: width || '30rem' }"
 				>
 					<slot></slot>
 					<template #closebutton><div></div></template>

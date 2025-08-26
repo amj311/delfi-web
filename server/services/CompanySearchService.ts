@@ -2,7 +2,7 @@
  * Company search service - Utility for finding company websites
  */
 import axios from 'axios';
-import { norm, similarityScore } from 'server/utils/textSimilarity';
+import { norm, similarityScore } from 'delfi-core/utils/textSimilarity';
 
 interface CompanySearchResult {
 	url: string;
@@ -16,11 +16,11 @@ interface CompanySearchResult {
 export default class CompanySearchService {
 	/**
 	 * Searches for a company's website using the LangSearch API
-	 * @param searchString The best identifier we have for the company name, usually parsed from a transaction
+	 * @param identifier The best identifier we have for the company name, usually parsed from a transaction
 	 * @param numResults Number of search results to analyze
 	 * @returns An array of scored search results, sorted by relevance
 	 */
-	public static async doCompanySearch(searchString: string, numResults = 5): Promise<CompanySearchResult | null> {
+	public static async doCompanySearch(identifier: string, additionalSearch: string = '', numResults = 5): Promise<CompanySearchResult | null> {
 		try {
 			const apiKey = process.env.LANGSEARCH_API_KEY;
 
@@ -29,11 +29,9 @@ export default class CompanySearchService {
 				return null;
 			}
 
-			console.log(`🔍 Searching for company website: "${searchString}"...`);
-
 			// Make search request to LangSearch API
 			const response = await axios.post('https://api.langsearch.com/v1/web-search', {
-				query: `Please find the website for this company: ${searchString}`,
+				query: `Please find the website for this company: ${identifier} ${additionalSearch}`,
 				num_results: numResults
 			}, {
 				headers: {
@@ -43,14 +41,18 @@ export default class CompanySearchService {
 			});
 
 			// Extract and score the search results
-			const webPages = response.data.data.webPages.value;
+			const webPages = response.data.data.webPages.value.filter((page: any) => {;
+				// skip known problematic search results like yelp, restaurantji, etc
+				const badSites = ['yelp.com', 'restaurantji.com', 'tripadvisor.com', 'facebook.com'];
+				return !badSites.some(badSite => page.url.includes(badSite));
+			});
 			const scoredResults: CompanySearchResult[] = webPages.map(page => {
 				const url = page.url;
 				const origin = new URL(url).origin;
 				const hostname = new URL(url).hostname;
 
 				// Calculate relevance score between company name and hostname
-				const score = CompanySearchService.calculateRelevanceScore(searchString, hostname);
+				const score = CompanySearchService.calculateRelevanceScore(identifier, hostname);
 
 				const result: CompanySearchResult = {
 					url,
@@ -62,6 +64,8 @@ export default class CompanySearchService {
 				};
 				return result;
 			});
+
+			console.log('Company search results:', scoredResults);
 
 			// Sort results by score (highest first)
 			return scoredResults.sort((a, b) => b.score - a.score)[0];
@@ -195,9 +199,50 @@ export default class CompanySearchService {
 			return 0; // If sizes are not available, keep original order
 		});
 
-		console.log("Extracted icon URLs:", iconUrls);
-
 		return iconUrls.length > 0 ? iconUrls[0].path : null;
+	}
+
+	/**
+	 * Decode HTML entities in a string
+	 * @param str String containing HTML entities
+	 * @returns Decoded string with normal characters
+	 */
+	private static decodeHtmlEntities(str: string): string {
+		const htmlEntities: { [key: string]: string } = {
+			'&amp;': '&',
+			'&lt;': '<',
+			'&gt;': '>',
+			'&quot;': '"',
+			'&apos;': "'",
+			'&#39;': "'",
+			'&#8211;': '–', // en dash
+			'&#8212;': '—', // em dash
+			'&#8216;': '\u2018', // left single quotation mark
+			'&#8217;': '\u2019', // right single quotation mark
+			'&#8220;': '\u201C', // left double quotation mark
+			'&#8221;': '\u201D', // right double quotation mark
+			'&#8230;': '…', // horizontal ellipsis
+			'&nbsp;': ' ',
+			'&copy;': '©',
+			'&reg;': '®',
+			'&trade;': '™'
+		};
+
+		// First handle named entities
+		let decoded = str;
+		for (const [entity, char] of Object.entries(htmlEntities)) {
+			decoded = decoded.replace(new RegExp(entity, 'g'), char);
+		}
+
+		// Then handle numeric entities like &#123; and &#x1A;
+		decoded = decoded.replace(/&#(\d+);/g, (match, num) => {
+			return String.fromCharCode(parseInt(num, 10));
+		});
+		decoded = decoded.replace(/&#x([0-9A-Fa-f]+);/g, (match, hex) => {
+			return String.fromCharCode(parseInt(hex, 16));
+		});
+
+		return decoded;
 	}
 
 	public static extractNameFromHtml(html: string, knownIdentifier: string): string | null {
@@ -205,12 +250,14 @@ export default class CompanySearchService {
 		const metaNameMatch = html.match(/<meta[^>]{1,100}property=["']og:site_name["'][^>]{1,100}>/i)?.[0].match(/content=["']([^"']{1,100})["']/)?.[1];
 		const pagTitle = html.match(/<title>(.{1,100}?)<\/title>/i)?.[1];
 
-		// Split title or site_name into parts
+		// Split title or site_name into parts and decode HTML entities
 		const nameCandidates = [metaNameMatch, pagTitle].flatMap(str => {
 			const parts: Array<string> = [];
 			if (str) {
 				const isStr = str.toString();
-				parts.push(...isStr.split(' - ').map(p => p.split(' | ')).flat().map(p => p.split(', ')).flat().map(p => p.trim()));
+				// Decode HTML entities before splitting
+				const decodedStr = CompanySearchService.decodeHtmlEntities(isStr);
+				parts.push(...decodedStr.split(' - ').map(p => p.split(' | ')).flat().map(p => p.split(', ')).flat().map(p => p.trim()));
 			}
 			return parts;
 		}).map(part => part.trim()).filter(Boolean).map(part => ({

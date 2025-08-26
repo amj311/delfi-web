@@ -321,6 +321,11 @@ export const Icons = {
 		source: "material-symbols",
 		source_id: "celebration",
 	},
+	"piggy-bank": {
+		name: "piggy-bank",
+		source: "material-symbols",
+		source_id: "savings",
+	},
 	"question-circle": {
 		name: "question-circle",
 		source: "material-symbols",

@@ -15,11 +15,12 @@ model User {
     created_at DateTime @default(now())
     updated_at DateTime @default(now()) @updatedAt
 
-    auth_id     String      @unique
-    email       String      @unique
-    given_name  String
-    family_name String
-    Workspaces  Workspace[]
+    auth_id              String        @unique
+    email                String        @unique
+    given_name           String
+    family_name          String
+    Workspaces           Workspace[]
+    AssignedTransactions Transaction[]
 }
 
 model Workspace {
@@ -314,7 +315,7 @@ model CategoryDetectionMapping {
     Workspace    Workspace? @relation(fields: [workspace_id], references: [workspace_id])
     workspace_id String
 
-    detection_key String // plaid category names
+    detection_key String // system category key
     Category      Category @relation(fields: [category_id], references: [category_id])
     category_id   String
 
@@ -380,6 +381,10 @@ model Transaction {
     source_data Json? // e.g. plaid transaction data, imported transaction data
     plaid_data  Json? // e.g. plaid transaction data, if available
 
+    needs_review Boolean @default(false)
+    Assignee     User?   @relation(fields: [assignee_id], references: [user_id])
+    assignee_id  String?
+
     // A single transaction cannot be split between accounts
     Account      Account                  @relation(fields: [account_id], references: [account_id])
     account_id   String
@@ -393,6 +398,10 @@ model Transaction {
 
     Workspace    Workspace @relation(fields: [workspace_id], references: [workspace_id])
     workspace_id String
+
+    TransferPair     Transaction? @relation("TransferPair", fields: [transfer_pair_id], references: [transaction_id])
+    TransferPairSelf Transaction? @relation("TransferPair")
+    transfer_pair_id String?      @unique
 }
 
 // To keep like data all in one place, this table holds data for ALL transactions, even without splits
@@ -427,12 +436,12 @@ model Merchant {
     updated_at  DateTime @default(now()) @updatedAt
 
     name     String
-    hostname String? @unique // e.g. "starbucks.com" no https
+    hostname String? // e.g. "starbucks.com" no https
     logo     String?
 
-    plaid_merchant_id    String? // e.g. plaid merchant id, manual merchant id, imported merchant id
-    category_association String? // e.g. "Food & Drink"
-    Transaction          Transaction[]
+    plaid_merchant_id String? // e.g. plaid merchant id, manual merchant id, imported merchant id
+    detection_key     String? // e.g. "Food & Drink"
+    Transaction       Transaction[]
 }
 
 model TransactionRule {

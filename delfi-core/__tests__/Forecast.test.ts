@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from 'vitest'
 import { ImmediateMatchTrigger } from "../models/schedules/triggers";
 import { MONTHS } from "../utils/constants";
 import { BudgetTransactionType, type Budget, type TriggeredBudget, RecurrenceType } from "../models/Budget";
-import { date } from "../utils/dateUtils";
+import { ddate } from "../utils/dateUtils";
 import Accumulator from "../models/Accumulator";
 import BudgetService from "../services/BudgetService";
 import type { Budget } from "../models/Budget";
@@ -66,8 +66,8 @@ describe('Forecast', () => {
 					)
 				],
 				budgets: [budgets[0]],
-				start: date('2023-01-01'),
-				end: date('2023-01-31')
+				start: ddate('2023-01-01'),
+				end: ddate('2023-01-31')
 			});
 
 			// check days accuracy
@@ -110,8 +110,8 @@ describe('Forecast', () => {
 					)
 				],
 				budgets,
-				start: date('2023-01-01'),
-				end: date('2023-01-31')
+				start: ddate('2023-01-01'),
+				end: ddate('2023-01-31')
 			});
 
 			// check days accuracy
@@ -164,8 +164,8 @@ describe('Forecast', () => {
 					accountAccumulator,
 				],
 				budgets: [],
-				start: date('2023-01-01'),
-				end: date('2023-01-31')
+				start: ddate('2023-01-01'),
+				end: ddate('2023-01-31')
 			});
 
 			expect(forecast.events).toHaveLength(1);
@@ -190,10 +190,10 @@ describe('Forecast', () => {
 					)
 				],
 				budgets,
-				start: date('2023-01-01'),
-				end: date('2023-01-31')
+				start: ddate('2023-01-01'),
+				end: ddate('2023-01-31')
 			});
-			const timeline = forecast.getTimeline(date('2023-01-01'), date('2023-01-31'));
+			const timeline = forecast.getTimeline(ddate('2023-01-01'), ddate('2023-01-31'));
 			expect(timeline.periods.length).toBe(31);
 			expect(timeline.periods[0].start.toString()).toBe('2023-01-01');
 			expect(timeline.periods[0].end.toString()).toBe('2023-01-01');
@@ -213,10 +213,10 @@ describe('Forecast', () => {
 					)
 				],
 				budgets,
-				start: date('2023-01-01'),
-				end: date('2023-01-31')
+				start: ddate('2023-01-01'),
+				end: ddate('2023-01-31')
 			});
-			const timeline = forecast.getTimeline(date('2023-01-01'), date('2023-01-31'));
+			const timeline = forecast.getTimeline(ddate('2023-01-01'), ddate('2023-01-31'));
 
 			expect(timeline.startingBalance('total')).toBe(500);
 			expect(timeline.periods[24].start.toString()).toBe('2023-01-25');
@@ -239,19 +239,19 @@ describe('Forecast', () => {
 					)
 				],
 				budgets,
-				start: date('2023-01-01'),
-				end: date('2023-03-31')
+				start: ddate('2023-01-01'),
+				end: ddate('2023-03-31')
 			});
 			// check first month snapshots
-			let timeline = forecast.getTimeline(date('2023-01-01'), date('2023-01-31'), 'week');
+			let timeline = forecast.getTimeline(ddate('2023-01-01'), ddate('2023-01-31'), 'week');
 			expect(timeline.events).toHaveLength(2);
 			expect(timeline.events[0].date.toString()).toBe('2023-01-25');
 			// check second month snapshots
-			timeline = forecast.getTimeline(date('2023-02-01'), date('2023-02-31'), 'week');
+			timeline = forecast.getTimeline(ddate('2023-02-01'), ddate('2023-02-31'), 'week');
 			expect(timeline.events).toHaveLength(2);
 			expect(timeline.events[0].date.toString()).toBe('2023-02-25');
 			// check third month snapshots
-			timeline = forecast.getTimeline(date('2023-03-01'), date('2023-03-31'), 'week');
+			timeline = forecast.getTimeline(ddate('2023-03-01'), ddate('2023-03-31'), 'week');
 			expect(timeline.events).toHaveLength(2);
 			expect(timeline.events[0].date.toString()).toBe('2023-03-25');
 		})

@@ -1,6 +1,6 @@
 import { type Budget, type BudgetChildItem, type BudgetEvent, type BudgetOccurrence } from "delfi-core/models/Budget";
 import type { AttributionEvent, BudgetableTransactionDetails, Merchant } from "delfi-core/models/Transaction";
-import { date, type DelfiDate } from "../utils/dateUtils";
+import { ddate, type DelfiDate } from "../utils/dateUtils";
 import type { Category } from "./Category";
 import type { Delfi } from "delfi-core/Delfi";
 import type { TransactionFilter } from "delfi-core/services/FilterService";
@@ -142,8 +142,8 @@ export class BudgetSnapshot {
 		const allAttributedEvents = this.occurrences.flatMap(o => o.attributedEvents);
 
 		return new BudgetSnapshot(
-			date(start),
-			date(end),
+			ddate(start),
+			ddate(end),
 			this.budget,
 			allBudgetEvents,
 			allAttributedEvents
@@ -209,18 +209,23 @@ export class BudgetSnapshot {
 	progress(onDate?: DelfiDate) {
 		const res = {
 			percent: 0,
-			dialPercent: 0, // modified to render within a dial component
 			pace: 0,
-			status: 'good', // 'good', 'warning', 'danger'
+			status: 'good', // 'good', 'warning', 'danger',
+			visualization: {
+				normalizedPace: 0, // normalized pace for visualization
+				normalizedBudgetedNet: 0, // normalized budgeted net for visualization
+				normalizedPercent: 0, // normalized percent for visualization
+			}
 		};
-		if (!this.tally.budgetedNet) {
+
+		// allow the budget target to be either positive or negative
+		// compute percentages with the absolute value, then adjust the sign if needed
+		const budgetedNet = Math.abs(this.tally.budgetedNet);
+		const attributedNet = Math.abs(this.tally.attributedNet);
+		if (!budgetedNet) {
 			res.percent = 101;
 			res.pace = 0;
 		} else {
-			// allow the budget target to be either positive or negative
-			// compute percentages with the absolute value, then adjust the sign if needed
-			const budgetedNet = Math.abs(this.tally.budgetedNet);
-			const attributedNet = Math.abs(this.tally.attributedNet);
 			res.percent = (attributedNet / budgetedNet) * 100;
 			// If the spent is NOT the same sign as the budgeted, use the sign to show it in the opposite direction
 			if (Math.sign(this.tally.budgetedNet) !== Math.sign(this.tally.attributedNet)) {
@@ -228,7 +233,6 @@ export class BudgetSnapshot {
 			}
 			res.pace = this.tally.budgetedNet > 0 ? attributedNet / budgetedNet : 0;
 		}
-		res.dialPercent = Math.min(Math.abs(res.percent), 101);
 
 		if (onDate && this.tally.budgetedNet !== 0) {
 			const budgetedByDate = this.budgetEvents.filter(e => e.date.isSameOrBefore(onDate)).reduce((acc, e) => acc + e.amount, 0);
@@ -236,7 +240,7 @@ export class BudgetSnapshot {
 		}
 
 		// determine color. Green = good pace. Yellow = over pace. Red = over max.
-		if (res.percent > 100) {
+		if (res.percent > 101) {
 			res.status = 'danger';
 		}
 		else if (res.percent > res.pace) {
@@ -245,6 +249,16 @@ export class BudgetSnapshot {
 		else {
 			res.status = 'good';
 		}
+
+		// compute normalized values for visualizations
+		const max = Math.max(budgetedNet, attributedNet);
+		const normalizedBudgetedNet = budgetedNet / max * 100;
+		res.visualization = {
+			normalizedPercent: attributedNet / max * 100,
+			normalizedBudgetedNet: normalizedBudgetedNet,
+			normalizedPace: res.pace * normalizedBudgetedNet / 100, // pace is a percentage of the budgeted net
+		}
+
 		return res;
 	}
 }

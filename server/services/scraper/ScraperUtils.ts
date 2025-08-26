@@ -1,6 +1,6 @@
 // Simple Playwright scraper to navigate to American First Credit Union login page
 import { chromium, type Page, type ElementHandle, type BrowserContext } from 'playwright';
-import { date, type DelfiDate } from 'delfi-core/utils/dateUtils';
+import { ddate, type DelfiDate } from 'delfi-core/utils/dateUtils';
 
 async function createBrowserContext(): Promise<BrowserContext> {
 	const browser = await chromium.launch({
@@ -146,9 +146,9 @@ export const stringToDate = (dateStr: string, regex?: RegExp): DelfiDate => {
 		if (!match?.groups) {
 			throw new Error("stringToDate could not parse date. Got " + dateStr);
 		}
-		return date(new Date(Number(match.groups.year!), Number(match.groups.month!) - 1, Number(match.groups.date!)));
+		return ddate(new Date(Number(match.groups.year!), Number(match.groups.month!) - 1, Number(match.groups.date!)));
 	}
-	return date(dateStr);
+	return ddate(dateStr);
 }
 
 export const formatDate = (date) => {

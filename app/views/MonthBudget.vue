@@ -3,11 +3,9 @@ import { useDelfiStore } from '@/stores/delfi.store';
 import { useAccountStore } from '@/stores/account.store';
 import { computed, reactive, ref, onMounted, watch } from 'vue';
 import Forecast from '../../delfi-core/models/Forecast';
-import { type DelfiDate, date } from '../../delfi-core/utils/dateUtils';
+import { type DelfiDate, ddate } from '../../delfi-core/utils/dateUtils';
 import Currency from '@/components/Currency.vue';
 import { useCategoryStore } from '@/stores/category.store';
-import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
-import UpsertBudgetForm from '@/components/UpsertBudgetForm.vue';
 import type { Delfi } from 'delfi-core/Delfi';
 import { type Budget } from '../../delfi-core/models/Budget';
 import type { Account } from 'delfi-core/models/Account';
@@ -15,7 +13,6 @@ import { useRoute, useRouter } from 'vue-router';
 import { useGroupStore } from '@/stores/group.store';
 import Icon from '@/components/Icon.vue';
 import { colors } from 'delfi-core/utils/constants';
-import CategoryAvatar from '@/components/CategoryAvatar.vue';
 import { type AttributionEvent, type Transaction } from 'delfi-core/models/Transaction';
 import TransactionDetailsDrawer from '@/components/TransactionDetailsDrawer.vue';
 import Accordion from 'primevue/accordion';
@@ -26,6 +23,7 @@ import Knob from 'primevue/knob';
 import AttributionAvatar from '@/components/AttributionAvatar.vue';
 import Select from 'primevue/select';
 import type { BudgetSnapshot } from 'delfi-core/models/Summary';
+import { useContextStore } from '@/stores/context.store';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -35,13 +33,12 @@ const router = useRouter();
 
 const state = reactive({
 	loading: true,
-	viewingMonth: date().startOf('month'),
+	viewingMonth: ddate().startOf('month'),
 	forecast: <Forecast>(<unknown>null),
 	upsertingAccount: <Partial<Account> | {} | null>null,
 	upsertingBudget: <Budget | {} | null>null,
 	summaryData: <Awaited<ReturnType<Delfi['getMonthSummary']>> | null>null,
 });
-
 
 // Spending breakdown view state
 const spendingViews = [
@@ -56,6 +53,8 @@ async function getSummary(month: DelfiDate, silent = false) {
 		return null;
 	}
 	let summary = await delfiStore.delfi.getMonthSummary(month);
+	state.summaryData = summary;
+	useContextStore().setCurrentSummary(summary);
 	state.loading = false;
 	return reactive(summary);
 }
@@ -68,11 +67,11 @@ function formatMonthForUrl(monthDate: DelfiDate): string {
 // Helper to parse month from URL
 function parseMonthFromUrl(monthStr: string | null | undefined): DelfiDate {
 	if (!monthStr) {
-		return date().startOf('month');
+		return ddate().startOf('month');
 	}
 
-	const parsedDate = date(monthStr);
-	return parsedDate.isValid() ? parsedDate.startOf('month') : date().startOf('month');
+	const parsedDate = ddate(monthStr);
+	return parsedDate.isValid() ? parsedDate.startOf('month') : ddate().startOf('month');
 }
 
 // Initialize the view based on route params
@@ -88,7 +87,7 @@ onMounted(async () => {
 		});
 	}
 
-	state.summaryData = await getSummary(state.viewingMonth);
+	await getSummary(state.viewingMonth);
 });
 
 // Watch for route changes to update the view
@@ -97,7 +96,7 @@ watch(
 	async (newMonth) => {
 		if (newMonth && newMonth !== formatMonthForUrl(state.viewingMonth)) {
 			state.viewingMonth = parseMonthFromUrl(newMonth as string);
-			state.summaryData = await getSummary(state.viewingMonth);
+			await getSummary(state.viewingMonth);
 		}
 	}
 );
@@ -105,7 +104,7 @@ watch(
 watch(
 	() => delfiStore.reComputed,
 	async () => {
-		state.summaryData = await getSummary(state.viewingMonth, true);
+		await getSummary(state.viewingMonth, true);
 	}
 );
 
@@ -130,7 +129,7 @@ const goForward = async () => {
 	if (!state.viewingMonth) {
 		return;
 	}
-	const newMonth = date(state.viewingMonth.add(1, 'month'));
+	const newMonth = ddate(state.viewingMonth.add(1, 'month'));
 	router.push({
 		name: 'Budget',
 		params: { month: formatMonthForUrl(newMonth) },
@@ -144,7 +143,7 @@ const goBack = async () => {
 	if (!state.viewingMonth) {
 		return;
 	}
-	const newMonth = date(state.viewingMonth.subtract(1, 'month'));
+	const newMonth = ddate(state.viewingMonth.subtract(1, 'month'));
 	router.push({
 		name: 'Budget',
 		params: { month: formatMonthForUrl(newMonth) },
@@ -156,9 +155,7 @@ const dailyEvents = computed(() => {
 	if (!state.summaryData || !state.summaryData.attributionEvents) {
 		return [];
 	}
-	const eventsByDay: Record<number, Array<AttributionEvent>> = Object.fromEntries(
-		Array.from({ length: 31 }, (_, i) => [i + 1, []])
-	);
+	const eventsByDay: Record<number, Array<AttributionEvent>> = Object.fromEntries(Array.from({ length: 31 }, (_, i) => [i + 1, []]));
 	for (const event of state.summaryData.attributionEvents) {
 		const dayKey = event.date.date();
 		if (!eventsByDay[dayKey]) {
@@ -166,21 +163,22 @@ const dailyEvents = computed(() => {
 		}
 		eventsByDay[dayKey].push(event);
 	}
-	return Object.entries(eventsByDay).flatMap(([, events]) =>
-		events.sort((a, b) => a.sourceTransaction.date_order?.localeCompare(b.sourceTransaction.date_order || '') || 0)
-	);
+	return Object.entries(eventsByDay).flatMap(([date, events]) => ({
+		date: ddate(state.viewingMonth.date(Number(date))).formatFull(),
+		transactions: events.sort((a, b) => a.sourceTransaction.date_order?.localeCompare(b.sourceTransaction.date_order || '') || 0),
+	}));
 });
 
 const progressColor = {
-	'good': colors.lime2,
-	'warning': colors.yellow2,
-	'danger': colors.cherry1,
+	good: colors.lime2,
+	warning: colors.yellow2,
+	danger: colors.cherry1,
 	muted: {
-		'good': colors.green3,
-		'warning': colors.yellow1,
-		'danger': colors.red2,
-	}
-}
+		good: colors.green3,
+		warning: colors.yellow1,
+		danger: colors.red2,
+	},
+};
 
 const openAccordions = ref<Set<string>>(new Set());
 const isAccordionOpen = (key: string) => {
@@ -193,17 +191,31 @@ function viewTransaction(transaction: Transaction) {
 }
 
 const orderedBudgets = computed(() => {
-	const budgetSnapshots: Array<BudgetSnapshot> = state.summaryData?.spendingSummary.budgets as Array<BudgetSnapshot> || [];
+	const budgetSnapshots: Array<BudgetSnapshot> = (state.summaryData?.spendingSummary.budgets as Array<BudgetSnapshot>) || [];
 	const orderedCategories = useCategoryStore().orderedCategories;
 	const output = [] as BudgetSnapshot[];
 	for (const category of orderedCategories) {
 		output.push(
-			...budgetSnapshots.filter(b => b.budget.category_id === category.category_id).sort((a, b) => a.budget.memo.localeCompare(b.budget.memo)) || [],
+			...(budgetSnapshots
+				.filter((b) => b.budget.category_id === category.category_id)
+				.sort((a, b) => a.budget.memo.localeCompare(b.budget.memo)) || [])
 		);
 	}
 	return output;
 });
 
+const changedAccounts = computed(() => {
+	if (!state.summaryData || !state.summaryData.accountSummaries) {
+		return [];
+	}
+	return state.summaryData.accountSummaries.filter((summary) => summary.budgetedChange !== 0 || summary.attributedChange !== 0);
+});
+const otherAccounts = computed(() => {
+	if (!state.summaryData || !state.summaryData.accountSummaries) {
+		return [];
+	}
+	return state.summaryData.accountSummaries.filter((summary) => summary.budgetedChange === 0 && summary.attributedChange === 0);
+});
 </script>
 
 <template>
@@ -224,34 +236,34 @@ const orderedBudgets = computed(() => {
 				<h3>Accounts</h3>
 				<div>
 					Net Growth ......
-					<Currency :amount="state.summaryData.netGrowth" mode="net_change" />
+					<Currency :amount="state.summaryData.attributedNet" mode="net_change" />
+					(&nbsp;<Currency :amount="state.summaryData.budgetedNet" mode="net_change" />)
 				</div>
 				<div class="list">
-					<div v-for="summary of state.summaryData.accountSummaries" class="list-row">
-						<div class="flex hover-show-trigger">
-							<div class="flex gap-2">
+					<div v-for="summary of changedAccounts" class="list-row">
+						<div class="flex">
+							<div class="flex align-items-center gap-2">
+								<div
+									class="border-round-sm square w-2rem"
+									:style="{
+										backgroundImage: `url(${accountStore.getAccountById(summary.account_id)?.Institution.logo})`,
+										backgroundSize: 'cover',
+									}"
+								></div>
 								<div class="text-semibold">
 									{{ accountStore.getAccountName(summary.account_id) }}
 								</div>
-								<button
-									class="hover-show"
-									@click="() => state.upsertingAccount = accountStore.getAccountById(summary.account_id)!"
-								>
+								<!-- <button class="hover-show" @click="() => state.upsertingAccount = accountStore.getAccountById(summary.account_id)!">
 									Edit
-								</button>
+								</button> -->
 							</div>
 							<div class="flex-grow-1"></div>
-							<div class="flex align-items-center">
-								<small v-if="summary.netChange !== 0">
-									<Currency :amount="summary.netChange" mode="net_change" hideCurrency />
-									&emsp13;
-								</small>
-								<span class="text-semibold"
-									><Currency :amount="summary.endingBalance" mode="balance"
-								/></span>
+							<div class="flex align-items-end">
+								<Currency :amount="summary.attributedChange" mode="net_change" hideCurrency class="font-medium" />
+								<small>&nbsp;&nbsp;/&nbsp;&nbsp;<Currency :amount="summary.budgetedChange" mode="net_change" hideCurrency /></small>
 							</div>
 						</div>
-						<small v-for="partition of summary.partitions" class="flex align-items-center">
+						<!-- <small v-for="partition of summary.partitions" class="flex align-items-center">
 							&emsp13;- {{ partition.name }}
 							<div class="flex-grow-1"></div>
 							<div class="flex align-items-center">
@@ -261,15 +273,15 @@ const orderedBudgets = computed(() => {
 								</small>
 								<span><Currency :amount="partition.endingBalance" mode="balance" /></span>
 							</div>
-						</small>
+						</small> -->
 					</div>
 				</div>
-				<UpsertAccountForm
+				<!-- <UpsertAccountForm
 					v-if="state.upsertingAccount"
 					:account="state.upsertingAccount || {}"
 					:close="() => (state.upsertingAccount = null)"
 				/>
-				<button v-else @click="() => (state.upsertingAccount = {})">Add Account</button>
+				<button v-else @click="() => (state.upsertingAccount = {})">Add Account</button> -->
 			</div>
 			<br />
 
@@ -280,10 +292,7 @@ const orderedBudgets = computed(() => {
 					<Currency :amount="state.summaryData.incomeSummary?.tally.budgetedNet || 0" mode="net_change" />
 				</div>
 				<div class="list">
-					<div
-						v-for="{ budget, budgetEvents } of state.summaryData.incomeSummary?.tally.budgetSnapshots"
-						class="list-row"
-					>
+					<div v-for="{ budget, budgetEvents } of state.summaryData.incomeSummary?.tally.budgetSnapshots" class="list-row">
 						<div class="transaction-main-line">
 							{{ budget.memo }}
 							<Currency :amount="budgetEvents.reduce((acc, o) => acc + o.amount, 0)" mode="transaction" />
@@ -299,10 +308,7 @@ const orderedBudgets = computed(() => {
 			<div>
 				<h3>Savings and Transfers</h3>
 				<div class="list">
-					<div
-						v-for="budgetEvent of state.summaryData.transferSummary.tally.budgetEventsWithoutTransferCopies"
-						class="list-row"
-					>
+					<div v-for="budgetEvent of state.summaryData.transferSummary.tally.budgetEventsWithoutTransferCopies" class="list-row">
 						<div class="transaction-main-line">
 							{{ budgetEvent.displayName }}
 							<Currency :amount="budgetEvent.amount" />
@@ -317,18 +323,14 @@ const orderedBudgets = computed(() => {
 			</div>
 			<br />
 
-			<UpsertBudgetForm
-				v-if="state.upsertingBudget"
-				:budget="state.upsertingBudget || {}"
-				:close="() => (state.upsertingBudget = null)"
-			/>
-			<button v-else @click="() => (state.upsertingBudget = {})">Add Transaction</button>
+			<!-- <UpsertBudgetForm v-if="state.upsertingBudget" :budget="state.upsertingBudget || {}" :close="() => (state.upsertingBudget = null)" />
+			<button v-else @click="() => (state.upsertingBudget = {})">Add Transaction</button> -->
 			<br />
 			<!-- <UpsertBudgetForm v-if="state.upsertingBudget" :budget="state.upsertingBudget || {}" :close="() => state.upsertingBudget = null" :onSave="createDelfi" />
 			<button v-else @click="() => state.upsertingBudget = {}">Add Budget</button> -->
 
-			<br />
-			<div>
+			<div v-if="state.summaryData.groupSummaries.length > 0">
+				<br />
 				<div v-for="{ groupId, tally } of state.summaryData.groupSummaries" class="group-summary">
 					<div class="title flex align-items-center gap-1 my-2">
 						<Icon name="tag" fill :color="groupStore.getGroupById(groupId)?.color" />
@@ -349,10 +351,7 @@ const orderedBudgets = computed(() => {
 									<div class="flex-grow-1"></div>
 									<!-- <Currency :amount="budgetSnapshot.tally.attributedNet" mode="transaction" /> -->
 								</div>
-								<div
-									v-for="childItem of budgetSnapshot.childItemEvents"
-									class="list-row flex align-items-center gap-3"
-								>
+								<div v-for="childItem of budgetSnapshot.childItemEvents" class="list-row flex align-items-center gap-3">
 									<AttributionAvatar :categoryId="childItem.category_id" :size="1.9">
 										<template #badge>
 											<Icon name="checklist" />
@@ -365,18 +364,12 @@ const orderedBudgets = computed(() => {
 											</div>
 											<div style="flex-grow: 1"></div>
 											<div style="display: flex; align-items: center; gap: 4px">
-												<Currency
-													:amount="childItem.rangeTally.attributedNet"
-													mode="transaction"
-												/>
+												<Currency :amount="childItem.rangeTally.attributedNet" mode="transaction" />
 											</div>
 											<Knob
 												v-model="
 													{
-														percent:
-															(childItem.rangeTally.attributedNet /
-																childItem.rangeTally.budgetedNet) *
-															100,
+														percent: (childItem.rangeTally.attributedNet / childItem.rangeTally.budgetedNet) * 100,
 													}.percent
 												"
 												:min="0"
@@ -399,10 +392,7 @@ const orderedBudgets = computed(() => {
 									</div>
 								</div>
 								<template v-for="event of budgetSnapshot.notChildAttributions">
-									<div
-										class="list-row flex align-items-center gap-3"
-										@click="viewTransaction(event.sourceTransaction)"
-									>
+									<div class="list-row flex align-items-center gap-3" @click="viewTransaction(event.sourceTransaction)">
 										<AttributionAvatar :event="event" :size="1.9" />
 										<div class="flex flex-column w-full min-w-0">
 											<div class="transaction-main-line">
@@ -415,10 +405,7 @@ const orderedBudgets = computed(() => {
 												</div>
 											</div>
 											<small>
-												{{
-													event.Budget?.memo ||
-													useCategoryStore().getCategoryById(event.category_id).name
-												}}
+												{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
 												-
 												{{ accountStore.getAccountName(event.account_id) }}
 											</small>
@@ -427,10 +414,7 @@ const orderedBudgets = computed(() => {
 								</template>
 							</template>
 						</template>
-						<div
-							v-if="tally.unBudgetedAttributions.length > 0"
-							class="flex align-items-center list-row gap-2"
-						>
+						<div v-if="tally.unBudgetedAttributions.length > 0" class="flex align-items-center list-row gap-2">
 							<i class="pi pi-exclamation-triangle" />
 							Unbudgeted
 							<div class="flex-grow-1"></div>
@@ -453,9 +437,7 @@ const orderedBudgets = computed(() => {
 									</div>
 								</div>
 								<small>
-									{{
-										event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name
-									}}
+									{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
 									-
 									{{ accountStore.getAccountName(event.account_id) }}
 								</small>
@@ -463,9 +445,8 @@ const orderedBudgets = computed(() => {
 						</div>
 					</div>
 				</div>
+				<br />
 			</div>
-
-			<br />
 
 			<div>
 				<div class="flex align-items-center gap-2">
@@ -490,14 +471,10 @@ const orderedBudgets = computed(() => {
 						<template v-for="(category, i) of state.summaryData.spendingSummary.categories">
 							<AccordionPanel :value="i" v-if="category.tally.attributionEvents.length > 0">
 								<AccordionHeader class="flex align-items-center gap-2">
-									<CategoryAvatar :category="category.category" style="width: 2rem; height: 2rem" />
+									<AttributionAvatar :category="category.category" :size="2" />
 									<b>{{ category.category.name }}</b>
 									<div class="flex-grow-1"></div>
-									<Currency
-										:amount="category.tally.attributedNet || 0"
-										mode="transaction"
-										class="text-semibold"
-									/>
+									<Currency :amount="category.tally.attributedNet || 0" mode="transaction" class="text-semibold" />
 								</AccordionHeader>
 								<AccordionContent>
 									<template v-for="budgetSummary of category.tally.budgetSnapshots">
@@ -510,76 +487,105 @@ const orderedBudgets = computed(() => {
 												<div class="flex-grow-1"></div>
 												<!-- <Currency :amount="budgetSummary.tally.attributedNet" mode="transaction" /> -->
 											</div>
-											<div
+											<template
 												v-for="event of budgetSummary.tally.attributionEvents"
-												class="list-row flex align-items-center gap-3"
-												@click="viewTransaction(event.sourceTransaction)"
 											>
-												<AttributionAvatar :event="event" :size="1.9" />
-												<div class="flex flex-column w-full min-w-0">
-													<div class="transaction-main-line">
-														<div class="text-ellipsis w-full min-w-0">
-															{{ event.displayName }}
-														</div>
-														<div style="flex-grow: 1"></div>
-														<div style="display: flex; align-items: center; gap: 4px">
-															<Currency :amount="event.amount" mode="transaction" />
-														</div>
+												<!-- only display one from transfer pair -->
+												<div
+													class="list-row flex align-items-center gap-3"
+													v-if="!event.isTransferCopy"
+													@click="viewTransaction(event.sourceTransaction)"
+												>
+													<div>
+														<AttributionAvatar :event="event" :size="1.9">
+															<template #badge v-if="event.isSplit">
+																<Icon source_id="arrow_split" source="material-symbols" />
+															</template>
+															<template #badge v-if="event.isTransferPair">
+																<Icon source_id="sync_alt" source="material-symbols" />
+															</template>
+														</AttributionAvatar>
 													</div>
-													<small>
-														{{
-															event.Budget?.memo ||
-															useCategoryStore().getCategoryById(event.category_id).name
-														}}
-														-
-														{{ accountStore.getAccountName(event.account_id) }}
-													</small>
+													<div class="flex flex-column w-full min-w-0">
+														<div class="flex align-items-center gap-2">
+															<div class="flex align-items-center w-full min-w-0">
+																<div class="text-ellipsis">
+																	<span class="font-medium">{{ event.displayName }}</span>
+																	<small v-if="event.memo">&nbsp;- {{ event.softDescription }}</small>
+																</div>
+															</div>
+															<div style="flex-grow: 1"></div>
+															<div class="font-medium flex align-items-center gap-1">
+																<Icon
+																	v-if="event.isTransferPair"
+																	source_id="sync_alt"
+																	source="material-symbols"
+																></Icon>
+																<Currency :amount="event.amount" mode="transaction" />
+															</div>
+														</div>
+														<small class="text-ellipsis">
+															{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+															-
+															{{ accountStore.getAccountName(event.account_id) }}
+														</small>
+													</div>
 												</div>
-											</div>
+											</template>
 										</template>
 									</template>
-									<div
-										v-if="category.tally.unBudgetedAttributions.length > 0"
-										class="flex align-items-center list-row gap-2"
-									>
+									<div v-if="category.tally.unBudgetedAttributions.length > 0" class="flex align-items-center list-row gap-2">
 										<i class="pi pi-exclamation-triangle" />
 										Unbudgeted
 										<div class="flex-grow-1"></div>
 										<Currency :amount="category.tally.unBudgetedNet" mode="transaction" />
 									</div>
-									<div
-										v-for="event of category.tally.unBudgetedAttributions"
-										class="list-row flex align-items-center gap-3"
-										@click="viewTransaction(event.sourceTransaction)"
-									>
-										<AttributionAvatar :event="event" :size="1.9" />
-										<div class="flex flex-column w-full min-w-0">
-											<div class="transaction-main-line">
-												<div class="text-ellipsis w-full min-w-0">
-													{{ event.displayName }}
-												</div>
-												<div style="flex-grow: 1"></div>
-												<div style="display: flex; align-items: center; gap: 4px">
-													<Currency :amount="event.amount" mode="transaction" />
-												</div>
+									<template v-for="event of category.tally.unBudgetedAttributions">
+										<!-- only display one from transfer pair -->
+										<div
+											class="list-row flex align-items-center gap-3"
+											v-if="!event.isTransferCopy"
+											@click="viewTransaction(event.sourceTransaction)"
+										>
+											<div>
+												<AttributionAvatar :event="event" :size="1.9">
+													<template #badge v-if="event.isSplit">
+														<Icon source_id="arrow_split" source="material-symbols" />
+													</template>
+													<template #badge v-if="event.isTransferPair">
+														<Icon source_id="sync_alt" source="material-symbols" />
+													</template>
+												</AttributionAvatar>
 											</div>
-											<small>
-												{{
-													event.Budget?.memo ||
-													useCategoryStore().getCategoryById(event.category_id).name
-												}}
-												-
-												{{ accountStore.getAccountName(event.account_id) }}
-											</small>
+											<div class="flex flex-column w-full min-w-0">
+												<div class="flex align-items-center gap-2">
+													<div class="flex align-items-center w-full min-w-0">
+														<div class="text-ellipsis">
+															<span class="font-medium">{{ event.displayName }}</span>
+															<small v-if="event.memo">&nbsp;- {{ event.softDescription }}</small>
+														</div>
+													</div>
+													<div style="flex-grow: 1"></div>
+													<div class="font-medium flex align-items-center gap-1">
+														<Icon v-if="event.isTransferPair" source_id="sync_alt" source="material-symbols"></Icon>
+														<Currency :amount="event.amount" mode="transaction" />
+													</div>
+												</div>
+												<small class="text-ellipsis">
+													{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+													-
+													{{ accountStore.getAccountName(event.account_id) }}
+												</small>
+											</div>
 										</div>
-									</div>
+									</template>
 								</AccordionContent>
 							</AccordionPanel>
 						</template>
 					</Accordion>
 				</div>
 				<div v-else-if="selectedSpendingView === 'budget'">
-					<Accordion multiple @update:value="(value) => openAccordions = new Set(value)">
+					<Accordion multiple @update:value="(value) => (openAccordions = new Set(value))">
 						<AccordionPanel value="0">
 							<AccordionHeader class="flex align-items-center gap-2">
 								<AttributionAvatar icon="question-circle" :size="2" :background="'cherry1'" />
@@ -588,29 +594,43 @@ const orderedBudgets = computed(() => {
 								<Currency :amount="state.summaryData.allUnbudgeted.unBudgetedNet" mode="transaction" />
 							</AccordionHeader>
 							<AccordionContent>
-								<template v-for="(event, i) of state.summaryData.allUnbudgeted.unBudgetedAttributions">
+								<template
+									v-for="(event, i) of state.summaryData.allUnbudgeted.unBudgetedAttributions
+										.slice()
+										.sort((a, b) => (a.date.isBefore(b.date) ? -1 : 1))"
+								>
+									<!-- only display one from transfer pair -->
 									<div
-										class="list-row flex align-items-center gap-3"
+										class="list-row flex align-items-center gap-3 px=0"
+										v-if="!event.isTransferCopy"
 										@click="viewTransaction(event.sourceTransaction)"
 									>
 										<div>
-											<AttributionAvatar :event="event" :size="1.9" />
+											<AttributionAvatar :event="event" :size="1.9">
+												<template #badge v-if="event.isSplit">
+													<Icon source_id="arrow_split" source="material-symbols" />
+												</template>
+												<template #badge v-if="event.isTransferPair">
+													<Icon source_id="sync_alt" source="material-symbols" />
+												</template>
+											</AttributionAvatar>
 										</div>
 										<div class="flex flex-column w-full min-w-0">
-											<div class="transaction-main-line">
-												<div class="text-ellipsis w-full min-w-0">
-													{{ event.displayName }}
+											<div class="flex align-items-center gap-2">
+												<div class="flex align-items-center w-full min-w-0">
+													<div class="text-ellipsis">
+														<span class="font-medium">{{ event.displayName }}</span>
+														<small v-if="event.memo">&nbsp;- {{ event.softDescription }}</small>
+													</div>
 												</div>
 												<div style="flex-grow: 1"></div>
-												<div style="display: flex; align-items: center; gap: 4px">
+												<div class="font-medium flex align-items-center gap-1">
+													<Icon v-if="event.isTransferPair" source_id="sync_alt" source="material-symbols"></Icon>
 													<Currency :amount="event.amount" mode="transaction" />
 												</div>
 											</div>
-											<small>
-												{{
-													event.Budget?.memo ||
-													useCategoryStore().getCategoryById(event.category_id).name
-												}}
+											<small class="text-ellipsis">
+												{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
 												-
 												{{ accountStore.getAccountName(event.account_id) }}
 											</small>
@@ -621,7 +641,10 @@ const orderedBudgets = computed(() => {
 						</AccordionPanel>
 						<template v-for="budgetSnapshot of orderedBudgets">
 							<AccordionPanel :value="budgetSnapshot.budget.budget_id">
-								<AccordionHeader class="budget-header flex align-items-center gap-2" :class="{ open: isAccordionOpen(budgetSnapshot.budget.budget_id) }">
+								<AccordionHeader
+									class="budget-header flex align-items-center gap-2"
+									:class="{ open: isAccordionOpen(budgetSnapshot.budget.budget_id) }"
+								>
 									<AttributionAvatar :category="budgetSnapshot.budget.Category" :size="2" />
 									<b>{{ budgetSnapshot.budget.memo }}</b>
 									<div class="flex-grow-1"></div>
@@ -632,28 +655,16 @@ const orderedBudgets = computed(() => {
 										class="text-semibold"
 									/> -->
 										<!-- {{ Math.floor(budgetSnapshot.progress(date()).percent) }}% -->
-										<small class="relative-status">
-											<div v-if="budgetSnapshot.progress(date()).percent > 100">
-												<Currency
-													:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining).toFixed(2)"
-												/>
-												over
-											</div>
-											<div v-else-if="budgetSnapshot.progress(date()).percent < 100">
-												<Currency
-													:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining).toFixed(2)"
-												/>
-												remaining
-											</div>
-										</small>
+										<div class="budget-total"><Currency :amount="budgetSnapshot.tally.attributedNet" /></div>
+
 										<Knob
 											class="budget-progress-knob"
-											v-model="budgetSnapshot.progress(date()).dialPercent"
+											v-model="budgetSnapshot.progress(ddate()).visualization.normalizedPercent"
 											:min="0"
 											:max="100"
 											:size="25"
 											:strokeWidth="15"
-											:valueColor="progressColor[budgetSnapshot.progress(date()).status]"
+											:valueColor="progressColor[budgetSnapshot.progress(ddate()).status]"
 											:readonly="true"
 											:showValue="false"
 											style="padding-top: 5px"
@@ -669,11 +680,11 @@ const orderedBudgets = computed(() => {
 								</AccordionHeader>
 								<AccordionContent class="budget-content" :class="{ open: isAccordionOpen(budgetSnapshot.budget.budget_id) }">
 									<!-- // PROGRESS BAR -->
-									<div class="flex align-items-center	gap-2 my-2 w-full">
+									<div class="flex align-items-center gap-2 my-2 w-full">
 										<div class="flex-grow-1">
 											<div
 												class="budget-progress-bar bg-black-alpha-10"
-												style="position: relative; padding: 4px 6px; width: 100%; border-radius: 4px; overflow: hidden;"
+												style="position: relative; padding: 4px 6px; width: 100%; border-radius: 4px"
 											>
 												<div
 													class="attributed-bar"
@@ -681,28 +692,52 @@ const orderedBudgets = computed(() => {
 														position: 'absolute',
 														top: '0',
 														left: '0',
-														width: budgetSnapshot.progress(date()).percent + '%',
+														width: Math.min(100, budgetSnapshot.progress(ddate()).visualization.normalizedPercent) + '%',
 														height: '100%',
 														borderRadius: '4px',
-														backgroundColor: progressColor.muted[budgetSnapshot.progress(date()).status],
+														backgroundColor: progressColor.muted[budgetSnapshot.progress(ddate()).status],
 													}"
 												></div>
-												<div class="pace-line"
-													v-if="budgetSnapshot.progress(date()).pace < 100"
+												<div
+													class="budget-line"
+													v-if="budgetSnapshot.progress(ddate()).visualization.normalizedBudgetedNet < 99"
 													:style="{
 														position: 'absolute',
 														top: '-2px',
 														bottom: '-2px',
-														left: budgetSnapshot.progress(date()).pace + '%',
+														left: budgetSnapshot.progress(ddate()).visualization.normalizedBudgetedNet + '%',
 														borderLeft: '1px solid ' + colors.gray8,
+														translate: '-51%',
 													}"
 												></div>
 												<div
+													class="pace-marker"
+													v-if="budgetSnapshot.progress(ddate()).visualization.normalizedPace < 99"
 													:style="{
-														position: 'relative'
+														position: 'absolute',
+														lineHeight: '0.3em',
+														fontSize: '2em',
+														translate: '-50% -100%',
+														verticalAlign: 'top',
+														top: '0',
+														left: budgetSnapshot.progress(ddate()).visualization.normalizedPace + '%',
 													}"
 												>
-													<Currency :amount="budgetSnapshot.tally.attributedNet" />
+													▾
+												</div>
+												<div class="flex align-items-center relative">
+													<div v-if="Math.abs(100 - budgetSnapshot.progress(ddate()).percent) > 1">
+														<Currency round :amount="Math.abs(budgetSnapshot.rangeBudgetRemaining)" />
+														{{ budgetSnapshot.progress(ddate()).percent > 100 ? 'over' : 'remaining' }}
+													</div>
+													<div v-else>✓</div>
+													&nbsp;
+													<!-- <div v-else-if="budgetSnapshot.progress(date()).percent < 100">
+														<Currency
+															:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining).toFixed(2)"
+														/>
+														remaining
+													</div> -->
 												</div>
 											</div>
 										</div>
@@ -710,10 +745,7 @@ const orderedBudgets = computed(() => {
 											<Currency :amount="budgetSnapshot.tally.budgetedNet" />
 										</div>
 									</div>
-									<div
-										v-for="childItem of budgetSnapshot.childItemEvents"
-										class="list-row flex align-items-center gap-3"
-									>
+									<div v-for="childItem of budgetSnapshot.childItemEvents" class="list-row flex align-items-center gap-3 px-0">
 										<AttributionAvatar :categoryId="childItem.category_id" :size="1.9">
 											<template #badge>
 												<Icon name="checklist" />
@@ -726,18 +758,12 @@ const orderedBudgets = computed(() => {
 												</div>
 												<div style="flex-grow: 1"></div>
 												<div style="display: flex; align-items: center; gap: 4px">
-													<Currency
-														:amount="childItem.rangeTally.attributedNet"
-														mode="transaction"
-													/>
+													<Currency :amount="childItem.rangeTally.attributedNet" mode="transaction" />
 												</div>
 												<Knob
 													v-model="
 														{
-															percent:
-																(childItem.rangeTally.attributedNet /
-																	childItem.rangeTally.budgetedNet) *
-																100,
+															percent: (childItem.rangeTally.attributedNet / childItem.rangeTally.budgetedNet) * 100,
 														}.percent
 													"
 													:min="0"
@@ -760,26 +786,38 @@ const orderedBudgets = computed(() => {
 										</div>
 									</div>
 									<template v-for="event of budgetSnapshot.notChildAttributions">
+										<!-- only display one from transfer pair -->
 										<div
 											class="list-row flex align-items-center gap-3 px-0"
+											v-if="!event.isTransferCopy"
 											@click="viewTransaction(event.sourceTransaction)"
 										>
-											<AttributionAvatar :event="event" :size="1.9" />
+											<div>
+												<AttributionAvatar :event="event" :size="1.9">
+													<template #badge v-if="event.isSplit">
+														<Icon source_id="arrow_split" source="material-symbols" />
+													</template>
+													<template #badge v-if="event.isTransferPair">
+														<Icon source_id="sync_alt" source="material-symbols" />
+													</template>
+												</AttributionAvatar>
+											</div>
 											<div class="flex flex-column w-full min-w-0">
-												<div class="transaction-main-line">
-													<div class="text-ellipsis w-full min-w-0">
-														{{ event.displayName }}
+												<div class="flex align-items-center gap-2">
+													<div class="flex align-items-center w-full min-w-0">
+														<div class="text-ellipsis">
+															<span class="font-medium">{{ event.displayName }}</span>
+															<small v-if="event.memo">&nbsp;- {{ event.softDescription }}</small>
+														</div>
 													</div>
 													<div style="flex-grow: 1"></div>
-													<div style="display: flex; align-items: center; gap: 4px">
+													<div class="font-medium flex align-items-center gap-1">
+														<Icon v-if="event.isTransferPair" source_id="sync_alt" source="material-symbols"></Icon>
 														<Currency :amount="event.amount" mode="transaction" />
 													</div>
 												</div>
-												<small>
-													{{
-														event.Budget?.memo ||
-														useCategoryStore().getCategoryById(event.category_id).name
-													}}
+												<small class="text-ellipsis">
+													{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
 													-
 													{{ accountStore.getAccountName(event.account_id) }}
 												</small>
@@ -797,50 +835,62 @@ const orderedBudgets = computed(() => {
 		<br />
 		<br />
 		<h3>Transactions</h3>
-		<template v-for="(event, i) of dailyEvents">
-			<h4
-				v-if="i === 0 || !dailyEvents[i - 1]?.date.isSame(event.date)"
-				:style="{
-					padding: '8px 8px',
-					marginTop: '8px',
-					position: 'sticky',
-					top: '0',
-					backgroundColor: '#ffff',
-					zIndex: 1,
-					marginLeft: '-5px',
-					marginRight: '-5px',
-				}"
-			>
-				{{ event.date.formatFull() }}
-			</h4>
-			<div class="list">
-				<div
-					class="list-row flex align-items-center gap-3"
-					@click="viewTransaction(event.sourceTransaction)"
+		<template v-for="(day, i) of dailyEvents">
+			<div v-if="day.transactions.length > 0">
+				<h4
+					:style="{
+						padding: '8px 8px',
+						marginTop: '8px',
+						position: 'sticky',
+						top: '0',
+						backgroundColor: '#ffff',
+						zIndex: 1,
+						marginLeft: '-5px',
+						marginRight: '-5px',
+					}"
 				>
-					<div>
-						<AttributionAvatar :event="event" style="width: 2.5rem; font-size: 1.2rem">
-							<template #badge v-if="event.isSplit">
-								<Icon source_id="arrow_split" source="material-symbols" />
-							</template>
-						</AttributionAvatar>
-					</div>
-					<div class="flex flex-column w-full min-w-0">
-						<div class="transaction-main-line">
-							<div class="text-ellipsis w-full min-w-0">
-								{{ event.displayName }}
+					{{ day.date }}
+				</h4>
+				<div class="list">
+					<template v-for="event in day.transactions">
+						<!-- only display one from transfer pair -->
+						<div
+							class="list-row flex align-items-center gap-3"
+							v-if="!event.isTransferCopy"
+							@click="viewTransaction(event.sourceTransaction)"
+						>
+							<div>
+								<AttributionAvatar :event="event" style="width: 2.5rem; font-size: 1.2rem">
+									<template #badge v-if="event.isSplit">
+										<Icon source_id="arrow_split" source="material-symbols" />
+									</template>
+									<template #badge v-if="event.isTransferPair">
+										<Icon source_id="sync_alt" source="material-symbols" />
+									</template>
+								</AttributionAvatar>
 							</div>
-							<div style="flex-grow: 1"></div>
-							<div style="display: flex; align-items: center; gap: 4px">
-								<Currency :amount="event.amount" mode="transaction" />
+							<div class="flex flex-column w-full min-w-0">
+								<div class="flex align-items-center gap-2">
+									<div class="flex align-items-center w-full min-w-0">
+										<div class="text-ellipsis">
+											<span class="font-medium">{{ event.displayName }}</span>
+											<small v-if="event.memo">&nbsp;- {{ event.softDescription }}</small>
+										</div>
+									</div>
+									<div style="flex-grow: 1"></div>
+									<div class="font-medium flex align-items-center gap-1">
+										<Icon v-if="event.isTransferPair" source_id="sync_alt" source="material-symbols"></Icon>
+										<Currency :amount="event.amount" mode="transaction" />
+									</div>
+								</div>
+								<small class="text-ellipsis">
+									{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+									-
+									{{ accountStore.getAccountName(event.account_id) }}
+								</small>
 							</div>
 						</div>
-						<small class="text-ellipsis">
-							{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
-							-
-							{{ accountStore.getAccountName(event.account_id) }}
-						</small>
-					</div>
+					</template>
 				</div>
 			</div>
 		</template>
@@ -956,10 +1006,7 @@ const orderedBudgets = computed(() => {
 			<br />
 			<br />
 
-			<div
-				v-for="[name, hex] in Object.entries(colors)"
-				:style="{ color: '#fff', padding: '10px', background: hex }"
-			>
+			<div v-for="[name, hex] in Object.entries(colors)" :style="{ color: '#fff', padding: '10px', background: hex }">
 				{{ name }}
 			</div>
 		</div>
@@ -973,7 +1020,7 @@ const orderedBudgets = computed(() => {
 }
 
 .list-row {
-	padding: 5px 16px;
+	padding: 6px 8px;
 	background: #fff;
 }
 
@@ -1002,11 +1049,10 @@ const orderedBudgets = computed(() => {
 	}
 }
 
-
 .budget-header {
 	overflow: hidden;
 
-	.relative-status {
+	.budget-total {
 		transition: 0.3s ease-in;
 	}
 
@@ -1016,7 +1062,7 @@ const orderedBudgets = computed(() => {
 	}
 
 	&.open {
-		.relative-status {
+		.budget-total {
 			translate: 30px;
 		}
 		.budget-progress-knob {
@@ -1041,5 +1087,4 @@ const orderedBudgets = computed(() => {
 		max-width: 100% !important;
 	}
 }
-
 </style>

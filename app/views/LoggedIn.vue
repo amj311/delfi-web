@@ -4,7 +4,7 @@ import { useAccountStore } from '@/stores/account.store';
 import { useCategoryStore } from '@/stores/category.store';
 import { useDelfiStore } from '@/stores/delfi.store';
 import { useBudgetStore } from '@/stores/budget.store';
-import { date } from 'delfi-core/utils/dateUtils';
+import { ddate } from 'delfi-core/utils/dateUtils';
 import { computed, onBeforeMount, reactive } from 'vue';
 import { RouterView } from 'vue-router'
 import Icon from '@/components/Icon.vue';

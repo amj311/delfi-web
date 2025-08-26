@@ -1,4 +1,4 @@
-import { date, type DelfiDate } from "../utils/dateUtils";
+import { ddate, type DelfiDate } from "../utils/dateUtils";
 import { type Budget, type ScheduledBudget, type BudgetEvent, type TriggeredBudget, RecurrenceType, type BudgetOccurrence } from "./Budget";
 import BudgetUtils from "./Budget";
 import FilterService from "../services/FilterService";
@@ -66,7 +66,7 @@ class Forecast {
 
 			// TODO compute cumulative triggers
 		
-			this.readyMonths.set(date(monthStart).toString(), {
+			this.readyMonths.set(ddate(monthStart).toString(), {
 				occurrences: monthOccurrences,
 				events: monthEvents,
 			});

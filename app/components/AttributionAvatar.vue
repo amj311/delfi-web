@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import Icon from './Icon.vue';
 import { colors, type IconName } from 'delfi-core/utils/constants';
 import type { Category } from 'delfi-core/models/Category';
@@ -38,6 +38,12 @@ const fontSize = computed(() => {
 const finalImage = computed(() => {
 	return props.image || props.event?.Merchant?.logo || '';
 });
+const imageError = ref(false);
+function setImageError() {
+	console.warn('Error loading image:', finalImage.value);
+	imageError.value = true;
+}
+
 const category = computed(
 	() =>
 		props.category ||
@@ -58,9 +64,9 @@ const backgroundColor = computed(() => {
 </script>
 
 <template>
-	<div class="avatar-wrapper" :style="{ width: `${props.size}rem`, height: `${props.size}rem` }">
+	<div class="avatar-wrapper" :style="{ width: `${props.size}rem`, height: `${props.size}rem`, fontSize: `${fontSize}rem` }">
 		<div class="attribution-avatar">
-			<img v-if="finalImage" :src="finalImage" />
+			<img v-if="finalImage && !imageError" :src="finalImage" @error="setImageError" />
 			<template v-else>
 				<div
 					class="icon-wrapper flex align-items-center justify-content-center"

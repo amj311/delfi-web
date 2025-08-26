@@ -1,7 +1,7 @@
 import { MONTHS, TagColor } from "../../delfi-core/utils/constants";
 import { categoryByName } from "../../delfi-core/models/systemCategories";
 import { BudgetType, RecurrenceType, type Budget } from "../../delfi-core/models/Budget";
-import { date } from "../../delfi-core/utils/dateUtils";
+import { ddate } from "../../delfi-core/utils/dateUtils";
 import { type Account, type Institution } from "../../delfi-core/models/Account";
 import { AccountService } from "./AccountService";
 import { type Workspace } from "./WorkspaceService";
@@ -569,7 +569,7 @@ export class TestDataService {
 						group_id: this.groupId('Montreal 2025')!,
 						category_id: categoryByName("Flights").category_id,
 						Category: categoryByName("Flights"),
-						date: date('2025-06-15'), // June 15, 2025
+						date: ddate('2025-06-15'), // June 15, 2025
 						budgetType: BudgetType.TRANSACTION,
 						account_id: getAccountByName('Expense Savings').account_id,
 						target_account_partition_id: null,
@@ -583,7 +583,7 @@ export class TestDataService {
 						Category: categoryByName("Lodging"),
 						memo: 'Airbnb',
 						amount: -1000,
-						date: date('2025-06-16'), // June 16, 2025
+						date: ddate('2025-06-16'), // June 16, 2025
 						budgetType: BudgetType.TRANSACTION,
 						account_id: getAccountByName('Expense Savings').account_id,
 						target_account_partition_id: null,
@@ -596,7 +596,7 @@ export class TestDataService {
 						category_id: null,
 						memo: 'Activities and Purchases',
 						amount: -500,
-						date: date('2025-06-18'), // June 18, 2025
+						date: ddate('2025-06-18'), // June 18, 2025
 						budgetType: BudgetType.TRANSACTION,
 						account_id: getAccountByName('Expense Savings').account_id,
 						target_account_partition_id: null,

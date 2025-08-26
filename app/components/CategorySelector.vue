@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useCategoryStore } from '@/stores/category.store';
-import CategoryAvatar from './CategoryAvatar.vue';
 import { computed, onMounted } from 'vue';
 import type { Category } from 'delfi-core/models/Category';
 import { ref } from 'vue';
 import InputText from 'primevue/inputtext';
+import AttributionAvatar from './AttributionAvatar.vue';
 
 const props = defineProps<{
 	currentCategoryId: string | null;
@@ -62,9 +62,8 @@ const groups = computed(() => useCategoryStore().categoriesByGroup
 						class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round"
 						@click="() => $emit('select', category.category_id)"
 					>
-						<CategoryAvatar
+						<AttributionAvatar
 							:category="category"
-							:groupColor="group.color"
 							style="width: 2rem; height: 2rem;"
 						/>
 						<div class="flex-grow-1">{{  category.name }}</div>

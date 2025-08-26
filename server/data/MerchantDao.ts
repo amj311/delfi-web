@@ -2,11 +2,9 @@ import type { Merchant, MerchantDraft } from "delfi-core/models/Transaction";
 import { prisma } from "../../prisma/client";
 
 export const MerchantDao = {
-    async createMerchant(merchantData: MerchantDraft) {
+    async createMerchant(workspace_id: string, merchantData: MerchantDraft) {
         return await prisma.merchant.create({
-            data: {
-                ...merchantData,
-            },
+            data: merchantData,
         });
     },
 
@@ -28,8 +26,16 @@ export const MerchantDao = {
         });
     },
 
+	async getByPlaidMerchantId(plaid_merchant_id: string) {
+		return await prisma.merchant.findFirst({
+			where: {
+				plaid_merchant_id,
+			},
+		});
+	},
+
 	async getMerchantByHostname(hostname: string) {
-		return await prisma.merchant.findUnique({
+		return await prisma.merchant.findFirst({
 			where: {
 				hostname,
 			},
@@ -47,7 +53,7 @@ export const MerchantDao = {
 			throw new Error(`Merchant with ID ${merchant_id} not found`);
 		}
 
-		const categoryAssociation = merchant.category_association;
+		const categoryAssociation = merchant.detection_key;
 		return await prisma.categoryDetectionMapping.findUnique({
 			where: {
 				workspace_id_detection_key: {
@@ -69,30 +75,4 @@ export const MerchantDao = {
             data: merchantData,
         });
     },
-
-	async upsertMerchant(unique: Partial<Merchant>, merchantData: Omit<Merchant, 'merchant_id'>) {
-		const existingMerchant = await prisma.merchant.findFirst({
-			where: {
-				...unique,
-			},
-		});
-		if (existingMerchant) {
-			return await prisma.merchant.update({
-				where: {
-					merchant_id: existingMerchant.merchant_id,
-				},
-				data: {
-					logo: merchantData.logo,
-					// don't update name so it can be edited by users
-				},
-			});
-		}
-		return await prisma.merchant.create({
-			data: {
-				...merchantData,
-				...unique,
-			},
-		});
-	}
-
 };

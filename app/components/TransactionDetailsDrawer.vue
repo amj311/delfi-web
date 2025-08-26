@@ -20,6 +20,7 @@ import InputNumber from 'primevue/inputnumber';
 import { useToast } from 'primevue/usetoast';
 import { v4 as uuid } from 'uuid';
 import MerchantSelectionDrawer from './MerchantSelectionDrawer.vue';
+import { useContextStore } from '@/stores/context.store';
 
 const triggerRef = ref<InstanceType<typeof NavTriggerDrawer> | null>(null);
 const transaction = ref<Transaction>({} as Transaction);
@@ -46,19 +47,23 @@ watch(
 		if (newTransaction.transaction_id !== oldValue.transaction_id) {
 			return;
 		}
-		
+
 		saving.value = true;
 		try {
 			await TransactionService.updateTransaction(transaction.value.transaction_id, newTransaction);
 			lastSaved.value = new Date();
 			const diffKeys = Object.keys(diff(oldValue, newTransaction) || {});
-			console.log('Transaction saved:', transaction.value.transaction_id, 'Changes:', diff(oldValue, newTransaction));
 			const shouldCompute = diffKeys.reduce((acc, key) => {
 				return acc || !computeExclusions.includes(key);
 			}, false);
 			if (shouldCompute) {
 				useDelfiStore().reCompute();
 			}
+			useToast().add({
+				severity: 'success',
+				summary: 'Transaction Updated',
+				detail: 'The transaction has been successfully updated.',
+			});
 		} catch (error) {
 			console.error('Error saving transaction:', error);
 		} finally {
@@ -67,31 +72,7 @@ watch(
 	}
 );
 
-const isSplit = computed(() => {
-	return transaction.value.Attributions.length > 1;
-});
-
-const largestAttribution = computed(() => {
-	return transaction.value.Attributions.reduce((prev, curr) => {
-		return curr.amount > prev.amount ? curr : prev;
-	}, transaction.value.Attributions[0]);
-});
-
-const avatarDetails = computed(() => {
-	return {
-		Merchant: transaction.value.Merchant,
-		Category: largestAttribution.value.Category,
-	};
-});
-
-const account = computed(() => {
-	return useAccountStore().getAccountById(transaction.value.account_id);
-});
-
-async function doAttributionDrawer(
-	step: Step,
-	attribution: Transaction['Attributions'][number]
-) {
+async function doAttributionDrawer(step: Step, attribution: Transaction['Attributions'][number]) {
 	if (transactionAttributionDrawer.value) {
 		const selection = await transactionAttributionDrawer.value.waitForSelection(jsonCopy(attribution), step);
 		if (!selection) {
@@ -130,7 +111,10 @@ async function promptForMemo(attribution: Transaction['Attributions'][number]) {
 const merchantSelectionDrawer = ref<InstanceType<typeof MerchantSelectionDrawer> | null>(null);
 async function selectMerchant() {
 	if (merchantSelectionDrawer.value) {
-		const selection = await merchantSelectionDrawer.value.selectMerchant(transaction.value.Merchant?.merchant_id || null, transaction.value.transaction_id);
+		const selection = await merchantSelectionDrawer.value.selectMerchant(
+			transaction.value.Merchant?.merchant_id || null,
+			transaction.value.transaction_id
+		);
 		transaction.value.Merchant = selection || null;
 		transaction.value.merchant_id = selection?.merchant_id || null;
 	}
@@ -149,6 +133,14 @@ watch(
 	},
 	{ immediate: true }
 );
+
+/**************
+ * SPLITS
+ */
+
+const isSplit = computed(() => {
+	return transaction.value.Attributions.length > 1;
+});
 
 const splitModal = ref<InstanceType<typeof DrawerModal> | null>(null);
 const draftAttributions = ref<Transaction['Attributions']>([]);
@@ -182,8 +174,8 @@ function createNewSplit() {
 		category_id: null,
 		group_id: undefined,
 		transaction_attribution_id: uuid(),
-		transaction_id: transaction.value.transaction_id
-	})
+		transaction_id: transaction.value.transaction_id,
+	});
 }
 
 function openSplitModal() {
@@ -210,20 +202,23 @@ async function saveSplitChanges() {
 	// Confirm removal of empty splits
 	const emptySplits = draftAttributions.value.filter((attr) => attr.amount <= 0);
 	if (emptySplits.length > 0) {
-			const confirmed = await usePrompt().confirm({
-				title: 'Remove Empty Splits',
-				message: `Some splits are empty and will be removed. Do you want to continue?`,
-			});
+		const confirmed = await usePrompt().confirm({
+			title: 'Remove Empty Splits',
+			message: `Some splits are empty and will be removed. Do you want to continue?`,
+		});
 		if (!confirmed) {
 			return;
 		}
 	}
 
 	// Restore sign of amounts to match original transaction
-	transaction.value.Attributions = draftAttributions.value.sort((a, b) => b.amount - a.amount).map((attr) => ({
-		...attr,
-		amount: Math.sign(transaction.value.amount) * attr.amount, // Store as absolute value
-	})).filter((attr) => attr.amount !== 0); // Remove empty splits
+	transaction.value.Attributions = draftAttributions.value
+		.sort((a, b) => b.amount - a.amount)
+		.map((attr) => ({
+			...attr,
+			amount: Math.sign(transaction.value.amount) * attr.amount, // Store as absolute value
+		}))
+		.filter((attr) => attr.amount !== 0); // Remove empty splits
 	closeSplitModal();
 }
 function cancelSplitChanges() {
@@ -235,6 +230,105 @@ function closeSplitModal() {
 		splitModal.value.close();
 	}
 }
+
+/***************
+ * TRANSFERS
+ */
+
+/** Filters transaction from current context to those matching this transaction */
+function getTransferCandidates() {
+	return (
+		useContextStore().currentSummary?.attributionEvents.filter(
+			(t) =>
+				!t.transfer_pair_id &&
+				t.sourceTransaction.transaction_id !== transaction.value.transaction_id &&
+				t.sourceTransaction.account_id !== transaction.value.account_id &&
+				t.sourceTransaction.amount === -transaction.value.amount
+		) || []
+	);
+}
+
+const isTransferPair = computed(() => {
+	return Boolean(transaction.value.TransferPair);
+});
+const transferPair = computed(() => {
+	return isTransferPair.value ? [transaction.value, transaction.value.TransferPair!] : [];
+});
+const transferSource = computed(() => {
+	return transferPair.value.find((t) => t.amount <= 0) || null;
+});
+const transferTarget = computed(() => {
+	return transferPair.value.find((t) => t.amount > 0) || null;
+});
+
+function cancelTransferPair() {
+	if (transferPairModal.value) {
+		transferPairModal.value.close();
+	}
+}
+
+async function breakTransferPair() {
+	console.log('Breaking transfer pair');
+	if (!isTransferPair.value) {
+		return;
+	}
+	if (!(await usePrompt().delete({
+		title: 'Delete Transfer Pair',
+		message: 'Are you sure you want to remove this transfer pair?',
+	}))) {
+		return;
+	}
+	transaction.value.transfer_pair_id = null;
+	transaction.value.TransferPair = null;
+}
+
+/***************
+ * DISPLAY
+ */
+
+const headerTitle = computed(() => {
+	let detailSource = isTransferPair.value ? transferSource.value! : transaction.value;
+	return TransactionUtils.getSimplifiedIdentifier(detailSource.original_description)?.identifier || detailSource.original_description;
+});
+
+const displayAmount = computed(() => {
+	return isTransferPair.value ? transferSource.value!.amount : transaction.value.amount;
+});
+
+const largestAttribution = computed(() => {
+	return transaction.value.Attributions.reduce((prev, curr) => {
+		return curr.amount > prev.amount ? curr : prev;
+	}, transaction.value.Attributions[0]);
+});
+
+const avatarDetails = computed(() => {
+	return {
+		Merchant: transaction.value.Merchant,
+		Category: largestAttribution.value.Category,
+	};
+});
+
+const account = computed(() => {
+	return useAccountStore().getAccountById(transaction.value.account_id);
+});
+const targetAccount = computed(() => {
+	return useAccountStore().getAccountById(transferTarget.value?.account_id);
+});
+const sourceAccount = computed(() => {
+	return useAccountStore().getAccountById(transferSource.value?.account_id);
+});
+
+const transferPairModal = ref<InstanceType<typeof DrawerModal> | null>(null);
+function openTransferPairModal() {
+	if (transferPairModal.value) {
+		transferPairModal.value.open();
+	}
+}
+function setTransferPair(t: Transaction) {
+	transaction.value.TransferPair = t;
+	transaction.value.transfer_pair_id = t.transaction_id;
+	transferPairModal.value?.close();
+}
 </script>
 
 <template>
@@ -243,35 +337,70 @@ function closeSplitModal() {
 			<div class="flex align-items-center gap-3">
 				<div><AttributionAvatar :event="avatarDetails" :size="3" /></div>
 				<div class="flex-frow-1 min-w-0">
-					<h3 class="m-0 text-ellipsis w-full min-w-0">
-						{{
-							transaction.Merchant?.name ||
-							TransactionUtils.getSimplifiedIdentifier(transaction.original_description)
-								?.identifier ||
-							transaction.original_description
-						}}
-					</h3>
+					<h3 class="m-0 text-ellipsis w-full min-w-0">{{ headerTitle }}</h3>
 					<div>{{ transaction.date.formatFull() }}</div>
 				</div>
 			</div>
-			<div class="text-4xl my-4"><Currency :amount="transaction.amount" mode="transaction" /></div>
+			<div class="text-4xl my-4">
+				<Currency :amount="displayAmount" mode="transaction" />
+			</div>
 
-			<div
-				style="font-family: monospace; opacity: 0.8; line-height: 1.2; font-size: 0.9em; word-break: break-all"
-			>
-				{{ transaction.original_description }}
-			</div>
-			<div class="flex align-items-center gap-2 my-2">
-				<div
-					class="border-round-sm square w-1rem"
-					:style="{ backgroundImage: `url(${account?.Institution.logo})`, backgroundSize: 'cover' }"
-				></div>
-				<span>{{ account?.display_name || account?.external_name }} - {{ account?.Institution.name }}</span>
-			</div>
+			<template v-if="isTransferPair">
+				<div class="flex align-items-center justify-content-between gap-3">
+					<div class="flex align-items-center gap-2 min-w-0">
+						<div
+							class="border-round-sm square"
+							:style="{
+								backgroundImage: `url(${sourceAccount?.Institution.logo})`,
+								backgroundSize: 'cover',
+								minWidth: '2.5rem',
+								maxWidth: '2.5rem',
+							}"
+						></div>
+						<div class="text-ellipsis">
+							<div class="font-medium">{{ sourceAccount?.display_name || sourceAccount?.external_name }}</div>
+							<small>{{ sourceAccount?.Institution.name }}</small>
+						</div>
+					</div>
+
+					<i class="pi pi-arrow-right text-2xl"></i>
+
+					<div class="flex align-items-center gap-2 min-w-0">
+						<div
+							class="border-round-sm square"
+							:style="{
+								backgroundImage: `url(${targetAccount?.Institution.logo})`,
+								backgroundSize: 'cover',
+								minWidth: '2.5rem',
+								maxWidth: '2.5rem',
+							}"
+						></div>
+						<div class="text-ellipsis">
+							<div class="font-medium">{{ targetAccount?.display_name || targetAccount?.external_name }}</div>
+							<small>{{ targetAccount?.Institution.name }}</small>
+						</div>
+					</div>
+				</div>
+			</template>
+			<template v-else>
+				<div style="font-family: monospace; opacity: 0.8; line-height: 1.2; font-size: 0.9em; word-break: break-all">
+					{{ transaction.original_description }}
+				</div>
+				<div class="flex align-items-center gap-2 my-2">
+					<div
+						class="border-round-sm square w-1rem"
+						:style="{
+							backgroundImage: `url(${account?.Institution.logo})`,
+							backgroundSize: 'cover',
+						}"
+					></div>
+					<span>{{ account?.display_name || account?.external_name }} - {{ account?.Institution.name }}</span>
+				</div>
+			</template>
 
 			<br />
 
-			<div v-for="attribution, i in transaction.Attributions" :key="attribution.transaction_attribution_id">
+			<div v-for="(attribution, i) in transaction.Attributions" :key="attribution.transaction_attribution_id">
 				<h4 v-if="isSplit" class="flex align-items-center gap-2 mt-2 px-1 py-1 bg-black-alpha-10 border-round-sm">
 					<Icon source_id="arrow_split" source="material-symbols" />
 					<span class="text-secondary">Split {{ i + 1 }}</span>
@@ -301,9 +430,7 @@ function closeSplitModal() {
 						>
 							<template v-if="attribution.Budget">
 								{{ attribution.Budget.memo }}
-								<span v-if="attribution.BudgetChildItem"
-									>- {{ attribution.BudgetChildItem.memo }}</span
-								>
+								<span v-if="attribution.BudgetChildItem">- {{ attribution.BudgetChildItem.memo }}</span>
 							</template>
 							<template v-else> Unbudgeted </template>
 						</Button>
@@ -317,13 +444,7 @@ function closeSplitModal() {
 							class="flex align-items-center gap-2"
 							@click="() => doAttributionDrawer('Category', attribution)"
 						>
-							<Icon
-								:name="
-									attribution.Category?.icon ||
-									attribution.Category?.ParentCategory?.icon ||
-									'question-circle'
-								"
-							/>
+							<Icon :name="attribution.Category?.icon || attribution.Category?.ParentCategory?.icon || 'question-circle'" />
 							{{ attribution.Category?.name || 'Uncategorized' }}
 						</Button>
 					</div>
@@ -343,24 +464,20 @@ function closeSplitModal() {
 							<template v-else> No Group </template>
 						</Button>
 					</div>
-
 				</div>
 			</div>
 
 			<br />
 
-			<Button link
-				v-if="isSplit"
-				class="flex align-items-center justify-content-center gap-2"
-				@click="showMoreFields = !showMoreFields"
-			>
+			<Button link v-if="isSplit" class="flex align-items-center justify-content-center gap-2" @click="showMoreFields = !showMoreFields">
 				<div></div>
 				{{ showMoreFields ? 'Less Details' : 'More Details' }}
 				<i class="pi pi-angle-down transition-all transition-duration-300" :class="{ 'rotate-180': showMoreFields }" />
 			</Button>
 			<div class="max-h-0 overflow-hidden transition-all transition-duration-300" :class="{ 'max-h-30rem': showMoreFields || !isSplit }">
 				<div class="details-rows">
-					<div class="row">
+					<!-- No merchant for transfers! -->
+					<div class="row" v-if="!isTransferPair">
 						<label>Merchant</label>
 						<div class="flex align-items-center gap-2">
 							<Button
@@ -376,35 +493,35 @@ function closeSplitModal() {
 
 					<div class="row">
 						<label>Notes</label>
-						<Textarea
-							v-model="notesDraft"
-							rows="3"
-							class="w-full"
-						/>
+						<Textarea v-model="notesDraft" rows="3" class="w-full" />
 					</div>
 				</div>
 			</div>
 
 			<div class="flex-grow-1" />
 
-			<Button class="w-full" text @click="openSplitModal">
+			<Button v-if="!isTransferPair" class="w-full" text @click="openSplitModal">
 				<Icon source_id="arrow_split" source="material-symbols" />
 				{{ isSplit ? 'Manage Splits' : 'Split Transaction' }}
+			</Button>
+			<Button v-if="!isSplit && !isTransferPair" class="w-full" text @click="openTransferPairModal">
+				<Icon source_id="compare_arrows" source="material-symbols" />
+				Create transfer pair
+			</Button>
+			<Button v-if="!isSplit && isTransferPair" class="w-full" text severity="danger" @click="breakTransferPair">
+				<Icon source_id="arrows_outward" source="material-symbols" />
+				Break transfer pair
 			</Button>
 		</div>
 	</NavTriggerDrawer>
 
-	
 	<DrawerModal ref="splitModal" title="Split Transaction">
-		<div
-			v-for="attribution of draftAttributions"
-			class="flex align-items-center gap-3 mb-2"
-		>
+		<div v-for="attribution of draftAttributions" class="flex align-items-center gap-3 mb-2">
 			<AttributionAvatar :event="attribution" :size="2.4" @click="doAttributionDrawer('Budget', attribution)" class="cursor-pointer" />
-			<div class="flex flex-column w-full min-w-0">
-				<div class="text-ellipsis text-semibold w-full min-w-0">
-					{{ attribution.memo || 'Unnamed Split' }}
-				</div>
+			<div class="flex flex-column align-items-start w-full min-w-0">
+				<Button text severity="contrast" class="p-0 w-auto text-ellipsis text-semibold w-full min-w-0" @click="promptForMemo(attribution)">
+					{{ attribution.memo || 'Add memo...' }}
+				</Button>
 				<small class="text-ellipsis w-full min-w-0">
 					{{ attribution.Budget?.memo ? attribution.Budget.memo + ' - ' : '' }}
 					{{ useCategoryStore().getCategoryById(attribution.category_id).name }}
@@ -421,10 +538,9 @@ function closeSplitModal() {
 					:class="{ showFillButton: splitTotalDiff < 0 }"
 					@input="({ value }) => handleSplitAmountChange(value as number, attribution)"
 					style="order: 1"
+					size="large"
 				/>
-				<div
-					class="fill-split-button max-w-0 overflow-hidden"
-				>
+				<div class="fill-split-button max-w-0 overflow-hidden">
 					<Button
 						text
 						severity="secondary"
@@ -438,34 +554,30 @@ function closeSplitModal() {
 					text
 					severity="secondary"
 					icon="pi pi-trash"
-					@click="async () => {
-						if (await usePrompt().delete({
-							title: 'Remove Split',
-							message: 'Are you sure you want to remove this split?',
-						})) {
-							draftAttributions.splice(draftAttributions.indexOf(attribution), 1)
+					@click="
+						async () => {
+							if (
+								await usePrompt().delete({
+									title: 'Remove Split',
+									message: 'Are you sure you want to remove this split?',
+								})
+							) {
+								draftAttributions.splice(draftAttributions.indexOf(attribution), 1);
+							}
 						}
-					}"
+					"
 					style="order: 2"
 				/>
 			</div>
 		</div>
 
 		<br />
-		<Button 
-			text
-			icon="pi pi-plus"
-			label="Add Split"
-			@click="createNewSplit"
-		/>
+		<Button text icon="pi pi-plus" label="Add Split" @click="createNewSplit" />
 
 		<br />
 		<br />
 		<div class="flex flex-column">
-			<Button
-				:disabled="!splitsAreFull"
-				@click="saveSplitChanges"
-			>
+			<Button :disabled="!splitsAreFull" @click="saveSplitChanges">
 				<div v-if="splitsAreFull">{{ 'Save Splits' }}</div>
 				<div v-else>
 					<Currency :amount="splitTotalDiff" />
@@ -476,33 +588,54 @@ function closeSplitModal() {
 		</div>
 	</DrawerModal>
 
+	<DrawerModal ref="transferPairModal" title="Select Transfer Transaction">
+		<div
+			v-for="event of getTransferCandidates()"
+			class="flex align-items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 border-round"
+			@click="setTransferPair(event.sourceTransaction)"
+		>
+			<div>
+				<AttributionAvatar :event="event" style="width: 2.5rem; font-size: 1.2rem">
+					<template #badge v-if="event.isSplit">
+						<Icon source_id="arrow_split" source="material-symbols" />
+					</template>
+				</AttributionAvatar>
+			</div>
+			<div class="flex flex-column w-full min-w-0">
+				<div class="flex align-items-center gap-2">
+					<div class="flex align-items-center w-full min-w-0">
+						<div class="text-ellipsis">
+							<span class="font-medium">{{ event.displayName }}</span>
+							<small v-if="event.memo">&nbsp;- {{ event.softDescription }}</small>
+						</div>
+					</div>
+					<div style="flex-grow: 1"></div>
+					<div class="font-medium flex align-items-center gap-1">
+						<Currency :amount="event.amount" mode="transaction" />
+					</div>
+				</div>
+				<small class="flex text-ellipsis">
+					{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+					-
+					{{ useAccountStore().getAccountName(event.account_id) }}
+					<div class="flex-grow-1"></div>
+					{{ event.date.formatFull() }}
+				</small>
+			</div>
+		</div>
+
+		<br />
+		<div class="flex flex-column">
+			<Button text label="Cancel" @click="cancelTransferPair" />
+		</div>
+	</DrawerModal>
+
 	<TransactionAttributionDrawer ref="transactionAttributionDrawer" />
 	<MerchantSelectionDrawer ref="merchantSelectionDrawer" :key="transaction.transaction_id" />
 </template>
 
 <style scoped lang="scss">
-:deep(.details-rows) {
-	.row {
-		display: flex;
-		align-items: top;
-		gap: 1rem;
-
-		> label {
-			--width: 7em;
-			--min-height: 2.5rem;
-			min-height: var(--min-height);
-			line-height: var(--min-height);
-			opacity: 0.75;
-			min-width: var(--width);
-			max-width: var(--width);
-		}
-	}
-}
-
-.fill-split-button {
-	transition: max-width 0.2s ease-in-out;
-}
 :deep(.p-inputwrapper-focus.showFillButton) + .fill-split-button {
-    max-width: 3rem !important;
+	max-width: 3rem !important;
 }
 </style>

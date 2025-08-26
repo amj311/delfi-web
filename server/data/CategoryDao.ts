@@ -1,5 +1,5 @@
 import { prisma } from "../../prisma/client";
-import { categoriesArray, flatCategoriesMap, plaidCategoryToSystemCategoryMap } from "delfi-core/models/systemCategories";
+import { categoriesArray, flatCategoriesMap, defaultKeyToSystemCategoryMap } from "delfi-core/models/systemCategories";
 import { WorkspaceDao } from "./WorkspaceDao";
 
 export const CategoryDao = {
@@ -32,7 +32,7 @@ export const CategoryDao = {
 			});
 		}
 
-		for (const [detection_key, system_category_name] of Object.entries(plaidCategoryToSystemCategoryMap)) {
+		for (const [detection_key, system_category_name] of Object.entries(defaultKeyToSystemCategoryMap)) {
 			await prisma.categoryDetectionMapping.upsert({
 				where: { workspace_id_detection_key: { workspace_id, detection_key } },
 				update: {

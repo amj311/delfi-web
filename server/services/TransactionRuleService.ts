@@ -25,7 +25,7 @@ export class TransactionRuleService {
 			// Iterate over ALL local rules first, so that they are set and global rules will not override them.
 			await this.applyRuleSetToTransaction(transaction, workspaceRules);
 			await this.applyRuleSetToTransaction(transaction, globalRules);
-			await TransactionDao.updateTransaction(workspace_id, transaction.transaction_id, transaction);
+			await TransactionDao.patchTransaction(workspace_id, transaction.transaction_id, transaction);
 		}));
 	}
 

@@ -1,3 +1,4 @@
+import { norm } from "delfi-core/utils/textSimilarity"
 import { type ScheduledBudget } from "./Budget"
 
 export type Institution = {
@@ -35,6 +36,7 @@ export enum AccountType {
 export enum AccountSubtype {
 	checking = 'checking',
 	savings = 'savings',
+	money_market = 'money_market',
 	credit_card = 'credit_card',
 	line_of_credit = 'line_of_credit',
 	cd = 'cd',
@@ -47,23 +49,23 @@ export enum AccountSubtype {
 }
 
 export const AccountTypes = {
-	depository: {
+	[AccountType.depository]: {
 		type: AccountType.depository,
 		subtypes: [AccountSubtype.checking, AccountSubtype.savings] as const,
 	},
-	credit: {
+	[AccountType.credit]: {
 		type: AccountType.credit,
 		subtypes: [AccountSubtype.credit_card, AccountSubtype.line_of_credit] as const,
 	},
-	investment: {
+	[AccountType.investment]: {
 		type: AccountType.investment,
-		subtypes: [AccountSubtype.cd, AccountSubtype.ira, AccountSubtype.stock] as const,
+		subtypes: [AccountSubtype.cd, AccountSubtype.ira, AccountSubtype.stock, AccountSubtype.money_market] as const,
 	},
-	loan: {
+	[AccountType.loan]: {
 		type: AccountType.loan,
 		subtypes: [AccountSubtype.mortgage, AccountSubtype.personal_loan, AccountSubtype.auto_loan] as const,
 	},
-	other: {
+	[AccountType.other]: {
 		type: AccountType.other,
 		subtypes: [AccountSubtype.other] as const,
 	},
@@ -101,4 +103,21 @@ export type Account = AccountDetails & {
 	sync_error?: string | null,
 	created_at: Date,
 	Institution: Institution,
+}
+
+export class AccountUtils {
+	public static matchAccountType(type: string): { type: AccountType, subtype: AccountSubtype } | null {
+		const normalized = norm(type);
+		for (const accountType of Object.values(AccountTypes)) {
+			for (const subtype of accountType.subtypes) {
+				if (norm(subtype) === normalized) {
+					return { type: accountType.type, subtype };
+				}
+			}
+			if (norm(accountType.type) === normalized) {
+				return { type: accountType.type, subtype: AccountSubtype.other };
+			}
+		}
+		return null;
+	}
 }

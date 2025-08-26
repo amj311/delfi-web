@@ -32,11 +32,10 @@ app.use(PrimeVue, {
 	}
 });
 
-app.use(ConfirmationService);
-app.use(ToastService);
-
 app.use(createPinia());
 app.use(router);
+app.use(ConfirmationService);
+app.use(ToastService);
 
 (async () => {
 	const { data } = await request.get('firebase-config');
