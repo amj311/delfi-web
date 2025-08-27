@@ -26,27 +26,35 @@ export class TransactionService {
 		return await TransactionDao.createTransaction(workspace_id, transactionData);
 	}
 
-	public static upsertTransaction = async (workspace_id: string, transactionData: CreateTransaction) => {
+	/**
+	 * inPATCHes transactions - inserts or patches ONLY provided values
+	 * @param workspace_id 
+	 * @param transactionData 
+	 * @returns 
+	 */
+	public static inPatchTransaction = async (workspace_id: string, transactionData: CreateTransaction) => {
 		const existingTransaction = await TransactionDao.getMatchingTransaction(workspace_id, transactionData);
 		let upsertedTransaction: Transaction | null = null;
 		let created = false;
 		if (existingTransaction) {
 			// Update existing transaction
 			upsertedTransaction = await TransactionDao.patchTransaction(workspace_id, existingTransaction.transaction_id, { ...transactionData, transaction_id: existingTransaction.transaction_id } as Transaction);
-			if (existingTransaction.transfer_pair_id && transactionData.transfer_pair_id !== existingTransaction.transfer_pair_id) {
-				// If we're not setting a new transfer pair, we need to remove the old one
-				await TransactionDao.breakTransferPair(workspace_id, existingTransaction.transfer_pair_id, existingTransaction.transaction_id);
-			}
 		} else {
 			// Create new transaction
 			upsertedTransaction = await this.createTransaction(workspace_id, transactionData);
 			created = true;
 		}
 
-		// Do transfer pairing
-		if (transactionData.transfer_pair_id) {
-			await TransactionDao.setTransferPair(workspace_id, upsertedTransaction.transaction_id, transactionData.transfer_pair_id);
-			upsertedTransaction = (await TransactionDao.getTransactionById(upsertedTransaction.transaction_id))!;
+		// Do transfer pairing operations, ONLY if transfer_pair_id is present
+		if (Object.hasOwn(transactionData, 'transfer_pair_id')) {
+			if (existingTransaction?.transfer_pair_id && transactionData.transfer_pair_id !== existingTransaction.transfer_pair_id) {
+				// If we're not setting a new transfer pair, we need to remove the old one
+				await TransactionDao.breakTransferPair(workspace_id, existingTransaction.transfer_pair_id, existingTransaction.transaction_id);
+			}
+			if (transactionData.transfer_pair_id) {
+				await TransactionDao.setTransferPair(workspace_id, upsertedTransaction.transaction_id, transactionData.transfer_pair_id);
+				upsertedTransaction = (await TransactionDao.getTransactionById(upsertedTransaction.transaction_id))!;
+			}
 		}
 		return {
 			transaction: upsertedTransaction,
@@ -110,7 +118,7 @@ export class TransactionService {
 			if (matchingOldPendingTransaction) {
 				// TODO copy attributions from pending
 			}
-			return await this.upsertTransaction(workspace_id, transaction);
+			return await this.inPatchTransaction(workspace_id, transaction);
 		}));
 
 		// Apply rules to all NEW transactions

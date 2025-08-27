@@ -15,7 +15,7 @@ export default (app, _, done) => {
 	app.post('/:transaction_id', async function handler (request, reply) {
 		const workspace_id = request.sessionUser.workspace_id;
 		const updateData = request.body;
-		const data = await TransactionService.upsertTransaction(workspace_id, updateData);
+		const data = await TransactionService.inPatchTransaction(workspace_id, updateData);
 		return {
 			success: true,
 			data,

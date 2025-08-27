@@ -65,8 +65,6 @@ export default class CompanySearchService {
 				return result;
 			});
 
-			console.log('Company search results:', scoredResults);
-
 			// Sort results by score (highest first)
 			return scoredResults.sort((a, b) => b.score - a.score)[0];
 
