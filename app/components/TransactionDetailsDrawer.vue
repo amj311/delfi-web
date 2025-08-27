@@ -61,11 +61,11 @@ watch(
 			if (shouldCompute) {
 				useDelfiStore().reCompute();
 			}
-			toast.add({
-				severity: 'success',
-				summary: 'Transaction Updated',
-				detail: 'The transaction has been successfully updated.',
-			});
+			// toast.add({
+			// 	severity: 'success',
+			// 	summary: 'Transaction Updated',
+			// 	detail: 'The transaction has been successfully updated.',
+			// });
 		} catch (error) {
 			console.error('Error saving transaction:', error);
 		} finally {

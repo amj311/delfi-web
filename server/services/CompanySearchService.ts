@@ -20,7 +20,7 @@ export default class CompanySearchService {
 	 * @param numResults Number of search results to analyze
 	 * @returns An array of scored search results, sorted by relevance
 	 */
-	public static async doCompanySearch(identifier: string, additionalSearch: string = '', numResults = 5): Promise<CompanySearchResult | null> {
+	public static async doCompanySearch(identifier: string, locationSearch: string = '', numResults = 5): Promise<CompanySearchResult | null> {
 		try {
 			const apiKey = process.env.LANGSEARCH_API_KEY;
 
@@ -29,23 +29,49 @@ export default class CompanySearchService {
 				return null;
 			}
 
+			// console.log(`🔍 Searching for company: ${identifier}, ${locationSearch}`);
+
+			/**
+			 * Do TOW Searches! Some small local businesses do better with location info,
+			 * while others do better with just the company identifier.
+			 * Search both, and then take the best out of all of them.
+			 */
 			// Make search request to LangSearch API
-			const response = await axios.post('https://api.langsearch.com/v1/web-search', {
-				query: `Please find the website for this company: ${identifier} ${additionalSearch}`,
-				num_results: numResults
-			}, {
-				headers: {
-					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${apiKey}`
-				}
-			});
+			const searchStrings = [
+				`Please find the website for this company: ${identifier}`,
+				`Please find the website for this company: ${identifier}, ${locationSearch}`
+			];
+			// const response = await axios.post('https://api.langsearch.com/v1/web-search', {
+			// 	query: `Please find the website for this company: ${identifier}`,
+			// 	num_results: numResults
+			// }, {
+			// 	headers: {
+			// 		'Content-Type': 'application/json',
+			// 		'Authorization': `Bearer ${apiKey}`
+			// 	}
+			// });
+
+			const allResults = await Promise.all(searchStrings.map(async (searchStr, i) => {
+				// Mind the rate limit
+				await new Promise(resolve => setTimeout(resolve, i * 2000)); // stagger requests
+				return await axios.post('https://api.langsearch.com/v1/web-search', {
+					query: searchStr,
+					num_results: numResults
+				}, {
+					headers: {
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${apiKey}`
+					}
+				});
+			}));
 
 			// Extract and score the search results
-			const webPages = response.data.data.webPages.value.filter((page: any) => {;
+			const webPages = allResults.flatMap(response => response.data.data.webPages.value.filter((page: any) => {;
 				// skip known problematic search results like yelp, restaurantji, etc
-				const badSites = ['yelp.com', 'restaurantji.com', 'tripadvisor.com', 'facebook.com'];
+				const badSites = ['yelp.com', 'restaurantji.com', 'tripadvisor.com', 'facebook.com', 'loc8nearme.com'];
 				return !badSites.some(badSite => page.url.includes(badSite));
-			});
+			}));
+
 			const scoredResults: CompanySearchResult[] = webPages.map(page => {
 				const url = page.url;
 				const origin = new URL(url).origin;
@@ -64,6 +90,8 @@ export default class CompanySearchService {
 				};
 				return result;
 			});
+
+			// console.log('Company search results:', scoredResults);
 
 			// Sort results by score (highest first)
 			return scoredResults.sort((a, b) => b.score - a.score)[0];
@@ -129,6 +157,24 @@ export default class CompanySearchService {
 
 		// Return capped score between 0-100
 		return Math.min(100, Math.max(0, score));
+	}
+
+	public static async extractWebsiteData(result: CompanySearchResult, identifier: string): Promise<{ name: string | null, logo: string | null }> {
+		const { data } = await axios.get(result.origin);
+		const html = data as string;
+
+		const namesFromHtml = CompanySearchService.extractNamesFromHtml(html);
+		const bestName = CompanySearchService.chooseBestName([...namesFromHtml, result.title, identifier], identifier);
+
+		let logoPath = CompanySearchService.extractLogoFromHtml(html);
+		if (logoPath && !logoPath.startsWith('http')) {
+			logoPath = new URL(logoPath, result.origin).href; // Make absolute URL
+		}
+
+		return {
+			name: bestName,
+			logo: logoPath
+		};
 	}
 
 	public static extractLogoFromHtml(html: string): string | null {
@@ -243,13 +289,13 @@ export default class CompanySearchService {
 		return decoded;
 	}
 
-	public static extractNameFromHtml(html: string, knownIdentifier: string): string | null {
+	public static extractNamesFromHtml(html: string): Array<string> {
 		// Extract name from og:site_name
 		const metaNameMatch = html.match(/<meta[^>]{1,100}property=["']og:site_name["'][^>]{1,100}>/i)?.[0].match(/content=["']([^"']{1,100})["']/)?.[1];
 		const pagTitle = html.match(/<title>(.{1,100}?)<\/title>/i)?.[1];
 
 		// Split title or site_name into parts and decode HTML entities
-		const nameCandidates = [metaNameMatch, pagTitle].flatMap(str => {
+		return [metaNameMatch, pagTitle].flatMap(str => {
 			const parts: Array<string> = [];
 			if (str) {
 				const isStr = str.toString();
@@ -258,12 +304,37 @@ export default class CompanySearchService {
 				parts.push(...decodedStr.split(' - ').map(p => p.split(' | ')).flat().map(p => p.split(', ')).flat().map(p => p.trim()));
 			}
 			return parts;
-		}).map(part => part.trim()).filter(Boolean).map(part => ({
+		})
+	}
+
+	/**
+	 * Candidates should already be cleaned from any html codes or other unwanted characters
+	 * @param candidates 
+	 * @param knownIdentifier 
+	 * @returns 
+	 */
+	private static chooseBestName(candidates: Array<string>, knownIdentifier: string): string | null {
+		// Split title or site_name into parts and decode HTML entities
+		const nameCandidates = candidates.map(part => part.trim()).filter(Boolean).map(part => ({
 			part,
 			score: similarityScore(norm(part), norm(knownIdentifier)),
 		})).sort((a, b) => b.score - a.score);
 
-		return nameCandidates.length > 0 ? nameCandidates[0].part : null;
+		const best = nameCandidates[0];
+		if (!best) return null;
+
+		// Clean up the best name a little bit
+
+		return nameCandidates.length > 0 ? this.prettifyName(nameCandidates[0].part) : null;
+	}
+
+	private static prettifyName(name: string): string {
+		// If either the entire name is uppercase or the entire name is lowercase, then only capitalize each word.
+		// Otherwise, maybe it's already the way it should be.
+		if (name === name.toUpperCase() || name === name.toLowerCase()) {
+			return name.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+		}
+		return name;
 	}
 
 }

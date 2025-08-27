@@ -64,14 +64,9 @@ export default class MerchantService {
 				}
 
 				// Load website HTML and find icons
-				const { data } = await axios.get(bestWebsite.origin);
-				const html = data as string;
-
-				const nameFromHtml = CompanySearchService.extractNameFromHtml(html, identifier);
-				let logoPath = CompanySearchService.extractLogoFromHtml(html);
-				if (logoPath && !logoPath.startsWith('http')) {
-					logoPath = new URL(logoPath, bestWebsite.origin).href; // Make absolute URL
-				}
+				const websiteData = await CompanySearchService.extractWebsiteData(bestWebsite, identifier);
+				const nameFromHtml = websiteData.name;
+				let logoPath = websiteData.logo;
 
 				// Create new merchant
 				let newMerchant: MerchantDraft = {
