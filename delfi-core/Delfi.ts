@@ -5,7 +5,7 @@
  */
 
 import { type Account } from "./models/Account";
-import { type Budget, type BudgetEvent, type BudgetOccurrence } from "./models/Budget";
+import { type Budget, type ProjectionEvent, type BudgetOccurrence } from "./models/Budget";
 import Forecast from "./models/Forecast";
 import { type Category } from "./models/Category";
 import { ddate, type DelfiDate, instantiateDates } from "./utils/dateUtils";
@@ -103,9 +103,9 @@ export class Delfi {
 
 		const budgetEventsByBudget: Map<Budget, BudgetEventSummary[]> = new Map();
 		monthBudgetEvents.forEach(event => {
-			const events = budgetEventsByBudget.get(event.sourceBudget) || [];
+			const events = budgetEventsByBudget.get(event.Budget) || [];
 			events.push(event);
-			budgetEventsByBudget.set(event.sourceBudget, events);
+			budgetEventsByBudget.set(event.Budget, events);
 		});
 		const budgetSummaries = Array.from(budgetEventsByBudget.entries()).map(([budget, budgetEvents]) => {
 			const attributedEvents = monthAttributionEvents.filter(e => e.budget_id === budget.budget_id && e.date.isBetweenInclusive(monthStart, monthEnd));
@@ -135,12 +135,14 @@ export class Delfi {
 
 		const incomeCategories = categorySummaries.filter(c => c.category.type === 'INCOME');
 		const incomeSummary = {
+			budgets: budgetSummaries.filter(c => c.budget.Category?.type === 'INCOME'),
 			categories: incomeCategories,
 			tally: RealityTally.fromTallies(incomeCategories.map(c => c.tally)),
 		};
 
 		const transferCategories = categorySummaries.filter(c => c.category.type === 'TRANSFER');
 		const transferSummary = {
+			budgets: budgetSummaries.filter(c => c.budget.Category?.type === 'TRANSFER'),
 			categories: transferCategories,
 			tally: RealityTally.fromTallies(transferCategories.map(c => c.tally)),
 		};
@@ -257,7 +259,7 @@ class TransactionSource {
 			const loadEnd = this.loadedTransactionStart ? this.loadedTransactionStart.subtract(1, 'day') : this.initialEnd;
 			const newTransactions = await this.loadTransactions(start, loadEnd);
 			newTransactions.forEach(tx => this.loadedTransactions.set(tx.transaction_id, tx));
-			TransactionUtils.processAttributionEvents(newTransactions).forEach(event => this.attributedEvents.set(event.transaction_attribution_id, event));
+			TransactionUtils.processAttributionEvents(newTransactions).forEach(event => this.attributedEvents.set(event.attributionDetails.transaction_attribution_id, event));
 			this.loadedTransactionStart = start;
 		}
 		// Filter the loaded transactions to the requested range

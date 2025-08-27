@@ -216,14 +216,13 @@ export class TestDataService {
 				budget_id: 'd4e5f6a7-8901-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Clozd Salary",
-				amount: -3140,
 				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-08', frequency: 'MONTHLY', byDayOfMonth: [14, 27] },
 					amountTemplate: {
 						type: 'fixed',
-						amount: 3594,
+						amount: 3593,
 					}
 				}],
 				category_id: categoryByName("Paycheck").category_id,
@@ -241,9 +240,9 @@ export class TestDataService {
 					trigger: {
 						type: 'immediateMatch',
 						filter: [{
-							property: 'Category.type',
+							property: 'category_id',
 							operator: 'eq',
-							operand: 'INCOME',
+							operand: categoryByName("Paycheck").category_id,
 						}],
 						computation: {
 							operator: 'percent',
@@ -330,18 +329,18 @@ export class TestDataService {
 					amountTemplate: {
 						type: 'seasonal',
 						monthAmounts: {
-							1: -56,
-							2: -42,
-							3: -40,
-							4: -37,
-							5: -45,
-							6: -74,
-							7: -100,
-							8: -86,
-							9: -107,
-							10: -46,
-							11: -49,
-							12: -54,
+							0: -56,
+							1: -42,
+							2: -40,
+							3: -37,
+							4: -45,
+							5: -74,
+							6: -100,
+							7: -86,
+							8: -107,
+							9: -46,
+							10: -49,
+							11: -54,
 						},
 					}
 				}],
@@ -414,7 +413,7 @@ export class TestDataService {
 						amount: 300,
 					}
 				}],
-				category_id: categoryByName("Transfer").category_id,
+				category_id: categoryByName("Savings").category_id,
 				Category: categoryByName("Transfer"),
 			},
 			{

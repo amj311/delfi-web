@@ -1,11 +1,11 @@
 import { ddate, type DelfiDate } from "../utils/dateUtils";
-import { type Budget, type ScheduledBudget, type BudgetEvent, type TriggeredBudget, RecurrenceType, type BudgetOccurrence } from "./Budget";
+import { type Budget, type ScheduledBudget, type ProjectionEvent, type TriggeredBudget, RecurrenceType, type BudgetOccurrence } from "./Budget";
 import BudgetUtils from "./Budget";
 import FilterService from "../services/FilterService";
 
 type MonthForecast = {
 	occurrences: BudgetOccurrence[],
-	events: BudgetEvent[],
+	events: ProjectionEvent[],
 }
 
 type ForecastProps = {
@@ -20,7 +20,7 @@ class Forecast {
 	readonly transactionTriggers!: TriggeredBudget[];
 	// readonly accumulatorMap: { [key: string]: Accumulator } = {};
 
-	events: BudgetEvent[] = [];
+	events: ProjectionEvent[] = [];
 	occurrences: BudgetOccurrence[] = [];
 	readyMonths: Map<string, MonthForecast> = new Map(); // Months that have been computed
 

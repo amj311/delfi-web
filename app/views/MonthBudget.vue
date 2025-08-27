@@ -39,6 +39,12 @@ const state = reactive({
 	upsertingBudget: <Budget | {} | null>null,
 	summaryData: <Awaited<ReturnType<Delfi['getMonthSummary']>> | null>null,
 });
+const isFuture = computed(() => {
+	if (!state.viewingMonth) {
+		return false;
+	}
+	return state.viewingMonth.isAfter(ddate());
+});
 
 // Spending breakdown view state
 const spendingViews = [
@@ -165,18 +171,31 @@ const dailyEvents = computed(() => {
 	}
 	return Object.entries(eventsByDay).flatMap(([date, events]) => ({
 		date: ddate(state.viewingMonth.date(Number(date))).formatFull(),
-		transactions: events.sort((a, b) => a.sourceTransaction.date_order?.localeCompare(b.sourceTransaction.date_order || '') || 0),
+		transactions: events.sort(
+			(a, b) => a.attributionDetails.sourceTransaction.date_order?.localeCompare(b.attributionDetails.sourceTransaction.date_order || '') || 0
+		),
 	}));
 });
 
-const progressColor = {
-	good: colors.lime2,
-	warning: colors.yellow2,
-	danger: colors.cherry1,
+const expenseColor = {
+	underPace: colors.lime2,
+	overPace: colors.yellow2,
+	overBudget: colors.cherry1,
 	muted: {
-		good: colors.green3,
-		warning: colors.yellow1,
-		danger: colors.red2,
+		underPace: colors.green3,
+		overPace: colors.yellow1,
+		overBudget: colors.red2,
+	},
+};
+
+const savingsColor = {
+	underPace: colors.yellow2,
+	overPace: colors.lime2,
+	overBudget: colors.lime2,
+	muted: {
+		underPace: colors.yellow1,
+		overPace: colors.green3,
+		overBudget: colors.green3,
 	},
 };
 
@@ -220,9 +239,9 @@ const otherAccounts = computed(() => {
 
 <template>
 	<main>
-		<div style="display: flex; justify-content: space-between; align-items: center">
+		<!-- <div style="display: flex; justify-content: space-between; align-items: center">
 			<h2>Monthly Budget</h2>
-		</div>
+		</div> -->
 		<div style="display: flex; justify-content: space-between">
 			<a @click="goBack()">Back</a>
 			<span>{{ state.viewingMonth?.format('MMMM YYYY') }}</span>
@@ -232,12 +251,21 @@ const otherAccounts = computed(() => {
 		<div v-if="state.loading">Loading...</div>
 
 		<div v-else-if="state.summaryData">
+			<div class="flex align-items-center gap-2">
+				Net Growth
+				<div class="flex-grow-1 h-1rem" style="border-bottom: 1px dashed"></div>
+				<Currency
+					:amount="isFuture ? state.summaryData.budgetedNet : state.summaryData.attributedNet"
+					mode="net_change"
+					class="font-semibold"
+				/>
+				<small v-if="!isFuture">/&nbsp;<Currency :amount="state.summaryData.budgetedNet" mode="net_change" /></small>
+			</div>
+			<br />
+
 			<div>
-				<h3>Accounts</h3>
-				<div>
-					Net Growth ......
-					<Currency :amount="state.summaryData.attributedNet" mode="net_change" />
-					(&nbsp;<Currency :amount="state.summaryData.budgetedNet" mode="net_change" />)
+				<div class="flex align-items-center py-2">
+					<h3>Accounts</h3>
 				</div>
 				<div class="list">
 					<div v-for="summary of changedAccounts" class="list-row">
@@ -253,14 +281,18 @@ const otherAccounts = computed(() => {
 								<div class="text-semibold">
 									{{ accountStore.getAccountName(summary.account_id) }}
 								</div>
-								<!-- <button class="hover-show" @click="() => state.upsertingAccount = accountStore.getAccountById(summary.account_id)!">
-									Edit
-								</button> -->
 							</div>
 							<div class="flex-grow-1"></div>
-							<div class="flex align-items-end">
-								<Currency :amount="summary.attributedChange" mode="net_change" hideCurrency class="font-medium" />
-								<small>&nbsp;&nbsp;/&nbsp;&nbsp;<Currency :amount="summary.budgetedChange" mode="net_change" hideCurrency /></small>
+							<div class="flex align-items-center">
+								<Currency
+									:amount="isFuture ? summary.budgetedChange : summary.attributedChange"
+									mode="net_change"
+									hideCurrency
+									class="font-medium"
+								/>
+								<small v-if="!isFuture"
+									>&nbsp;&nbsp;/&nbsp;<Currency :amount="summary.budgetedChange" mode="net_change" hideCurrency
+								/></small>
 							</div>
 						</div>
 						<!-- <small v-for="partition of summary.partitions" class="flex align-items-center">
@@ -276,58 +308,529 @@ const otherAccounts = computed(() => {
 						</small> -->
 					</div>
 				</div>
-				<!-- <UpsertAccountForm
-					v-if="state.upsertingAccount"
-					:account="state.upsertingAccount || {}"
-					:close="() => (state.upsertingAccount = null)"
-				/>
-				<button v-else @click="() => (state.upsertingAccount = {})">Add Account</button> -->
 			</div>
 			<br />
 
 			<div>
-				<h3>Income</h3>
-				<div>
-					Total ......
-					<Currency :amount="state.summaryData.incomeSummary?.tally.budgetedNet || 0" mode="net_change" />
+				<div class="flex align-items-center py-2">
+					<h3>Income</h3>
+					<div class="flex-grow-1"></div>
+					&emsp;
+					<Currency
+						:amount="isFuture ? state.summaryData.incomeSummary.tally.budgetedNet : state.summaryData.incomeSummary.tally.attributedNet"
+						mode="transaction"
+						class="font-semibold"
+					/>
+					<small v-if="!isFuture">&nbsp;&nbsp;/&nbsp;<Currency :amount="state.summaryData.incomeSummary.tally.budgetedNet" /></small>
 				</div>
 				<div class="list">
-					<div v-for="{ budget, budgetEvents } of state.summaryData.incomeSummary?.tally.budgetSnapshots" class="list-row">
-						<div class="transaction-main-line">
-							{{ budget.memo }}
-							<Currency :amount="budgetEvents.reduce((acc, o) => acc + o.amount, 0)" mode="transaction" />
-						</div>
-						<small>
-							{{ accountStore.getAccountName(budget.account_id) }}
-						</small>
-					</div>
+					<Accordion multiple @update:value="(value) => (openAccordions = new Set(value))">
+						<template v-for="budgetSnapshot of state.summaryData.incomeSummary.budgets">
+							<AccordionPanel :value="budgetSnapshot.budget.budget_id">
+								<AccordionHeader
+									class="budget-header flex align-items-center gap-2"
+									:class="{ shift: !isFuture && isAccordionOpen(budgetSnapshot.budget.budget_id) }"
+								>
+									<AttributionAvatar :category="budgetSnapshot.budget.Category" :size="2" />
+									<b>{{ budgetSnapshot.budget.memo }}</b>
+									<div class="flex-grow-1"></div>
+									<div class="flex align-items-center gap-2">
+										<div class="budget-total">
+											<Currency :amount="isFuture ? budgetSnapshot.tally.budgetedNet : budgetSnapshot.tally.attributedNet" />
+										</div>
+
+										<Knob
+											v-if="!isFuture"
+											class="budget-progress-knob"
+											v-model="budgetSnapshot.progress(ddate()).visualization.normalizedPercent"
+											:min="0"
+											:max="100"
+											:size="25"
+											:strokeWidth="15"
+											:valueColor="savingsColor[budgetSnapshot.progress(ddate()).status]"
+											:readonly="true"
+											:showValue="false"
+											style="padding-top: 5px"
+										/>
+									</div>
+								</AccordionHeader>
+								<AccordionContent>
+									<!-- PROGRESS BAR -->
+									<div v-if="!isFuture" class="flex align-items-center gap-3 my-2 w-full">
+										<div class="flex-grow-1">
+											<div
+												class="budget-progress-bar bg-black-alpha-10"
+												style="position: relative; padding: 4px 6px; width: 100%; border-radius: 4px"
+											>
+												<div
+													class="attributed-bar"
+													:style="{
+														position: 'absolute',
+														top: '0',
+														left: '0',
+														width: Math.min(100, budgetSnapshot.progress(ddate()).visualization.normalizedPercent) + '%',
+														height: '100%',
+														borderRadius: '4px',
+														backgroundColor: savingsColor.muted[budgetSnapshot.progress(ddate()).status],
+													}"
+												></div>
+												<div
+													class="budget-line"
+													v-if="budgetSnapshot.progress(ddate()).visualization.normalizedBudgetedNet < 99"
+													:style="{
+														position: 'absolute',
+														top: '-2px',
+														bottom: '-2px',
+														left: budgetSnapshot.progress(ddate()).visualization.normalizedBudgetedNet + '%',
+														borderLeft: '1px solid ' + colors.gray8,
+														translate: '-51%',
+													}"
+												></div>
+												<div
+													class="pace-marker"
+													v-if="budgetSnapshot.progress(ddate()).visualization.normalizedPace < 99"
+													:style="{
+														position: 'absolute',
+														lineHeight: '0.3em',
+														fontSize: '2em',
+														translate: '-50% -100%',
+														verticalAlign: 'top',
+														top: '0',
+														left: budgetSnapshot.progress(ddate()).visualization.normalizedPace + '%',
+													}"
+												>
+													▾
+												</div>
+												<div class="flex align-items-center relative">
+													<div v-if="Math.abs(100 - budgetSnapshot.progress(ddate()).percent) > 1">
+														<Currency round :amount="Math.abs(budgetSnapshot.rangeBudgetRemaining)" />
+														{{ budgetSnapshot.progress(ddate()).percent > 100 ? 'over' : 'remaining' }}
+													</div>
+													<div v-else>✓</div>
+													&nbsp;
+													<!-- <div v-else-if="budgetSnapshot.progress(date()).percent < 100">
+													<Currency
+														:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining).toFixed(2)"
+													/>
+													remaining
+												</div> -->
+												</div>
+											</div>
+										</div>
+										<div>
+											<Currency :amount="budgetSnapshot.tally.budgetedNet" />
+										</div>
+									</div>
+									<template v-for="event of isFuture ? budgetSnapshot.budgetEvents : budgetSnapshot.notChildAttributions">
+										<!-- only display one from transfer pair -->
+										<div
+											class="list-row flex align-items-center gap-3 px-0"
+											v-if="!event.attributionDetails?.isTransferCopy"
+											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+										>
+											<div>
+												<AttributionAvatar :event="event" :size="1.9">
+													<template #badge v-if="event.attributionDetails?.isSplit">
+														<Icon source_id="arrow_split" source="material-symbols" />
+													</template>
+													<template #badge v-if="event.attributionDetails?.isTransferPair">
+														<Icon source_id="sync_alt" source="material-symbols" />
+													</template>
+													<template #badge v-if="event.projectionDetails">
+														<i class="pi pi-wallet" style="font-size: .95em" />
+													</template>
+												</AttributionAvatar>
+											</div>
+											<div class="flex flex-column w-full min-w-0">
+												<div class="flex align-items-center gap-2">
+													<div class="flex align-items-center w-full min-w-0">
+														<div class="text-ellipsis">
+															<span class="font-medium">{{ event.displayName }}</span>
+															<small v-if="event.attributionDetails?.memo"
+																>&nbsp;- {{ event.attributionDetails.softDescription }}</small
+															>
+														</div>
+													</div>
+													<div style="flex-grow: 1"></div>
+													<div class="font-medium flex align-items-center gap-1">
+														<Icon
+															v-if="event.attributionDetails?.isTransferPair"
+															source_id="sync_alt"
+															source="material-symbols"
+														></Icon>
+														<Currency
+															:amount="event.amount"
+															:mode="event.attributionDetails?.isTransferPair ? 'none' : 'transaction'"
+														/>
+													</div>
+												</div>
+												<div class="flex align-items-center gap-2">
+													<small class="text-ellipsis">
+														{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+														-
+														{{ accountStore.getAccountName(event.account_id) }}
+														<template v-if="event.attributionDetails?.isTransferPair">
+															→
+															{{
+																accountStore.getAccountName(
+																	event.attributionDetails?.sourceTransaction.TransferPair!.account_id
+																)
+															}}
+														</template>
+													</small>
+													<div class="flex-grow-1"></div>
+													<small class="white-space-nowrap">
+														{{ event.date.formatShort() }}
+													</small>
+												</div>
+											</div>
+										</div>
+									</template>
+								</AccordionContent>
+							</AccordionPanel>
+						</template>
+						<!-- OTHER INCOME -->
+						<AccordionPanel value="other-income" v-if="!isFuture">
+							<AccordionHeader class="flex align-items-center gap-2">
+								<AttributionAvatar icon="money-bag" :size="2" :background="'lime2'" />
+								Other
+								<div class="flex-grow-1"></div>
+								<Currency :amount="state.summaryData.incomeSummary.tally.unBudgetedNet" />
+							</AccordionHeader>
+							<AccordionContent>
+								<template
+									v-for="(event, i) of state.summaryData.incomeSummary.tally.unBudgetedAttributions
+										.slice()
+										.sort((a, b) => (a.date.isBefore(b.date) ? -1 : 1))"
+								>
+									<!-- only display one from transfer pair -->
+									<div
+										class="list-row flex align-items-center gap-3 px-0"
+										v-if="!event.attributionDetails?.isTransferCopy"
+										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+									>
+										<div>
+											<AttributionAvatar :event="event" :size="1.9">
+												<template #badge v-if="event.attributionDetails?.isSplit">
+													<Icon source_id="arrow_split" source="material-symbols" />
+												</template>
+												<template #badge v-if="event.attributionDetails?.isTransferPair">
+													<Icon source_id="sync_alt" source="material-symbols" />
+												</template>
+												<template #badge v-if="event.projectionDetails">
+													<i class="pi pi-wallet" style="font-size: .95em" />
+												</template>
+											</AttributionAvatar>
+										</div>
+										<div class="flex flex-column w-full min-w-0">
+											<div class="flex align-items-center gap-2">
+												<div class="flex align-items-center w-full min-w-0">
+													<div class="text-ellipsis">
+														<span class="font-medium">{{ event.displayName }}</span>
+														<small v-if="event.attributionDetails?.memo"
+															>&nbsp;- {{ event.attributionDetails.softDescription }}</small
+														>
+													</div>
+												</div>
+												<div style="flex-grow: 1"></div>
+												<div class="font-medium flex align-items-center gap-1">
+													<Icon
+														v-if="event.attributionDetails?.isTransferPair"
+														source_id="sync_alt"
+														source="material-symbols"
+													></Icon>
+													<Currency
+														:amount="event.amount"
+														:mode="event.attributionDetails?.isTransferPair ? 'none' : 'transaction'"
+													/>
+												</div>
+											</div>
+											<div class="flex align-items-center gap-2">
+												<small class="text-ellipsis">
+													{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+													-
+													{{ accountStore.getAccountName(event.account_id) }}
+													<template v-if="event.attributionDetails?.isTransferPair">
+														→
+														{{
+															accountStore.getAccountName(
+																event.attributionDetails?.sourceTransaction.TransferPair!.account_id
+															)
+														}}
+													</template>
+												</small>
+												<div class="flex-grow-1"></div>
+												<small class="white-space-nowrap">
+													{{ event.date.formatShort() }}
+												</small>
+											</div>
+										</div>
+									</div>
+								</template>
+							</AccordionContent>
+						</AccordionPanel>
+					</Accordion>
 				</div>
 			</div>
 			<br />
 
 			<div>
-				<h3>Savings and Transfers</h3>
+				<div class="flex align-items-center py-2">
+					<h3>Savings</h3>
+					<div class="flex-grow-1"></div>
+					<!-- ... -->
+				</div>
 				<div class="list">
-					<div v-for="budgetEvent of state.summaryData.transferSummary.tally.budgetEventsWithoutTransferCopies" class="list-row">
-						<div class="transaction-main-line">
-							{{ budgetEvent.displayName }}
-							<Currency :amount="budgetEvent.amount" />
-						</div>
-						<small>
-							{{ accountStore.getAccountName(budgetEvent.sourceBudget.origin_account_id!) }}
-							→
-							{{ accountStore.getAccountName(budgetEvent.account_id) }}
-						</small>
-					</div>
+					<Accordion multiple @update:value="(value) => (openAccordions = new Set(value))">
+						<template v-for="budgetSnapshot of state.summaryData.transferSummary.budgets">
+							<AccordionPanel :value="budgetSnapshot.budget.budget_id">
+								<AccordionHeader
+									class="budget-header flex align-items-center gap-2"
+									:class="{ shift: !isFuture && isAccordionOpen(budgetSnapshot.budget.budget_id) }"
+								>
+									<AttributionAvatar :category="budgetSnapshot.budget.Category" :size="2" />
+									<b>{{ budgetSnapshot.budget.memo }}</b>
+									<div class="flex-grow-1"></div>
+									<div class="flex align-items-center gap-2">
+										<div class="budget-total">
+											<Currency :amount="isFuture ? budgetSnapshot.tally.budgetedNet : budgetSnapshot.tally.attributedNet" />
+										</div>
+
+										<Knob
+											v-if="!isFuture"
+											class="budget-progress-knob"
+											v-model="budgetSnapshot.progress(ddate()).visualization.normalizedPercent"
+											:min="0"
+											:max="100"
+											:size="25"
+											:strokeWidth="15"
+											:valueColor="savingsColor[budgetSnapshot.progress(ddate()).status]"
+											:readonly="true"
+											:showValue="false"
+											style="padding-top: 5px"
+										/>
+									</div>
+								</AccordionHeader>
+								<AccordionContent>
+									<!-- PROGRESS BAR -->
+									<div v-if="!isFuture" class="flex align-items-center gap-3 my-2 w-full">
+										<div class="flex-grow-1">
+											<div
+												class="budget-progress-bar bg-black-alpha-10"
+												style="position: relative; padding: 4px 6px; width: 100%; border-radius: 4px"
+											>
+												<div
+													class="attributed-bar"
+													:style="{
+														position: 'absolute',
+														top: '0',
+														left: '0',
+														width: Math.min(100, budgetSnapshot.progress(ddate()).visualization.normalizedPercent) + '%',
+														height: '100%',
+														borderRadius: '4px',
+														backgroundColor: savingsColor.muted[budgetSnapshot.progress(ddate()).status],
+													}"
+												></div>
+												<div
+													class="budget-line"
+													v-if="budgetSnapshot.progress(ddate()).visualization.normalizedBudgetedNet < 99"
+													:style="{
+														position: 'absolute',
+														top: '-2px',
+														bottom: '-2px',
+														left: budgetSnapshot.progress(ddate()).visualization.normalizedBudgetedNet + '%',
+														borderLeft: '1px solid ' + colors.gray8,
+														translate: '-51%',
+													}"
+												></div>
+												<div
+													class="pace-marker"
+													v-if="budgetSnapshot.progress(ddate()).visualization.normalizedPace < 99"
+													:style="{
+														position: 'absolute',
+														lineHeight: '0.3em',
+														fontSize: '2em',
+														translate: '-50% -100%',
+														verticalAlign: 'top',
+														top: '0',
+														left: budgetSnapshot.progress(ddate()).visualization.normalizedPace + '%',
+													}"
+												>
+													▾
+												</div>
+												<div class="flex align-items-center relative">
+													<div v-if="Math.abs(100 - budgetSnapshot.progress(ddate()).percent) > 1">
+														<Currency round :amount="Math.abs(budgetSnapshot.rangeBudgetRemaining)" />
+														{{ budgetSnapshot.progress(ddate()).percent > 100 ? 'over' : 'remaining' }}
+													</div>
+													<div v-else>✓</div>
+													&nbsp;
+													<!-- <div v-else-if="budgetSnapshot.progress(date()).percent < 100">
+													<Currency
+														:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining).toFixed(2)"
+													/>
+													remaining
+												</div> -->
+												</div>
+											</div>
+										</div>
+										<div>
+											<Currency :amount="budgetSnapshot.tally.budgetedNet" />
+										</div>
+									</div>
+									<template v-for="event of isFuture ? budgetSnapshot.budgetEvents : budgetSnapshot.notChildAttributions">
+										<!-- only display one from transfer pair -->
+										<div
+											class="list-row flex align-items-center gap-3 px-0"
+											v-if="!event.attributionDetails?.isTransferCopy"
+											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+										>
+											<div>
+												<AttributionAvatar :event="event" :size="1.9">
+													<template #badge v-if="event.attributionDetails?.isSplit">
+														<Icon source_id="arrow_split" source="material-symbols" />
+													</template>
+													<template #badge v-if="event.attributionDetails?.isTransferPair">
+														<Icon source_id="sync_alt" source="material-symbols" />
+													</template>
+													<template #badge v-if="event.projectionDetails">
+														<i class="pi pi-wallet" style="font-size: .95em" />
+													</template>
+												</AttributionAvatar>
+											</div>
+											<div class="flex flex-column w-full min-w-0">
+												<div class="flex align-items-center gap-2">
+													<div class="flex align-items-center w-full min-w-0">
+														<div class="text-ellipsis">
+															<span class="font-medium">{{ event.displayName }}</span>
+															<small v-if="event.attributionDetails?.memo"
+																>&nbsp;- {{ event.attributionDetails.softDescription }}</small
+															>
+														</div>
+													</div>
+													<div style="flex-grow: 1"></div>
+													<div class="font-medium flex align-items-center gap-1">
+														<Icon
+															v-if="event.attributionDetails?.isTransferPair"
+															source_id="sync_alt"
+															source="material-symbols"
+														></Icon>
+														<Currency
+															:amount="event.amount"
+															:mode="event.attributionDetails?.isTransferPair ? 'none' : 'transaction'"
+														/>
+													</div>
+												</div>
+												<div class="flex align-items-center gap-2">
+													<small class="text-ellipsis">
+														{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+														-
+														{{ accountStore.getAccountName(event.account_id) }}
+														<template v-if="event.attributionDetails?.isTransferPair">
+															→
+															{{
+																accountStore.getAccountName(
+																	event.attributionDetails?.sourceTransaction.TransferPair!.account_id
+																)
+															}}
+														</template>
+													</small>
+													<div class="flex-grow-1"></div>
+													<small class="white-space-nowrap">
+														{{ event.date.formatShort() }}
+													</small>
+												</div>
+											</div>
+										</div>
+									</template>
+								</AccordionContent>
+							</AccordionPanel>
+						</template>
+						<!-- OTHER TRANSFERS -->
+						<AccordionPanel value="other-transfers" v-if="!isFuture">
+							<AccordionHeader class="flex align-items-center gap-2">
+								<AttributionAvatar icon="transfer" :size="2" :background="'sky1'" />
+								Other Transfers
+								<div class="flex-grow-1"></div>
+								<Currency :amount="state.summaryData.transferSummary.tally.unBudgetedNet" mode="net_change" />
+							</AccordionHeader>
+							<AccordionContent>
+								<template
+									v-for="(event, i) of state.summaryData.transferSummary.tally.unBudgetedAttributions
+										.slice()
+										.sort((a, b) => (a.date.isBefore(b.date) ? -1 : 1))"
+								>
+									<!-- only display one from transfer pair -->
+									<div
+										class="list-row flex align-items-center gap-3 px-0"
+										v-if="!event.attributionDetails?.isTransferCopy"
+										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+									>
+										<div>
+											<AttributionAvatar :event="event" :size="1.9">
+												<template #badge v-if="event.attributionDetails?.isSplit">
+													<Icon source_id="arrow_split" source="material-symbols" />
+												</template>
+												<template #badge v-if="event.attributionDetails?.isTransferPair">
+													<Icon source_id="sync_alt" source="material-symbols" />
+												</template>
+												<template #badge v-if="event.projectionDetails">
+													<i class="pi pi-wallet" style="font-size: .95em" />
+												</template>
+											</AttributionAvatar>
+										</div>
+										<div class="flex flex-column w-full min-w-0">
+											<div class="flex align-items-center gap-2">
+												<div class="flex align-items-center w-full min-w-0">
+													<div class="text-ellipsis">
+														<span class="font-medium">{{ event.displayName }}</span>
+														<small v-if="event.attributionDetails?.memo"
+															>&nbsp;- {{ event.attributionDetails.softDescription }}</small
+														>
+													</div>
+												</div>
+												<div style="flex-grow: 1"></div>
+												<div class="font-medium flex align-items-center gap-1">
+													<Icon
+														v-if="event.attributionDetails?.isTransferPair"
+														source_id="sync_alt"
+														source="material-symbols"
+													></Icon>
+													<Currency
+														:amount="event.amount"
+														:mode="event.attributionDetails?.isTransferPair ? 'none' : 'net_change'"
+													/>
+												</div>
+											</div>
+											<div class="flex align-items-center gap-2">
+												<small class="text-ellipsis">
+													{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+													-
+													{{ accountStore.getAccountName(event.account_id) }}
+													<template v-if="event.attributionDetails?.isTransferPair">
+														→
+														{{
+															accountStore.getAccountName(
+																event.attributionDetails?.sourceTransaction.TransferPair!.account_id
+															)
+														}}
+													</template>
+												</small>
+												<div class="flex-grow-1"></div>
+												<small class="white-space-nowrap">
+													{{ event.date.formatShort() }}
+												</small>
+											</div>
+										</div>
+									</div>
+								</template>
+							</AccordionContent>
+						</AccordionPanel>
+					</Accordion>
 				</div>
 			</div>
 			<br />
-
-			<!-- <UpsertBudgetForm v-if="state.upsertingBudget" :budget="state.upsertingBudget || {}" :close="() => (state.upsertingBudget = null)" />
-			<button v-else @click="() => (state.upsertingBudget = {})">Add Transaction</button> -->
 			<br />
-			<!-- <UpsertBudgetForm v-if="state.upsertingBudget" :budget="state.upsertingBudget || {}" :close="() => state.upsertingBudget = null" :onSave="createDelfi" />
-			<button v-else @click="() => state.upsertingBudget = {}">Add Budget</button> -->
 
 			<div v-if="state.summaryData.groupSummaries.length > 0">
 				<br />
@@ -367,6 +870,7 @@ const otherAccounts = computed(() => {
 												<Currency :amount="childItem.rangeTally.attributedNet" mode="transaction" />
 											</div>
 											<Knob
+												v-if="!isFuture"
 												v-model="
 													{
 														percent: (childItem.rangeTally.attributedNet / childItem.rangeTally.budgetedNet) * 100,
@@ -381,18 +885,13 @@ const otherAccounts = computed(() => {
 												:showValue="false"
 											/>
 										</div>
-										<!-- <small>
-											{{
-												childItem.sourceBudget?.memo ||
-												useCategoryStore().getCategoryById(childItem.category_id).name
-											}}
-											-
-											{{ accountStore.getAccountName(childItem.account_id) }}
-										</small> -->
 									</div>
 								</div>
-								<template v-for="event of budgetSnapshot.notChildAttributions">
-									<div class="list-row flex align-items-center gap-3" @click="viewTransaction(event.sourceTransaction)">
+								<template v-for="event of isFuture ? budgetSnapshot.budgetEvents : budgetSnapshot.notChildAttributions">
+									<div
+										class="list-row flex align-items-center gap-3"
+										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+									>
 										<AttributionAvatar :event="event" :size="1.9" />
 										<div class="flex flex-column w-full min-w-0">
 											<div class="transaction-main-line">
@@ -401,14 +900,31 @@ const otherAccounts = computed(() => {
 												</div>
 												<div style="flex-grow: 1"></div>
 												<div style="display: flex; align-items: center; gap: 4px">
-													<Currency :amount="event.amount" mode="transaction" />
+													<Currency
+														:amount="event.amount"
+														:mode="event.attributionDetails?.isTransferPair ? 'none' : 'transaction'"
+													/>
 												</div>
 											</div>
-											<small>
-												{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
-												-
-												{{ accountStore.getAccountName(event.account_id) }}
-											</small>
+											<div class="flex align-items-center gap-2">
+												<small class="text-ellipsis">
+													{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+													-
+													{{ accountStore.getAccountName(event.account_id) }}
+													<template v-if="event.attributionDetails?.isTransferPair">
+														→
+														{{
+															accountStore.getAccountName(
+																event.attributionDetails?.sourceTransaction.TransferPair!.account_id
+															)
+														}}
+													</template>
+												</small>
+												<div class="flex-grow-1"></div>
+												<small class="white-space-nowrap">
+													{{ event.date.formatShort() }}
+												</small>
+											</div>
 										</div>
 									</div>
 								</template>
@@ -423,7 +939,7 @@ const otherAccounts = computed(() => {
 						<div
 							v-for="event of tally.unBudgetedAttributions"
 							class="list-row flex align-items-center gap-3"
-							@click="viewTransaction(event.sourceTransaction)"
+							@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 						>
 							<AttributionAvatar :event="event" :size="1.9" />
 							<div class="flex flex-column w-full min-w-0">
@@ -433,18 +949,29 @@ const otherAccounts = computed(() => {
 									</div>
 									<div style="flex-grow: 1"></div>
 									<div style="display: flex; align-items: center; gap: 4px">
-										<Currency :amount="event.amount" mode="transaction" />
+										<Currency :amount="event.amount" :mode="event.attributionDetails?.isTransferPair ? 'none' : 'transaction'" />
 									</div>
 								</div>
-								<small>
-									{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
-									-
-									{{ accountStore.getAccountName(event.account_id) }}
-								</small>
+								<div class="flex align-items-center gap-2">
+									<small class="text-ellipsis">
+										{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+										-
+										{{ accountStore.getAccountName(event.account_id) }}
+										<template v-if="event.attributionDetails?.isTransferPair">
+											→
+											{{ accountStore.getAccountName(event.attributionDetails?.sourceTransaction.TransferPair!.account_id) }}
+										</template>
+									</small>
+									<div class="flex-grow-1"></div>
+									<small class="white-space-nowrap">
+										{{ event.date.formatShort() }}
+									</small>
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
+				<br />
 				<br />
 			</div>
 
@@ -460,133 +987,22 @@ const otherAccounts = computed(() => {
 						aria-labelledby="spending-view-select"
 					/>
 					<div class="flex-grow-1"></div>
-					<div class="flex align-items-center gap-2">
-						<Currency :amount="state.summaryData.spendingSummary.tally.attributedNet" mode="transaction" />
-						/
-						<Currency :amount="state.summaryData.spendingSummary.tally.budgetedNet" mode="transaction" />
+					<div class="flex align-items-center">
+						<Currency
+							:amount="
+								isFuture ? state.summaryData.spendingSummary.tally.budgetedNet : state.summaryData.spendingSummary.tally.attributedNet
+							"
+							mode="net_change"
+							class="font-semibold"
+						/>
+						<small v-if="!isFuture"
+							>&nbsp;&nbsp;/&nbsp;<Currency :amount="state.summaryData.spendingSummary.tally.budgetedNet" mode="net_change"
+						/></small>
 					</div>
 				</div>
-				<div v-if="selectedSpendingView === 'category'">
-					<Accordion multiple>
-						<template v-for="(category, i) of state.summaryData.spendingSummary.categories">
-							<AccordionPanel :value="i" v-if="category.tally.attributionEvents.length > 0">
-								<AccordionHeader class="flex align-items-center gap-2">
-									<AttributionAvatar :category="category.category" :size="2" />
-									<b>{{ category.category.name }}</b>
-									<div class="flex-grow-1"></div>
-									<Currency :amount="category.tally.attributedNet || 0" mode="transaction" class="text-semibold" />
-								</AccordionHeader>
-								<AccordionContent>
-									<template v-for="budgetSummary of category.tally.budgetSnapshots">
-										<template v-if="budgetSummary.attributedEvents.length > 0">
-											<div class="flex hover-show-trigger list-row gap-2">
-												<div class="flex align-items-center gap-2">
-													<i class="pi pi-wallet" />
-													{{ budgetSummary.budget.memo }}
-												</div>
-												<div class="flex-grow-1"></div>
-												<!-- <Currency :amount="budgetSummary.tally.attributedNet" mode="transaction" /> -->
-											</div>
-											<template
-												v-for="event of budgetSummary.tally.attributionEvents"
-											>
-												<!-- only display one from transfer pair -->
-												<div
-													class="list-row flex align-items-center gap-3"
-													v-if="!event.isTransferCopy"
-													@click="viewTransaction(event.sourceTransaction)"
-												>
-													<div>
-														<AttributionAvatar :event="event" :size="1.9">
-															<template #badge v-if="event.isSplit">
-																<Icon source_id="arrow_split" source="material-symbols" />
-															</template>
-															<template #badge v-if="event.isTransferPair">
-																<Icon source_id="sync_alt" source="material-symbols" />
-															</template>
-														</AttributionAvatar>
-													</div>
-													<div class="flex flex-column w-full min-w-0">
-														<div class="flex align-items-center gap-2">
-															<div class="flex align-items-center w-full min-w-0">
-																<div class="text-ellipsis">
-																	<span class="font-medium">{{ event.displayName }}</span>
-																	<small v-if="event.memo">&nbsp;- {{ event.softDescription }}</small>
-																</div>
-															</div>
-															<div style="flex-grow: 1"></div>
-															<div class="font-medium flex align-items-center gap-1">
-																<Icon
-																	v-if="event.isTransferPair"
-																	source_id="sync_alt"
-																	source="material-symbols"
-																></Icon>
-																<Currency :amount="event.amount" mode="transaction" />
-															</div>
-														</div>
-														<small class="text-ellipsis">
-															{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
-															-
-															{{ accountStore.getAccountName(event.account_id) }}
-														</small>
-													</div>
-												</div>
-											</template>
-										</template>
-									</template>
-									<div v-if="category.tally.unBudgetedAttributions.length > 0" class="flex align-items-center list-row gap-2">
-										<i class="pi pi-exclamation-triangle" />
-										Unbudgeted
-										<div class="flex-grow-1"></div>
-										<Currency :amount="category.tally.unBudgetedNet" mode="transaction" />
-									</div>
-									<template v-for="event of category.tally.unBudgetedAttributions">
-										<!-- only display one from transfer pair -->
-										<div
-											class="list-row flex align-items-center gap-3"
-											v-if="!event.isTransferCopy"
-											@click="viewTransaction(event.sourceTransaction)"
-										>
-											<div>
-												<AttributionAvatar :event="event" :size="1.9">
-													<template #badge v-if="event.isSplit">
-														<Icon source_id="arrow_split" source="material-symbols" />
-													</template>
-													<template #badge v-if="event.isTransferPair">
-														<Icon source_id="sync_alt" source="material-symbols" />
-													</template>
-												</AttributionAvatar>
-											</div>
-											<div class="flex flex-column w-full min-w-0">
-												<div class="flex align-items-center gap-2">
-													<div class="flex align-items-center w-full min-w-0">
-														<div class="text-ellipsis">
-															<span class="font-medium">{{ event.displayName }}</span>
-															<small v-if="event.memo">&nbsp;- {{ event.softDescription }}</small>
-														</div>
-													</div>
-													<div style="flex-grow: 1"></div>
-													<div class="font-medium flex align-items-center gap-1">
-														<Icon v-if="event.isTransferPair" source_id="sync_alt" source="material-symbols"></Icon>
-														<Currency :amount="event.amount" mode="transaction" />
-													</div>
-												</div>
-												<small class="text-ellipsis">
-													{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
-													-
-													{{ accountStore.getAccountName(event.account_id) }}
-												</small>
-											</div>
-										</div>
-									</template>
-								</AccordionContent>
-							</AccordionPanel>
-						</template>
-					</Accordion>
-				</div>
-				<div v-else-if="selectedSpendingView === 'budget'">
+				<div v-if="selectedSpendingView === 'budget'">
 					<Accordion multiple @update:value="(value) => (openAccordions = new Set(value))">
-						<AccordionPanel value="0">
+						<AccordionPanel value="0" v-if="!isFuture">
 							<AccordionHeader class="flex align-items-center gap-2">
 								<AttributionAvatar icon="question-circle" :size="2" :background="'cherry1'" />
 								<b>Unbudgeted</b>
@@ -601,17 +1017,20 @@ const otherAccounts = computed(() => {
 								>
 									<!-- only display one from transfer pair -->
 									<div
-										class="list-row flex align-items-center gap-3 px=0"
-										v-if="!event.isTransferCopy"
-										@click="viewTransaction(event.sourceTransaction)"
+										class="list-row flex align-items-center gap-3 px-0"
+										v-if="!event.attributionDetails?.isTransferCopy"
+										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 									>
 										<div>
 											<AttributionAvatar :event="event" :size="1.9">
-												<template #badge v-if="event.isSplit">
+												<template #badge v-if="event.attributionDetails?.isSplit">
 													<Icon source_id="arrow_split" source="material-symbols" />
 												</template>
-												<template #badge v-if="event.isTransferPair">
+												<template #badge v-if="event.attributionDetails?.isTransferPair">
 													<Icon source_id="sync_alt" source="material-symbols" />
+												</template>
+												<template #badge v-if="event.projectionDetails">
+													<i class="pi pi-wallet" style="font-size: .95em" />
 												</template>
 											</AttributionAvatar>
 										</div>
@@ -620,20 +1039,43 @@ const otherAccounts = computed(() => {
 												<div class="flex align-items-center w-full min-w-0">
 													<div class="text-ellipsis">
 														<span class="font-medium">{{ event.displayName }}</span>
-														<small v-if="event.memo">&nbsp;- {{ event.softDescription }}</small>
+														<small v-if="event.attributionDetails?.memo"
+															>&nbsp;- {{ event.attributionDetails.softDescription }}</small
+														>
 													</div>
 												</div>
 												<div style="flex-grow: 1"></div>
 												<div class="font-medium flex align-items-center gap-1">
-													<Icon v-if="event.isTransferPair" source_id="sync_alt" source="material-symbols"></Icon>
-													<Currency :amount="event.amount" mode="transaction" />
+													<Icon
+														v-if="event.attributionDetails?.isTransferPair"
+														source_id="sync_alt"
+														source="material-symbols"
+													></Icon>
+													<Currency
+														:amount="event.amount"
+														:mode="event.attributionDetails?.isTransferPair ? 'none' : 'transaction'"
+													/>
 												</div>
 											</div>
-											<small class="text-ellipsis">
-												{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
-												-
-												{{ accountStore.getAccountName(event.account_id) }}
-											</small>
+											<div class="flex align-items-center gap-2">
+												<small class="text-ellipsis">
+													{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+													-
+													{{ accountStore.getAccountName(event.account_id) }}
+													<template v-if="event.attributionDetails?.isTransferPair">
+														→
+														{{
+															accountStore.getAccountName(
+																event.attributionDetails?.sourceTransaction.TransferPair!.account_id
+															)
+														}}
+													</template>
+												</small>
+												<div class="flex-grow-1"></div>
+												<small class="white-space-nowrap">
+													{{ event.date.formatShort() }}
+												</small>
+											</div>
 										</div>
 									</div>
 								</template>
@@ -643,44 +1085,37 @@ const otherAccounts = computed(() => {
 							<AccordionPanel :value="budgetSnapshot.budget.budget_id">
 								<AccordionHeader
 									class="budget-header flex align-items-center gap-2"
-									:class="{ open: isAccordionOpen(budgetSnapshot.budget.budget_id) }"
+									:class="{ shift: !isFuture && isAccordionOpen(budgetSnapshot.budget.budget_id) }"
 								>
 									<AttributionAvatar :category="budgetSnapshot.budget.Category" :size="2" />
-									<b>{{ budgetSnapshot.budget.memo }}</b>
+									<b class="text-ellipsis">{{ budgetSnapshot.budget.memo }}</b>
 									<div class="flex-grow-1"></div>
 									<div class="flex align-items-center gap-2">
-										<!-- <Currency
-										:amount="budgetSummary.tally.attributedNet || 0"
-										mode="transaction"
-										class="text-semibold"
-									/> -->
-										<!-- {{ Math.floor(budgetSnapshot.progress(date()).percent) }}% -->
-										<div class="budget-total"><Currency :amount="budgetSnapshot.tally.attributedNet" /></div>
+										<div class="budget-total">
+											<Currency :amount="isFuture ? budgetSnapshot.tally.budgetedNet : budgetSnapshot.tally.attributedNet" />
+										</div>
 
 										<Knob
+											v-if="!isFuture"
 											class="budget-progress-knob"
 											v-model="budgetSnapshot.progress(ddate()).visualization.normalizedPercent"
 											:min="0"
 											:max="100"
 											:size="25"
 											:strokeWidth="15"
-											:valueColor="progressColor[budgetSnapshot.progress(ddate()).status]"
+											:valueColor="expenseColor[budgetSnapshot.progress(ddate()).status]"
 											:readonly="true"
 											:showValue="false"
 											style="padding-top: 5px"
 										/>
-										<!-- <small>/</small>
-									<small>
-										<Currency
-											:amount="budgetSummary.tally.budgetedNet || 0"
-											mode="transaction"
-										/>
-									</small> -->
 									</div>
 								</AccordionHeader>
-								<AccordionContent class="budget-content" :class="{ open: isAccordionOpen(budgetSnapshot.budget.budget_id) }">
-									<!-- // PROGRESS BAR -->
-									<div class="flex align-items-center gap-2 my-2 w-full">
+								<AccordionContent
+									class="budget-content"
+									:class="{ shift: !isFuture && isAccordionOpen(budgetSnapshot.budget.budget_id) }"
+								>
+									<!-- PROGRESS BAR -->
+									<div v-if="!isFuture" class="flex align-items-center gap-3 my-2 w-full">
 										<div class="flex-grow-1">
 											<div
 												class="budget-progress-bar bg-black-alpha-10"
@@ -695,7 +1130,7 @@ const otherAccounts = computed(() => {
 														width: Math.min(100, budgetSnapshot.progress(ddate()).visualization.normalizedPercent) + '%',
 														height: '100%',
 														borderRadius: '4px',
-														backgroundColor: progressColor.muted[budgetSnapshot.progress(ddate()).status],
+														backgroundColor: expenseColor.muted[budgetSnapshot.progress(ddate()).status],
 													}"
 												></div>
 												<div
@@ -731,13 +1166,6 @@ const otherAccounts = computed(() => {
 														{{ budgetSnapshot.progress(ddate()).percent > 100 ? 'over' : 'remaining' }}
 													</div>
 													<div v-else>✓</div>
-													&nbsp;
-													<!-- <div v-else-if="budgetSnapshot.progress(date()).percent < 100">
-														<Currency
-															:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining).toFixed(2)"
-														/>
-														remaining
-													</div> -->
 												</div>
 											</div>
 										</div>
@@ -761,6 +1189,7 @@ const otherAccounts = computed(() => {
 													<Currency :amount="childItem.rangeTally.attributedNet" mode="transaction" />
 												</div>
 												<Knob
+													v-if="!isFuture"
 													v-model="
 														{
 															percent: (childItem.rangeTally.attributedNet / childItem.rangeTally.budgetedNet) * 100,
@@ -785,20 +1214,23 @@ const otherAccounts = computed(() => {
 										</small> -->
 										</div>
 									</div>
-									<template v-for="event of budgetSnapshot.notChildAttributions">
+									<template v-for="event of isFuture ? budgetSnapshot.budgetEvents : budgetSnapshot.notChildAttributions">
 										<!-- only display one from transfer pair -->
 										<div
 											class="list-row flex align-items-center gap-3 px-0"
-											v-if="!event.isTransferCopy"
-											@click="viewTransaction(event.sourceTransaction)"
+											v-if="!event.attributionDetails?.isTransferCopy"
+											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 										>
 											<div>
 												<AttributionAvatar :event="event" :size="1.9">
-													<template #badge v-if="event.isSplit">
+													<template #badge v-if="event.attributionDetails?.isSplit">
 														<Icon source_id="arrow_split" source="material-symbols" />
 													</template>
-													<template #badge v-if="event.isTransferPair">
+													<template #badge v-if="event.attributionDetails?.isTransferPair">
 														<Icon source_id="sync_alt" source="material-symbols" />
+													</template>
+													<template #badge v-if="event.projectionDetails">
+														<i class="pi pi-wallet" style="font-size: .95em" />
 													</template>
 												</AttributionAvatar>
 											</div>
@@ -807,20 +1239,246 @@ const otherAccounts = computed(() => {
 													<div class="flex align-items-center w-full min-w-0">
 														<div class="text-ellipsis">
 															<span class="font-medium">{{ event.displayName }}</span>
-															<small v-if="event.memo">&nbsp;- {{ event.softDescription }}</small>
+															<small v-if="event.attributionDetails?.memo"
+																>&nbsp;- {{ event.attributionDetails.softDescription }}</small
+															>
 														</div>
 													</div>
 													<div style="flex-grow: 1"></div>
 													<div class="font-medium flex align-items-center gap-1">
-														<Icon v-if="event.isTransferPair" source_id="sync_alt" source="material-symbols"></Icon>
-														<Currency :amount="event.amount" mode="transaction" />
+														<Icon
+															v-if="event.attributionDetails?.isTransferPair"
+															source_id="sync_alt"
+															source="material-symbols"
+														></Icon>
+														<Currency
+															:amount="event.amount"
+															:mode="event.attributionDetails?.isTransferPair ? 'none' : 'transaction'"
+														/>
 													</div>
 												</div>
-												<small class="text-ellipsis">
-													{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
-													-
-													{{ accountStore.getAccountName(event.account_id) }}
-												</small>
+												<div class="flex align-items-center gap-2">
+													<small class="text-ellipsis">
+														{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+														-
+														{{ accountStore.getAccountName(event.account_id) }}
+														<template v-if="event.attributionDetails?.isTransferPair">
+															→
+															{{
+																accountStore.getAccountName(
+																	event.attributionDetails?.sourceTransaction.TransferPair!.account_id
+																)
+															}}
+														</template>
+													</small>
+													<div class="flex-grow-1"></div>
+													<small class="white-space-nowrap">
+														{{ event.date.formatShort() }}
+													</small>
+												</div>
+											</div>
+										</div>
+									</template>
+								</AccordionContent>
+							</AccordionPanel>
+						</template>
+					</Accordion>
+				</div>
+				<div v-else-if="selectedSpendingView === 'category'">
+					<Accordion multiple @update:value="(value) => (openAccordions = new Set(value))">
+						<template v-for="(category, i) of state.summaryData.spendingSummary.categories">
+							<AccordionPanel :value="i" v-if="isFuture ? category.tally.budgetEvents.length > 0 : category.tally.attributionEvents.length > 0">
+								<AccordionHeader class="flex align-items-center gap-2">
+									<AttributionAvatar :category="category.category" :size="2" />
+									<b>{{ category.category.name }}</b>
+									<div class="flex-grow-1"></div>
+									<Currency :amount="isFuture ? category.tally.budgetedNet : category.tally.attributedNet" mode="transaction" class="text-semibold" />
+								</AccordionHeader>
+								<AccordionContent>
+									<template v-for="budgetSnapshot of category.tally.budgetSnapshots">
+										<!-- only show budget totals for future -->
+										<template v-if="isFuture">
+												<!-- only display one from transfer pair -->
+												<div
+													class="list-row flex align-items-center gap-3"
+												>
+													<div>
+														<AttributionAvatar :category="budgetSnapshot.budget.Category" :size="1.9">
+															<template #badge>
+																<i class="pi pi-wallet" style="font-size: .95em" />
+															</template>
+														</AttributionAvatar>
+													</div>
+													<div class="flex flex-column w-full min-w-0">
+														<div class="flex align-items-center gap-2">
+															<div class="flex align-items-center w-full min-w-0">
+																<div class="text-ellipsis">
+																	<span class="font-medium">{{ budgetSnapshot.budget.memo }}</span>
+																</div>
+															</div>
+															<div style="flex-grow: 1"></div>
+															<div class="font-medium flex align-items-center gap-1">
+																<Currency
+																	:amount="budgetSnapshot.budgetedAtEnd"
+																	mode="transaction"
+																/>
+															</div>
+														</div>
+														<div class="flex align-items-center gap-2">
+															<small class="text-ellipsis">
+																{{ accountStore.getAccountName(budgetSnapshot.budget.account_id) }}
+															</small>
+														</div>
+													</div>
+												</div>
+										</template>
+
+										<!-- otherwise show actual transactions -->
+										<template v-else-if="budgetSnapshot.attributedEvents.length > 0">
+											<div class="flex hover-show-trigger list-row gap-2">
+												<div class="flex align-items-center gap-2">
+													<i class="pi pi-wallet" />
+													{{ budgetSnapshot.budget.memo }}
+												</div>
+												<div class="flex-grow-1"></div>
+												<!-- <Currency :amount="budgetSummary.tally.attributedNet" mode="transaction" /> -->
+											</div>
+										
+											<template v-for="event of budgetSnapshot.tally.attributionEvents">
+												<!-- only display one from transfer pair -->
+												<div
+													class="list-row flex align-items-center gap-3"
+													v-if="!event.attributionDetails.isTransferCopy"
+													@click="viewTransaction(event.attributionDetails.sourceTransaction)"
+												>
+													<div>
+														<AttributionAvatar :event="event" :size="1.9">
+															<template #badge v-if="event.attributionDetails.isSplit">
+																<Icon source_id="arrow_split" source="material-symbols" />
+															</template>
+															<template #badge v-if="event.attributionDetails.isTransferPair">
+																<Icon source_id="sync_alt" source="material-symbols" />
+															</template>
+															<template #badge v-if="event.projectionDetails">
+																<i class="pi pi-wallet" style="font-size: .95em" />
+															</template>
+														</AttributionAvatar>
+													</div>
+													<div class="flex flex-column w-full min-w-0">
+														<div class="flex align-items-center gap-2">
+															<div class="flex align-items-center w-full min-w-0">
+																<div class="text-ellipsis">
+																	<span class="font-medium">{{ event.displayName }}</span>
+																	<small v-if="event.attributionDetails.memo"
+																		>&nbsp;- {{ event.attributionDetails.softDescription }}</small
+																	>
+																</div>
+															</div>
+															<div style="flex-grow: 1"></div>
+															<div class="font-medium flex align-items-center gap-1">
+																<Icon
+																	v-if="event.attributionDetails.isTransferPair"
+																	source_id="sync_alt"
+																	source="material-symbols"
+																></Icon>
+																<Currency
+																	:amount="event.amount"
+																	:mode="event.attributionDetails.isTransferPair ? 'none' : 'transaction'"
+																/>
+															</div>
+														</div>
+														<div class="flex align-items-center gap-2">
+															<small class="text-ellipsis">
+																{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+																-
+																{{ accountStore.getAccountName(event.account_id) }}
+																<template v-if="event.attributionDetails.isTransferPair">
+																	→
+																	{{
+																		accountStore.getAccountName(
+																			event.attributionDetails?.sourceTransaction.TransferPair!.account_id
+																		)
+																	}}
+																</template>
+															</small>
+															<div class="flex-grow-1"></div>
+															<small class="white-space-nowrap">
+																{{ event.date.formatShort() }}
+															</small>
+														</div>
+													</div>
+												</div>
+											</template>
+										</template>
+									</template>
+									<div v-if="category.tally.unBudgetedAttributions.length > 0" class="flex align-items-center list-row gap-2">
+										<i class="pi pi-exclamation-triangle" />
+										Unbudgeted
+										<div class="flex-grow-1"></div>
+										<Currency :amount="category.tally.unBudgetedNet" mode="transaction" />
+									</div>
+									<template v-for="event of category.tally.unBudgetedAttributions">
+										<!-- only display one from transfer pair -->
+										<div
+											class="list-row flex align-items-center gap-3"
+											v-if="!event.attributionDetails?.isTransferCopy"
+											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+										>
+											<div>
+												<AttributionAvatar :event="event" :size="1.9">
+													<template #badge v-if="event.attributionDetails?.isSplit">
+														<Icon source_id="arrow_split" source="material-symbols" />
+													</template>
+													<template #badge v-if="event.attributionDetails?.isTransferPair">
+														<Icon source_id="sync_alt" source="material-symbols" />
+													</template>
+													<template #badge v-if="event.projectionDetails">
+														<i class="pi pi-wallet" style="font-size: .95em" />
+													</template>
+												</AttributionAvatar>
+											</div>
+											<div class="flex flex-column w-full min-w-0">
+												<div class="flex align-items-center gap-2">
+													<div class="flex align-items-center w-full min-w-0">
+														<div class="text-ellipsis">
+															<span class="font-medium">{{ event.displayName }}</span>
+															<small v-if="event.attributionDetails?.memo"
+																>&nbsp;- {{ event.attributionDetails.softDescription }}</small
+															>
+														</div>
+													</div>
+													<div style="flex-grow: 1"></div>
+													<div class="font-medium flex align-items-center gap-1">
+														<Icon
+															v-if="event.attributionDetails?.isTransferPair"
+															source_id="sync_alt"
+															source="material-symbols"
+														></Icon>
+														<Currency
+															:amount="event.amount"
+															:mode="event.attributionDetails?.isTransferPair ? 'none' : 'transaction'"
+														/>
+													</div>
+												</div>
+												<div class="flex align-items-center gap-2">
+													<small class="text-ellipsis">
+														{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+														-
+														{{ accountStore.getAccountName(event.account_id) }}
+														<template v-if="event.attributionDetails?.isTransferPair">
+															→
+															{{
+																accountStore.getAccountName(
+																	event.attributionDetails?.sourceTransaction.TransferPair!.account_id
+																)
+															}}
+														</template>
+													</small>
+													<div class="flex-grow-1"></div>
+													<small class="white-space-nowrap">
+														{{ event.date.formatShort() }}
+													</small>
+												</div>
 											</div>
 										</div>
 									</template>
@@ -834,7 +1492,7 @@ const otherAccounts = computed(() => {
 
 		<br />
 		<br />
-		<h3>Transactions</h3>
+		<h3 v-if="!isFuture">Transactions</h3>
 		<template v-for="(day, i) of dailyEvents">
 			<div v-if="day.transactions.length > 0">
 				<h4
@@ -856,16 +1514,19 @@ const otherAccounts = computed(() => {
 						<!-- only display one from transfer pair -->
 						<div
 							class="list-row flex align-items-center gap-3"
-							v-if="!event.isTransferCopy"
-							@click="viewTransaction(event.sourceTransaction)"
+							v-if="!event.attributionDetails?.isTransferCopy"
+							@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 						>
 							<div>
 								<AttributionAvatar :event="event" style="width: 2.5rem; font-size: 1.2rem">
-									<template #badge v-if="event.isSplit">
+									<template #badge v-if="event.attributionDetails?.isSplit">
 										<Icon source_id="arrow_split" source="material-symbols" />
 									</template>
-									<template #badge v-if="event.isTransferPair">
+									<template #badge v-if="event.attributionDetails?.isTransferPair">
 										<Icon source_id="sync_alt" source="material-symbols" />
+									</template>
+									<template #badge v-if="event.projectionDetails">
+										<i class="pi pi-wallet" style="font-size: .95em" />
 									</template>
 								</AttributionAvatar>
 							</div>
@@ -874,20 +1535,28 @@ const otherAccounts = computed(() => {
 									<div class="flex align-items-center w-full min-w-0">
 										<div class="text-ellipsis">
 											<span class="font-medium">{{ event.displayName }}</span>
-											<small v-if="event.memo">&nbsp;- {{ event.softDescription }}</small>
+											<small v-if="event.attributionDetails?.memo"
+												>&nbsp;- {{ event.attributionDetails.softDescription }}</small
+											>
 										</div>
 									</div>
 									<div style="flex-grow: 1"></div>
 									<div class="font-medium flex align-items-center gap-1">
-										<Icon v-if="event.isTransferPair" source_id="sync_alt" source="material-symbols"></Icon>
-										<Currency :amount="event.amount" mode="transaction" />
+										<Icon v-if="event.attributionDetails?.isTransferPair" source_id="sync_alt" source="material-symbols"></Icon>
+										<Currency :amount="event.amount" :mode="event.attributionDetails?.isTransferPair ? 'none' : 'transaction'" />
 									</div>
 								</div>
-								<small class="text-ellipsis">
-									{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
-									-
-									{{ accountStore.getAccountName(event.account_id) }}
-								</small>
+								<div class="flex align-items-center gap-2">
+									<small class="text-ellipsis">
+										{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
+										-
+										{{ accountStore.getAccountName(event.account_id) }}
+										<template v-if="event.attributionDetails?.isTransferPair">
+											→
+											{{ accountStore.getAccountName(event.attributionDetails?.sourceTransaction.TransferPair!.account_id) }}
+										</template>
+									</small>
+								</div>
 							</div>
 						</div>
 					</template>
@@ -1061,7 +1730,7 @@ const otherAccounts = computed(() => {
 		translate: 0 0;
 	}
 
-	&.open {
+	&.shift {
 		.budget-total {
 			translate: 30px;
 		}
@@ -1073,18 +1742,12 @@ const otherAccounts = computed(() => {
 }
 
 .budget-content {
-	&:not(.open) {
-		display: block !important;
-		max-height: 0;
-		overflow: hidden;
-	}
-
-	.budget-progress-bar {
-		max-width: 0;
-		transition: 0.3s ease-in;
-	}
-	&.open .budget-progress-bar {
-		max-width: 100% !important;
-	}
+	// .budget-progress-bar {
+	// 	max-width: 0;
+	// 	transition: 0.3s ease-in;
+	// }
+	// &.shift .budget-progress-bar {
+	// 	max-width: 100% !important;
+	// }
 }
 </style>

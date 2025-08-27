@@ -1,7 +1,7 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils"
-import { type BudgetedTransactionDetails, type BudgetEvent, type ScheduledBudget } from "../models/Budget"
+import { type BudgetedTransactionDetails, type ProjectionEvent, type ScheduledBudget } from "../models/Budget"
 import { getPropertyByPath } from "delfi-core/utils/miscUtils"
-import { TransactionUtils, type AttributionEvent, type DescriptionBreakdown } from "delfi-core/models/Transaction"
+import { TransactionUtils, type CommonEventDetails, type DescriptionBreakdown } from "delfi-core/models/Transaction"
 import type { Category } from "delfi-core/models/Category"
 
 export type Predicate = {
@@ -20,7 +20,7 @@ type AndFilter = {
 type OrFilter = {
 	OR: TransactionFilter;
 }
-type Filterable = BudgetedTransactionDetails | ScheduledBudget | BudgetEvent | AttributionEvent;
+type Filterable = BudgetedTransactionDetails | ScheduledBudget | ProjectionEvent | CommonEventDetails;
 type Accumulatable = Filterable & { amount: number };
 
 

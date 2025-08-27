@@ -17,6 +17,7 @@ export type DelfiDate =
 		isDelfiDate: true;
 		isBetweenInclusive: (start: DelfiDate, end: DelfiDate) => boolean;
 		formatFull(): string;
+		formatShort(): string;
 	}
 	& Replace<dayjs.Dayjs, {
 		toString: () => string;
@@ -41,6 +42,7 @@ export const ddate = (input: DelfiDateConfig = new Date()) => {
 	
 	d.isBetweenInclusive = (start: DelfiDate, end: DelfiDate) => d.isBetween(start, end, 'day', '[]');
 	d.formatFull = () => d.format('MMMM D, YYYY');
+	d.formatShort = () => d.format('MMM D');
 
 	const proxyMethods = [ 'add', 'subtract', 'startOf', 'endOf'] as const;
 	for (const method of proxyMethods) {

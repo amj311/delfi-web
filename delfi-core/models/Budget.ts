@@ -3,7 +3,7 @@ import { computeTriggeredAmount, type Trigger } from "./schedules/triggers"
 import { ddate, toDelfiInterval, type DelfiDate } from "../utils/dateUtils";
 import FilterService from "../services/FilterService";
 import { type BudgetableTransactionDetails } from "./Transaction";
-import type { CommonEventDetails } from "./Summary";
+import type { CommonEvent } from "./Summary";
 import { v4 as uuid } from "uuid";
 import type { MONTHS } from "delfi-core/utils/constants";
 import type { Replace } from "delfi-core/utils/typeUtils";
@@ -143,25 +143,25 @@ export type BudgetOccurrenceDraft = {
 
 export type BudgetOccurrence = BudgetOccurrenceDraft & {
 	amount: number, // The total amount of the budget for this occurrence
-	budgetEvents: BudgetEvent[],
+	budgetEvents: ProjectionEvent[],
 }
 
-
-export type BudgetEvent = CommonEventDetails & BudgetedTransactionDetails & {
+export type ProjectionEventDetails = BudgetedTransactionDetails & {
 	budget_event_id: string,
 	sourceOccurrence: BudgetOccurrence, // The occurrence this event is associated with
-	sourceType: 'budget',
-	sourceBudget: Budget, // The budget this event is associated with
-	sourceChildItem?: BudgetChildItem, // If this event is a child item of a budget, this will be the item it came from
-
-	triggerEvent?: BudgetEvent
-
+	triggerEvent?: ProjectionEvent
 	isTransferCopy?: boolean, // If true, this event is a copy of a transfer event, i.e. the target of a transfer
-	
 	isPartial?: true, // indicates that this event is a partial event, i.e. it is not the full amount of the budget
 	budgetCap?: number, // the total cap for the budget
 	budgetUsedSoFar?: number, // the accumulation of this and previous events for the same window
 }
+
+export type ProjectionEvent = Replace<CommonEvent, {
+	Budget: Budget,
+	projectionDetails: ProjectionEventDetails,
+	attributionDetails: undefined,
+}>
+
 export default class BudgetUtils {
 	static createScheduledOccurrences(start: DelfiDate, end: DelfiDate, budget: ScheduledBudget): BudgetOccurrence[] {
 		const occurrences: BudgetOccurrence[] = [];
@@ -208,19 +208,19 @@ export default class BudgetUtils {
 	 * @param occurrence The budget occurrence to compute events for.
 	 * @returns An array of partial budget event constructions representing the projected events.
 	 */
-	private static computeProjectionEvents(windowAmount: number, windowStart: DelfiDate, windowEnd: DelfiDate, occurrence: BudgetOccurrence): BudgetEvent[] {
+	private static computeProjectionEvents(windowAmount: number, windowStart: DelfiDate, windowEnd: DelfiDate, occurrence: BudgetOccurrence): ProjectionEvent[] {
 		// Short circuit for windows with no special projection rules
 		if (!occurrence.sourceSchedule.projectionInterval) {
 			const events = BudgetUtils.createDateEventsFromOccurrenceDetails(windowStart, windowAmount, occurrence.budget, occurrence);
 			return events.map(event => ({
 				...event,
 				sourceOccurrence: occurrence,
-			} as BudgetEvent));
+			} as ProjectionEvent));
 		}
 
 		const intervalQty = occurrence.sourceSchedule.projectionInterval!.quantity;
 		const interval = occurrence.sourceSchedule.projectionInterval!.interval;
-		const projectionEvents: BudgetEvent[] = [];
+		const projectionEvents: ProjectionEvent[] = [];
 		// Get child items within this window
 		const childItems = occurrence.budget.childItems?.filter(item => ddate(item.date).isBetweenInclusive(windowStart, windowEnd)) || [];
 
@@ -229,10 +229,10 @@ export default class BudgetUtils {
 		for (const child of childItems) {
 			const childEvents = BudgetUtils.createDateEventsFromOccurrenceDetails(ddate(child.date), child.amount, child, occurrence);
 			childEvents.forEach(event => {
-				event.isPartial = true;
-				event.budgetCap = windowAmount;
-				event.budgetUsedSoFar = budgetUsedSoFar + child.amount;
-				event.sourceChildItem = child;
+				event.projectionDetails.isPartial = true;
+				event.projectionDetails.budgetCap = windowAmount;
+				event.projectionDetails.budgetUsedSoFar = budgetUsedSoFar + child.amount;
+				event.BudgetChildItem = child;
 
 				budgetUsedSoFar += child.amount;
 			});
@@ -273,7 +273,7 @@ export default class BudgetUtils {
 	 * @param triggerEvent 
 	 * @returns 
 	 */
-	static createTriggeredOccurrenceForMonth(monthStart: DelfiDate, budget: TriggeredBudget, monthEvents: BudgetEvent[]): BudgetOccurrence | undefined {
+	static createTriggeredOccurrenceForMonth(monthStart: DelfiDate, budget: TriggeredBudget, monthEvents: ProjectionEvent[]): BudgetOccurrence | undefined {
 		// Find a schedule variant that matches the trigger event
 		for (const variant of budget.scheduleVariants) {
 			const variantNextOccurrence = ScheduleService.delfi.getNextOccurrence(variant.schedule, monthStart);
@@ -318,21 +318,25 @@ export default class BudgetUtils {
 		return occurrenceStart.add(variant.schedule.interval || 1, toDelfiInterval(variant.schedule.frequency)).subtract(1, 'day'); // Subtract one day to get the end of the occurrence, not the start of the next one
 	}
 
-	private static createDateEventsFromOccurrenceDetails(eventDate: DelfiDate, amount: number, details: BudgetedTransactionDetails, sourceOccurrence: BudgetOccurrence): BudgetEvent[] {
-		const base: BudgetEvent = {
-			budget_event_id: sourceOccurrence.occurrence_id + '-' + sourceOccurrence.budgetEvents.length,
-			...BudgetUtils.copyTransactionDetails(details),
-			sourceType: 'budget',
-			sourceBudget: sourceOccurrence.budget,
-			sourceOccurrence,
+	private static createDateEventsFromOccurrenceDetails(eventDate: DelfiDate, amount: number, details: BudgetedTransactionDetails, sourceOccurrence: BudgetOccurrence): ProjectionEvent[] {
+		const base: ProjectionEvent = {
+			Budget: sourceOccurrence.budget,
 			displayName: details.memo,
 			date: eventDate,
 			year: eventDate.year(),
 			month: eventDate.month(),
 			day: eventDate.day(),
 			amount,
+			...BudgetUtils.copyTransactionDetails(details),
+
+			projectionDetails: {
+				...BudgetUtils.copyTransactionDetails(details),
+				budget_event_id: sourceOccurrence.occurrence_id + '-' + sourceOccurrence.budgetEvents.length,
+				sourceOccurrence,
+			},
+			attributionDetails: undefined,
 		}
-		const events: BudgetEvent[] = [];
+		const events: ProjectionEvent[] = [];
 		// Origin transaction for Transfer
 		// if (details.budgetType === BudgetType.TRANSFER && details.origin_account_id) {
 		// 	// TODO don't allow transfers without origin account

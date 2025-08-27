@@ -1,24 +1,29 @@
-import { type Budget, type BudgetChildItem, type BudgetEvent, type BudgetOccurrence } from "delfi-core/models/Budget";
-import type { AttributionEvent, BudgetableTransactionDetails, Merchant } from "delfi-core/models/Transaction";
+import { type Budget, type BudgetChildItem, type ProjectionEvent, type BudgetOccurrence } from "delfi-core/models/Budget";
+import type { AttributionEvent, AttributionEventDetails, BudgetableTransactionDetails, Merchant } from "delfi-core/models/Transaction";
 import { ddate, type DelfiDate } from "../utils/dateUtils";
 import type { Category } from "./Category";
-import type { Delfi } from "delfi-core/Delfi";
-import type { TransactionFilter } from "delfi-core/services/FilterService";
 
 
-export type CommonEventDetails = BudgetableTransactionDetails & {
+export type CommonEvent = BudgetableTransactionDetails & {
 	displayName: string,
 	date: DelfiDate,
 	year: number;
 	month: number;
 	day: number;
 	amount: number,
-	sourceType: string,
+	
 	Merchant?: Merchant | null,
+	merchant_id?: string | null,
 	Category?: Category | null,
-};
+	category_id?: string | null,
+	Budget?: Budget | null,
+	budget_id?: string | null,
+	BudgetChildItem?: BudgetChildItem | null,
+	budget_child_item_id?: string | null,
 
-export type CommonEvent = AttributionEvent | BudgetEvent;
+	attributionDetails?: AttributionEventDetails,
+	projectionDetails?: ProjectionEvent,
+};
 
 export function netChange(events: { amount: number }[]): number {
 	return events.reduce((acc, event) => acc + event.amount, 0);
@@ -40,7 +45,7 @@ export class BudgetOccurrenceSummary {
 	get budgetEvents(): BudgetEventSummary[] {
 		return this.occurrence.budgetEvents.map(event => {
 			// Right now the only link between attributions and specific events are child events.
-			const attributedEvents = this.attributedEvents.filter(a => event.sourceChildItem && a.budget_child_item_id === event.sourceChildItem.budget_child_item_id);
+			const attributedEvents = this.attributedEvents.filter(a => event.BudgetChildItem && a.budget_child_item_id === event.BudgetChildItem.budget_child_item_id);
 			return new BudgetEventSummary(this, event, attributedEvents);
 		});
 	}
@@ -59,11 +64,11 @@ export class BudgetOccurrenceSummary {
 }
 
 /** A single budgeted event with an occurrenceSummary and any applicable attributions */
-export interface BudgetEventSummary extends BudgetEvent {};
+export interface BudgetEventSummary extends ProjectionEvent {};
 export class BudgetEventSummary {
 	constructor (
 		readonly occurrenceSummary: BudgetOccurrenceSummary,
-		readonly budgetEvent: BudgetEvent,
+		readonly budgetEvent: ProjectionEvent,
 		readonly attributedEvents: AttributionEvent[],
 	) {
 		Object.assign(this, budgetEvent); // Copy all properties from budgetEvent
@@ -89,7 +94,7 @@ export class BudgetSnapshot {
 		readonly budget: Budget,
 		/** Always just the events applicable to the snapshot (date range or other common attribute) */
 		readonly budgetEvents: BudgetEventSummary[],
-		readonly attributedEvents: AttributionEvent[],
+		readonly _attributedEvents: AttributionEvent[],
 		readonly asFullContext: boolean = false,
 	) {}
 
@@ -97,19 +102,31 @@ export class BudgetSnapshot {
 	private get occurrences(): BudgetOccurrenceSummary[] {
 		const presentOccurrences = new Set<BudgetOccurrenceSummary>();
 		this.budgetEvents.forEach(event => {
-			if (event.sourceOccurrence) {
+			if (event.projectionDetails.sourceOccurrence) {
 				presentOccurrences.add(event.occurrenceSummary);
 			}
 		});
 		return Array.from(presentOccurrences);
 	}
 
+
+	get withoutTransferCopies() {
+		return this._attributedEvents.filter(e => !e.attributionDetails?.isTransferCopy);
+	}
+
+	/**
+	 * For now, defaulting to NOT counting transfer copies. Still wondering what this will mean....
+	 */
+	get attributedEvents(): AttributionEvent[] {
+		return this.withoutTransferCopies;
+	}
+
 	get childItemEvents() {
-		return this.budgetEvents.filter(e => Boolean(e.sourceChildItem)).map(e => {
-			const attributedEvents = this.attributedEvents.filter(a => a.budget_child_item_id === e.sourceChildItem!.budget_child_item_id);
+		return this.budgetEvents.filter(e => Boolean(e.BudgetChildItem)).map(e => {
+			const attributedEvents = this.attributedEvents.filter(a => a.budget_child_item_id === e.BudgetChildItem!.budget_child_item_id);
 			return {
 				...e,
-				sourceChildItem: e.sourceChildItem as NonNullable<BudgetChildItem>,
+				sourceChildItem: e.BudgetChildItem as NonNullable<BudgetChildItem>,
 				/**
 				 * Only events attributed to this child item within the snapshot range. There may be others.
 				 */
@@ -122,6 +139,7 @@ export class BudgetSnapshot {
 	get notChildAttributions(): AttributionEvent[] {
 		return this.attributedEvents.filter(e => !e.budget_child_item_id);
 	}
+
 
 	get tally(): RealityTally {
 		return new RealityTally(this.budgetEvents, this.attributedEvents);
@@ -210,7 +228,7 @@ export class BudgetSnapshot {
 		const res = {
 			percent: 0,
 			pace: 0,
-			status: 'good', // 'good', 'warning', 'danger',
+			status: 'underPace', // 'underPace', 'overPace', 'overBudget',
 			visualization: {
 				normalizedPace: 0, // normalized pace for visualization
 				normalizedBudgetedNet: 0, // normalized budgeted net for visualization
@@ -239,15 +257,14 @@ export class BudgetSnapshot {
 			res.pace = budgetedByDate / this.tally.budgetedNet * 100;
 		}
 
-		// determine color. Green = good pace. Yellow = over pace. Red = over max.
 		if (res.percent > 101) {
-			res.status = 'danger';
+			res.status = 'overBudget';
 		}
 		else if (res.percent > res.pace) {
-			res.status = 'warning';
+			res.status = 'overPace';
 		}
 		else {
-			res.status = 'good';
+			res.status = 'underPace';
 		}
 
 		// compute normalized values for visualizations
@@ -291,8 +308,8 @@ export class RealityTally<Grouper = any> {
 	}
 
 
-	get budgetEventsWithoutTransferCopies(): BudgetEvent[] {
-		return this.budgetEvents.filter(e => !e.isTransferCopy);
+	get budgetEventsWithoutTransferCopies(): ProjectionEvent[] {
+		return this.budgetEvents.filter(e => !e.projectionDetails?.isTransferCopy);
 	}
 
 	/**
@@ -317,7 +334,7 @@ export class RealityTally<Grouper = any> {
 	get budgetSnapshots() {
 		const presentBudgets = new Map<string, Budget>();
 		this.budgetEvents.forEach(event => {
-			presentBudgets.set(event.sourceBudget.budget_id, event.sourceBudget);
+			presentBudgets.set(event.Budget.budget_id, event.Budget);
 		});
 		this.attributionEvents.forEach(event => {
 			if (event.budget_id && event.Budget) {
@@ -328,7 +345,7 @@ export class RealityTally<Grouper = any> {
 			null, // rangeStart
 			null, // rangeEnd
 			budget,
-			this.budgetEvents.filter(e => e.sourceBudget.budget_id === budgetId),
+			this.budgetEvents.filter(e => e.Budget.budget_id === budgetId),
 			this.attributionEvents.filter(e => e.budget_id === budgetId),
 		)).sort((a, b) => {
 			const aParentCategory = a.budget.Category?.ParentCategory ? a.budget.Category!.ParentCategory.name : a.budget.Category?.name || 'Uncategorized';
@@ -347,10 +364,10 @@ export class RealityTally<Grouper = any> {
 
 
 export class SummaryUtils {
-	public static getBudgetEventIdentifier(event: BudgetEvent): string {
+	public static getBudgetEventIdentifier(event: ProjectionEvent): string {
 		const attributes = [
-			['sourceBudget', event.sourceBudget?.budget_id],
-			['childItem', event.sourceChildItem?.budget_child_item_id],
+			['sourceBudget', event.Budget?.budget_id],
+			['childItem', event.BudgetChildItem?.budget_child_item_id],
 			['date', event.date.toISOString()],
 		]
 		return attributes.map(([key, value]) => `${key}:${value}`).join('__');

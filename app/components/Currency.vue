@@ -3,7 +3,7 @@ import { computed, reactive, toRefs } from 'vue';
 
 const _props = defineProps<{
 	amount: number | string,
-	mode?: 'balance' | 'balance_reverse' | 'net_change' | 'transaction',
+	mode?: 'none' | 'balance' | 'balance_reverse' | 'net_change' | 'transaction',
 	hideCurrency?: boolean
 	round?: boolean
 }>();

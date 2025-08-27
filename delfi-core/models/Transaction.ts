@@ -1,11 +1,10 @@
 import { ddate, type DelfiDate } from "delfi-core/utils/dateUtils"
 import type { Category } from "./Category"
 import type { TagColor } from "delfi-core/utils/constants"
-import type { CommonEventDetails } from "./Summary"
+import type { CommonEvent } from "./Summary"
 import type { Budget, BudgetChildItem } from "./Budget"
-import type { PlaidCategory } from "server/services/PlaidService"
-import type { CategoryKey } from "./systemCategories"
 import { AccountUtils, type AccountSubtype } from "./Account"
+import type { Replace } from "delfi-core/utils/typeUtils"
 
 
 /**
@@ -78,14 +77,14 @@ type AttributionBudgetableDetails = {
 export type BudgetableTransactionDetails = TrueBudgetableDetails & AttributionBudgetableDetails;
 
 
-type AttributionEventDetails = {
+type AttributionDetails = {
 	amount: number,
 	budget_id?: string | null,
 	Budget?: Budget | null,
 	budget_child_item_id?: string | null,
 	BudgetChildItem?: BudgetChildItem | null,
 }
-export type TransactionAttribution = AttributionBudgetableDetails & AttributionEventDetails & {
+export type TransactionAttribution = AttributionBudgetableDetails & AttributionDetails & {
 	transaction_attribution_id: string,
 	transaction_id: string,
 	amount: number,
@@ -156,13 +155,18 @@ export type CreateTransaction = Omit<Transaction, 'transaction_id' | 'Attributio
 /**
  * A compiled event that represents a single attribution as if it were a standalone transaction.
  */
-export type AttributionEvent = CommonEventDetails & TransactionAttribution & {
+export type AttributionEventDetails = TransactionAttribution & {
 	sourceTransaction: Transaction,
 	isSplit: boolean, // If this event is a split of a transaction
 	softDescription: string,
 	isTransferPair: boolean,
 	isTransferCopy: boolean,
 }
+
+export type AttributionEvent = Replace<CommonEvent, {
+	projectionDetails: undefined,
+	attributionDetails: AttributionEventDetails,
+}>;
 
 export type Merchant = {
 	merchant_id: string,
@@ -193,9 +197,7 @@ export class TransactionUtils {
 		const breakdown = TransactionUtils.extractDescriptionInfo(transaction.original_description);
 
 		return {
-			sourceType: 'attribution',
-			isSplit: transaction.Attributions.length > 1,
-			sourceTransaction: transaction,
+			displayName: attribution.memo || breakdown?.simple_description || transaction.original_description,
 			date: transaction.date,
 			day: transaction.date.day(),
 			year: transaction.date.year(),
@@ -203,13 +205,20 @@ export class TransactionUtils {
 
 			account_id: transaction.account_id,
 			Merchant: transaction.Merchant || null,
-			BudgetChildItem,
+			merchant_id: transaction.Merchant?.merchant_id || null,
 
-			displayName: attribution.memo || breakdown?.simple_description || transaction.original_description,
-			softDescription: breakdown?.simple_description || transaction.original_description,
-			isTransferPair: Boolean(transaction.transfer_pair_id),
-			isTransferCopy: Boolean(transaction.transfer_pair_id) && transaction.amount > 0,
 			...attribution,
+	
+			attributionDetails: {
+				...attribution,
+				sourceTransaction: transaction,
+				isSplit: transaction.Attributions.length > 1,
+				softDescription: breakdown?.simple_description || transaction.original_description,
+				isTransferPair: Boolean(transaction.transfer_pair_id),
+				isTransferCopy: Boolean(transaction.transfer_pair_id) && transaction.amount < 0,
+				BudgetChildItem,
+			},
+			projectionDetails: undefined,
 		};
 	}
 
