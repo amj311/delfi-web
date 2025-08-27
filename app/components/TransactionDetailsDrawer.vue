@@ -22,6 +22,8 @@ import { v4 as uuid } from 'uuid';
 import MerchantSelectionDrawer from './MerchantSelectionDrawer.vue';
 import { useContextStore } from '@/stores/context.store';
 
+const toast = useToast();
+
 const triggerRef = ref<InstanceType<typeof NavTriggerDrawer> | null>(null);
 const transaction = ref<Transaction>({} as Transaction);
 
@@ -59,7 +61,7 @@ watch(
 			if (shouldCompute) {
 				useDelfiStore().reCompute();
 			}
-			useToast().add({
+			toast.add({
 				severity: 'success',
 				summary: 'Transaction Updated',
 				detail: 'The transaction has been successfully updated.',
@@ -239,11 +241,11 @@ function closeSplitModal() {
 function getTransferCandidates() {
 	return (
 		useContextStore().currentSummary?.attributionEvents.filter(
-			(t) =>
-				!t.transfer_pair_id &&
-				t.sourceTransaction.transaction_id !== transaction.value.transaction_id &&
-				t.sourceTransaction.account_id !== transaction.value.account_id &&
-				t.sourceTransaction.amount === -transaction.value.amount
+			(e) =>
+				!e.attributionDetails.transfer_pair_id &&
+				e.attributionDetails.sourceTransaction.transaction_id !== transaction.value.transaction_id &&
+				e.attributionDetails.sourceTransaction.account_id !== transaction.value.account_id &&
+				e.attributionDetails.sourceTransaction.amount === -transaction.value.amount
 		) || []
 	);
 }
@@ -592,7 +594,7 @@ function setTransferPair(t: Transaction) {
 		<div
 			v-for="event of getTransferCandidates()"
 			class="flex align-items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 border-round"
-			@click="setTransferPair(event.sourceTransaction)"
+			@click="setTransferPair(event.attributionDetails.sourceTransaction)"
 		>
 			<div>
 				<AttributionAvatar :event="event" style="width: 2.5rem; font-size: 1.2rem">
