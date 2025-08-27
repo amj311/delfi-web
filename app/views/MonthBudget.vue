@@ -24,6 +24,7 @@ import AttributionAvatar from '@/components/AttributionAvatar.vue';
 import Select from 'primevue/select';
 import type { BudgetSnapshot } from 'delfi-core/models/Summary';
 import { useContextStore } from '@/stores/context.store';
+import CommonEventRow from '@/components/CommonEventRow.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -424,66 +425,10 @@ const otherAccounts = computed(() => {
 									<template v-for="event of isFuture ? budgetSnapshot.budgetEvents : budgetSnapshot.notChildAttributions">
 										<!-- only display one from transfer pair -->
 										<div
-											class="list-row flex align-items-center gap-3 px-0"
-											v-if="!event.attributionDetails?.isTransferCopy"
+											class="list-row px-0"
 											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 										>
-											<div>
-												<AttributionAvatar :event="event" :size="1.9">
-													<template #badge v-if="event.attributionDetails?.isSplit">
-														<Icon source_id="arrow_split" source="material-symbols" />
-													</template>
-													<template #badge v-if="event.attributionDetails?.isTransferPair">
-														<Icon source_id="sync_alt" source="material-symbols" />
-													</template>
-													<template #badge v-if="event.projectionDetails">
-														<i class="pi pi-wallet" style="font-size: .95em" />
-													</template>
-												</AttributionAvatar>
-											</div>
-											<div class="flex flex-column w-full min-w-0">
-												<div class="flex align-items-center gap-2">
-													<div class="flex align-items-center w-full min-w-0">
-														<div class="text-ellipsis">
-															<span class="font-medium">{{ event.displayName }}</span>
-															<small v-if="event.attributionDetails?.memo"
-																>&nbsp;- {{ event.attributionDetails.softDescription }}</small
-															>
-														</div>
-													</div>
-													<div style="flex-grow: 1"></div>
-													<div class="font-medium flex align-items-center gap-1">
-														<Icon
-															v-if="event.attributionDetails?.isTransferPair"
-															source_id="sync_alt"
-															source="material-symbols"
-														></Icon>
-														<Currency
-															:amount="event.amount"
-															:mode="event.attributionDetails?.isTransferPair ? 'none' : 'transaction'"
-														/>
-													</div>
-												</div>
-												<div class="flex align-items-center gap-2">
-													<small class="text-ellipsis">
-														{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
-														-
-														{{ accountStore.getAccountName(event.account_id) }}
-														<template v-if="event.attributionDetails?.isTransferPair">
-															→
-															{{
-																accountStore.getAccountName(
-																	event.attributionDetails?.sourceTransaction.TransferPair!.account_id
-																)
-															}}
-														</template>
-													</small>
-													<div class="flex-grow-1"></div>
-													<small class="white-space-nowrap">
-														{{ event.date.formatShort() }}
-													</small>
-												</div>
-											</div>
+											<CommonEventRow :event="event" />
 										</div>
 									</template>
 								</AccordionContent>
@@ -505,66 +450,10 @@ const otherAccounts = computed(() => {
 								>
 									<!-- only display one from transfer pair -->
 									<div
-										class="list-row flex align-items-center gap-3 px-0"
+										class="list-row px-0"
 										v-if="!event.attributionDetails?.isTransferCopy"
 										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 									>
-										<div>
-											<AttributionAvatar :event="event" :size="1.9">
-												<template #badge v-if="event.attributionDetails?.isSplit">
-													<Icon source_id="arrow_split" source="material-symbols" />
-												</template>
-												<template #badge v-if="event.attributionDetails?.isTransferPair">
-													<Icon source_id="sync_alt" source="material-symbols" />
-												</template>
-												<template #badge v-if="event.projectionDetails">
-													<i class="pi pi-wallet" style="font-size: .95em" />
-												</template>
-											</AttributionAvatar>
-										</div>
-										<div class="flex flex-column w-full min-w-0">
-											<div class="flex align-items-center gap-2">
-												<div class="flex align-items-center w-full min-w-0">
-													<div class="text-ellipsis">
-														<span class="font-medium">{{ event.displayName }}</span>
-														<small v-if="event.attributionDetails?.memo"
-															>&nbsp;- {{ event.attributionDetails.softDescription }}</small
-														>
-													</div>
-												</div>
-												<div style="flex-grow: 1"></div>
-												<div class="font-medium flex align-items-center gap-1">
-													<Icon
-														v-if="event.attributionDetails?.isTransferPair"
-														source_id="sync_alt"
-														source="material-symbols"
-													></Icon>
-													<Currency
-														:amount="event.amount"
-														:mode="event.attributionDetails?.isTransferPair ? 'none' : 'transaction'"
-													/>
-												</div>
-											</div>
-											<div class="flex align-items-center gap-2">
-												<small class="text-ellipsis">
-													{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
-													-
-													{{ accountStore.getAccountName(event.account_id) }}
-													<template v-if="event.attributionDetails?.isTransferPair">
-														→
-														{{
-															accountStore.getAccountName(
-																event.attributionDetails?.sourceTransaction.TransferPair!.account_id
-															)
-														}}
-													</template>
-												</small>
-												<div class="flex-grow-1"></div>
-												<small class="white-space-nowrap">
-													{{ event.date.formatShort() }}
-												</small>
-											</div>
-										</div>
 									</div>
 								</template>
 							</AccordionContent>
@@ -681,66 +570,11 @@ const otherAccounts = computed(() => {
 									<template v-for="event of isFuture ? budgetSnapshot.budgetEvents : budgetSnapshot.notChildAttributions">
 										<!-- only display one from transfer pair -->
 										<div
-											class="list-row flex align-items-center gap-3 px-0"
+											class="list-row px-0"
 											v-if="!event.attributionDetails?.isTransferCopy"
 											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 										>
-											<div>
-												<AttributionAvatar :event="event" :size="1.9">
-													<template #badge v-if="event.attributionDetails?.isSplit">
-														<Icon source_id="arrow_split" source="material-symbols" />
-													</template>
-													<template #badge v-if="event.attributionDetails?.isTransferPair">
-														<Icon source_id="sync_alt" source="material-symbols" />
-													</template>
-													<template #badge v-if="event.projectionDetails">
-														<i class="pi pi-wallet" style="font-size: .95em" />
-													</template>
-												</AttributionAvatar>
-											</div>
-											<div class="flex flex-column w-full min-w-0">
-												<div class="flex align-items-center gap-2">
-													<div class="flex align-items-center w-full min-w-0">
-														<div class="text-ellipsis">
-															<span class="font-medium">{{ event.displayName }}</span>
-															<small v-if="event.attributionDetails?.memo"
-																>&nbsp;- {{ event.attributionDetails.softDescription }}</small
-															>
-														</div>
-													</div>
-													<div style="flex-grow: 1"></div>
-													<div class="font-medium flex align-items-center gap-1">
-														<Icon
-															v-if="event.attributionDetails?.isTransferPair"
-															source_id="sync_alt"
-															source="material-symbols"
-														></Icon>
-														<Currency
-															:amount="event.amount"
-															:mode="event.attributionDetails?.isTransferPair ? 'none' : 'transaction'"
-														/>
-													</div>
-												</div>
-												<div class="flex align-items-center gap-2">
-													<small class="text-ellipsis">
-														{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
-														-
-														{{ accountStore.getAccountName(event.account_id) }}
-														<template v-if="event.attributionDetails?.isTransferPair">
-															→
-															{{
-																accountStore.getAccountName(
-																	event.attributionDetails?.sourceTransaction.TransferPair!.account_id
-																)
-															}}
-														</template>
-													</small>
-													<div class="flex-grow-1"></div>
-													<small class="white-space-nowrap">
-														{{ event.date.formatShort() }}
-													</small>
-												</div>
-											</div>
+											<CommonEventRow :event="event" />
 										</div>
 									</template>
 								</AccordionContent>
@@ -762,66 +596,10 @@ const otherAccounts = computed(() => {
 								>
 									<!-- only display one from transfer pair -->
 									<div
-										class="list-row flex align-items-center gap-3 px-0"
-										v-if="!event.attributionDetails?.isTransferCopy"
+										class="list-row px-0"
 										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 									>
-										<div>
-											<AttributionAvatar :event="event" :size="1.9">
-												<template #badge v-if="event.attributionDetails?.isSplit">
-													<Icon source_id="arrow_split" source="material-symbols" />
-												</template>
-												<template #badge v-if="event.attributionDetails?.isTransferPair">
-													<Icon source_id="sync_alt" source="material-symbols" />
-												</template>
-												<template #badge v-if="event.projectionDetails">
-													<i class="pi pi-wallet" style="font-size: .95em" />
-												</template>
-											</AttributionAvatar>
-										</div>
-										<div class="flex flex-column w-full min-w-0">
-											<div class="flex align-items-center gap-2">
-												<div class="flex align-items-center w-full min-w-0">
-													<div class="text-ellipsis">
-														<span class="font-medium">{{ event.displayName }}</span>
-														<small v-if="event.attributionDetails?.memo"
-															>&nbsp;- {{ event.attributionDetails.softDescription }}</small
-														>
-													</div>
-												</div>
-												<div style="flex-grow: 1"></div>
-												<div class="font-medium flex align-items-center gap-1">
-													<Icon
-														v-if="event.attributionDetails?.isTransferPair"
-														source_id="sync_alt"
-														source="material-symbols"
-													></Icon>
-													<Currency
-														:amount="event.amount"
-														:mode="event.attributionDetails?.isTransferPair ? 'none' : 'net_change'"
-													/>
-												</div>
-											</div>
-											<div class="flex align-items-center gap-2">
-												<small class="text-ellipsis">
-													{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
-													-
-													{{ accountStore.getAccountName(event.account_id) }}
-													<template v-if="event.attributionDetails?.isTransferPair">
-														→
-														{{
-															accountStore.getAccountName(
-																event.attributionDetails?.sourceTransaction.TransferPair!.account_id
-															)
-														}}
-													</template>
-												</small>
-												<div class="flex-grow-1"></div>
-												<small class="white-space-nowrap">
-													{{ event.date.formatShort() }}
-												</small>
-											</div>
-										</div>
+										<CommonEventRow :event="event" />
 									</div>
 								</template>
 							</AccordionContent>
@@ -889,43 +667,10 @@ const otherAccounts = computed(() => {
 								</div>
 								<template v-for="event of isFuture ? budgetSnapshot.budgetEvents : budgetSnapshot.notChildAttributions">
 									<div
-										class="list-row flex align-items-center gap-3"
+										class="list-row"
 										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 									>
-										<AttributionAvatar :event="event" :size="1.9" />
-										<div class="flex flex-column w-full min-w-0">
-											<div class="transaction-main-line">
-												<div class="text-ellipsis w-full min-w-0">
-													{{ event.displayName }}
-												</div>
-												<div style="flex-grow: 1"></div>
-												<div style="display: flex; align-items: center; gap: 4px">
-													<Currency
-														:amount="event.amount"
-														:mode="event.attributionDetails?.isTransferPair ? 'none' : 'transaction'"
-													/>
-												</div>
-											</div>
-											<div class="flex align-items-center gap-2">
-												<small class="text-ellipsis">
-													{{ event.Budget?.memo || useCategoryStore().getCategoryById(event.category_id).name }}
-													-
-													{{ accountStore.getAccountName(event.account_id) }}
-													<template v-if="event.attributionDetails?.isTransferPair">
-														→
-														{{
-															accountStore.getAccountName(
-																event.attributionDetails?.sourceTransaction.TransferPair!.account_id
-															)
-														}}
-													</template>
-												</small>
-												<div class="flex-grow-1"></div>
-												<small class="white-space-nowrap">
-													{{ event.date.formatShort() }}
-												</small>
-											</div>
-										</div>
+										<CommonEventRow :event="event" />
 									</div>
 								</template>
 							</template>
@@ -938,10 +683,10 @@ const otherAccounts = computed(() => {
 						</div>
 						<div
 							v-for="event of tally.unBudgetedAttributions"
-							class="list-row flex align-items-center gap-3"
-							@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+							class="list-row"
 						>
-							<AttributionAvatar :event="event" :size="1.9" />
+							<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" />
+							<!-- <AttributionAvatar :event="event" :size="1.9" />
 							<div class="flex flex-column w-full min-w-0">
 								<div class="transaction-main-line">
 									<div class="text-ellipsis w-full min-w-0">
@@ -967,7 +712,7 @@ const otherAccounts = computed(() => {
 										{{ event.date.formatShort() }}
 									</small>
 								</div>
-							</div>
+							</div> -->
 						</div>
 					</div>
 				</div>
@@ -1015,9 +760,10 @@ const otherAccounts = computed(() => {
 										.slice()
 										.sort((a, b) => (a.date.isBefore(b.date) ? -1 : 1))"
 								>
+									<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" />
 									<!-- only display one from transfer pair -->
-									<div
-										class="list-row flex align-items-center gap-3 px-0"
+									<!-- <div
+										class="list-row px-0"
 										v-if="!event.attributionDetails?.isTransferCopy"
 										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 									>
@@ -1077,7 +823,7 @@ const otherAccounts = computed(() => {
 												</small>
 											</div>
 										</div>
-									</div>
+									</div> -->
 								</template>
 							</AccordionContent>
 						</AccordionPanel>
@@ -1173,7 +919,7 @@ const otherAccounts = computed(() => {
 											<Currency :amount="budgetSnapshot.tally.budgetedNet" />
 										</div>
 									</div>
-									<div v-for="childItem of budgetSnapshot.childItemEvents" class="list-row flex align-items-center gap-3 px-0">
+									<div v-for="childItem of budgetSnapshot.childItemEvents" class="list-row px-0">
 										<AttributionAvatar :categoryId="childItem.category_id" :size="1.9">
 											<template #badge>
 												<Icon name="checklist" />
@@ -1216,8 +962,8 @@ const otherAccounts = computed(() => {
 									</div>
 									<template v-for="event of isFuture ? budgetSnapshot.budgetEvents : budgetSnapshot.notChildAttributions">
 										<!-- only display one from transfer pair -->
-										<div
-											class="list-row flex align-items-center gap-3 px-0"
+										<!-- <div
+											class="list-row px-0"
 											v-if="!event.attributionDetails?.isTransferCopy"
 											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 										>
@@ -1277,7 +1023,8 @@ const otherAccounts = computed(() => {
 													</small>
 												</div>
 											</div>
-										</div>
+										</div> -->
+										<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" />
 									</template>
 								</AccordionContent>
 							</AccordionPanel>
@@ -1344,9 +1091,9 @@ const otherAccounts = computed(() => {
 												<!-- <Currency :amount="budgetSummary.tally.attributedNet" mode="transaction" /> -->
 											</div>
 										
-											<template v-for="event of budgetSnapshot.tally.attributionEvents">
+											<div v-for="event of budgetSnapshot.tally.attributionEvents" class="list-row">
 												<!-- only display one from transfer pair -->
-												<div
+												<!-- <div
 													class="list-row flex align-items-center gap-3"
 													v-if="!event.attributionDetails.isTransferCopy"
 													@click="viewTransaction(event.attributionDetails.sourceTransaction)"
@@ -1407,8 +1154,9 @@ const otherAccounts = computed(() => {
 															</small>
 														</div>
 													</div>
-												</div>
-											</template>
+												</div> -->
+												<CommonEventRow :event="event" @click="() => viewTransaction(event.attributionDetails.sourceTransaction)" />
+											</div>
 										</template>
 									</template>
 									<div v-if="category.tally.unBudgetedAttributions.length > 0" class="flex align-items-center list-row gap-2">
@@ -1417,9 +1165,9 @@ const otherAccounts = computed(() => {
 										<div class="flex-grow-1"></div>
 										<Currency :amount="category.tally.unBudgetedNet" mode="transaction" />
 									</div>
-									<template v-for="event of category.tally.unBudgetedAttributions">
+									<div v-for="event of category.tally.unBudgetedAttributions" class="list-row">
 										<!-- only display one from transfer pair -->
-										<div
+										<!-- <div
 											class="list-row flex align-items-center gap-3"
 											v-if="!event.attributionDetails?.isTransferCopy"
 											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
@@ -1480,8 +1228,9 @@ const otherAccounts = computed(() => {
 													</small>
 												</div>
 											</div>
-										</div>
-									</template>
+										</div> -->
+										<CommonEventRow :event="event" @click="() => viewTransaction(event.attributionDetails.sourceTransaction)" />
+									</div>
 								</AccordionContent>
 							</AccordionPanel>
 						</template>
@@ -1510,9 +1259,9 @@ const otherAccounts = computed(() => {
 					{{ day.date }}
 				</h4>
 				<div class="list">
-					<template v-for="event in day.transactions">
+					<div v-for="event in day.transactions" class="list-row">
 						<!-- only display one from transfer pair -->
-						<div
+						<!-- <div
 							class="list-row flex align-items-center gap-3"
 							v-if="!event.attributionDetails?.isTransferCopy"
 							@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
@@ -1558,8 +1307,9 @@ const otherAccounts = computed(() => {
 									</small>
 								</div>
 							</div>
-						</div>
-					</template>
+						</div> -->
+						<CommonEventRow :event="event" :hideDate="true" :size="2.3" @click="() => viewTransaction(event.attributionDetails.sourceTransaction)" />
+					</div>
 				</div>
 			</div>
 		</template>

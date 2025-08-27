@@ -6,8 +6,10 @@ import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
 import Currency from '@/components/Currency.vue';
 import { TransactionService } from '@/services/transaction.service';
 import { TransactionUtils, type Transaction } from 'delfi-core/models/Transaction';
-import AttributionAvatar from '@/components/AttributionAvatar.vue';
 import { instantiateDates } from 'delfi-core/utils/dateUtils';
+import CommonEventRow from '@/components/CommonEventRow.vue';
+import Divider from 'primevue/divider';
+import TransactionDetailsDrawer from '@/components/TransactionDetailsDrawer.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -106,6 +108,14 @@ async function syncAccount() {
 const attributedEvents = computed(() => {
 	return TransactionUtils.processAttributionEvents(transactions.value);
 });
+
+
+const transactionDetailsDrawer = ref<InstanceType<typeof TransactionDetailsDrawer> | null>(null);
+function viewTransaction(transaction: Transaction) {
+	console.log('Viewing transaction:', transaction);
+	console.log('Drawer ref:', transactionDetailsDrawer.value);
+	transactionDetailsDrawer.value?.open(transaction);
+}
 
 </script>
 
@@ -262,7 +272,7 @@ const attributedEvents = computed(() => {
 				</div>
 
 				<div v-else class="transactions-list">
-					<table>
+					<!-- <table>
 						<thead>
 							<tr>
 								<th></th>
@@ -295,7 +305,11 @@ const attributedEvents = computed(() => {
 								</td>
 							</tr>
 						</tbody>
-					</table>
+					</table> -->
+					<div v-for="event in attributedEvents" @click="() => viewTransaction(event.attributionDetails.sourceTransaction)">
+						<CommonEventRow :event="event" showTransferCopy :size="2.3" hideAccount />
+						<Divider layout="horizontal" type="solid" />
+					</div>
 				</div>
 			</div>
 		</div>
@@ -308,6 +322,8 @@ const attributedEvents = computed(() => {
 				:onSave="handleAccountSaved"
 			/>
 		</dialog>
+
+		<TransactionDetailsDrawer ref="transactionDetailsDrawer" />
 	</div>
 </template>
 

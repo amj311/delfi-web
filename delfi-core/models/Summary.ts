@@ -1,4 +1,4 @@
-import { type Budget, type BudgetChildItem, type ProjectionEvent, type BudgetOccurrence } from "delfi-core/models/Budget";
+import { type Budget, type BudgetChildItem, type ProjectionEvent, type BudgetOccurrence, type ProjectionEventDetails } from "delfi-core/models/Budget";
 import type { AttributionEvent, AttributionEventDetails, BudgetableTransactionDetails, Merchant } from "delfi-core/models/Transaction";
 import { ddate, type DelfiDate } from "../utils/dateUtils";
 import type { Category } from "./Category";
@@ -22,7 +22,7 @@ export type CommonEvent = BudgetableTransactionDetails & {
 	budget_child_item_id?: string | null,
 
 	attributionDetails?: AttributionEventDetails,
-	projectionDetails?: ProjectionEvent,
+	projectionDetails?: ProjectionEventDetails,
 };
 
 export function netChange(events: { amount: number }[]): number {
