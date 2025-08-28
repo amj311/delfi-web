@@ -306,10 +306,7 @@ function viewTransaction(transaction: Transaction) {
 							</tr>
 						</tbody>
 					</table> -->
-					<div v-for="event in attributedEvents" @click="() => viewTransaction(event.attributionDetails.sourceTransaction)">
-						<CommonEventRow :event="event" showTransferCopy :size="2.3" hideAccount />
-						<Divider layout="horizontal" type="solid" />
-					</div>
+					<CommonEventRow v-for="event in attributedEvents" :event="event" showTransferCopy :size="2.3" hideAccount @click="() => viewTransaction(event.attributionDetails.sourceTransaction)" />
 				</div>
 			</div>
 		</div>

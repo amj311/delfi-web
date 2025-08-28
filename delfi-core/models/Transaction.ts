@@ -4,7 +4,7 @@ import type { TagColor } from "delfi-core/utils/constants"
 import type { CommonEvent } from "./Summary"
 import type { Budget, BudgetChildItem } from "./Budget"
 import { AccountUtils, type AccountSubtype } from "./Account"
-import type { Replace } from "delfi-core/utils/typeUtils"
+import type { Optional, Replace } from "delfi-core/utils/typeUtils"
 
 
 /**
@@ -176,7 +176,7 @@ export type Merchant = {
 	plaid_merchant_id?: string | null, // The Plaid merchant ID, if available
 	detection_key?: string | null,
 }
-export type MerchantDraft = Omit<Merchant, 'merchant_id'>;
+export type MerchantDraft = Optional<Merchant, 'merchant_id'>;
 
 
 export class TransactionUtils {

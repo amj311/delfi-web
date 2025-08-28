@@ -54,7 +54,7 @@ export default (fastify, _, done) => {
 		const results = await MerchantService.searchForTransactionMerchants([transaction]);
 		return {
 			success: true,
-			data: results[0]?.merchant || null,
+			data: results[0]?.newMerchant || null,
 		};
 	});
 

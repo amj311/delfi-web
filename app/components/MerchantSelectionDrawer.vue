@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { type Merchant } from 'delfi-core/models/Transaction';
+import { type Merchant, type MerchantDraft } from 'delfi-core/models/Transaction';
 import AttributionAvatar from './AttributionAvatar.vue';
 import NavTriggerDrawer from './utils/NavTrigger/NavTriggerDrawer.vue';
 import { useMerchantStore } from '@/stores/merchant.store';
@@ -12,6 +12,8 @@ import DrawerModal from './utils/DrawerModal.vue';
 import { jsonCopy } from 'delfi-core/utils/miscUtils';
 import { CategoryKeys } from 'delfi-core/models/systemCategories';
 import Select from 'primevue/select';
+
+const toast = useToast();
 
 const triggerRef = ref<InstanceType<typeof NavTriggerDrawer> | null>(null);
 let resolvePromise: ((merchant: Merchant | null) => void) | null = null;
@@ -39,7 +41,6 @@ function selectMerchant(merchant?: Merchant) {
 		resolvePromise = null;
 	}
 	triggerRef.value?.trigger()?.close();
-	webSearchedMerchant.value = null; // Reset web searched merchant when selecting a merchant
 }
 
 function cancelSelection() {
@@ -54,15 +55,15 @@ const merchants = computed(() => useMerchantStore().merchants.filter(m => {
 	return !search.value.trim() || m.name.toLowerCase().includes(search.value.trim().toLowerCase());
 }));
 
-
-const webSearchedMerchant = ref<Merchant | null>(null);
+// const webSearchedMerchant = ref<Merchant | null>(null);
 const isSearchingForWebMerchant = ref(false);
-async function searchMerchant() {
-	if (!transactionId.value) return;
+async function searchMerchantDetails() {
+	if (!transactionId.value || !editingMerchant.value) return;
 	isSearchingForWebMerchant.value = true;
 	try {
 		const { data } = await request.get('/merchant/findTransactionMerchant/' + transactionId.value);
-		webSearchedMerchant.value = data.data;
+		// webSearchedMerchant.value = data.data;
+		editingMerchant.value = data.data;
 	} catch (error) {
 		useToast().add({
 			severity: 'error',
@@ -74,37 +75,9 @@ async function searchMerchant() {
 	}
 }
 
-const isSavingWebMerchant = ref(false);
-async function selectWebMerchant() {
-	if (!webSearchedMerchant.value) return;
-	if (isSavingWebMerchant.value) return; // Prevent multiple clicks
-
-	let newMerchant;
-	isSavingWebMerchant.value = true;
-	try {
-		if (webSearchedMerchant.value.merchant_id) {
-			newMerchant = webSearchedMerchant.value;
-		}
-		else {
-			newMerchant = await useMerchantStore().createMerchant(webSearchedMerchant.value);
-		}
-		selectMerchant(newMerchant);
-	} catch (error) {
-		console.error('Failed to create merchant from web search:', error);
-		// useToast().add({
-		// 	severity: 'error',
-		// 	summary: 'Error',
-		// 	detail: 'Failed to create merchant from web search. Please try again later.'
-		// });
-		return;
-	} finally {
-		isSavingWebMerchant.value = false;
-	}
-}
-
 const editingMerchantModal = ref<InstanceType<typeof DrawerModal> | null>(null);
 const isSavingMerchant = ref(false);
-const editingMerchant = ref<Merchant | null>(null);
+const editingMerchant = ref<MerchantDraft | null>(null);
 
 watch(editingMerchant, (newVal) => {
 	if (newVal) {
@@ -117,19 +90,35 @@ watch(editingMerchant, (newVal) => {
 async function editMerchant(merchant: Merchant) {
 	editingMerchant.value = jsonCopy(merchant);
 }
+async function draftNewMerchant() {
+	editingMerchant.value = {
+		name: '',
+		hostname: '',
+		logo: '',
+		detection_key: null,
+	};
+}
+const isCreatingMerchant = computed(() => {
+	return editingMerchant.value && !editingMerchant.value.merchant_id;
+});
 async function saveMerchant() {
 	if (!editingMerchant.value) return;
 	isSavingMerchant.value = true;
 	try {
-		await useMerchantStore().updateMerchant(editingMerchant.value);
+		if (editingMerchant.value.merchant_id) {
+			await useMerchantStore().updateMerchant(editingMerchant.value as Merchant);
+		}
+		else {
+			await useMerchantStore().createMerchant(editingMerchant.value);
+		}
 		editingMerchant.value = null; // Close the editor
 	} catch (error) {
 		console.error('Failed to save merchant:', error);
-		// useToast().add({
-		// 	severity: 'error',
-		// 	summary: 'Error',
-		// 	detail: 'Failed to save merchant. Please try again later.'
-		// });
+		toast.add({
+			severity: 'error',
+			summary: 'Error',
+			detail: 'Failed to save merchant. Please try again later.'
+		});
 	} finally {
 		isSavingMerchant.value = false;
 	}
@@ -170,39 +159,13 @@ const categoryOptions = computed(() => [{ value: undefined as any, label: 'None'
 			</div>
 
 			<div v-if="transactionId">
-				<Button v-if="!webSearchedMerchant"
+				<Button
 					icon="pi pi-plus"
-					:label="isSearchingForWebMerchant ? 'Searching...' : 'Search web for merchant'"
-					:disabled="isSearchingForWebMerchant"
+					label="Create new merchant..."
 					severity="secondary"
 					class="mt-2 mb-2"
-					@click="searchMerchant"
+					@click="draftNewMerchant"
 				/>
-
-				<div v-else>
-					<div class="flex align-items-center gap-3">
-						Web result:
-						<div class="flex-grow-1" />
-						<Button
-							size="small"
-							icon="pi pi-times"
-							severity="secondary"
-							class="p-button-rounded p-button-text"
-							@click="webSearchedMerchant = null"
-						/>
-					</div>
-					<div
-						class="flex align-items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 border-round"
-						@click="selectWebMerchant"
-					>
-						<AttributionAvatar
-							:image="webSearchedMerchant.logo"
-							style="width: 2rem; height: 2rem;"
-						/>
-						<div class="flex-grow-1">{{ webSearchedMerchant.name }}</div>
-						<i v-if="isSavingWebMerchant" class="pi pi-spin pi-spinner" />
-					</div>
-				</div>
 			</div>
 
 			<div class="searchbar">
@@ -235,7 +198,7 @@ const categoryOptions = computed(() => [{ value: undefined as any, label: 'None'
 
 	<DrawerModal
 		ref="editingMerchantModal"
-		:title="`Edit Merchant`"
+		:title="isCreatingMerchant ? 'New Merchant' : 'Edit Merchant'"
 	>
 		<template #default v-if="editingMerchant">
 			<div class="flex flex-column gap-2 details-rows">
@@ -249,7 +212,10 @@ const categoryOptions = computed(() => [{ value: undefined as any, label: 'None'
 				</div>
 				<div class="row">
 					<label>Logo URL</label>
-					<InputText v-model="editingMerchant.logo" placeholder="Merchant Logo URL" />
+					<div class="flex align-items-center gap-2">
+						<InputText v-model="editingMerchant.logo" placeholder="Merchant Logo URL" />
+						<AttributionAvatar :image="editingMerchant.logo" :size="2" :key="editingMerchant.logo || ''" />
+					</div>
 				</div>
 				<div class="row">
 					<label>Category Key</label>
@@ -264,7 +230,18 @@ const categoryOptions = computed(() => [{ value: undefined as any, label: 'None'
 				</div>
 			</div>
 			<br />
-			<div class="flex justify-content-end gap-2">
+			<div class="flex gap-2">
+				<Button
+					icon="pi pi-globe"
+					:label="isSearchingForWebMerchant ? 'Searching...' : 'Search web'"
+					:disabled="isSearchingForWebMerchant"
+					severity="secondary"
+					class="mt-2 mb-2"
+					@click="searchMerchantDetails"
+				/>
+				
+				<div class="flex-grow-1" />
+				
 				<Button
 					class="p-button-text"
 					label="Cancel"

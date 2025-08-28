@@ -5,8 +5,8 @@ import axios from "axios";
 import { TransactionRuleDao } from "server/data/TransactionRuleDao";
 
 type MerchantSearchResult = {
-	merchant: MerchantDraft,
-	createdMerchant?: Merchant,
+	existingMerchant?: Merchant,
+	newMerchant?: MerchantDraft,
 	transactions: Array<Transaction>,
 	identifier: string,
 }
@@ -27,9 +27,8 @@ export default class MerchantService {
 	 * Receives new transactions for which a known merchant was not identified.
 	 * Searches the web for merchants that match the transaction description.
 	 * Checks known merchants for a match, to update the auto-assigning rules if needed.
-	 * Creates new merchants if no existing match is found.
 	 */
-	public static async searchForTransactionMerchants(transactions: Array<Transaction>, save = false) {
+	public static async searchForTransactionMerchants(transactions: Array<Transaction>) {
 		// Small efficiency gain: group transaction that look like they could be the same merchant
 		// so we don't have to repeat the same search for each transaction.
 		const identifiersAndTransactions = transactions.reduce((acc, tx) => {
@@ -41,7 +40,7 @@ export default class MerchantService {
 			return acc;
 		}, new Map<string, Array<Transaction>>());
 
-		const results = await Promise.all(Array.from(identifiersAndTransactions.entries()).map(async ([identifier, transactions]) => {
+		const results: Array<MerchantSearchResult | void> = await Promise.all(Array.from(identifiersAndTransactions.entries()).map(async ([identifier, transactions]) => {
 			if (!identifier) {
 				return; // Skip empty identifiers
 			}
@@ -51,30 +50,38 @@ export default class MerchantService {
 				const firstTransactionBreakdown = TransactionUtils.extractDescriptionInfo(transactions[0].original_description);
 				const location = firstTransactionBreakdown?.location_full || `${firstTransactionBreakdown?.location_city || ''} ${firstTransactionBreakdown?.location_region || ''}`.trim();
 				const bestWebsite = await CompanySearchService.doCompanySearch(identifier, location);
+
 				if (!bestWebsite) {
 					console.warn(`No website found for identifier: ${identifier}`);
 					return;
 				}
 
+				console.log(`Best website for "${identifier}":`, bestWebsite.origin);
+
 				// Lookup existing merchant by hostname
 				const existingMerchant = await MerchantDao.getMerchantByHostname(bestWebsite.hostname);
 				if (existingMerchant) {
 					console.log(`Found existing merchant for ${identifier}:`, existingMerchant);
-					return { merchant: existingMerchant, transactions, identifier } as MerchantSearchResult;
+					return { existingMerchant, transactions, identifier };
 				}
 
+				console.log("HERE 3")
+
 				// Load website HTML and find icons
-				const websiteData = await CompanySearchService.extractWebsiteData(bestWebsite, identifier);
-				const nameFromHtml = websiteData.name;
+				const websiteData = await CompanySearchService.extractWebsiteData(bestWebsite);
+
+				console.log("HERE 4", websiteData)
+				const bestName = CompanySearchService.chooseBestName([...websiteData.nameCandidates, identifier], identifier);
 				let logoPath = websiteData.logo;
 
 				// Create new merchant
 				let newMerchant: MerchantDraft = {
-					name: nameFromHtml || identifier,
+					name: bestName || identifier,
 					hostname: bestWebsite.hostname,
 					logo: logoPath || null,
 				};
-				return { merchant: newMerchant, transactions, identifier } as MerchantSearchResult;
+				console.log(`Returning new merchant for ${identifier}:`, newMerchant);
+				return { newMerchant, transactions, identifier };
 			}
 			catch (error) {
 				console.error(`Error searching for merchant for identifier "${identifier}":`, error);
@@ -84,20 +91,20 @@ export default class MerchantService {
 
 		let successfulResults = results.filter(result => !!result);
 
-		if (save) {
-			// Create new rules to auto-assign these merchants in the future
-			successfulResults = await Promise.all(successfulResults.map(async (entry) => {
-				const createdMerchant = await MerchantDao.createMerchant('', entry.merchant);
-				await TransactionRuleDao.createTransactionRule({
-					filter: [{ property: 'Transaction.original_description', operator: 'inc', operand: entry.identifier }],
-					actions: [{ action: 'merchant_id', value: createdMerchant.merchant_id }]
-				})
-				return {
-					...entry,
-					createdMerchant: createdMerchant,
-				}
-			}));
-		}
+		// if (save) {
+		// 	// Create new rules to auto-assign these merchants in the future
+		// 	successfulResults = await Promise.all(successfulResults.map(async (entry) => {
+		// 		const createdMerchant = await MerchantDao.createMerchant('', entry.merchant);
+		// 		await TransactionRuleDao.createTransactionRule({
+		// 			filter: [{ property: 'Transaction.original_description', operator: 'inc', operand: entry.identifier }],
+		// 			actions: [{ action: 'merchant_id', value: createdMerchant.merchant_id }]
+		// 		})
+		// 		return {
+		// 			...entry,
+		// 			createdMerchant: createdMerchant,
+		// 		}
+		// 	}));
+		// }
 
 		return successfulResults;
 	}

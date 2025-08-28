@@ -28,7 +28,7 @@ const accountStore = useAccountStore();
 const categoryStore = useCategoryStore();
 
 const currencyModeComputed = computed(() => {
-	if (props.event.attributionDetails?.isTransferPair) {
+	if (!props.showTransferCopy && props.event.attributionDetails?.isTransferPair) {
 		return 'none';
 	}
 	return props.currencyMode;
@@ -40,23 +40,21 @@ const isPending = computed(() => props.event.attributionDetails?.sourceTransacti
 <template>
 	<div
 		v-if="showTransferCopy || !event.attributionDetails?.isTransferCopy"
-		class="flex align-items-center gap-3"
-		:class="{ 'opacity-50': isPending, clickable }"
+		class="event-row flex align-items-center gap-3 py-2"
+		:class="{ 'opacity-70': isPending, clickable }"
 	>
 		<!-- Avatar with badges -->
-		<div>
-			<AttributionAvatar :event="event" :size="size">
-				<template #badge v-if="event.attributionDetails?.isSplit">
-					<Icon source_id="arrow_split" source="material-symbols" />
-				</template>
-				<template #badge v-if="event.attributionDetails?.isTransferPair">
-					<Icon source_id="sync_alt" source="material-symbols" />
-				</template>
-				<template #badge v-if="event.projectionDetails">
-					<i class="pi pi-wallet" style="font-size: 0.95em" />
-				</template>
-			</AttributionAvatar>
-		</div>
+		<AttributionAvatar :event="event" :size="size">
+			<template #badge v-if="event.attributionDetails?.isSplit">
+				<Icon source_id="arrow_split" source="material-symbols" />
+			</template>
+			<template #badge v-if="event.attributionDetails?.isTransferPair">
+				<Icon source_id="sync_alt" source="material-symbols" />
+			</template>
+			<template #badge v-if="event.projectionDetails">
+				<i class="pi pi-wallet" style="font-size: 0.95em" />
+			</template>
+		</AttributionAvatar>
 
 		<!-- Main content area -->
 		<div class="flex flex-column w-full min-w-0">
@@ -70,8 +68,7 @@ const isPending = computed(() => props.event.attributionDetails?.sourceTransacti
 				</div>
 				<div style="flex-grow: 1"></div>
 				<div class="font-medium flex align-items-center gap-1">
-					<span v-if="isPending">PENDING</span>
-					<Icon v-if="event.attributionDetails?.isTransferPair" source_id="sync_alt" source="material-symbols" />
+					<Icon v-if="!props.showTransferCopy && event.attributionDetails?.isTransferPair" source_id="sync_alt" source="material-symbols" />
 					<Currency :amount="event.amount" :mode="currencyModeComputed" />
 				</div>
 			</div>
@@ -90,16 +87,24 @@ const isPending = computed(() => props.event.attributionDetails?.sourceTransacti
 					</template>
 				</small>
 				<div class="flex-grow-1"></div>
-				<small class="white-space-nowrap" v-if="!hideDate">
+				<small class="white-space-nowrap" v-if="!hideDate && !isPending">
 					{{ event.date.formatShort() }}
 				</small>
+				<small v-if="isPending">PENDING</small>
 			</div>
 		</div>
 	</div>
 </template>
 
 <style scoped lang="scss">
+.event-row:not(:last-child) {
+	border-bottom: 1px solid #eee;
+}
+
 .clickable {
 	cursor: pointer;
+	&:hover {
+		background-color: var(--color-background-soft);
+	}
 }
 </style>

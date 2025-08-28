@@ -57,6 +57,9 @@ defineExpose({
 				>
 					<slot></slot>
 					<template #closebutton><div></div></template>
+					<template v-for="(slotFn, name) in $slots" #[name]="slotProps">
+						<slot :name="name" v-bind="slotProps" />
+					</template>
 				</Dialog>
 
 				<!-- Drawer for mobile view -->
@@ -69,6 +72,9 @@ defineExpose({
 				>
 					<slot></slot>
 					<template #closebutton><div></div></template>
+					<template v-for="(slotFn, name) in $slots" #[name]="slotProps">
+						<slot :name="name" v-bind="slotProps" />
+					</template>
 				</Drawer>
 			</template>
 		</template>

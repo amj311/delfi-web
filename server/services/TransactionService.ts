@@ -129,12 +129,12 @@ export class TransactionService {
 		// NOTE! This expects that createdTransactions have been updated with a merchant_id if applicable by the rules.
 		const transactionsWithoutMerchants = createdTransactions.filter(tx => !tx.merchant_id);
 		if (transactionsWithoutMerchants.length > 0) {
-			const merchantResults = await MerchantService.searchForTransactionMerchants(transactionsWithoutMerchants, true);
-			await Promise.all(merchantResults.map(async ({ createdMerchant, transactions }) => {
-				if (createdMerchant) {
+			const merchantResults = await MerchantService.searchForTransactionMerchants(transactionsWithoutMerchants);
+			await Promise.all(merchantResults.map(async ({ existingMerchant, transactions }) => {
+				if (existingMerchant) {
 					// Update all transactions with the new merchant
 					await Promise.all(transactions.map(tx => {
-						tx.merchant_id = createdMerchant.merchant_id;
+						tx.merchant_id = existingMerchant.merchant_id;
 						return TransactionDao.patchTransaction(workspace_id, tx.transaction_id, tx);
 					}));
 				}

@@ -29,7 +29,7 @@ export default class CompanySearchService {
 				return null;
 			}
 
-			// console.log(`🔍 Searching for company: ${identifier}, ${locationSearch}`);
+			console.log(`🔍 Searching for company: ${identifier}, ${locationSearch}`);
 
 			/**
 			 * Do TOW Searches! Some small local businesses do better with location info,
@@ -53,6 +53,7 @@ export default class CompanySearchService {
 
 			const allResults = await Promise.all(searchStrings.map(async (searchStr, i) => {
 				// Mind the rate limit
+				console.log("searching for ", searchStr);
 				await new Promise(resolve => setTimeout(resolve, i * 2000)); // stagger requests
 				return await axios.post('https://api.langsearch.com/v1/web-search', {
 					query: searchStr,
@@ -65,6 +66,8 @@ export default class CompanySearchService {
 				});
 			}));
 
+			console.log("HERE 1")
+
 			// Extract and score the search results
 			const webPages = allResults.flatMap(response => response.data.data.webPages.value.filter((page: any) => {;
 				// skip known problematic search results like yelp, restaurantji, etc
@@ -72,6 +75,7 @@ export default class CompanySearchService {
 				return !badSites.some(badSite => page.url.includes(badSite));
 			}));
 
+			console.log("HERE 2")
 			const scoredResults: CompanySearchResult[] = webPages.map(page => {
 				const url = page.url;
 				const origin = new URL(url).origin;
@@ -91,7 +95,7 @@ export default class CompanySearchService {
 				return result;
 			});
 
-			// console.log('Company search results:', scoredResults);
+			console.log('Company search results:', scoredResults);
 
 			// Sort results by score (highest first)
 			return scoredResults.sort((a, b) => b.score - a.score)[0];
@@ -159,20 +163,32 @@ export default class CompanySearchService {
 		return Math.min(100, Math.max(0, score));
 	}
 
-	public static async extractWebsiteData(result: CompanySearchResult, identifier: string): Promise<{ name: string | null, logo: string | null }> {
-		const { data } = await axios.get(result.origin);
-		const html = data as string;
+	public static async extractWebsiteData(result: CompanySearchResult): Promise<{ nameCandidates: string[], logo: string | null }> {
+		console.log("HERE 9")
+		let html;
+		try {
+			const { data } = await axios.get(result.origin, { timeout: 5000 });
+			html = data as string;
+		}
+		catch (error) {
+			console.error(`Could not fetch website HTML for ${result.origin}`);
+			return { nameCandidates: [], logo: null };
+		}
+		console.log("HERE 10")
 
+		console.log("HERE 5")
 		const namesFromHtml = CompanySearchService.extractNamesFromHtml(html);
-		const bestName = CompanySearchService.chooseBestName([...namesFromHtml, result.title, identifier], identifier);
+		console.log("HERE 6")
 
+		console.log("HERE 7")
 		let logoPath = CompanySearchService.extractLogoFromHtml(html);
+		console.log("HERE 8")
 		if (logoPath && !logoPath.startsWith('http')) {
 			logoPath = new URL(logoPath, result.origin).href; // Make absolute URL
 		}
 
 		return {
-			name: bestName,
+			nameCandidates: namesFromHtml,
 			logo: logoPath
 		};
 	}
@@ -313,7 +329,7 @@ export default class CompanySearchService {
 	 * @param knownIdentifier 
 	 * @returns 
 	 */
-	private static chooseBestName(candidates: Array<string>, knownIdentifier: string): string | null {
+	public static chooseBestName(candidates: Array<string>, knownIdentifier: string): string | null {
 		// Split title or site_name into parts and decode HTML entities
 		const nameCandidates = candidates.map(part => part.trim()).filter(Boolean).map(part => ({
 			part,
