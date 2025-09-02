@@ -19,6 +19,12 @@ const commonInclude = {
 	},
 	Merchant: true,
 	TransferPair: true,
+	TransactionReview: {
+		include: {
+			ReviewedBy: true,
+			AssignedTo: true,
+		}
+	},
 };
 const commonOrder: any = [
 	{ pending: 'desc' }, // Show pending transactions first
@@ -78,6 +84,8 @@ export const TransactionDao = {
 				Tags: attr.Tags,
 				Group: attr.Group || null,
 			})),
+
+			TransactionReview: dbTransaction.TransactionReview || null,
 		};
 	},
 

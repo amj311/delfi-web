@@ -44,7 +44,6 @@ export class SyncService {
 				last_successful_sync: new Date(),
 			});
 			await TransactionService.syncNewTransactionsForAccount(workspace_id, account.account_id, result.transactions);
-
 		}));
 
 		// await PlaidService.searchForPlaidTransactionData(workspace_id);

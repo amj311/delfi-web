@@ -66,8 +66,6 @@ export default class CompanySearchService {
 				});
 			}));
 
-			console.log("HERE 1")
-
 			// Extract and score the search results
 			const webPages = allResults.flatMap(response => response.data.data.webPages.value.filter((page: any) => {;
 				// skip known problematic search results like yelp, restaurantji, etc
@@ -75,7 +73,6 @@ export default class CompanySearchService {
 				return !badSites.some(badSite => page.url.includes(badSite));
 			}));
 
-			console.log("HERE 2")
 			const scoredResults: CompanySearchResult[] = webPages.map(page => {
 				const url = page.url;
 				const origin = new URL(url).origin;
@@ -164,7 +161,6 @@ export default class CompanySearchService {
 	}
 
 	public static async extractWebsiteData(result: CompanySearchResult): Promise<{ nameCandidates: string[], logo: string | null }> {
-		console.log("HERE 9")
 		let html;
 		try {
 			const { data } = await axios.get(result.origin, { timeout: 5000 });
@@ -174,15 +170,8 @@ export default class CompanySearchService {
 			console.error(`Could not fetch website HTML for ${result.origin}`);
 			return { nameCandidates: [], logo: null };
 		}
-		console.log("HERE 10")
-
-		console.log("HERE 5")
 		const namesFromHtml = CompanySearchService.extractNamesFromHtml(html);
-		console.log("HERE 6")
-
-		console.log("HERE 7")
 		let logoPath = CompanySearchService.extractLogoFromHtml(html);
-		console.log("HERE 8")
 		if (logoPath && !logoPath.startsWith('http')) {
 			logoPath = new URL(logoPath, result.origin).href; // Make absolute URL
 		}

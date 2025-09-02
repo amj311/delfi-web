@@ -62,12 +62,12 @@ const isPending = computed(() => props.event.attributionDetails?.sourceTransacti
 			<div class="flex align-items-center gap-2">
 				<div class="flex align-items-center w-full min-w-0">
 					<div class="text-ellipsis">
-						<span class="font-medium">{{ event.displayName }}</span>
+						<span class="font-medium" :class="{'review-bold': event.attributionDetails?.needsReview}">{{ event.displayName }}</span>
 						<small v-if="event.attributionDetails?.memo"> &nbsp;- {{ event.attributionDetails.softDescription }} </small>
 					</div>
 				</div>
 				<div style="flex-grow: 1"></div>
-				<div class="font-medium flex align-items-center gap-1">
+				<div class="font-medium flex align-items-center gap-1" :class="{'review-bold': event.attributionDetails?.needsReview}">
 					<Icon v-if="!props.showTransferCopy && event.attributionDetails?.isTransferPair" source_id="sync_alt" source="material-symbols" />
 					<Currency :amount="event.amount" :mode="currencyModeComputed" />
 				</div>
@@ -93,10 +93,21 @@ const isPending = computed(() => props.event.attributionDetails?.sourceTransacti
 				<small v-if="isPending">PENDING</small>
 			</div>
 		</div>
+
+
+		<div v-if="event.attributionDetails?.needsReview" class="review-dot" />
 	</div>
 </template>
 
 <style scoped lang="scss">
+.event-row {
+	position: relative;
+}
+
+.review-bold {
+	font-weight: 600 !important;
+}
+
 .event-row:not(:last-child) {
 	border-bottom: 1px solid #eee;
 }
@@ -106,5 +117,16 @@ const isPending = computed(() => props.event.attributionDetails?.sourceTransacti
 	&:hover {
 		background-color: var(--color-background-soft);
 	}
+}
+
+
+.review-dot {
+	position: absolute;
+	top: 8px;
+	left: -4px;
+	width: 10px;
+	aspect-ratio: 1;
+	border-radius: 50%;
+	background-color: rgb(80, 198, 238);
 }
 </style>

@@ -212,7 +212,7 @@ export class TestDataService {
 				Category: categoryByName("Auto Insurance"),
 			},
 
-			{ // Clozd fulltime
+			{
 				budget_id: 'd4e5f6a7-8901-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Clozd Salary",
@@ -228,6 +228,24 @@ export class TestDataService {
 				category_id: categoryByName("Paycheck").category_id,
 				Category: categoryByName("Paycheck"),
 			},
+
+			{
+				budget_id: '7c13f6a7-8901-abcd-ef01-234567895f3b',
+				budgetType: BudgetType.TRANSACTION,
+				memo: "Clozd Bonus",
+				account_id: getAccountByName('Checking').account_id,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-01-01', frequency: 'MONTHLY', byDayOfMonth: [27], interval: 3 },
+					amountTemplate: {
+						type: 'fixed',
+						amount: 800,
+					}
+				}],
+				category_id: categoryByName("Bonus").category_id,
+				Category: categoryByName("Bonus"),
+			},
+
 			{
 				budget_id: 'c5d6e7f8-9012-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,

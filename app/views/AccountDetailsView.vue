@@ -509,7 +509,6 @@ function viewTransaction(transaction: Transaction) {
 
 .transactions-list {
 	width: 100%;
-	overflow-x: auto;
 }
 
 table {

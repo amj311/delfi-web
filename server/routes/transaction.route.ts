@@ -22,5 +22,16 @@ export default (app, _, done) => {
 		};
 	});
 
+	app.post('/:transaction_id/review', async function handler (request, reply) {
+		const workspace_id = request.sessionUser.workspace_id;
+		const user_id = request.sessionUser.user_id;
+		const { transaction_id } = request.params;
+		const data = await TransactionService.markTransactionReviewed(workspace_id, transaction_id, user_id);
+		return {
+			success: true,
+			data,
+		};
+	});
+
     done();
 };

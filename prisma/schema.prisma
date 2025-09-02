@@ -15,12 +15,13 @@ model User {
     created_at DateTime @default(now())
     updated_at DateTime @default(now()) @updatedAt
 
-    auth_id              String        @unique
-    email                String        @unique
-    given_name           String
-    family_name          String
-    Workspaces           Workspace[]
-    AssignedTransactions Transaction[]
+    auth_id            String              @unique
+    email              String              @unique
+    given_name         String
+    family_name        String
+    Workspaces         Workspace[]
+    AssignedReviews    TransactionReview[] @relation("AssignedTo")
+    TransactionReviews TransactionReview[] @relation("ReviewedBy")
 }
 
 model Workspace {
@@ -35,11 +36,12 @@ model Workspace {
     Budgets                  Budget[]
     categories               Category[]
     tags                     Tag[]
-    Transaction              Transaction[]
-    PlaidItem                PlaidItem[]
-    CategoryDetectionMapping CategoryDetectionMapping[]
-    Group                    BudgetGroup[]
-    TransactionRule          TransactionRule[]
+    Transactions              Transaction[]
+    PlaidItems                PlaidItem[]
+    CategoryDetectionMappings  CategoryDetectionMapping[]
+    Groups                    BudgetGroup[]
+    TransactionRules          TransactionRule[]
+    TransactionReviews        TransactionReview[]
 }
 
 model Institution {
@@ -381,10 +383,6 @@ model Transaction {
     source_data Json? // e.g. plaid transaction data, imported transaction data
     plaid_data  Json? // e.g. plaid transaction data, if available
 
-    needs_review Boolean @default(false)
-    Assignee     User?   @relation(fields: [assignee_id], references: [user_id])
-    assignee_id  String?
-
     // A single transaction cannot be split between accounts
     Account      Account                  @relation(fields: [account_id], references: [account_id])
     account_id   String
@@ -399,9 +397,10 @@ model Transaction {
     Workspace    Workspace @relation(fields: [workspace_id], references: [workspace_id])
     workspace_id String
 
-    TransferPair     Transaction? @relation("TransferPair", fields: [transfer_pair_id], references: [transaction_id])
-    TransferPairSelf Transaction? @relation("TransferPair")
-    transfer_pair_id String?      @unique
+    TransferPair      Transaction?       @relation("TransferPair", fields: [transfer_pair_id], references: [transaction_id])
+    TransferPairSelf  Transaction?       @relation("TransferPair")
+    transfer_pair_id  String?            @unique
+    TransactionReview TransactionReview?
 }
 
 // To keep like data all in one place, this table holds data for ALL transactions, even without splits
@@ -465,4 +464,22 @@ model TransactionRuleAction {
 
     action String // e.g. "set_category", "set_tag", "set_budget", etc.
     value  String // Either a specific value or a JSON string
+}
+
+model TransactionReview {
+    transaction_review_id String   @id @default(uuid())
+    created_at            DateTime @default(now())
+    updated_at            DateTime @default(now()) @updatedAt
+
+    transaction_id String      @unique
+    Transaction    Transaction @relation(fields: [transaction_id], references: [transaction_id])
+    Workspace      Workspace   @relation(fields: [workspace_id], references: [workspace_id])
+    workspace_id   String
+
+    AssignedTo     User?     @relation(name: "AssignedTo", fields: [assigned_to_id], references: [user_id])
+    assigned_to_id String?
+    ReviewedBy     User?     @relation(name: "ReviewedBy", fields: [reviewed_by_id], references: [user_id])
+    reviewed_by_id String?
+    reviewed_at    DateTime?
+    dismissed_at   DateTime?
 }

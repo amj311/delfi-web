@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, defineComponent, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { TransactionUtils, type Transaction } from 'delfi-core/models/Transaction';
 import Currency from './Currency.vue';
 import { useAccountStore } from '@/stores/account.store';
@@ -21,6 +21,7 @@ import { useToast } from 'primevue/usetoast';
 import { v4 as uuid } from 'uuid';
 import MerchantSelectionDrawer from './MerchantSelectionDrawer.vue';
 import { useContextStore } from '@/stores/context.store';
+import { ddate } from 'delfi-core/utils/dateUtils';
 
 const toast = useToast();
 
@@ -269,19 +270,64 @@ function cancelTransferPair() {
 	}
 }
 
+const transferPairModal = ref<InstanceType<typeof DrawerModal> | null>(null);
+function openTransferPairModal() {
+	if (transferPairModal.value) {
+		transferPairModal.value.open();
+	}
+}
+function setTransferPair(t: Transaction) {
+	transaction.value.TransferPair = t;
+	transaction.value.transfer_pair_id = t.transaction_id;
+	transferPairModal.value?.close();
+}
+
 async function breakTransferPair() {
 	console.log('Breaking transfer pair');
 	if (!isTransferPair.value) {
 		return;
 	}
-	if (!(await usePrompt().delete({
-		title: 'Delete Transfer Pair',
-		message: 'Are you sure you want to remove this transfer pair?',
-	}))) {
+	if (
+		!(await usePrompt().delete({
+			title: 'Delete Transfer Pair',
+			message: 'Are you sure you want to remove this transfer pair?',
+		}))
+	) {
 		return;
 	}
 	transaction.value.transfer_pair_id = null;
 	transaction.value.TransferPair = null;
+}
+
+
+/****************
+ * REVIEWS
+ */
+
+const needsReview = computed(() => {
+	return transaction.value.TransactionReview && !transaction.value.TransactionReview.reviewed_at && !transaction.value.TransactionReview.dismissed_at;
+});
+
+async function reviewTransaction() {
+	try {
+		await TransactionService.markTransactionReviewed(transaction.value.transaction_id);
+		transaction.value.TransactionReview = {
+			...transaction.value.TransactionReview!,
+			reviewed_at: new Date(),
+		};
+		toast.add({
+			severity: 'success',
+			summary: 'Transaction Reviewed',
+			detail: 'The transaction has been marked as reviewed.',
+		});
+	} catch (error) {
+		console.error('Error reviewing transaction:', error);
+		toast.add({
+			severity: 'error',
+			summary: 'Error',
+			detail: 'Failed to mark transaction as reviewed. Please try again later.',
+		});
+	}
 }
 
 /***************
@@ -320,24 +366,13 @@ const sourceAccount = computed(() => {
 	return useAccountStore().getAccountById(transferSource.value?.account_id);
 });
 
-const transferPairModal = ref<InstanceType<typeof DrawerModal> | null>(null);
-function openTransferPairModal() {
-	if (transferPairModal.value) {
-		transferPairModal.value.open();
-	}
-}
-function setTransferPair(t: Transaction) {
-	transaction.value.TransferPair = t;
-	transaction.value.transfer_pair_id = t.transaction_id;
-	transferPairModal.value?.close();
-}
 </script>
 
 <template>
 	<NavTriggerDrawer ref="triggerRef" :triggerKey="'transaction-details'">
 		<div class="flex flex-column h-full">
 			<div class="flex align-items-center gap-3">
-				<div><AttributionAvatar :event="avatarDetails" :size="3" /></div>
+				<AttributionAvatar :event="avatarDetails" :size="3" />
 				<div class="flex-frow-1 min-w-0">
 					<h3 class="m-0 text-ellipsis w-full min-w-0">{{ headerTitle }}</h3>
 					<div>{{ transaction.date.formatFull() }}</div>
@@ -400,7 +435,17 @@ function setTransferPair(t: Transaction) {
 				</div>
 			</template>
 
-			<br />
+			<div class="mt-3"></div>
+
+			<!-- REVIEW -->
+			<div v-if="needsReview" class="py-3 px-3 bg-blue-100 border-round mb-3 flex align-items-center gap-3">
+				<div>
+					<p class="font-semibold">Review Transaction</p>
+					<p>Is this transaction good-to-go?</p>
+				</div>
+				<div class="flex-grow-1"></div>
+				<Button severity="info" icon="pi pi-thumbs-up" size="large" @click="reviewTransaction" />
+			</div>
 
 			<div v-for="(attribution, i) in transaction.Attributions" :key="attribution.transaction_attribution_id">
 				<h4 v-if="isSplit" class="flex align-items-center gap-2 mt-2 px-1 py-1 bg-black-alpha-10 border-round-sm">
@@ -498,14 +543,21 @@ function setTransferPair(t: Transaction) {
 						<Textarea v-model="notesDraft" rows="3" class="w-full" />
 					</div>
 				</div>
+				<div v-if="transaction.TransactionReview?.reviewed_at" class="my-3 flex align-items-center gap-2 text-black-alpha-50">
+					<i class="pi pi-check-circle" />
+					<small>Reviewed by {{ transaction.TransactionReview.ReviewedBy?.given_name }} {{ transaction.TransactionReview.ReviewedBy?.family_name }} on {{ ddate(transaction.TransactionReview?.reviewed_at).formatFull() }}</small>
+				</div>
 			</div>
 
 			<div class="flex-grow-1" />
 
+			<!-- SPLITS -->
 			<Button v-if="!isTransferPair" class="w-full" text @click="openSplitModal">
 				<Icon source_id="arrow_split" source="material-symbols" />
 				{{ isSplit ? 'Manage Splits' : 'Split Transaction' }}
 			</Button>
+
+			<!-- TRANSFER PAIRS -->
 			<Button v-if="!isSplit && !isTransferPair" class="w-full" text @click="openTransferPairModal">
 				<Icon source_id="compare_arrows" source="material-symbols" />
 				Create transfer pair

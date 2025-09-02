@@ -65,12 +65,9 @@ export default class MerchantService {
 					return { existingMerchant, transactions, identifier };
 				}
 
-				console.log("HERE 3")
-
 				// Load website HTML and find icons
 				const websiteData = await CompanySearchService.extractWebsiteData(bestWebsite);
 
-				console.log("HERE 4", websiteData)
 				const bestName = CompanySearchService.chooseBestName([...websiteData.nameCandidates, identifier], identifier);
 				let logoPath = websiteData.logo;
 

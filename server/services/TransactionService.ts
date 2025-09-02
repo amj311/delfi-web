@@ -3,6 +3,7 @@ import { ddate, type DelfiDate } from "delfi-core/utils/dateUtils";
 import { TransactionDao } from "server/data/TransactionDao";
 import { TransactionRuleService } from "./TransactionRuleService";
 import MerchantService from "./MerchantService";
+import { TransactionReviewDao } from "server/data/TransactionReviewDao";
 
 export class TransactionService {
 	private static async createTransaction(workspace_id: string, transactionData: CreateTransaction) {
@@ -109,7 +110,7 @@ export class TransactionService {
 		}
 
 		// THEN UPSERT NEW TRANSACTIONS
-		const results = await Promise.all(filteredIncoming.map(async (transaction) => {
+		const upsertResults = await Promise.all(filteredIncoming.map(async (transaction) => {
 			transaction.account_id = account_id;
 			// See if this transaction matches any old pending transactions (not any still pending)
 			const matchingOldPendingTransaction = noLongerPendingTransactions.find(t =>
@@ -118,16 +119,18 @@ export class TransactionService {
 			if (matchingOldPendingTransaction) {
 				// TODO copy attributions from pending
 			}
+
 			return await this.inPatchTransaction(workspace_id, transaction);
 		}));
 
-		// Apply rules to all NEW transactions
-		const createdTransactions = results.filter(result => result.created).map(result => result.transaction);
-		await TransactionRuleService.applyRulesToTransactions(workspace_id, createdTransactions);
+		const savedNewTransactions = upsertResults.filter(result => result.created).map(result => result.transaction);
 
-		// Find any missing merchants for new transactions.
-		// NOTE! This expects that createdTransactions have been updated with a merchant_id if applicable by the rules.
-		const transactionsWithoutMerchants = createdTransactions.filter(tx => !tx.merchant_id);
+		// Apply rules to all NEW transactions
+		await TransactionRuleService.applyRulesToTransactions(workspace_id, savedNewTransactions);
+
+		// Look for merchants for new transactions.
+		// NOTE! This expects that savedNewTransactions have been updated with a merchant_id if applicable by the rules.
+		const transactionsWithoutMerchants = savedNewTransactions.filter(tx => !tx.merchant_id);
 		if (transactionsWithoutMerchants.length > 0) {
 			const merchantResults = await MerchantService.searchForTransactionMerchants(transactionsWithoutMerchants);
 			await Promise.all(merchantResults.map(async ({ existingMerchant, transactions }) => {
@@ -141,7 +144,11 @@ export class TransactionService {
 			}));
 		}
 
-		return results;
+		// Request review for new transactions
+		const needsReview = savedNewTransactions.filter(result => !result.TransactionReview);
+		await Promise.all(needsReview.map(tx => TransactionService.requestTransactionReview(tx)));
+
+		return upsertResults;
 	}
 
 	private static determineAuthorizedDate(transaction: CreateTransaction): DelfiDate | null {
@@ -202,5 +209,24 @@ export class TransactionService {
 
 	public static async getTransactionsForAccount(workspace_id: string, account_id: string): Promise<Transaction[]> {
 		return await TransactionDao.getTransactionsForAccount(workspace_id, account_id);
+	}
+
+	/** Looks up workspace rules for assigning transactions and finds the user to assign the review to */
+	private static async requestTransactionReview(transaction: Transaction): Promise<void> {
+		// TODO implement workspace rules and settings for transaction reviews. For now create the pending review record without an assignment
+		await TransactionReviewDao.createTransactionReview(transaction.workspace_id, transaction.transaction_id);
+	}
+
+	public static async markTransactionReviewed(workspace_id, transaction_id: string, user_id?: string) {
+		const transaction = await TransactionDao.getTransactionById(transaction_id);
+		if (!transaction) {
+			throw new Error(`Transaction with ID ${transaction_id} not found`);
+		}
+		if (transaction.workspace_id !== workspace_id) {
+			throw new Error(`Transaction with ID ${transaction_id} does not belong to your workspace`);
+		}
+
+		const review = await TransactionReviewDao.markTransactionReviewed(workspace_id, transaction_id, user_id);
+		return review;
 	}
 };

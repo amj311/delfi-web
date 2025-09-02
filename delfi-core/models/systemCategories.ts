@@ -613,6 +613,12 @@ const defaultCategories = {
 		type: "INCOME",
 		parent_category_id: parentCategories["Income"].category_id
 	},
+	"Bonus": {
+		name: "Bonus",
+		category_id: "79a890d0-64d9-436b-a8d4-982b11272d56",
+		type: "INCOME",
+		parent_category_id: parentCategories["Income"].category_id
+	},
 	"Interest Earned": {
 		name: "Interest Earned",
 		category_id: "f26d6a29-64e9-443f-b2c3-81d2b9921142",

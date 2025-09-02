@@ -36,5 +36,15 @@ export const TransactionService = {
 			console.error('Error updating transaction:', error);
 			throw error;
 		}
+	},
+
+	async markTransactionReviewed(transactionId: string) {
+		try {
+			const response = await request.post(`/transactions/${transactionId}/review`);
+			return response.data;
+		} catch (error) {
+			console.error('Error marking transaction as reviewed:', error);
+			throw error;
+		}
 	}
 };

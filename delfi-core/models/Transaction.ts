@@ -146,6 +146,7 @@ export type Transaction = TrueBudgetableDetails & TrueEventDetails & {
 	workspace_id: string,
 	Attributions: TransactionAttribution[],
 	Merchant?: Merchant | null,
+	TransactionReview?: TransactionReview | null,
 }
 
 export type CreateTransaction = Omit<Transaction, 'transaction_id' | 'Attributions' | 'workspace_id'> & {
@@ -161,6 +162,7 @@ export type AttributionEventDetails = TransactionAttribution & {
 	softDescription: string,
 	isTransferPair: boolean,
 	isTransferCopy: boolean,
+	needsReview: boolean,
 }
 
 export type AttributionEvent = Replace<CommonEvent, {
@@ -178,6 +180,26 @@ export type Merchant = {
 }
 export type MerchantDraft = Optional<Merchant, 'merchant_id'>;
 
+export type TransactionReview = {
+	transaction_review_id: string,
+	transaction_id: string,
+	workspace_id: string,
+	created_at: Date,
+	updated_at: Date,
+	AssignedTo?: User,
+	ReviewedBy?: User,
+	assigned_to_id?: string | null,
+	reviewed_by_id?: string | null,
+	reviewed_at?: Date | null,
+	dismissed_at?: Date | null,
+}
+
+type User = {
+	user_id: string,
+	given_name: string,
+	family_name: string,
+	email: string,
+}
 
 export class TransactionUtils {
 	public static processAttributionEvents(transactions: Array<Transaction>) {
@@ -217,6 +239,7 @@ export class TransactionUtils {
 				isTransferPair: Boolean(transaction.transfer_pair_id),
 				isTransferCopy: Boolean(transaction.transfer_pair_id) && transaction.amount < 0,
 				BudgetChildItem,
+				needsReview: Boolean(transaction.TransactionReview && !transaction.TransactionReview.reviewed_at && !transaction.TransactionReview.dismissed_at),
 			},
 			projectionDetails: undefined,
 		};
@@ -478,15 +501,17 @@ export const DescriptionFormats = {
 		const match = regexp.exec(description);
 		if (!match?.groups) return null;
 
+		const type = match.groups.type.trim() as 'CR' | 'DR';
+
 		return {
 			format: 'P2P_PAYMENT',
-			simple_description: `${match.groups.service} Payment to ${match.groups.recipient.trim()}`,
+			simple_description: `${match.groups.service} Payment ${type === 'CR' ? 'from' : 'to'} ${match.groups.recipient.trim()}`,
 			p2p_service: match.groups.service,
 			p2p_recipient: match.groups.recipient.trim(),
 			p2p_identifier: match.groups.identifier.trim(),
 			p2p_transaction_id: match.groups.transaction_id.trim(),
 			date: ddate(match.groups.date.trim()),
-			p2p_type: match.groups.type.trim() as 'CR' | 'DR',
+			p2p_type: type,
 		}
 	}
 } as const;
