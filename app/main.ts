@@ -38,8 +38,7 @@ app.use(ConfirmationService);
 app.use(ToastService);
 
 (async () => {
-	const { data } = await request.get('firebase-config');
-	AuthService.setupAuth(data.data);
+	AuthService.setupAuth();
 })()
 
 app.mount('#app');

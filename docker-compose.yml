@@ -3,8 +3,10 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile.server.dev
-    container_name: delfi-server-dev
-    restart: unless-stopped
+    labels:
+      - "com.docker.compose.project=delfi"
+    container_name: delfi-server
+    restart: on-failure:max=2
     ports:
       - 5000:5000
     depends_on:
@@ -23,7 +25,7 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile.frontend.dev
-    container_name: delfi-frontend-dev
+    container_name: delfi-frontend
     restart: unless-stopped
     ports:
       - 5173:5173
@@ -41,6 +43,8 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile.db
+    labels:
+      - "com.docker.compose.project=delfi"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password

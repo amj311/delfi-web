@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   server:
     build:
@@ -9,10 +7,9 @@ services:
     labels:
       - "com.docker.compose.project=delfi"
     container_name: delfi-server
-    # command: yarn server:dev
     restart: on-failure:max=2
     ports:
-      - 3001:5000
+      - 3011:5000
     depends_on:
       - db
     links:
@@ -32,29 +29,30 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=delfi
     ports:
-      - 3002:5432
+      - 3012:5432
     volumes:
       - db-data:/var/lib/postgresql/data
 
-  # backup:
-  #   image: delfi-backup:latest
-  #   container_name: delfi-backup
-  #   restart: on-failure:max=2
-  #   build:
-  #     context: .
-  #     dockerfile: ./Dockerfile.backup
-  #   labels:
-  #     - "com.docker.compose.project=delfi"
-  #   environment:
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=password
-  #     - POSTGRES_DB=delfi
-  #   volumes:
-  #     - /home/arthur/backups:/backup-dir
-  #   depends_on:
-  #     - db
-  #   links:
-  #     - db
+  backup:
+    image: delfi-backup:latest
+    container_name: delfi-backup
+    restart: on-failure:max=2
+    build:
+      context: .
+      dockerfile: ./Dockerfile.backup
+    labels:
+      - "com.docker.compose.project=delfi"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=delfi
+    volumes:
+      # - /home/arthur/backups:/backup-dir
+      - /Users/Arthur/code/delfi-web/backups:/backup-dir
+    depends_on:
+      - db
+    links:
+      - db
 
 volumes:
   db-data:

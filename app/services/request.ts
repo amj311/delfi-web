@@ -1,8 +1,10 @@
 import axios from "axios";
 import { AuthService } from "./authService";
 
+const baseURL = window.location.href.includes('localhost:517') ? 'http://localhost:5000/api' : '/api'
+
 const instance = axios.create({
-	baseURL: 'https://localhost:5000',
+	baseURL,
 })
 
 instance.interceptors.request.use(async (config) => {

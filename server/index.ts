@@ -37,31 +37,36 @@ app.addHook('onResponse', (request, reply) => {
 });
 
 // authenticated routes
-app.register((authRoutes, _, done) => {
-	authRoutes.addHook('preValidation', firebaseAuthMiddleware);
+app.register((api, _, done) => {
+	api.addHook('preValidation', firebaseAuthMiddleware);
 
-	authRoutes.register(require('./routes/transaction.route'), { prefix: '/transactions' });
-	authRoutes.register(require('./routes/user.route'), { prefix: '/user' });
-	authRoutes.register(require('./routes/plaid.route'), { prefix: '/plaid' });
-	authRoutes.register(require('./routes/account.route'), { prefix: '/account' });
-	authRoutes.register(require('./routes/budget.route'), { prefix: '/budget' });
-	authRoutes.register(require('./routes/category.route'), { prefix: '/category' });
-	authRoutes.register(require('./routes/tag.route'), { prefix: '/tag' });
-	authRoutes.register(require('./routes/group.route'), { prefix: '/group' });
-	authRoutes.register(require('./routes/merchant.route'), { prefix: '/merchant' });
+	api.register(require('./routes/transaction.route'), { prefix: '/transactions' });
+	api.register(require('./routes/user.route'), { prefix: '/user' });
+	api.register(require('./routes/plaid.route'), { prefix: '/plaid' });
+	api.register(require('./routes/account.route'), { prefix: '/account' });
+	api.register(require('./routes/budget.route'), { prefix: '/budget' });
+	api.register(require('./routes/category.route'), { prefix: '/category' });
+	api.register(require('./routes/tag.route'), { prefix: '/tag' });
+	api.register(require('./routes/group.route'), { prefix: '/group' });
+	api.register(require('./routes/merchant.route'), { prefix: '/merchant' });
+
+
+	api.setNotFoundHandler((req, reply) => {
+		reply.status(404).send({ message: 'Not Found' });
+	})
 
 	done();
-}, { prefix: '/' });
+}, { prefix: '/api' });
 
 
-// // Serving the static app in PROD
-// app.register(require('@fastify/static'), {
-// 	root: path.join(__dirname, '../dist'),
-// });
-// app.setNotFoundHandler((req, reply) => {
-// 	const stream = createReadStream(path.join(__dirname, '../dist') + '/index.html'); // for app sub-routing
-// 	reply.type('text/html').send(stream)
-// })
+// Serving the static app in PROD
+app.register(require('@fastify/static'), {
+	root: path.join(__dirname, '../dist'),
+});
+app.setNotFoundHandler((req, reply) => {
+	const stream = createReadStream(path.join(__dirname, '../dist') + '/index.html'); // for app sub-routing
+	reply.type('text/html').send(stream)
+})
 
 app.setErrorHandler((error: any, request, reply) => {
 	console.error('\nError: ', error)
