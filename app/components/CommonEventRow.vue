@@ -16,6 +16,7 @@ interface Props {
 	showTransferCopy?: boolean;
 	hideAccount?: boolean;
 	clickable?: boolean;
+	expand?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -40,8 +41,8 @@ const isPending = computed(() => props.event.attributionDetails?.sourceTransacti
 <template>
 	<div
 		v-if="showTransferCopy || !event.attributionDetails?.isTransferCopy"
-		class="event-row flex align-items-center gap-3 py-2"
-		:class="{ 'opacity-70': isPending, clickable }"
+		class="event-row flex align-items-center gap-3"
+		:class="{ 'opacity-70': isPending, clickable, expand }"
 	>
 		<!-- Avatar with badges -->
 		<AttributionAvatar :event="event" :size="size">
@@ -101,32 +102,41 @@ const isPending = computed(() => props.event.attributionDetails?.sourceTransacti
 
 <style scoped lang="scss">
 .event-row {
+	--padding-x: 8px;
 	position: relative;
-}
+	padding: 6px var(--padding-x);
 
-.review-bold {
-	font-weight: 600 !important;
-}
+	&.expand {
+		margin-left: calc(var(--padding-x) * -1);
+		margin-right: calc(var(--padding-x) * -1);
+	}
 
-.event-row:not(:last-child) {
-	border-bottom: 1px solid #eee;
-}
+	&:not(:last-child) {
+		border-bottom: 1px solid #eee;
+	}
 
-.clickable {
-	cursor: pointer;
-	&:hover {
-		background-color: var(--color-background-soft);
+	&.clickable {
+		cursor: pointer;
+		&:hover {
+			background-color: var(--color-background-soft);
+		}
+	}
+
+
+	.review-bold {
+		font-weight: 600 !important;
+	}
+
+
+	.review-dot {
+		position: absolute;
+		top: 8px;
+		left: -4px;
+		width: 10px;
+		aspect-ratio: 1;
+		border-radius: 50%;
+		background-color: rgb(80, 198, 238);
 	}
 }
 
-
-.review-dot {
-	position: absolute;
-	top: 8px;
-	left: -4px;
-	width: 10px;
-	aspect-ratio: 1;
-	border-radius: 50%;
-	background-color: rgb(80, 198, 238);
-}
 </style>

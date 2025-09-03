@@ -12,8 +12,8 @@ export const useDelfiStore = defineStore('delfi', () => {
 	const isInitializing: Ref<boolean> = ref(true);
 	const isGeneratingForecast: Ref<boolean> = ref(false);
 
-	// begin with the previous month as hindsight
-	const projectionStart = ref<DelfiDate>(ddate().startOf('month').subtract(1, 'month'));
+	// begin with a few previous months as hindsight
+	const projectionStart = ref<DelfiDate>(ddate().startOf('month').subtract(3, 'month'));
 	const projectionEnd = ref<DelfiDate>(ddate().startOf('month').add(5, 'year'));
 
 	const reComputed = ref(0);

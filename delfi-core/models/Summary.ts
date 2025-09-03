@@ -121,7 +121,7 @@ export class BudgetSnapshot {
 		return this.withoutTransferCopies;
 	}
 
-	get childItemEvents() {
+	get childItemBudgets() {
 		return this.budgetEvents.filter(e => Boolean(e.BudgetChildItem)).map(e => {
 			const attributedEvents = this.attributedEvents.filter(a => a.budget_child_item_id === e.BudgetChildItem!.budget_child_item_id);
 			return {
@@ -134,6 +134,10 @@ export class BudgetSnapshot {
 				rangeTally: new RealityTally([e], attributedEvents),
 			};
 		});
+	}
+
+	get notChildBudgets() {
+		return this.childItemBudgets.filter(e => !e.BudgetChildItem);
 	}
 
 	get notChildAttributions(): AttributionEvent[] {
@@ -224,11 +228,11 @@ export class BudgetSnapshot {
 	}
 
 
-	progress(onDate?: DelfiDate) {
+	progress(onDate: DelfiDate = ddate()) {
 		const res = {
 			percent: 0,
 			pace: 0,
-			status: 'underPace', // 'underPace', 'overPace', 'overBudget',
+			status: 'underPace' as 'underPace' | 'onPace' | 'overPace' | 'overBudget',
 			visualization: {
 				normalizedPace: 0, // normalized pace for visualization
 				normalizedBudgetedNet: 0, // normalized budgeted net for visualization
@@ -241,14 +245,14 @@ export class BudgetSnapshot {
 		const budgetedNet = Math.abs(this.tally.budgetedNet);
 		const attributedNet = Math.abs(this.tally.attributedNet);
 		if (!budgetedNet) {
-			res.percent = 101;
+			res.percent = 100;
 			res.pace = 0;
 		} else {
 			res.percent = (attributedNet / budgetedNet) * 100;
-			// If the spent is NOT the same sign as the budgeted, use the sign to show it in the opposite direction
-			if (Math.sign(this.tally.budgetedNet) !== Math.sign(this.tally.attributedNet)) {
-				res.percent = -res.percent;
-			}
+			// // If the spent is NOT the same sign as the budgeted, use the sign to show it in the opposite direction
+			// if (Math.sign(this.tally.budgetedNet) !== Math.sign(this.tally.attributedNet)) {
+			// 	res.percent = -res.percent;
+			// }
 			res.pace = this.tally.budgetedNet > 0 ? attributedNet / budgetedNet : 0;
 		}
 
@@ -260,8 +264,11 @@ export class BudgetSnapshot {
 		if (res.percent > 101) {
 			res.status = 'overBudget';
 		}
-		else if (res.percent > res.pace) {
+		else if (res.percent > (res.pace + 1)) {
 			res.status = 'overPace';
+		}
+		else if (res.percent > (res.pace - 1)) {
+			res.status = 'onPace';
 		}
 		else {
 			res.status = 'underPace';

@@ -166,7 +166,7 @@ export default class BudgetUtils {
 	static createScheduledOccurrences(start: DelfiDate, end: DelfiDate, budget: ScheduledBudget): BudgetOccurrence[] {
 		const occurrences: BudgetOccurrence[] = [];
 		for (const variant of budget.scheduleVariants) {
-			const recurrenceDates = ScheduleService.delfi.getOccurrences(variant.schedule, { start, end });
+			const recurrenceDates = ScheduleService.delfi.getOccurrences(variant.schedule, { start, end }, true); // include ongoing occurrences
 			occurrences.push(...recurrenceDates.map((startDate) => {
 				const endDate = BudgetUtils.getBudgetOccurrenceEndDate(variant, startDate);
 				const occurrence: BudgetOccurrence = {
@@ -185,6 +185,10 @@ export default class BudgetUtils {
 					budgetEvents: BudgetUtils.computeProjectionEvents(amount, occurrence.start, occurrence.end, occurrence),
 				};
 			}));
+		}
+
+		if (budget.memo === "Travel") {
+			console.log(occurrences);
 		}
 
 		return occurrences;

@@ -471,15 +471,15 @@ const defaultCategories = {
 		type: "EXPENSE",
 		parent_category_id: parentCategories["Gifts & Celebrations"].category_id,
 	},
-	"Birthday": {
-		name: "Birthday",
-		category_id: "22fa90b8-f3f3-4a8c-922b-6b8835e977f8",
-		type: "EXPENSE",
-		parent_category_id: parentCategories["Gifts & Celebrations"].category_id,
-		icon: 'cake',
-	},
-	"Party": {
-		name: "Party",
+	// "Birthday": {
+	// 	name: "Birthday",
+	// 	category_id: "22fa90b8-f3f3-4a8c-922b-6b8835e977f8",
+	// 	type: "EXPENSE",
+	// 	parent_category_id: parentCategories["Gifts & Celebrations"].category_id,
+	// 	icon: 'cake',
+	// },
+	"Parties": {
+		name: "Parties",
 		category_id: "c2c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d56",
 		type: "EXPENSE",
 		parent_category_id: parentCategories["Gifts & Celebrations"].category_id,

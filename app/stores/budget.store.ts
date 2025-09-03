@@ -1,14 +1,28 @@
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import request from '@/services/request';
 import type { Budget } from 'delfi-core/models/Budget';
 import { instantiateDates } from 'delfi-core/utils/dateUtils';
+import { useCategoryStore } from './category.store';
 
 export const useBudgetStore = defineStore('budget', () => {
 	let budgets = ref<Budget[]>([]);
 	let isLoadingBudgets = ref(false);
 	let isUpsertingBudget = ref(false);
 	let isDeletingBudget = ref(false);
+
+	const orderedBudgets = computed(() => {
+		const orderedCategories = useCategoryStore().orderedCategories;
+		const output = [] as Budget[];
+		for (const category of orderedCategories) {
+			output.push(
+				...(budgets.value
+					.filter((b) => b.category_id === category.category_id)
+					.sort((a, b) => a.memo.localeCompare(b.memo)) || [])
+			);
+		}
+		return output;
+	});
 
 	async function loadBudgets() {
 		try {
@@ -62,6 +76,7 @@ export const useBudgetStore = defineStore('budget', () => {
 
 	return {
 		budgets,
+		orderedBudgets,
 		isLoadingBudgets,
 		loadBudgets: loadBudgets,
 		upsertBudget: upsertBudget,

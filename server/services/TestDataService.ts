@@ -205,7 +205,7 @@ export class TestDataService {
 					schedule: { start: '2021-04-08', frequency: 'MONTHLY', byDayOfMonth: [8] },
 					amountTemplate: {
 						type: 'fixed',
-						amount: -81,
+						amount: -55,
 					}
 				}],
 				category_id: categoryByName("Auto Insurance").category_id,
@@ -258,9 +258,18 @@ export class TestDataService {
 					trigger: {
 						type: 'immediateMatch',
 						filter: [{
-							property: 'category_id',
-							operator: 'eq',
-							operand: categoryByName("Paycheck").category_id,
+							OR: [
+								{
+									property: 'category_id',
+									operator: 'eq',
+									operand: categoryByName("Paycheck").category_id,
+								},
+								{
+									property: 'category_id',
+									operator: 'eq',
+									operand: categoryByName("Bonus").category_id,
+								},
+							]
 						}],
 						computation: {
 							operator: 'percent',
@@ -381,6 +390,23 @@ export class TestDataService {
 			},
 
 			{
+				budget_id: 'adeff2-4567-abcd-ef01-234567897935',
+				budgetType: BudgetType.TRANSACTION,
+				memo: "Phone Bill",
+				account_id: getAccountByName('Checking').account_id,
+				category_id: categoryByName("Phone Plan").category_id,
+				Category: categoryByName("Phone Plan"),
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] },
+					amountTemplate: {
+						type: 'fixed',
+						amount: -50,
+					}
+				}],
+			},
+
+			{
 				budget_id: 'c40e1f2-4567-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Preschool",
@@ -420,7 +446,7 @@ export class TestDataService {
 			{
 				budget_id: 'e12f34a5-67b8-90cd-ef12-345678901234',
 				budgetType: BudgetType.TRANSFER,
-				memo: "Emergency Savings Transfer",
+				memo: "Car Savings",
 				account_id: getAccountByName('Expense Savings').account_id,
 				origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -428,7 +454,41 @@ export class TestDataService {
 					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
 					amountTemplate: {
 						type: 'fixed',
-						amount: 300,
+						amount: 1000,
+					}
+				}],
+				category_id: categoryByName("Savings").category_id,
+				Category: categoryByName("Transfer"),
+			},
+			{
+				budget_id: 'f13a34a5-67b8-90cd-ef12-345678901335',
+				budgetType: BudgetType.TRANSFER,
+				memo: "Hannah-Claire Savings",
+				account_id: getAccountByName('Expense Savings').account_id,
+				origin_account_id: getAccountByName('Checking').account_id,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					amountTemplate: {
+						type: 'fixed',
+						amount: 50,
+					}
+				}],
+				category_id: categoryByName("Savings").category_id,
+				Category: categoryByName("Transfer"),
+			},
+			{
+				budget_id: 'a14f34a5-67b8-90cd-ef12-34567890a144',
+				budgetType: BudgetType.TRANSFER,
+				memo: "August Savings",
+				account_id: getAccountByName('Expense Savings').account_id,
+				origin_account_id: getAccountByName('Checking').account_id,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					amountTemplate: {
+						type: 'fixed',
+						amount: 50,
 					}
 				}],
 				category_id: categoryByName("Savings").category_id,
@@ -437,21 +497,23 @@ export class TestDataService {
 			{
 				budget_id: '42f56a78-90b1-2c3d-e4f5-678901234567',
 				budgetType: BudgetType.TRANSFER,
-				memo: "To Car Fund",
+				memo: "Emergency Savings",
 				account_id: getAccountByName('Expense Savings').account_id,
-				target_account_partition_id: getAccountByName('Expense Savings').partitions[0].account_partition_id, // New Car
 				origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
 					amountTemplate: {
 						type: 'fixed',
-						amount: 500,
+						amount: 250,
 					}
 				}],
-				category_id: categoryByName("Transfer").category_id,
+				category_id: categoryByName("Savings").category_id,
 				Category: categoryByName("Transfer"),
 			},
+
+
+
 
 
 			// BROUGHT IN FROM OLD "BUDGETS"
@@ -489,7 +551,6 @@ export class TestDataService {
 					}
 				}],
 				account_id: getAccountByName('Checking').account_id,
-				num_months: 1,
 			},
 			// Fun Money
 			{
@@ -506,7 +567,6 @@ export class TestDataService {
 					}
 				}],
 				account_id: getAccountByName('Checking').account_id,
-				num_months: 1,
 			},
 			{
 				budget_id: '2b3c4d5e-6f78-90ab-cdef-0123456789ab',
@@ -522,7 +582,21 @@ export class TestDataService {
 					}
 				}],
 				account_id: getAccountByName('Checking').account_id,
-				num_months: 1,
+			},
+			{
+				budget_id: '3c4a4d5e-6f78-90ab-cdef-01234567a73f',
+				memo: "Date Night",
+				category_id: null,
+				budgetType: BudgetType.TRANSACTION,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					amountTemplate: {
+						type: 'fixed',
+						amount: -50,
+					}
+				}],
+				account_id: getAccountByName('Checking').account_id,
 			},
 			{
 				budget_id: '3c4d5e6f-7890-abcd-ef01-23456789abcd',
@@ -538,7 +612,6 @@ export class TestDataService {
 					}
 				}],
 				account_id: getAccountByName('Checking').account_id,
-				num_months: 1,
 			},
 			// // Baby Care
 			// {
@@ -552,9 +625,120 @@ export class TestDataService {
 			// 		amount: -50,
 			// 	}],
 			// 	account_id: getAccountByName('Checking').account_id,
-			// 	num_months: 1,
 			// },
 
+
+
+			// ANNUAL BUDGETS
+			{
+				budget_id: 'd21e1f2-4567-abcd-ef01-23456789d213',
+				memo: "Thanksgiving Point Membership",
+				category_id: categoryByName("Amusement").category_id,
+				budgetType: BudgetType.TRANSACTION,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-05-01', frequency: 'YEARLY' },
+					amountTemplate: {
+						type: 'fixed',
+						amount: -269,
+					}
+				}],
+				account_id: getAccountByName('Checking').account_id,
+			},
+			{
+				budget_id: 'c30e1f2-4567-abcd-ef01-234567890123',
+				memo: "Costco Membership",
+				category_id: categoryByName("Shopping").category_id,
+				budgetType: BudgetType.TRANSACTION,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-01-01', frequency: 'YEARLY' },
+					amountTemplate: {
+						type: 'fixed',
+						amount: -69,
+					}
+				}],
+				account_id: getAccountByName('Checking').account_id,
+			},
+			{
+				budget_id: 'df151f2-4567-abcd-ef01-234567892856',
+				memo: "Back2School",
+				category_id: categoryByName("Books & Supplies").category_id,
+				budgetType: BudgetType.TRANSACTION,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-08-01', frequency: 'YEARLY' },
+					amountTemplate: {
+						type: 'fixed',
+						amount: -100,
+					}
+				}],
+				account_id: getAccountByName('Checking').account_id,
+			},
+
+
+			{
+				budget_id: 'fe251f2-4567-abcd-ef01-234567890962',
+				memo: "Hannah-Claire Party",
+				category_id: categoryByName("Parties").category_id,
+				budgetType: BudgetType.TRANSACTION,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-02-01', frequency: 'YEARLY' },
+					amountTemplate: {
+						type: 'fixed',
+						amount: -100,
+					}
+				}],
+				account_id: getAccountByName('Checking').account_id,
+			},
+			{
+				budget_id: 'fe241f2-4567-abcd-ef01-234567882962',
+				memo: "Hannah-Claire Gift",
+				category_id: categoryByName("Gifts").category_id,
+				budgetType: BudgetType.TRANSACTION,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-02-01', frequency: 'YEARLY' },
+					amountTemplate: {
+						type: 'fixed',
+						amount: -50,
+					}
+				}],
+				account_id: getAccountByName('Checking').account_id,
+			},
+
+
+			{
+				budget_id: 'df251f2-4567-abcd-ef01-234567890973',
+				memo: "August Party",
+				category_id: categoryByName("Parties").category_id,
+				budgetType: BudgetType.TRANSACTION,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-08-01', frequency: 'YEARLY' },
+					amountTemplate: {
+						type: 'fixed',
+						amount: -100,
+					}
+				}],
+				account_id: getAccountByName('Checking').account_id,
+			},
+			{
+				budget_id: 'df361f2-4567-abcd-ef01-234567451973',
+				memo: "August Gift",
+				category_id: categoryByName("Gifts").category_id,
+				budgetType: BudgetType.TRANSACTION,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-08-01', frequency: 'YEARLY' },
+					amountTemplate: {
+						type: 'fixed',
+						amount: -50,
+					}
+				}],
+				account_id: getAccountByName('Checking').account_id,
+			},
 
 
 			// LARGE budgets with children

@@ -99,24 +99,48 @@ export class Delfi {
 
 		const monthBudgetOccurrences = await this.getOccurrenceSummaries(monthForecast.occurrences);
 		const monthBudgetSnapshots = monthBudgetOccurrences.map(o => o.snapshot(monthStart, monthEnd));
-		const monthBudgetEvents = monthBudgetSnapshots.flatMap(snapshot => snapshot.budgetEvents);
 
-		const budgetEventsByBudget: Map<Budget, BudgetEventSummary[]> = new Map();
-		monthBudgetEvents.forEach(event => {
-			const events = budgetEventsByBudget.get(event.Budget) || [];
-			events.push(event);
-			budgetEventsByBudget.set(event.Budget, events);
+		const allSnapshotsByBudget: Map<Budget, BudgetSnapshot[]> = new Map();
+		monthBudgetSnapshots.forEach(snapshot => {
+			const budgets = allSnapshotsByBudget.get(snapshot.budget) || [];
+			budgets.push(snapshot);
+			allSnapshotsByBudget.set(snapshot.budget, budgets);
 		});
-		const budgetSummaries = Array.from(budgetEventsByBudget.entries()).map(([budget, budgetEvents]) => {
-			const attributedEvents = monthAttributionEvents.filter(e => e.budget_id === budget.budget_id && e.date.isBetweenInclusive(monthStart, monthEnd));
+		const consolidatedBudgetSnapshots = Array.from(allSnapshotsByBudget.entries()).map(([budget, snapshots]) => {
 			return new BudgetSnapshot(
 				monthStart,
 				monthEnd,
 				budget,
-				budgetEvents,
-				attributedEvents,
+				snapshots.flatMap(s => s.budgetEvents),
+				Array.from(new Set(snapshots.flatMap(s => s.attributedEvents))),
 			);
 		});
+
+		// const budgetEventsByBudget: Map<Budget, BudgetEventSummary[]> = new Map();
+		// const monthBudgetEvents = monthBudgetSnapshots.flatMap(snapshot => snapshot.budgetEvents);
+		// monthBudgetEvents.forEach(event => {
+		// 	const events = budgetEventsByBudget.get(event.Budget) || [];
+		// 	events.push(event);
+		// 	budgetEventsByBudget.set(event.Budget, events);
+		// });
+		// // Still need to include ongoing budget occurrences that have no projected events in the window
+		// monthBudgetOccurrences.forEach(occurrence => {
+		// 	if (!budgetEventsByBudget.has(occurrence.budget)) {
+		// 		budgetEventsByBudget.set(occurrence.budget, []);
+		// 	}
+		// });
+		// const budgetSummaries = Array.from(budgetEventsByBudget.entries()).map(([budget, budgetEvents]) => {
+		// 	const attributedEvents = monthAttributionEvents.filter(e => e.budget_id === budget.budget_id && e.date.isBetweenInclusive(monthStart, monthEnd));
+		// 	return new BudgetSnapshot(
+		// 		monthStart,
+		// 		monthEnd,
+		// 		budget,
+		// 		budgetEvents,
+		// 		attributedEvents,
+		// 	);
+		// });
+
+		const monthBudgetEvents = consolidatedBudgetSnapshots.flatMap(snapshot => snapshot.budgetEvents);
 
 		const categorySummaries = this.categories.map((category: Category) => ({
 			category,
@@ -128,21 +152,21 @@ export class Delfi {
 		const spendingCategories = categorySummaries.filter(c => c.category.type === 'EXPENSE');
 		const spendingSummary = {
 			// spending budgets are any budgets not in an income or transfer category
-			budgets: budgetSummaries.filter(b => !b.budget.category_id || b.budget.Category?.type === 'EXPENSE'),
+			budgets: consolidatedBudgetSnapshots.filter(b => !b.budget.category_id || b.budget.Category?.type === 'EXPENSE'),
 			categories: spendingCategories,
 			tally: RealityTally.fromTallies(spendingCategories.map(c => c.tally)),
 		};
 
 		const incomeCategories = categorySummaries.filter(c => c.category.type === 'INCOME');
 		const incomeSummary = {
-			budgets: budgetSummaries.filter(c => c.budget.Category?.type === 'INCOME'),
+			budgets: consolidatedBudgetSnapshots.filter(c => c.budget.Category?.type === 'INCOME'),
 			categories: incomeCategories,
 			tally: RealityTally.fromTallies(incomeCategories.map(c => c.tally)),
 		};
 
 		const transferCategories = categorySummaries.filter(c => c.category.type === 'TRANSFER');
 		const transferSummary = {
-			budgets: budgetSummaries.filter(c => c.budget.Category?.type === 'TRANSFER'),
+			budgets: consolidatedBudgetSnapshots.filter(c => c.budget.Category?.type === 'TRANSFER'),
 			categories: transferCategories,
 			tally: RealityTally.fromTallies(transferCategories.map(c => c.tally)),
 		};
@@ -225,7 +249,7 @@ export class Delfi {
 			attributedNet: incomeSummary.tally.attributedNet + spendingSummary.tally.attributedNet,
 			budgetEvents: monthBudgetEvents,
 			attributionEvents: monthAttributionEvents,
-			budgetSummaries: monthBudgetSnapshots,
+			budgetSummaries: consolidatedBudgetSnapshots,
 			totalTally: new RealityTally(monthBudgetEvents, monthAttributionEvents),
 			allUnbudgeted: new RealityTally([], monthAttributionEvents.filter(t => !t.budget_id && (!t.category_id || t.Category?.type === 'EXPENSE'))),
 			accountSummaries,

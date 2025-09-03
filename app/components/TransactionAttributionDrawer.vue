@@ -13,6 +13,7 @@ import { useCategoryStore } from '@/stores/category.store';
 import GroupSelector from './GroupSelector.vue';
 import { useGroupStore } from '@/stores/group.store';
 import NavTriggerDrawer from './utils/NavTrigger/NavTriggerDrawer.vue';
+import Icon from './Icon.vue';
 
 const drawerTrigger = ref<InstanceType<typeof NavTriggerDrawer> | null>(null);
 
@@ -75,7 +76,7 @@ const currentStep = ref<Step>('Budget');
 
 defineExpose({
 	waitForSelection(current: Selection, activeStep?: Step) {
-		originalSelection.value = { ...current};
+		originalSelection.value = { ...current };
 
 		currentSelection.value.budget_id = current.budget_id ?? null;
 		currentSelection.value.Budget = current.Budget ?? null;
@@ -102,7 +103,7 @@ function onBudgetSelected(budget_id: string | null, budget_child_item_id: string
 	// assign budget attributes if available, other wise keep original.
 	// Use child attributes first if available
 	const budget = useBudgetStore().getBudgetById(budget_id);
-	const childItem = budget?.childItems?.find(item => item.budget_child_item_id === budget_child_item_id);
+	const childItem = budget?.childItems?.find((item) => item.budget_child_item_id === budget_child_item_id);
 	currentSelection.value.budget_id = budget_id;
 	currentSelection.value.Budget = budget;
 	currentSelection.value.budget_child_item_id = budget_child_item_id;
@@ -119,7 +120,14 @@ function onBudgetSelected(budget_id: string | null, budget_child_item_id: string
 		currentSelection.value.Group = useGroupStore().getGroupById(currentSelection.value.group_id || undefined) || null;
 	}
 
-	currentStep.value = 'Category';
+	// If there is only one category option, continue to Group
+	// If budget has no category, or is a parent category, allow selection
+	if (currentSelection.value.Budget?.Category?.ParentCategory) {
+		currentStep.value = 'Group';
+	}
+	else {
+		currentStep.value = 'Category';
+	}
 }
 
 function onCategorySelected(category_id: string | null) {
@@ -138,9 +146,11 @@ function onGroupSelected(group_id: string | null) {
 
 const allowedCategories = computed(() => {
 	if (currentSelection.value.BudgetChildItem?.category_id || currentSelection.value.Budget?.category_id) {
-		const budgetCategory = useCategoryStore().getCategoryById(currentSelection.value.BudgetChildItem?.category_id || currentSelection.value.Budget?.category_id);
+		const budgetCategory = useCategoryStore().getCategoryById(
+			currentSelection.value.BudgetChildItem?.category_id || currentSelection.value.Budget?.category_id
+		);
 		if (budgetCategory) {
-			return [budgetCategory, ...budgetCategory.Children || []];
+			return [budgetCategory, ...(budgetCategory.Children || [])];
 		}
 	}
 	return undefined;
@@ -155,17 +165,13 @@ const allowedGroups = computed(() => {
 	}
 	return undefined;
 });
-
 </script>
 
 <template>
-	<NavTriggerDrawer
-		ref="drawerTrigger"
-		:triggerKey="'transaction-attribution'"
-		:width="25"
-	>
+	<NavTriggerDrawer ref="drawerTrigger" :triggerKey="'transaction-attribution'" :width="25">
 		<div class="flex flex-column gap-1 h-full overflow-hidden">
 			<div class="step-label" @click="currentStep = 'Budget'">
+				<i class="pi pi-wallet" />
 				<span>Budget: </span>
 
 				<div class="flex-grow-1 w-full min-w-0 text-ellipsis">
@@ -179,7 +185,7 @@ const allowedGroups = computed(() => {
 				<i class="pi pi-angle-down" v-else />
 			</div>
 
-			<div class="selector-frame" :class="{ 'current': currentStep === 'Budget' }">
+			<div class="selector-frame" :class="{ current: currentStep === 'Budget' }">
 				<BudgetSelector
 					v-if="currentStep === 'Budget'"
 					:currentBudgetId="currentSelection.budget_id"
@@ -189,6 +195,7 @@ const allowedGroups = computed(() => {
 			</div>
 
 			<div class="step-label" @click="currentStep = 'Category'">
+				<Icon name="category" />
 				<span>Category: </span>
 
 				<div class="flex-grow-1 w-full min-w-0 text-ellipsis">
@@ -200,7 +207,7 @@ const allowedGroups = computed(() => {
 				<i class="pi pi-angle-down" v-else />
 			</div>
 
-			<div class="selector-frame" :class="{ 'current': currentStep === 'Category' }">
+			<div class="selector-frame" :class="{ current: currentStep === 'Category' }">
 				<div v-if="allowedCategories" class="flex align-items-center justify-content-center gap-2 p-2 my-2 text-sm text-gray-600">
 					<i class="pi pi-info-circle" />
 					Options determined by selected budget
@@ -214,6 +221,7 @@ const allowedGroups = computed(() => {
 			</div>
 
 			<div class="step-label" @click="currentStep = 'Group'">
+				<Icon name="tag" />
 				<span>Group: </span>
 				<div class="flex-grow-1 text-ellipsis">
 					<template v-if="!currentSelection.Group">No group</template>
@@ -223,7 +231,7 @@ const allowedGroups = computed(() => {
 				<i class="pi pi-angle-down" v-else />
 			</div>
 
-			<div class="selector-frame" :class="{ 'current': currentStep === 'Group' }">
+			<div class="selector-frame" :class="{ current: currentStep === 'Group' }">
 				<div v-if="allowedGroups" class="flex align-items-center justify-content-center gap-2 p-2 my-2 text-sm text-gray-600">
 					<i class="pi pi-info-circle" />
 					Options determined by selected budget
@@ -237,19 +245,8 @@ const allowedGroups = computed(() => {
 			</div>
 
 			<div class="flex justify-content-end gap-2">
-				<Button
-					label="Cancel"
-					size="large"
-					text
-					severity="secondary"
-					@click="cancel"
-				/>
-				<Button
-					label="Save"
-					size="large"
-					@click="submit"
-				/>
-
+				<Button label="Cancel" size="large" text severity="secondary" @click="cancel" />
+				<Button label="Save" size="large" @click="submit" />
 			</div>
 		</div>
 	</NavTriggerDrawer>
@@ -271,7 +268,7 @@ const allowedGroups = computed(() => {
 .selector-frame {
 	display: flex;
 	flex-direction: column;
-	margin-left: .5rem;
+	margin-left: 0.5rem;
 	max-height: 0px;
 	overflow-y: auto;
 	flex-grow: 1;

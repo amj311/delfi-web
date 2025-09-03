@@ -25,6 +25,7 @@ import Select from 'primevue/select';
 import type { BudgetSnapshot } from 'delfi-core/models/Summary';
 import { useContextStore } from '@/stores/context.store';
 import CommonEventRow from '@/components/CommonEventRow.vue';
+import Button from 'primevue/button';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -180,10 +181,12 @@ const dailyEvents = computed(() => {
 
 const expenseColor = {
 	underPace: colors.lime2,
+	onPace: colors.lime2,
 	overPace: colors.yellow2,
 	overBudget: colors.cherry1,
 	muted: {
 		underPace: colors.green3,
+		onPace: colors.green3,
 		overPace: colors.yellow1,
 		overBudget: colors.red2,
 	},
@@ -191,10 +194,12 @@ const expenseColor = {
 
 const savingsColor = {
 	underPace: colors.yellow2,
+	onPace: colors.lime2,
 	overPace: colors.lime2,
 	overBudget: colors.lime2,
 	muted: {
 		underPace: colors.yellow1,
+		onPace: colors.green3,
 		overPace: colors.green3,
 		overBudget: colors.green3,
 	},
@@ -244,9 +249,9 @@ const otherAccounts = computed(() => {
 			<h2>Monthly Budget</h2>
 		</div> -->
 		<div style="display: flex; justify-content: space-between">
-			<a @click="goBack()">Back</a>
+			<Button text @click="goBack()">Back</Button>
 			<span>{{ state.viewingMonth?.format('MMMM YYYY') }}</span>
-			<a @click="goForward()">Forward</a>
+			<Button text @click="goForward()">Forward</Button>
 		</div>
 		<br />
 		<div v-if="state.loading">Loading...</div>
@@ -269,7 +274,7 @@ const otherAccounts = computed(() => {
 					<h3>Accounts</h3>
 				</div>
 				<div class="list">
-					<div v-for="summary of changedAccounts" class="list-row">
+					<div v-for="summary of changedAccounts" class="list-row px-2">
 						<div class="flex">
 							<div class="flex align-items-center gap-2">
 								<div
@@ -325,9 +330,9 @@ const otherAccounts = computed(() => {
 					<small v-if="!isFuture">&nbsp;&nbsp;/&nbsp;<Currency :amount="state.summaryData.incomeSummary.tally.budgetedNet" /></small>
 				</div>
 				<div class="list">
-					<Accordion multiple @update:value="(value) => (openAccordions = new Set(value))">
+					<Accordion multiple @update:value="(value) => (openAccordions = new Set(value))" :value="Array.from(openAccordions)">
 						<template v-for="budgetSnapshot of state.summaryData.incomeSummary.budgets">
-							<AccordionPanel :value="budgetSnapshot.budget.budget_id">
+							<AccordionPanel v-if="budgetSnapshot.tally.hasInfo" :value="budgetSnapshot.budget.budget_id">
 								<AccordionHeader
 									class="budget-header flex align-items-center gap-2"
 									:class="{ shift: !isFuture && isAccordionOpen(budgetSnapshot.budget.budget_id) }"
@@ -423,7 +428,7 @@ const otherAccounts = computed(() => {
 										</div>
 									</div>
 									<template v-for="event of isFuture ? budgetSnapshot.budgetEvents : budgetSnapshot.notChildAttributions">
-										<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" />
+										<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" expand />
 									</template>
 								</AccordionContent>
 							</AccordionPanel>
@@ -442,7 +447,7 @@ const otherAccounts = computed(() => {
 										.slice()
 										.sort((a, b) => (a.date.isBefore(b.date) ? -1 : 1))"
 								>
-									<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" />
+									<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" expand />
 								</template>
 							</AccordionContent>
 						</AccordionPanel>
@@ -458,7 +463,7 @@ const otherAccounts = computed(() => {
 					<!-- ... -->
 				</div>
 				<div class="list">
-					<Accordion multiple @update:value="(value) => (openAccordions = new Set(value))">
+					<Accordion multiple @update:value="(value) => (openAccordions = new Set(value))" :value="Array.from(openAccordions)">
 						<template v-for="budgetSnapshot of state.summaryData.transferSummary.budgets">
 							<AccordionPanel :value="budgetSnapshot.budget.budget_id">
 								<AccordionHeader
@@ -556,7 +561,7 @@ const otherAccounts = computed(() => {
 										</div>
 									</div>
 									<template v-for="event of isFuture ? budgetSnapshot.budgetEvents : budgetSnapshot.notChildAttributions">
-										<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" />
+										<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" expand />
 									</template>
 								</AccordionContent>
 							</AccordionPanel>
@@ -575,7 +580,7 @@ const otherAccounts = computed(() => {
 										.slice()
 										.sort((a, b) => (a.date.isBefore(b.date) ? -1 : 1))"
 								>
-										<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" />
+										<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" expand />
 								</template>
 							</AccordionContent>
 						</AccordionPanel>
@@ -596,7 +601,7 @@ const otherAccounts = computed(() => {
 							<Currency :amount="tally.attributedNet || 0" mode="transaction" class="text-semibold" />
 						</div>
 					</div>
-					<div>
+					<div class="px-3">
 						<template v-for="budgetSnapshot of tally.budgetSnapshots">
 							<template v-if="budgetSnapshot.tally.hasInfo">
 								<div class="flex hover-show-trigger list-row gap-2">
@@ -607,7 +612,7 @@ const otherAccounts = computed(() => {
 									<div class="flex-grow-1"></div>
 									<!-- <Currency :amount="budgetSnapshot.tally.attributedNet" mode="transaction" /> -->
 								</div>
-								<div v-for="childItem of budgetSnapshot.childItemEvents" class="list-row flex align-items-center gap-3">
+								<div v-for="childItem of budgetSnapshot.childItemBudgets" class="list-row flex align-items-center gap-3">
 									<AttributionAvatar :categoryId="childItem.category_id" :size="1.9">
 										<template #badge>
 											<Icon name="checklist" />
@@ -641,7 +646,7 @@ const otherAccounts = computed(() => {
 									</div>
 								</div>
 								<template v-for="event of isFuture ? budgetSnapshot.budgetEvents : budgetSnapshot.notChildAttributions">
-									<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" />
+									<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" expand />
 								</template>
 							</template>
 						</template>
@@ -651,7 +656,7 @@ const otherAccounts = computed(() => {
 							<div class="flex-grow-1"></div>
 							<!-- <Currency :amount="tally.unBudgetedNet" mode="transaction" /> -->
 						</div>
-						<CommonEventRow v-for="event of tally.unBudgetedAttributions" :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" />
+						<CommonEventRow v-for="event of tally.unBudgetedAttributions" :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" expand />
 					</div>
 				</div>
 				<br />
@@ -659,7 +664,7 @@ const otherAccounts = computed(() => {
 			</div>
 
 			<div>
-				<div class="flex align-items-center gap-2">
+				<div class="flex align-items-center gap-2 py-2">
 					<h3>Spending</h3>
 					<Select
 						v-model="selectedSpendingView"
@@ -684,7 +689,7 @@ const otherAccounts = computed(() => {
 					</div>
 				</div>
 				<div v-if="selectedSpendingView === 'budget'">
-					<Accordion multiple @update:value="(value) => (openAccordions = new Set(value))">
+					<Accordion multiple @update:value="(value) => (openAccordions = new Set(value))" :value="Array.from(openAccordions)">
 						<AccordionPanel value="0" v-if="!isFuture">
 							<AccordionHeader class="flex align-items-center gap-2">
 								<AttributionAvatar icon="question-circle" :size="2" :background="'cherry1'" />
@@ -698,12 +703,12 @@ const otherAccounts = computed(() => {
 										.slice()
 										.sort((a, b) => (a.date.isBefore(b.date) ? -1 : 1))"
 								>
-									<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" />
+									<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" expand />
 								</template>
 							</AccordionContent>
 						</AccordionPanel>
 						<template v-for="budgetSnapshot of orderedBudgets">
-							<AccordionPanel :value="budgetSnapshot.budget.budget_id">
+							<AccordionPanel v-if="budgetSnapshot.tally.hasInfo" :value="budgetSnapshot.budget.budget_id">
 								<AccordionHeader
 									class="budget-header flex align-items-center gap-2"
 									:class="{ shift: !isFuture && isAccordionOpen(budgetSnapshot.budget.budget_id) }"
@@ -794,7 +799,7 @@ const otherAccounts = computed(() => {
 											<Currency :amount="budgetSnapshot.tally.budgetedNet" />
 										</div>
 									</div>
-									<div v-for="childItem of budgetSnapshot.childItemEvents" class="list-row px-0">
+									<div v-for="childItem of budgetSnapshot.childItemBudgets" class="list-row">
 										<AttributionAvatar :categoryId="childItem.category_id" :size="1.9">
 											<template #badge>
 												<Icon name="checklist" />
@@ -836,7 +841,7 @@ const otherAccounts = computed(() => {
 										</div>
 									</div>
 									<template v-for="event of isFuture ? budgetSnapshot.budgetEvents : budgetSnapshot.notChildAttributions">
-										<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" />
+										<CommonEventRow :event="event" @click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)" expand />
 									</template>
 								</AccordionContent>
 							</AccordionPanel>
@@ -844,7 +849,7 @@ const otherAccounts = computed(() => {
 					</Accordion>
 				</div>
 				<div v-else-if="selectedSpendingView === 'category'">
-					<Accordion multiple @update:value="(value) => (openAccordions = new Set(value))">
+					<Accordion multiple @update:value="(value) => (openAccordions = new Set(value))" :value="Array.from(openAccordions)">
 						<template v-for="(category, i) of state.summaryData.spendingSummary.categories">
 							<AccordionPanel :value="i" v-if="isFuture ? category.tally.budgetEvents.length > 0 : category.tally.attributionEvents.length > 0">
 								<AccordionHeader class="flex align-items-center gap-2">
@@ -904,7 +909,7 @@ const otherAccounts = computed(() => {
 											</div>
 										
 											<div v-for="event of budgetSnapshot.tally.attributionEvents">
-												<CommonEventRow :event="event" @click="() => viewTransaction(event.attributionDetails.sourceTransaction)" />
+												<CommonEventRow :event="event" @click="() => viewTransaction(event.attributionDetails.sourceTransaction)" expand />
 											</div>
 										</template>
 									</template>
@@ -915,7 +920,7 @@ const otherAccounts = computed(() => {
 										<Currency :amount="category.tally.unBudgetedNet" mode="transaction" />
 									</div>
 									<div v-for="event of category.tally.unBudgetedAttributions">
-										<CommonEventRow :event="event" @click="() => viewTransaction(event.attributionDetails.sourceTransaction)" />
+										<CommonEventRow :event="event" @click="() => viewTransaction(event.attributionDetails.sourceTransaction)" expand />
 									</div>
 								</AccordionContent>
 							</AccordionPanel>
@@ -945,7 +950,7 @@ const otherAccounts = computed(() => {
 					{{ day.date }}
 				</h4>
 				<div class="list">
-					<div class="px-3">
+					<div>
 						<CommonEventRow v-for="event in day.transactions" :event="event" :hideDate="true" :size="2.3" @click="() => viewTransaction(event.attributionDetails.sourceTransaction)" />
 					</div>
 				</div>
@@ -1077,7 +1082,7 @@ const otherAccounts = computed(() => {
 }
 
 .list-row {
-	padding: 6px 8px;
+	padding: 6px 0;
 	background: #fff;
 }
 
