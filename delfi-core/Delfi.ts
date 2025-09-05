@@ -9,8 +9,8 @@ import { type Budget, type ProjectionEvent, type BudgetOccurrence } from "./mode
 import Forecast from "./models/Forecast";
 import { type Category } from "./models/Category";
 import { ddate, type DelfiDate, instantiateDates } from "./utils/dateUtils";
-import type { TransactionFilter } from "./services/FilterService";
-import FilterService from "./services/FilterService";
+import type { TransactionFilter } from "./models/Filters";
+import FilterUtils from "./models/Filters";
 import { TransactionUtils, type AttributionEvent, type Transaction } from "./models/Transaction";
 import { BudgetOccurrenceSummary, BudgetSnapshot, RealityTally, type BudgetEventSummary } from "./models/Summary";
 import { jsonCopy, PromiseQueue } from "./utils/miscUtils";
@@ -287,7 +287,7 @@ class TransactionSource {
 			this.loadedTransactionStart = start;
 		}
 		// Filter the loaded transactions to the requested range
-		return FilterService.filter(Array.from(this.attributedEvents.values()), [
+		return FilterUtils.filter(Array.from(this.attributedEvents.values()), [
 			{ property: 'date', operator: 'gte', operand: start },
 			{ property: 'date', operator: 'lte', operand: end },
 			...filter,

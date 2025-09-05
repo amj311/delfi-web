@@ -8,7 +8,7 @@ COPY . .
 COPY .env.prod .env
 RUN yarn
 RUN yarn build-only
-RUN yarn --production
+# RUN yarn --production
 
 
 # Set up display for headed mode

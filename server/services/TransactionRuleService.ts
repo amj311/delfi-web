@@ -1,14 +1,82 @@
 import type { Category } from "delfi-core/models/Category";
 import { TransactionUtils, type Transaction, type TransactionAttribution } from "delfi-core/models/Transaction";
 import { type TransactionRule } from "delfi-core/models/TransactionRule";
-import FilterService from "delfi-core/services/FilterService";
+import FilterUtils from "delfi-core/models/Filters";
 import { nullOrUndefined } from "delfi-core/utils/miscUtils";
 import { BudgetDao } from "server/data/BudgetDao";
 import { MerchantDao } from "server/data/MerchantDao";
 import { TransactionDao } from "server/data/TransactionDao";
 import { TransactionRuleDao } from "server/data/TransactionRuleDao";
+import { CategoryDao } from "server/data/CategoryDao";
 
 export class TransactionRuleService {
+	public static async getWorkspaceRulesWithDefinitions(workspace_id: string) {
+		const rules = await TransactionRuleDao.getWorkspaceRules(workspace_id);
+		return await Promise.all(rules.map(async (rule) => {
+			const defValues: { type: string, value: any }[] = [];
+			const predicates = FilterUtils.extractPredicates(rule.filter);
+			// Find filter defs
+			await Promise.all(predicates.map(async (predicate) => {
+				if (predicate.property.includes('merchant_id')) {
+					defValues.push({
+						value: predicate.operand,
+						type: 'merchant',
+					})
+				}
+				if (predicate.property.includes('category_id')) {
+					defValues.push({
+						value: predicate.operand,
+						type: 'category',
+					})
+				}
+			}));
+			// Find action defs
+			await Promise.all(rule.actions.map(async (action) => {
+				if (action.action.includes('merchant_id')) {
+					defValues.push({
+						value: action.value,
+						type: 'merchant',
+					})
+				}
+				if (action.action.includes('category_id')) {
+					defValues.push({
+						value: action.value,
+						type: 'category',
+					})
+				}
+			}));
+
+			const defs = {};
+			for (const def of defValues) {
+				if (def.type === 'merchant') {
+					const merchant = await MerchantDao.getMerchantById(def.value as string);
+					if (merchant) {
+						defs[def.value!.toString()] = {
+							text: merchant.name,
+							type: 'merchant',
+							data: merchant,
+						};
+					}
+				}
+				if (def.type === 'category') {
+					const category = await CategoryDao.getCategoryById(def.value as string);
+					if (category) {
+						defs[def.value!.toString()] = {
+							text: category.name,
+							type: 'category',
+							data: category,
+						};
+					}
+				}
+			}
+
+			return {
+				...rule,
+				defs,
+			};
+		}));
+	}
+
 	public static async applyRulesToTransactions(workspace_id: string, transactions: Transaction[]) {
 		const workspaceRules = await TransactionRuleDao.getWorkspaceRules(workspace_id);
 		const globalRules = await TransactionRuleDao.getGlobalRules();
@@ -41,7 +109,7 @@ export class TransactionRuleService {
 			for (const rule of rules) {
 				for (const attribution of transaction.Attributions) {
 					// Create AttributionEvent for filtering as it is is easier to filter on
-					if (!FilterService.matches(rule.filter, TransactionUtils.createEventFromAttribution(attribution, transaction))) {
+					if (!FilterUtils.matches(rule.filter, TransactionUtils.createEventFromAttribution(attribution, transaction))) {
 						continue; // Rule does not match this attribution
 					}
 

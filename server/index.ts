@@ -7,18 +7,17 @@ import firebaseAuthMiddleware, { firebaseConfig } from "./services/FirebaseServi
 import signupRoute from "./routes/signup.route";
 import './services/SyncService'; // Import to trigger job creation
 
-// HTTPS support for development
-const isDevelopment = !("RENDER" in process.env);
-const httpsOptions = isDevelopment ? {
-  https: {
-    key: readFileSync(path.join(__dirname, 'certs/localhost+2-key.pem')),
-    cert: readFileSync(path.join(__dirname, 'certs/localhost+2.pem'))
-  }
-} : {};
+// HTTPS was only needed for testing with plaid
+// // HTTPS support for development
+// const isDevelopment = process.env.NODE_ENV === 'development';
+// const httpsOptions = isDevelopment ? {
+//     key: readFileSync(path.join(__dirname, 'certs/localhost+2-key.pem')),
+//     cert: readFileSync(path.join(__dirname, 'certs/localhost+2.pem'))
+// } : {};
 
 const app = Fastify({
 	logger: false,
-	...httpsOptions
+	// https: httpsOptions
 });
 app.register(require('@fastify/cors'));
 
@@ -49,6 +48,7 @@ app.register((api, _, done) => {
 	api.register(require('./routes/tag.route'), { prefix: '/tag' });
 	api.register(require('./routes/group.route'), { prefix: '/group' });
 	api.register(require('./routes/merchant.route'), { prefix: '/merchant' });
+	api.register(require('./routes/transactionRule.route'), { prefix: '/transaction-rule' });
 
 
 	api.setNotFoundHandler((req, reply) => {

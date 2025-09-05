@@ -1,7 +1,7 @@
 import { ScheduleService, type SingleSchedule } from "./schedules/Schedule"
 import { computeTriggeredAmount, type Trigger } from "./schedules/triggers"
 import { ddate, toDelfiInterval, type DelfiDate } from "../utils/dateUtils";
-import FilterService from "../services/FilterService";
+import FilterUtils from "./Filters";
 import { type BudgetableTransactionDetails } from "./Transaction";
 import type { CommonEvent } from "./Summary";
 import { v4 as uuid } from "uuid";
@@ -299,7 +299,7 @@ export default class BudgetUtils {
 			};
 
 			const events = monthEvents.flatMap(event => {
-				if (!FilterService.matches(variant.amountTemplate.trigger.filter, event)) {
+				if (!FilterUtils.matches(variant.amountTemplate.trigger.filter, event)) {
 					return []; // Skip events that don't match the trigger filter
 				}
 				const trigger = variant.amountTemplate.trigger;

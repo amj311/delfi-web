@@ -12,20 +12,23 @@ export type User = {
 export const UserService = {
 	async setupTestData() {
 		for (const user of TestDataService.users) {
-			const existingUser = await prisma.user.findFirst({
-				where: { auth_id: user.auth_id },
+			await prisma.user.upsert({
+				where: { user_id: user.user_id },
+				update: {
+					auth_id: user.auth_id,
+					user_id: user.user_id,
+					given_name: user.given_name,
+					family_name: user.family_name,
+					email: user.email,
+				},
+				create: {
+					auth_id: user.auth_id,
+					user_id: user.user_id,
+					given_name: user.given_name,
+					family_name: user.family_name,
+					email: user.email,
+				},
 			});
-			if (!existingUser) {
-				await prisma.user.create({
-					data: {
-						auth_id: user.auth_id,
-						user_id: user.user_id,
-						given_name: user.given_name,
-						family_name: user.family_name,
-						email: user.email,
-					},
-				});
-			}
 		}
 	},
 

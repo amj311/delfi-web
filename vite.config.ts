@@ -18,9 +18,9 @@ export default defineConfig({
 		}
 	},
 	server: {
-		https: {
-			key: fileURLToPath(new URL('./server/certs/localhost+2-key.pem', import.meta.url)),
-			cert: fileURLToPath(new URL('./server/certs/localhost+2.pem', import.meta.url)),
-		}
+		// https: {
+		// 	key: fileURLToPath(new URL('./server/certs/localhost+2-key.pem', import.meta.url)),
+		// 	cert: fileURLToPath(new URL('./server/certs/localhost+2.pem', import.meta.url)),
+		// }
 	},
 })

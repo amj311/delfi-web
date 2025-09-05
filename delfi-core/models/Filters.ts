@@ -1,12 +1,14 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils"
-import { type BudgetedTransactionDetails, type ProjectionEvent, type ScheduledBudget } from "../models/Budget"
+import { type BudgetedTransactionDetails, type ProjectionEvent, type ScheduledBudget } from "./Budget"
 import { getPropertyByPath } from "delfi-core/utils/miscUtils"
-import { TransactionUtils, type CommonEventDetails, type DescriptionBreakdown } from "delfi-core/models/Transaction"
+import { TransactionUtils, type AttributionEvent, type DescriptionBreakdown } from "delfi-core/models/Transaction"
 import type { Category } from "delfi-core/models/Category"
+import type { CommonEvent } from "delfi-core/models/Summary"
+import type { TransactionRule } from "delfi-core/models/TransactionRule"
 
 export type Predicate = {
 	property: (keyof Filterable) | 'budget_id' | 'date' | 'year' | 'month' | 'day' | `${keyof typeof CustomGetters}.${string}`,
-	operator: keyof typeof Operators,
+	operator: Operator,
 	not?: boolean // If true, the rule is inverted
 	operand?: number | string | string[] | DelfiDate
 }
@@ -20,11 +22,11 @@ type AndFilter = {
 type OrFilter = {
 	OR: TransactionFilter;
 }
-type Filterable = BudgetedTransactionDetails | ScheduledBudget | ProjectionEvent | CommonEventDetails;
+type Filterable = BudgetedTransactionDetails | ScheduledBudget | ProjectionEvent | AttributionEvent | CommonEvent;
 type Accumulatable = Filterable & { amount: number };
 
 
-export default class FilterService {
+export default class FilterUtils {
 	public static filter<T extends Filterable = Filterable>(transactions: T[], filter: TransactionFilter): T[] {
 		if (!filter || filter.length === 0) return transactions;
 		return transactions.filter(transaction => this.matches(filter, transaction));
@@ -46,7 +48,7 @@ export default class FilterService {
 			...filter,
 			{ property: 'date', operator: 'lt', operand: date },
 		];
-		const matchingEvents = FilterService.filter(events, thisFilter);
+		const matchingEvents = FilterUtils.filter(events, thisFilter);
 		return this.accumulate(matchingEvents, thisFilter);
 	}
 
@@ -111,6 +113,7 @@ export default class FilterService {
 				break;
 			case 'inc':
 				if (Array.isArray(value) && value.includes(operand)) result = true;
+				if (typeof value === 'string' && typeof operand === 'string' && value.includes(operand)) result = true;
 				break;
 			default:
 				break;
@@ -123,6 +126,46 @@ export default class FilterService {
 
 		return rule.not ? !result : result;
 	};
+
+
+	public static describeFilter(filter: TransactionFilter, defs: NonNullable<TransactionRule['defs']> = {}): string {
+		return filter.map(rule => this.describeFilterRule(rule, defs)).join(' AND ');
+	}
+
+	public static describeFilterRule(rule: FilterRule, defs: TransactionRule['defs'] = {}): string {
+		if ('AND' in rule) {
+			return `${rule.AND.map(r => this.describeFilterRule(r, defs)).join(' AND ')}`;
+		} else if ('OR' in rule) {
+			return `${rule.OR.map(r => this.describeFilterRule(r, defs)).join(' OR ')}`;
+		} else {
+			return this.describePredicate(rule, defs);
+		}
+	}
+
+	private static describePredicate(rule: Predicate, defs: Record<string, any>): string {
+		const { property, operator, operand } = rule;
+		const operatorDescription = OperatorDescriptions[operator];
+		let operandString = Array.isArray(operand) ? `[${operand.map(o => defs[o]?.text || o).join(', ')}]` : (defs[operand?.toString() || '']?.text || operand);
+		if (typeof operand === 'string') {
+			operandString = `'${operandString}'`;
+		}
+		return `${PrettyProperties[property] || property} ${rule.not ? 'not ' : ''}${operatorDescription} ${operandString}`;
+	}
+
+	public static extractPredicates(filter: TransactionFilter): Predicate[] {
+		const predicates: Predicate[] = [];
+		const extract = (rule: FilterRule) => {
+			if ('AND' in rule) {
+				rule.AND.forEach(extract);
+			} else if ('OR' in rule) {
+				rule.OR.forEach(extract);
+			} else {
+				predicates.push(rule);
+			}
+		};
+		filter.forEach(extract);
+		return predicates;
+	}
 }
 
 /**
@@ -153,8 +196,10 @@ const CustomGetters: Record<string, (obj: Filterable, property: any) => any> = {
 	},
 } as const;
 
+const Operators = ['*', 'eq', 'gt', 'gte', 'lt', 'lte', 'inc'] as const;
+type Operator = (typeof Operators)[number];
 type Operation<T> = (operand: T, value: T) => boolean;
-const Operators: Record<string, Operation<any>> = {
+const Operations: Record<Operator, Operation<any>> = {
 	'*': () => true,
 	'eq': (operand, value) => value === operand,
 	'gt': (operand, value) => value > operand,
@@ -170,4 +215,27 @@ const Operators: Record<string, Operation<any>> = {
 		}
 		return false;
 	}
+} as const;
+
+const OperatorDescriptions: Record<Operator, string> = {
+	'*': 'is anything',
+	'eq': 'is',
+	'gt': '>',
+	'gte': '>=',
+	'lt': '<',
+	'lte': '<=',
+	'inc': 'includes',
+};
+
+const PrettyProperties: Record<string, string> = {
+	merchant_id: 'Merchant',
+	category_id: 'Category',
+	group_id: 'Group',
+	target_account_partition_id: 'Target Account Partition',
+	budget_id: 'Budget',
+	'Transaction.original_description': 'Description',
+	'Transaction.merchant_id': 'Merchant',
+	'Transaction.account_id': 'Account',
+	'Transaction.origin_account_id': 'Origin Account',
+	'Category.type': 'Category Type'
 };

@@ -1,7 +1,7 @@
 import { ddate, type DelfiDate } from "../utils/dateUtils";
 import { type Budget, type ScheduledBudget, type ProjectionEvent, type TriggeredBudget, RecurrenceType, type BudgetOccurrence } from "./Budget";
 import BudgetUtils from "./Budget";
-import FilterService from "../services/FilterService";
+import FilterUtils from "./Filters";
 
 type MonthForecast = {
 	occurrences: BudgetOccurrence[],
@@ -51,7 +51,7 @@ class Forecast {
 				o.start.isSameOrBefore(monthEnd, 'month') &&
 				o.end.isSameOrAfter(monthStart, 'month')
 			);
-			const monthEvents = FilterService.filter(scheduledEvents, [
+			const monthEvents = FilterUtils.filter(scheduledEvents, [
 				{ property: 'year', operator: 'eq', operand: monthStart.year() },
 				{ property: 'month', operator: 'eq', operand: monthStart.month() },
 			])

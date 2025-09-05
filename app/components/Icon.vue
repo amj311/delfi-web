@@ -1,18 +1,30 @@
 <script setup lang="ts">
-import { Icons, type IconName, colors, type Icon } from 'delfi-core/utils/constants';
+import { Icons, type IconName, colors, type Icon, type IconIdentifier } from 'delfi-core/utils/constants';
 import { computed } from 'vue';
 
 const props = defineProps<{
-	name?: IconName;
+	name?: IconIdentifier;
 	source?: string;
 	source_id?: string;
 	fill?: boolean;
 	color?: string;
 }>();
 
-const icon = computed<Icon>(() => Icons[props.name || ''] || {
-	source: props.source || 'material-symbols',
-	source_id: props.source_id || '',
+const icon = computed<Icon>(() => {
+	if (Icons[props.name || '']) {
+		return Icons[props.name || ''];
+	}
+	if (props.name?.includes('::')) {
+		const [source, source_id] = props.name.split('::');
+		return {
+			source: source || 'material-symbols',
+			source_id: source_id || '',
+		};
+	}
+	return {
+		source: props.source || 'material-symbols',
+		source_id: props.source_id || '',
+	};
 });
 const color = computed(() => colors[props.color || ''] || props.color || 'inherit');
 </script>

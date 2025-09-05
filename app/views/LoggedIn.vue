@@ -47,9 +47,13 @@ onBeforeMount(() => {
 					<Icon name="bank" />
 					Accounts
 				</router-link>
-				<router-link to="/categories" class="nav-link flex align-items-center gap-1">
+				<!-- <router-link to="/categories" class="nav-link flex align-items-center gap-1">
 					<Icon name="category" />
 					Categories
+				</router-link> -->
+				<router-link to="/rules" class="nav-link flex align-items-center gap-1">
+					<Icon name="material-symbols::manufacturing" />
+					Rules
 				</router-link>
 			</nav>
 		</header>

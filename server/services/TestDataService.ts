@@ -21,8 +21,8 @@ export class TestDataService {
 
 	public static users: Array<User> = [{
 		user_id: "a911cba0-3f61-4bc7-86a6-0d1c407baf18",
-		auth_id: "5etpEgtKBCdDWG7XrmxOrlKFTI92",
-		email: "amjudd315@gmail.com",
+		auth_id: "xK5UD7EtKXPp05JzFuTfjM4PzXA3",
+		email: "simplyolives2018@gmail.com",
 		given_name: "Arthur",
 		family_name: "Judd"
 	}]
@@ -181,7 +181,6 @@ export class TestDataService {
 				budget_id: 'a3c1d3e4-5f6a-7890-abcd-ef0123456789',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Rachel Life Insurance",
-				amount: -70,
 				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
@@ -198,7 +197,6 @@ export class TestDataService {
 				budget_id: 'd3e4f5a6-7890-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Car Insurance",
-				amount: -81,
 				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
@@ -884,7 +882,7 @@ export class TestDataService {
 			{
 				transaction_rule_id: 'rule-11',
 				workspace_id: TestDataService.workspaceId,
-				filter: [ { property: 'sourceTransaction.merchant_id', operator: 'eq', operand: "dec45eae-1d76-405e-be2f-710e55bc2215" } ],
+				filter: [ { property: 'Transaction.merchant_id', operator: 'eq', operand: "dec45eae-1d76-405e-be2f-710e55bc2215" } ],
 				actions: [
 					{ action: 'category_id', value: categoryByName("Groceries").category_id }
 				]

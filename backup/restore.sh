@@ -47,8 +47,8 @@ fi
 echo -e "\nRestoring the backup: ${BACKUP_FILE}..."
 
 # CLOSE ALL EXISTING CONNECTIONS
-sudo docker exec -e PGPASSWORD=$POSTGRES_PASS gallery-backup psql -h db -U $POSTGRES_USER -d $POSTGRES_DB -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$POSTGRES_DB' AND pid <> pg_backend_pid();"
+PGPASSWORD=$POSTGRES_PASS psql -h db -U $POSTGRES_USER -d $POSTGRES_DB -c "SELECT pg_terminate_backend(pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$POSTGRES_DB' AND pid <> pg_backend_pid();"
 # RUN THE DUMP FILE
-sudo docker exec -e PGPASSWORD=$POSTGRES_PASS gallery-backup psql -h db -U $POSTGRES_USER -f ${BACKUP_FILE}
+PGPASSWORD=$POSTGRES_PASS psql -h db -U $POSTGRES_USER -f ${BACKUP_FILE}
 
 echo -e "\nRestoration completed for volume '${VOLUME}' from ${BACKUP_FILE}."

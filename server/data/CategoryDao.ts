@@ -73,5 +73,16 @@ export const CategoryDao = {
 				workspace_id,
 			},
 		});
+	},
+
+	async getCategoryById(category_id: string) {
+		return await prisma.category.findUnique({
+			where: {
+				category_id,
+			},
+			include: {
+				ParentCategory: true
+			}
+		});
 	}
 };

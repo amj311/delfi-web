@@ -387,3 +387,4 @@ export const Icons = {
 } as const;
 
 export type IconName = keyof typeof Icons;
+export type IconIdentifier = IconName | `${IconSource}::${string}`; // Allow custom icons in the format source::source_id

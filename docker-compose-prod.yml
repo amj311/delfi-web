@@ -5,7 +5,7 @@ services:
       dockerfile: ./Dockerfile.server.prod
     image: delfi-server
     labels:
-      - "com.docker.compose.project=delfi"
+      - "com.docker.compose.project=delfi-web"
     container_name: delfi-server
     restart: on-failure:max=2
     ports:
@@ -23,7 +23,7 @@ services:
       context: .
       dockerfile: ./Dockerfile.db
     labels:
-      - "com.docker.compose.project=delfi"
+      - "com.docker.compose.project=delfi-web"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
@@ -41,14 +41,14 @@ services:
       context: .
       dockerfile: ./Dockerfile.backup
     labels:
-      - "com.docker.compose.project=delfi"
+      - "com.docker.compose.project=delfi-web"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=delfi
     volumes:
-      # - /home/arthur/backups:/backup-dir
-      - /Users/Arthur/code/delfi-web/backups:/backup-dir
+      - /home/arthur/backups:/backup-dir
+      # - /Users/Arthur/code/delfi-web/backups:/backup-dir
     depends_on:
       - db
     links:

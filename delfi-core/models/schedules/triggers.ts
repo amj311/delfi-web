@@ -1,4 +1,4 @@
-import type { TransactionFilter } from "../../services/FilterService"
+import type { TransactionFilter } from "../Filters"
 
 type Computation = {
 	operator: 'exactly' | 'add' | 'sub' | 'mult' | 'div' | 'percent'

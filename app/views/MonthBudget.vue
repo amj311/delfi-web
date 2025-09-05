@@ -434,7 +434,7 @@ const otherAccounts = computed(() => {
 							</AccordionPanel>
 						</template>
 						<!-- OTHER INCOME -->
-						<AccordionPanel value="other-income" v-if="!isFuture">
+						<AccordionPanel value="other-income" v-if="state.summaryData.incomeSummary.tally.unBudgetedAttributions.length">
 							<AccordionHeader class="flex align-items-center gap-2">
 								<AttributionAvatar icon="money-bag" :size="2" :background="'lime2'" />
 								Other
@@ -567,7 +567,7 @@ const otherAccounts = computed(() => {
 							</AccordionPanel>
 						</template>
 						<!-- OTHER TRANSFERS -->
-						<AccordionPanel value="other-transfers" v-if="!isFuture">
+						<AccordionPanel value="other-transfers" v-if="state.summaryData.transferSummary.tally.unBudgetedAttributions.length">
 							<AccordionHeader class="flex align-items-center gap-2">
 								<AttributionAvatar icon="transfer" :size="2" :background="'sky1'" />
 								Other Transfers

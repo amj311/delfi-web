@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import Icon from './Icon.vue';
-import { colors, type IconName } from 'delfi-core/utils/constants';
+import { colors, type IconIdentifier, type IconName } from 'delfi-core/utils/constants';
 import type { Category } from 'delfi-core/models/Category';
 import { useCategoryStore } from '@/stores/category.store';
 
@@ -20,7 +20,7 @@ const props = defineProps<{
 		} | null;
 	};
 	image?: string | null;
-	icon?: IconName;
+	icon?: IconIdentifier;
 	background?: string;
 	category?: Category | null;
 	categoryId?: string | null;
