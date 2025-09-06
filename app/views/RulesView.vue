@@ -16,6 +16,9 @@ import InputText from 'primevue/inputtext';
 import MerchantButton from '@/components/MerchantButton.vue';
 import CategoryButton from '@/components/CategoryButton.vue';
 import BudgetButton from '@/components/BudgetButton.vue';
+import { useBudgetStore } from '@/stores/budget.store';
+import { useMerchantStore } from '@/stores/merchant.store';
+import { usePrompt } from '@/components/utils/PromptModal.vue';
 
 const toast = useToast();
 const categoryStore = useCategoryStore();
@@ -37,9 +40,13 @@ function findCategoryAction(actions: TransactionRule['actions']) {
 	return actions.find((action) => action.action.includes('category_id'));
 }
 
+function findAction(rule: TransactionRule, actionName: string) {
+	return rule.actions?.find((action) => action.action === actionName);
+}
+
 function findActionDefs(rule: TransactionRule, action?: Action | ActionType): Record<string, { text: string; data: any }> {
 	if (typeof action === 'string') {
-		action = rule.actions.find((a) => a.action === action);
+		action = findAction(rule, action);
 	}
 	if (!action) return {};
 	const defs = rule.defs || {};
@@ -89,7 +96,7 @@ async function saveRule() {
 	try {
 		isSavingRule.value = true;
 		// This endpoint upserts
-		await request.post('/transaction-rule', editingRule.value);
+		const { data } = await request.post('/transaction-rule', editingRule.value);
 		upsertRuleModal.value?.close();
 		toast.add({
 			severity: 'success',
@@ -97,6 +104,9 @@ async function saveRule() {
 			detail: 'Rule saved successfully.',
 			life: 3000,
 		});
+		if (isNewRule) {
+			rules.value.push(data.data);
+		}
 	} catch (error) {
 		toast.add({
 			severity: 'error',
@@ -122,6 +132,32 @@ const ActionOptions = Object.keys(Actions).map((key) => ({
 	label: Actions[key as ActionType].label,
 	value: key,
 }));
+
+async function deleteRule(rule: TransactionRuleDraft) {
+	if (!rule || !rule.transaction_rule_id) return;
+	if (!(await usePrompt().delete({ message: 'Are you sure you want to delete this rule? This action cannot be undone.' }))) return;
+	try {
+		isSavingRule.value = true;
+		await request.delete(`/transaction-rule/${rule.transaction_rule_id}`);
+		rules.value = rules.value.filter((r) => r.transaction_rule_id !== rule.transaction_rule_id);
+		editingRule.value = null;
+		toast.add({
+			severity: 'success',
+			summary: 'Success',
+			detail: 'Rule deleted successfully.',
+			life: 3000,
+		});
+	} catch (error) {
+		toast.add({
+			severity: 'error',
+			summary: 'Error',
+			detail: 'Failed to delete rule. Please try again later.',
+			life: 3000,
+		});
+	} finally {
+		isSavingRule.value = false;
+	}
+}
 </script>
 
 <template>
@@ -145,22 +181,27 @@ const ActionOptions = Object.keys(Actions).map((key) => ({
 				>
 					<!-- Use avatars to indicate the result of the action -->
 					<AttributionAvatar
-						v-if="findMerchantAction(rule.actions)"
-						:image="findActionDefs(rule, 'merchant_id').merchant_id?.data.logo"
+						v-if="findAction(rule, 'merchant_id')"
+						:image="useMerchantStore().getMerchantById(findAction(rule, 'merchant_id')?.value.merchant_id as string)?.logo"
 						:size="2.3"
 					/>
 					<AttributionAvatar
-						v-else-if="findCategoryAction(rule.actions)"
-						:category="findActionDefs(rule, 'category_id').category_id?.data"
+						v-else-if="findAction(rule, 'category_id')"
+						:category="useCategoryStore().getCategoryById(findAction(rule, 'category_id')?.value.category_id as string)"
+						:size="2.3"
+					/>
+					<AttributionAvatar
+						v-else-if="findAction(rule, 'budget_id')"
+						:category="useBudgetStore().getBudgetById(findAction(rule, 'budget_id')?.value.budget_id as string)?.Category"
 						:size="2.3"
 					/>
 					<AttributionAvatar v-else icon="material-symbols::manufacturing" :size="2.3" />
 					<div class="flex flex-column flex-grow-1 min-w-0 text-ellipsis">
 						<div class="text-ellipsis font-medium">
-							{{ getActionDescription(rule.actions[0], rule).actionVerb }}
-							{{ getActionDescription(rule.actions[0], rule).actionTarget }}
+							{{ getActionDescription(rule.actions?.[0], rule).actionVerb }}
+							{{ getActionDescription(rule.actions?.[0], rule).actionTarget }}
 							→
-							{{ getActionDescription(rule.actions[0], rule).actionValue }}
+							{{ getActionDescription(rule.actions?.[0], rule).actionValue }}
 						</div>
 						<small class="text-ellipsis">When: {{ FilterUtils.describeFilter(rule.filter, rule.defs) }}</small>
 					</div>
@@ -222,9 +263,10 @@ const ActionOptions = Object.keys(Actions).map((key) => ({
 			</div>
 		</div>
 		<div class="flex gap-2">
+			<Button v-if="!isNewRule && editingRule" icon="pi pi-trash" class="p-button-text" label="Delete" severity="secondary" @click="() => deleteRule(editingRule!)" />
 			<div class="flex-grow-1" />
 			<Button class="p-button-text" label="Cancel" @click="editingRule = null" />
-			<Button label="Save" :loading="isSavingRule" :disabled="isSavingRule || !canSave" @click="saveRule" />
+			<Button label="Save Rule" :loading="isSavingRule" :disabled="isSavingRule || !canSave" @click="saveRule" />
 		</div>
 	</DrawerModal>
 </template>

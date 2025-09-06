@@ -17,12 +17,10 @@ export const TransactionRuleDao = {
 	async upsertTransactionRule(workspace_id, data: Optional<TransactionRule, 'transaction_rule_id'>) {
 		await this.setupTestData();
 
-		console.log("Upserting rule", data);
-
 		return await prisma.transactionRule.upsert({
 			where: {
 				workspace_id: workspace_id,
-				transaction_rule_id: data.transaction_rule_id,
+				transaction_rule_id: data.transaction_rule_id || uuid(),
 			},
 			create: {
 				workspace_id: workspace_id,
@@ -50,6 +48,7 @@ export const TransactionRuleDao = {
 					},
 				}
 			},
+			include: { actions: true },
 		});
 	},
 
@@ -76,6 +75,12 @@ export const TransactionRuleDao = {
 	},
 
 	async deleteTransactionRule(workspace_id: string, transactionRuleId: string) {
+		await prisma.transactionRuleAction.deleteMany({
+			where: {
+				transaction_rule_id: transactionRuleId,
+			},
+		});
+
 		await prisma.transactionRule.delete({
 			where: {
 				workspace_id: workspace_id,

@@ -68,7 +68,7 @@ function addRule(rule: FilterRule, parent: EitherBlock) {
 						option-label="label"
 						option-value="value"
 						v-model="rule.property"
-						@change="() => (rule.operator = null)"
+						@change="() => (rule.operator = Properties[rule.property]?.allowedOperators?.[0] || Operators[0])"
 						placeholder="Property..."
 					/>
 					<Select

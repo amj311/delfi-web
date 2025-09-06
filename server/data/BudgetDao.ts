@@ -123,6 +123,18 @@ export class BudgetDao {
 			where: {
 				budget_id,
 				workspace_id,
+			},
+			include: {
+				Group: true,
+				Category: {
+					include: {
+						ParentCategory: true,
+					}
+				},
+				Tags: true,
+				scheduleVariants: true,
+				triggerVariants: true,
+				childItems: true,
 			}
 		});
 	}

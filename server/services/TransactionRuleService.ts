@@ -29,6 +29,12 @@ export class TransactionRuleService {
 						type: 'category',
 					})
 				}
+				if (predicate.property.includes('budget_id')) {
+					defValues.push({
+						value: predicate.operand,
+						type: 'budget',
+					})
+				}
 			}));
 			// Find action defs
 			await Promise.all(rule.actions.map(async (action) => {
@@ -42,6 +48,12 @@ export class TransactionRuleService {
 					defValues.push({
 						value: asAny(action.value).category_id,
 						type: 'category',
+					})
+				}
+				if (action.action.includes('budget_id')) {
+					defValues.push({
+						value: asAny(action.value).budget_id,
+						type: 'budget',
 					})
 				}
 			}));
@@ -66,6 +78,16 @@ export class TransactionRuleService {
 							text: category.name,
 							type: 'category',
 							data: category,
+						};
+					}
+				}
+				if (def.type === 'budget') {
+					const budget = await BudgetDao.getBudgetById(workspace_id, def.value as string);
+					if (budget) {
+						defs[def.value!.toString()] = {
+							text: budget.memo,
+							type: 'budget',
+							data: budget,
 						};
 					}
 				}

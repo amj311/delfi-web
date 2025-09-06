@@ -19,7 +19,9 @@ const app = Fastify({
 	logger: false,
 	// https: httpsOptions
 });
-app.register(require('@fastify/cors'));
+app.register(require('@fastify/cors'), {
+	methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+});
 
 app.get('/firebase-config', () => {
 	return {
