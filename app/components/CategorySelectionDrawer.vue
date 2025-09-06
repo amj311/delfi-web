@@ -47,17 +47,4 @@ function cancelSelection() {
 </template>
 
 <style scoped lang="scss">
-.searchbar {
-	position: relative;
-	padding: 0.5rem 0;
-	background: var(--color-background);
-
-	> i.pi {
-		position: absolute;
-		right: 0.7rem;
-		top: 50%;
-		transform: translateY(-50%);
-		color: var(--p-text-color);
-	}
-}
 </style>

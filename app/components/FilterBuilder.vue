@@ -10,6 +10,9 @@ import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
 import CategorySelectionDrawer from './CategorySelectionDrawer.vue';
 import { useCategoryStore } from '@/stores/category.store';
+import MerchantButton from './MerchantButton.vue';
+import CategoryButton from './CategoryButton.vue';
+import BudgetButton from './BudgetButton.vue';
 
 const filter = defineModel<TransactionFilter>();
 const draft = ref<EitherBlock>(filter.value || { AND: [] });
@@ -21,25 +24,7 @@ watch(draft, (newVal) => {
 });
 
 const PropertyOptions = Object.entries(Properties).map(([key, prop]) => ({ label: prop.label, value: key }));
-
 const OperatorOptions = Operators.map((op) => ({ label: OperatorDescriptions[op] || op, value: op }));
-
-const merchantSelectionDrawer = ref<InstanceType<typeof MerchantSelectionDrawer> | null>(null);
-async function selectMerchant(predicate: Predicate) {
-	if (merchantSelectionDrawer.value) {
-		const selection = await merchantSelectionDrawer.value.selectMerchant(predicate.operand?.toString() || null);
-		predicate.operand = selection?.merchant_id || undefined;
-	}
-}
-
-
-const categorySelectionDrawer = ref<InstanceType<typeof CategorySelectionDrawer> | null>(null);
-async function selectCategory(predicate: Predicate) {
-	if (categorySelectionDrawer.value) {
-		const selection = await categorySelectionDrawer.value.selectCategory(predicate.operand?.toString() || null);
-		predicate.operand = selection || undefined;
-	}
-}
 
 function blockType(filter: EitherBlock) {
 	return ('AND' in filter) ? 'AND' : 'OR';
@@ -76,7 +61,7 @@ function addRule(rule: FilterRule, parent: EitherBlock) {
 			</div>
 			<div v-else-if="i > 1" class="track"></div>
 
-			<div v-if="rule && 'property' in rule" class="flex align-items-center gap-2 w-full">
+			<div v-if="rule && 'property' in rule" class="flex align-items-start gap-2 w-full">
 				<div class="flex align-items-center gap-2 flex-wrap">
 					<Select
 						:options="PropertyOptions"
@@ -84,6 +69,7 @@ function addRule(rule: FilterRule, parent: EitherBlock) {
 						option-value="value"
 						v-model="rule.property"
 						@change="() => (rule.operator = null)"
+						placeholder="Property..."
 					/>
 					<Select
 						v-if="rule.property"
@@ -98,31 +84,20 @@ function addRule(rule: FilterRule, parent: EitherBlock) {
 						@change="() => (rule.operand = null)"
 					/>
 					<template v-if="rule.operator">
-						<Button v-if="Properties[rule.property].type === 'merchant'" severity="secondary" outlined @click="() => selectMerchant(rule)">
-							<template v-if="rule.operand && typeof rule.operand === 'string'">
-								<AttributionAvatar :image="useMerchantStore().getMerchantById(rule.operand)?.logo" :size="1.4" />
-								{{ useMerchantStore().getMerchantById(rule.operand)?.name }}
-							</template>
-							<div v-else>Select merchant...</div>
-						</Button>
+						<MerchantButton v-if="Properties[rule.property].type === 'merchant'" v-model="rule.operand" />
+						<CategoryButton v-if="Properties[rule.property].type === 'category'" v-model="rule.operand" />
+						<BudgetButton v-if="Properties[rule.property].type === 'budget'" v-model="rule.operand" />
 
-						<Button v-else-if="Properties[rule.property].type === 'category'" severity="secondary" outlined @click="() => selectCategory(rule)">
-							<template v-if="rule.operand && typeof rule.operand === 'string'">
-								<AttributionAvatar :categoryId="rule.operand" :size="1.4" />
-								{{ useCategoryStore().getCategoryById(rule.operand)?.name }}
-							</template>
-							<div v-else>Select category...</div>
-						</Button>
-
-						<InputNumber v-else-if="Properties[rule.property].type === 'number'" v-model="rule.operand" />
+						<InputNumber v-if="Properties[rule.property].type === 'number'" v-model="rule.operand" class="w-7rem text-right" />
 						<InputNumber
-							v-else-if="Properties[rule.property].type === 'currency'"
+							v-if="Properties[rule.property].type === 'currency'"
 							v-model="rule.operand"
 							mode="currency"
 							currency="USD"
 							locale="en-US"
+							class="w-7rem text-right"
 						/>
-						<InputText v-else v-model="rule.operand" />
+						<InputText v-if="Properties[rule.property].type === 'string'" v-model="rule.operand" fluid />
 					</template>
 				</div>
 				<div class="flex-grow-1" />
@@ -131,14 +106,9 @@ function addRule(rule: FilterRule, parent: EitherBlock) {
 		</div>
 		<div class="track-row">
 			<div v-if="(block.AND || block.OR)?.length > 1" class="track end"></div>
-			<div><Button link icon="pi pi-plus-circle" label="Add condition" @click="() => addRule({ property: '' }, block)" /></div>
+			<div><Button text icon="pi pi-plus-circle" label="Add condition" @click="() => addRule({ property: '' }, block)" /></div>
 		</div>
-
 	</div>
-
-
-	<MerchantSelectionDrawer ref="merchantSelectionDrawer" />
-	<CategorySelectionDrawer ref="categorySelectionDrawer" />
 </template>
 
 <style scoped lang="scss">

@@ -2,7 +2,7 @@
 import { useCategoryStore } from '@/stores/category.store';
 import { computed, onBeforeMount, ref, watch } from 'vue';
 import AttributionAvatar from '@/components/AttributionAvatar.vue';
-import { Actions, type Action, type ActionType, type TransactionRule } from 'delfi-core/models/TransactionRule';
+import { Actions, type Action, type ActionType, type TransactionRule, type TransactionRuleDraft } from 'delfi-core/models/TransactionRule';
 import request from '@/services/request';
 import FilterUtils from 'delfi-core/models/Filters';
 import Button from 'primevue/button';
@@ -11,6 +11,11 @@ import Icon from '@/components/Icon.vue';
 import { jsonCopy } from 'delfi-core/utils/miscUtils';
 import { useToast } from 'primevue/usetoast';
 import FilterBuilder from '@/components/FilterBuilder.vue';
+import Select from 'primevue/select';
+import InputText from 'primevue/inputtext';
+import MerchantButton from '@/components/MerchantButton.vue';
+import CategoryButton from '@/components/CategoryButton.vue';
+import BudgetButton from '@/components/BudgetButton.vue';
 
 const toast = useToast();
 const categoryStore = useCategoryStore();
@@ -35,7 +40,7 @@ function findCategoryAction(actions: TransactionRule['actions']) {
 function findActionDefs(rule: TransactionRule, action?: Action | ActionType): Record<string, { text: string; data: any }> {
 	if (typeof action === 'string') {
 		action = rule.actions.find((a) => a.action === action);
-	};
+	}
 	if (!action) return {};
 	const defs = rule.defs || {};
 	const labels = {};
@@ -55,16 +60,15 @@ function getActionDescription(action: TransactionRule['actions'][0], rule: Trans
 		actionVerb: Actions[actionName].verb || '',
 		actionTarget: Actions[actionName]?.label || actionName,
 		// TODO this will not match more complex action values
-		actionValue: labels[actionName]?.text as string || value[actionName],
+		actionValue: (labels[actionName]?.text as string) || value[actionName],
 	};
 }
-
 
 /*******************
  * UPSERTING
  */
 const upsertRuleModal = ref<InstanceType<typeof DrawerModal> | null>(null);
-const editingRule = ref<TransactionRule | null>(null);
+const editingRule = ref<TransactionRuleDraft | null>(null);
 
 watch(editingRule, (newVal) => {
 	if (newVal) {
@@ -74,7 +78,7 @@ watch(editingRule, (newVal) => {
 	}
 });
 
-function editRule(rule: TransactionRule) {
+function editRule(rule: TransactionRuleDraft) {
 	upsertRuleModal.value?.open();
 	editingRule.value = jsonCopy(rule);
 }
@@ -91,14 +95,14 @@ async function saveRule() {
 			severity: 'success',
 			summary: 'Success',
 			detail: 'Rule saved successfully.',
-			life: 3000
+			life: 3000,
 		});
 	} catch (error) {
 		toast.add({
 			severity: 'error',
 			summary: 'Error',
 			detail: 'Failed to save rule. Please try again later.',
-			life: 3000
+			life: 3000,
 		});
 	} finally {
 		isSavingRule.value = false;
@@ -107,12 +111,17 @@ async function saveRule() {
 
 function isFilterComplete(filter) {
 	return !!filter && FilterUtils.extractPredicates(filter).every((rule) => rule.property && rule.operator && rule.operand);
-};
+}
 
 const canSave = computed(() => {
 	if (!isFilterComplete(editingRule.value?.filter)) return false;
 	return true;
 });
+
+const ActionOptions = Object.keys(Actions).map((key) => ({
+	label: Actions[key as ActionType].label,
+	value: key,
+}));
 </script>
 
 <template>
@@ -120,7 +129,7 @@ const canSave = computed(() => {
 		<div class="header-actions">
 			<h2>Automation Rules</h2>
 			<div class="actions">
-				<button class="btn primary">Add rule</button>
+				<Button label="Add rule" @click="() => editRule({ filter: { AND: [ { property: '' as any } ] }, actions: [ { action: '' as any, value: {} } ] })" />
 			</div>
 		</div>
 
@@ -138,14 +147,14 @@ const canSave = computed(() => {
 					<AttributionAvatar
 						v-if="findMerchantAction(rule.actions)"
 						:image="findActionDefs(rule, 'merchant_id').merchant_id?.data.logo"
-						:size="2.5"
+						:size="2.3"
 					/>
 					<AttributionAvatar
 						v-else-if="findCategoryAction(rule.actions)"
 						:category="findActionDefs(rule, 'category_id').category_id?.data"
-						:size="2.5"
+						:size="2.3"
 					/>
-					<AttributionAvatar v-else icon="material-symbols::manufacturing" :size="2.5" />
+					<AttributionAvatar v-else icon="material-symbols::manufacturing" :size="2.3" />
 					<div class="flex flex-column flex-grow-1 min-w-0 text-ellipsis">
 						<div class="text-ellipsis font-medium">
 							{{ getActionDescription(rule.actions[0], rule).actionVerb }}
@@ -184,6 +193,32 @@ const canSave = computed(() => {
 
 			<div>
 				<h4 class="mb-1">Then...</h4>
+				<div v-for="(action, index) in editingRule.actions" :key="index" class="flex align-items-start gap-2 mb-2">
+					<div class="flex align-items-center gap-2">
+						<Select v-model="action.action" :options="ActionOptions" option-label="label" option-value="value" class="w-11rem" placeholder="Action..." />
+						<b class="text-xl">→</b>
+					</div>
+					<div class="flex flex-wrap gap-2 flex-grow-1">
+						<template v-for="field in Actions[action.action]?.form || []" :key="field.key">
+							<MerchantButton v-if="field.type === 'merchant'" v-model="action.value[field.key]" />
+							<CategoryButton v-if="field.type === 'category'" v-model="action.value[field.key]" />
+							<BudgetButton v-if="field.type === 'budget'" v-model="action.value[field.key]" />
+							<InputText v-if="field.type === 'string'" v-model="action.value[field.key]" :placeholder="field.placeholder || ''" />
+							<div v-else-if="field.type === 'number'" class="flex flex-column">
+								<label :for="`action-${index}-${field.key}`" class="text-sm">{{ field.label }}</label>
+								<input
+									type="number"
+									:id="`action-${index}-${field.key}`"
+									v-model.number="action.value[field.key]"
+									:placeholder="field.placeholder || ''"
+									class="p-inputtext p-component w-20rem"
+								/>
+							</div>
+						</template>
+					</div>
+					<Button icon="pi pi-trash" severity="secondary" text @click="editingRule.actions.splice(index, 1)" />
+				</div>
+				<Button label="Add Action" icon="pi pi-plus-circle" text @click="editingRule.actions.push({ action: '', value: {} })" />
 			</div>
 		</div>
 		<div class="flex gap-2">

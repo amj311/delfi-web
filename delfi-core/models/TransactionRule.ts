@@ -3,6 +3,7 @@
 */
 import type { JsonObject } from "@prisma/client/runtime/library";
 import type { TransactionFilter } from "delfi-core/models/Filters";
+import type { Optional } from "delfi-core/utils/typeUtils";
 
 export type TransactionRule = {
 	transaction_rule_id: string,
@@ -11,6 +12,8 @@ export type TransactionRule = {
 	actions: Array<Action>,
 	defs?: RuleDef
 }
+
+export type TransactionRuleDraft = Optional<TransactionRule, 'transaction_rule_id'>;
 
 export type Action = {
 	/** Either a Transaction property or more complicated action */
@@ -35,24 +38,36 @@ export class TransactionRuleUtils {
 export const Actions = {
 	'memo': {
 		label: 'Set Memo',
-		shape: {
+		form: [{
 			key: 'memo',
 			label: 'Memo',
 			placeholder: 'Enter memo',
 			type: 'string',
-		}
+		}],
 	},
 	'merchant_id': {
-		label: 'Merchant',
+		label: 'Set Merchant',
+		form: [{
+			key: 'merchant_id',
+			label: 'Merchant',
+			type: 'merchant',
+		}]
 	},
 	'category_id': {
-		label: 'Category',
-	},
-	'account_attribution_id': {
-		label: 'Account Attribution',
+		label: 'Set Category',
+		form: [{
+			key: 'category_id',
+			label: 'Category',
+			type: 'category',
+		}]
 	},
 	'budget_id': {
-		label: 'Budget'
+		label: 'Set Budget',
+		form: [{
+			key: 'budget_id',
+			label: 'Budget',
+			type: 'budget',
+		}]
 	},
 } as const;
 
