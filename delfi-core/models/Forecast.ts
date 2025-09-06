@@ -51,11 +51,11 @@ class Forecast {
 				o.start.isSameOrBefore(monthEnd, 'month') &&
 				o.end.isSameOrAfter(monthStart, 'month')
 			);
-			const monthEvents = FilterUtils.filter(scheduledEvents, [
+			const monthEvents = FilterUtils.filter(scheduledEvents, { AND: [
 				{ property: 'year', operator: 'eq', operand: monthStart.year() },
 				{ property: 'month', operator: 'eq', operand: monthStart.month() },
-			])
-		
+			]});
+
 			// Compute immediate triggers by letting them query the store for events from the current month matching their filter
 			const triggeredOccurrences = this.transactionTriggers.map(budget =>
 				BudgetUtils.createTriggeredOccurrenceForMonth(monthStart, budget, monthEvents)

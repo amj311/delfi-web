@@ -264,13 +264,13 @@ const transferTarget = computed(() => {
 	return transferPair.value.find((t) => t.amount > 0) || null;
 });
 
+const transferPairModal = ref<InstanceType<typeof DrawerModal> | null>(null);
+
 function cancelTransferPair() {
 	if (transferPairModal.value) {
 		transferPairModal.value.close();
 	}
 }
-
-const transferPairModal = ref<InstanceType<typeof DrawerModal> | null>(null);
 function openTransferPairModal() {
 	if (transferPairModal.value) {
 		transferPairModal.value.open();

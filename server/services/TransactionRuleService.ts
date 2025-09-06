@@ -2,7 +2,7 @@ import type { Category } from "delfi-core/models/Category";
 import { TransactionUtils, type Transaction, type TransactionAttribution } from "delfi-core/models/Transaction";
 import { type TransactionRule } from "delfi-core/models/TransactionRule";
 import FilterUtils from "delfi-core/models/Filters";
-import { nullOrUndefined } from "delfi-core/utils/miscUtils";
+import { asAny, nullOrUndefined } from "delfi-core/utils/miscUtils";
 import { BudgetDao } from "server/data/BudgetDao";
 import { MerchantDao } from "server/data/MerchantDao";
 import { TransactionDao } from "server/data/TransactionDao";
@@ -34,13 +34,13 @@ export class TransactionRuleService {
 			await Promise.all(rule.actions.map(async (action) => {
 				if (action.action.includes('merchant_id')) {
 					defValues.push({
-						value: action.value,
+						value: asAny(action.value).merchant_id,
 						type: 'merchant',
 					})
 				}
 				if (action.action.includes('category_id')) {
 					defValues.push({
-						value: action.value,
+						value: asAny(action.value).category_id,
 						type: 'category',
 					})
 				}
@@ -49,6 +49,7 @@ export class TransactionRuleService {
 			const defs = {};
 			for (const def of defValues) {
 				if (def.type === 'merchant') {
+					console.log(def.value);
 					const merchant = await MerchantDao.getMerchantById(def.value as string);
 					if (merchant) {
 						defs[def.value!.toString()] = {
@@ -134,11 +135,13 @@ export class TransactionRuleService {
 		// attempt to set property on attribution or transaction
 		else if (change.action in attribution) {
 			changed = true;
-			attribution[change.action] = change.value;
+			// attribution.example = change.value.example;
+			attribution[change.action] = change.value[change.action];
 		}
 		else if (change.action in transaction) {
 			changed = true;
-			transaction[change.action] = change.value;
+			// transaction.example = change.value.example;
+			transaction[change.action] = change.value[change.action];
 		}
 		return changed;
 	}

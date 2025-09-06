@@ -5,7 +5,7 @@ services:
       dockerfile: ./Dockerfile.server.dev
     labels:
       - "com.docker.compose.project=delfi-web"
-    container_name: delfi-server
+    container_name: delfi-server-dev
     restart: on-failure:max=2
     ports:
       - 5000:5000

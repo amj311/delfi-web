@@ -7,28 +7,32 @@ import type { CommonEvent } from "delfi-core/models/Summary"
 import type { TransactionRule } from "delfi-core/models/TransactionRule"
 
 export type Predicate = {
-	property: (keyof Filterable) | 'budget_id' | 'date' | 'year' | 'month' | 'day' | `${keyof typeof CustomGetters}.${string}`,
+	property: Property,
 	operator: Operator,
 	not?: boolean // If true, the rule is inverted
 	operand?: number | string | string[] | DelfiDate
 }
 
-type FilterRule = Predicate | AndFilter | OrFilter;
-export type TransactionFilter = Array<FilterRule>;
+export type FilterRule = Predicate | AndBlock | OrBlock | null;
 
-type AndFilter = {
-	AND: TransactionFilter;
+export type AndBlock = {
+	AND: Array<FilterRule>;
 }
-type OrFilter = {
-	OR: TransactionFilter;
+export type OrBlock = {
+	OR: Array<FilterRule>;
 }
+export type EitherFilter = {
+	AND?: Array<FilterRule>;
+	OR?: Array<FilterRule>;
+}
+export type TransactionFilter = AndBlock | OrBlock | null; // Empty object for no filter
+
 type Filterable = BudgetedTransactionDetails | ScheduledBudget | ProjectionEvent | AttributionEvent | CommonEvent;
 type Accumulatable = Filterable & { amount: number };
 
 
 export default class FilterUtils {
 	public static filter<T extends Filterable = Filterable>(transactions: T[], filter: TransactionFilter): T[] {
-		if (!filter || filter.length === 0) return transactions;
 		return transactions.filter(transaction => this.matches(filter, transaction));
 	}
 
@@ -43,24 +47,26 @@ export default class FilterUtils {
 	 * @param date 
 	 * @param filter
 	 */
-	public static accumulateUpTo(events: Array<Accumulatable>, date: DelfiDate, filter: TransactionFilter = []) {
-		const thisFilter: TransactionFilter = [
-			...filter,
-			{ property: 'date', operator: 'lt', operand: date },
-		];
+	public static accumulateUpTo(events: Array<Accumulatable>, date: DelfiDate, filter: TransactionFilter = { AND: [] }) {
+		const thisFilter: TransactionFilter = {
+			AND: [
+				filter,
+				{ property: 'date', operator: 'lt', operand: date },
+			]
+		};
 		const matchingEvents = FilterUtils.filter(events, thisFilter);
 		return this.accumulate(matchingEvents, thisFilter);
 	}
 
-
-	public static matches(filter: TransactionFilter, transaction: Filterable): boolean {
-		return filter.every(rule => this.evaluateFilterRule(rule, transaction));
-	}
-
-	private static evaluateFilterRule(rule: FilterRule, transaction: Filterable): boolean {
-		if (Array.isArray(rule)) {
-			return this.evaluateAndFilter(rule, transaction);
-		} else if ('AND' in rule) {
+	public static matches(rule: FilterRule, transaction: Filterable): boolean {
+		if (rule === null) {
+			return true; // Null rule
+		}
+		// Check empty rules
+		if (Object.keys(rule).length === 0) {
+			return true; // Empty rule
+		}
+		if ('AND' in rule) {
 			return this.evaluateAndFilter(rule.AND, transaction);
 		} else if ('OR' in rule) {
 			return this.evaluateOrFilter(rule.OR, transaction);
@@ -71,12 +77,12 @@ export default class FilterUtils {
 
 	private static evaluateAndFilter(filter: Array<FilterRule>, transaction: Filterable): boolean {
 		if (filter.length === 0) return true;
-		return filter.every(rule => this.evaluateFilterRule(rule, transaction));
+		return filter.every(rule => this.matches(rule, transaction));
 	}
 
 	private static evaluateOrFilter(filter: Array<FilterRule>, transaction: Filterable): boolean {
 		if (filter.length === 0) return false;
-		return filter.some(rule => this.evaluateFilterRule(rule, transaction));
+		return filter.some(rule => this.matches(rule, transaction));
 	}
 
 	private static evaluatePredicate(rule: Predicate, obj: Filterable): boolean {
@@ -94,8 +100,8 @@ export default class FilterUtils {
 		let result = false;
 
 		switch (operator) {
-			case '*':
-				return true;
+			// case '*':
+			// 	return true;
 			case 'eq':
 				if (value === operand) result = true;
 				break;
@@ -115,28 +121,30 @@ export default class FilterUtils {
 				if (Array.isArray(value) && value.includes(operand)) result = true;
 				if (typeof value === 'string' && typeof operand === 'string' && value.includes(operand)) result = true;
 				break;
+			case 'in':
+				if (Array.isArray(operand) && operand.includes(value)) result = true;
+				if (typeof operand === 'string' && typeof value === 'string' && operand.includes(value)) result = true;
+				break;
 			default:
 				break;
 		}
-		
+
 		// const operatorResult = Operators[operator](value, operand);
 		// if (operatorResult !== result) {
 		// 	console.log(`FilterService: Rule mismatch for property "${property}" with operator "${operator}". Expected: ${result}, got: ${operatorResult}`);
 		// }
-
 		return rule.not ? !result : result;
 	};
 
 
-	public static describeFilter(filter: TransactionFilter, defs: NonNullable<TransactionRule['defs']> = {}): string {
-		return filter.map(rule => this.describeFilterRule(rule, defs)).join(' AND ');
-	}
-
-	public static describeFilterRule(rule: FilterRule, defs: TransactionRule['defs'] = {}): string {
+	public static describeFilter(rule: FilterRule, defs: TransactionRule['defs'] = {}): string {
+		if (rule === null) {
+			return '<empty rule>';
+		}
 		if ('AND' in rule) {
-			return `${rule.AND.map(r => this.describeFilterRule(r, defs)).join(' AND ')}`;
+			return `${rule.AND.map(r => this.describeFilter(r, defs)).join(' AND ')}`;
 		} else if ('OR' in rule) {
-			return `${rule.OR.map(r => this.describeFilterRule(r, defs)).join(' OR ')}`;
+			return `${rule.OR.map(r => this.describeFilter(r, defs)).join(' OR ')}`;
 		} else {
 			return this.describePredicate(rule, defs);
 		}
@@ -149,21 +157,28 @@ export default class FilterUtils {
 		if (typeof operand === 'string') {
 			operandString = `'${operandString}'`;
 		}
-		return `${PrettyProperties[property] || property} ${rule.not ? 'not ' : ''}${operatorDescription} ${operandString}`;
+		return `${Properties[property]?.label || property} ${rule.not ? 'not ' : ''}${operatorDescription} ${operandString}`;
 	}
 
-	public static extractPredicates(filter: TransactionFilter): Predicate[] {
+	public static extractPredicates(filter: FilterRule): Predicate[] {
 		const predicates: Predicate[] = [];
 		const extract = (rule: FilterRule) => {
+			if (rule === null) {
+				return;
+			}
 			if ('AND' in rule) {
 				rule.AND.forEach(extract);
 			} else if ('OR' in rule) {
 				rule.OR.forEach(extract);
+			} else if (Array.isArray(rule)) {
+				rule.forEach(extract);
 			} else {
 				predicates.push(rule);
 			}
 		};
-		filter.forEach(extract);
+		if (filter) {
+			extract(filter);
+		}
 		return predicates;
 	}
 }
@@ -196,11 +211,11 @@ const CustomGetters: Record<string, (obj: Filterable, property: any) => any> = {
 	},
 } as const;
 
-const Operators = ['*', 'eq', 'gt', 'gte', 'lt', 'lte', 'inc'] as const;
+export const Operators = ['eq', 'gt', 'gte', 'lt', 'lte', 'inc', 'in'] as const;
 type Operator = (typeof Operators)[number];
 type Operation<T> = (operand: T, value: T) => boolean;
 const Operations: Record<Operator, Operation<any>> = {
-	'*': () => true,
+	// '*': () => true,
 	'eq': (operand, value) => value === operand,
 	'gt': (operand, value) => value > operand,
 	'gte': (operand, value) => value >= operand,
@@ -214,28 +229,46 @@ const Operations: Record<Operator, Operation<any>> = {
 			return value.includes(operand as string);
 		}
 		return false;
-	}
+	},
+	'in': (operand, value) => {
+		if (Array.isArray(operand)) {
+			return operand.includes(value);
+		}
+		return false;
+	},
 } as const;
 
-const OperatorDescriptions: Record<Operator, string> = {
-	'*': 'is anything',
+export const OperatorDescriptions: Record<Operator, string> = {
+	// '*': 'is anything',
 	'eq': 'is',
 	'gt': '>',
 	'gte': '>=',
 	'lt': '<',
 	'lte': '<=',
 	'inc': 'includes',
+	'in': 'in',
 };
 
-const PrettyProperties: Record<string, string> = {
-	merchant_id: 'Merchant',
-	category_id: 'Category',
-	group_id: 'Group',
-	target_account_partition_id: 'Target Account Partition',
-	budget_id: 'Budget',
-	'Transaction.original_description': 'Description',
-	'Transaction.merchant_id': 'Merchant',
-	'Transaction.account_id': 'Account',
-	'Transaction.origin_account_id': 'Origin Account',
-	'Category.type': 'Category Type'
-};
+export const Properties = {
+	'date': { label: 'Date', type: 'date' },
+	'year': { label: 'Year', type: 'year' },
+	'month': { label: 'Month', type: 'month' },
+	'day': { label: 'Day', type: 'day' },
+	
+	'amount': { label: 'Amount', type: 'currency' },
+	'account_id': { label: 'Account', type: 'Account', allowedOperators: ['eq'] },
+	'origin_account_id': { label: 'Origin Account', type: 'Account', allowedOperators: ['eq'] },
+	'account_partition_id': { label: 'Account Partition', type: 'AccountPartition', allowedOperators: ['eq'] },
+	'origin_account_partition_id': { label: 'Origin Account Partition', type: 'AccountPartition', allowedOperators: ['eq'] },
+
+	'category_id': { label: 'Category', type: 'category', allowedOperators: ['eq', 'in'] },
+	'Category.type': { label: 'Category Type', type: 'Category.type', allowedOperators: ['eq', 'in'] },
+	'budget_id': { label: 'Budget', type: 'budget', allowedOperators: ['eq'] },
+	'group_id': { label: 'Group', type: 'group', allowedOperators: ['eq'] },
+
+	// 'merchant_id': { label: 'Merchant', type: 'merchant', allowedOperators: ['eq'] },
+	'Transaction.merchant_id': { label: 'Merchant', type: 'merchant', allowedOperators: ['eq'] },
+
+	'Transaction.original_description': { label: 'Description', type: 'string' },
+} as const;
+type Property = keyof typeof Properties;

@@ -13,7 +13,7 @@ const props = defineProps<{
 const selectedCategory = computed(() => useCategoryStore().getCategoryById(props.currentCategoryId));
 
 defineEmits<{
-	'select': [categoryId: string | null];
+	select: [categoryId: string | null];
 }>();
 
 onMounted(() => {
@@ -23,33 +23,48 @@ onMounted(() => {
 			if (groupElement) {
 				groupElement.scrollIntoView();
 			}
-		}, 50)
+		}, 50);
 	}
-})
+});
 
 const search = ref<string>('');
 
-const groups = computed(() => useCategoryStore().categoriesByGroup
-	.map(group => ({
-		...group,
-		categories: group.categories
-			.filter(cat => !props.allowedCategories || props.allowedCategories.some(c => c.category_id === cat.category_id))
-			.filter(c => !search.value.trim() || c.name.toLowerCase().includes(search.value.trim().toLowerCase()) || group.name.toLowerCase().includes(search.value.trim().toLowerCase()))
-	}))
-	.filter(group => group.categories.length > 0)
+const groups = computed(() =>
+	useCategoryStore()
+		.categoriesByGroup.map((group) => ({
+			...group,
+			categories: group.categories
+				.filter((cat) => !props.allowedCategories || props.allowedCategories.some((c) => c.category_id === cat.category_id))
+				.filter(
+					(c) =>
+						!search.value.trim() ||
+						c.name.toLowerCase().includes(search.value.trim().toLowerCase()) ||
+						group.name.toLowerCase().includes(search.value.trim().toLowerCase())
+				),
+		}))
+		.filter((group) => group.categories.length > 0)
 );
-
-
 </script>
 
 <template>
 	<div class="flex flex-column h-full">
+		<div class="flex align-items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 border-round" @click="() => $emit('select', null)">
+			<AttributionAvatar :icon="'category'" style="width: 2rem; height: 2rem" />
+			<div class="flex-grow-1">Uncategorized</div>
+			<i class="pi pi-check" v-if="!currentCategoryId" />
+		</div>
+		<div
+			v-if="currentCategoryId && selectedCategory"
+			class="flex align-items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 border-round"
+			@click="() => $emit('select', selectedCategory.category_id)"
+		>
+			<AttributionAvatar :category="selectedCategory" style="width: 2rem; height: 2rem" />
+			<div class="flex-grow-1">{{ selectedCategory.name }}</div>
+			<i class="pi pi-check" v-if="currentCategoryId === selectedCategory.category_id" />
+		</div>
+
 		<div class="searchbar">
-			<InputText
-				v-model="search"
-				placeholder="Search..."
-				class="w-full"
-			/>
+			<InputText v-model="search" placeholder="Search..." class="w-full" />
 			<i class="pi pi-search"></i>
 		</div>
 		<div class="flex flex-column gap-3 overflow-y-auto">
@@ -62,11 +77,8 @@ const groups = computed(() => useCategoryStore().categoriesByGroup
 						class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round"
 						@click="() => $emit('select', category.category_id)"
 					>
-						<AttributionAvatar
-							:category="category"
-							style="width: 2rem; height: 2rem;"
-						/>
-						<div class="flex-grow-1">{{  category.name }}</div>
+						<AttributionAvatar :category="category" style="width: 2rem; height: 2rem" />
+						<div class="flex-grow-1">{{ category.name }}</div>
 						<i class="pi pi-check" v-if="currentCategoryId === category.category_id" />
 					</div>
 				</div>

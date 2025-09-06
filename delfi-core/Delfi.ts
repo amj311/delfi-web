@@ -9,7 +9,7 @@ import { type Budget, type ProjectionEvent, type BudgetOccurrence } from "./mode
 import Forecast from "./models/Forecast";
 import { type Category } from "./models/Category";
 import { ddate, type DelfiDate, instantiateDates } from "./utils/dateUtils";
-import type { TransactionFilter } from "./models/Filters";
+import type { FilterRule, TransactionFilter } from "./models/Filters";
 import FilterUtils from "./models/Filters";
 import { TransactionUtils, type AttributionEvent, type Transaction } from "./models/Transaction";
 import { BudgetOccurrenceSummary, BudgetSnapshot, RealityTally, type BudgetEventSummary } from "./models/Summary";
@@ -77,9 +77,9 @@ export class Delfi {
 	private async getOccurrenceSummaries(occurrences: BudgetOccurrence[]): Promise<BudgetOccurrenceSummary[]> {
 		const summaries: BudgetOccurrenceSummary[] = [];
 		for (const occurrence of occurrences) {
-			const attributedEvents = await this.transactionSource.getAttributedEventsBetween(occurrence.start, occurrence.end, [
+			const attributedEvents = await this.transactionSource.getAttributedEventsBetween(occurrence.start, occurrence.end, 
 				{ property: 'budget_id', operator: 'eq', operand: occurrence.budget.budget_id },
-			]);
+			);
 			const summary = this.budgetOccurrenceSummaries.get(occurrence.occurrence_id) || new BudgetOccurrenceSummary(occurrence, attributedEvents);
 			this.budgetOccurrenceSummaries.set(occurrence.occurrence_id, summary);
 			// for (const event of summary.budgetEvents) {
@@ -274,7 +274,7 @@ class TransactionSource {
 		private readonly initialEnd: DelfiDate,
 	) {}
 
-	public async getAttributedEventsBetween(start: DelfiDate, end: DelfiDate, filter: TransactionFilter = []): Promise<Array<AttributionEvent>> {
+	public async getAttributedEventsBetween(start: DelfiDate, end: DelfiDate, filter: FilterRule = null): Promise<Array<AttributionEvent>> {
 	// use a promise queue to make sure we don't double-load transactions
 	return await this.getEventsQueue.add(async () => {
 		// If we don't yet have transactions for this period, load them
@@ -287,11 +287,11 @@ class TransactionSource {
 			this.loadedTransactionStart = start;
 		}
 		// Filter the loaded transactions to the requested range
-		return FilterUtils.filter(Array.from(this.attributedEvents.values()), [
+		return FilterUtils.filter(Array.from(this.attributedEvents.values()), { AND: [
 			{ property: 'date', operator: 'gte', operand: start },
 			{ property: 'date', operator: 'lte', operand: end },
-			...filter,
-		]);
+			filter,
+		]});
 	});
 }
 }

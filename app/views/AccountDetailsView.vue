@@ -325,10 +325,6 @@ function viewTransaction(transaction: Transaction) {
 </template>
 
 <style scoped>
-.account-details-view {
-	padding: 20px;
-}
-
 .loading,
 .not-found {
 	text-align: center;

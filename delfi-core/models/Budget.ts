@@ -187,10 +187,6 @@ export default class BudgetUtils {
 			}));
 		}
 
-		if (budget.memo === "Travel") {
-			console.log(occurrences);
-		}
-
 		return occurrences;
 	}
 

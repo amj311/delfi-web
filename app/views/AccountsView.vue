@@ -149,10 +149,6 @@ const connectAccountsMenu = [
 </template>
 
 <style scoped>
-.accounts-view {
-  padding: 20px;
-}
-
 .loading,
 .no-accounts {
   text-align: center;

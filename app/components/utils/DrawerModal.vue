@@ -68,7 +68,7 @@ defineExpose({
 					:visible="show"
 					:header="title"
 					position="bottom"
-					:style="{ height: 'auto', maxHeight: '80vh' }"
+					:style="{ height: 'auto', maxHeight: '100vh' }"
 				>
 					<slot></slot>
 					<template #closebutton><div></div></template>

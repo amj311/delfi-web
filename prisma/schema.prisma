@@ -462,8 +462,8 @@ model TransactionRuleAction {
     transaction_rule_id String
     TransactionRule     TransactionRule @relation(fields: [transaction_rule_id], references: [transaction_rule_id])
 
-    action String // e.g. "set_category", "set_tag", "set_budget", etc.
-    value  String // Either a specific value or a JSON string
+    action String // e.g. "budget_id"
+    value Json? // JSON object containing the value to set, e.g. { "budget_id": "uuid" }
 }
 
 model TransactionReview {

@@ -2,6 +2,7 @@ import type { TransactionRule } from "delfi-core/models/TransactionRule";
 import { prisma } from "../../prisma/client";
 import { TestDataService } from "server/services/TestDataService";
 import type { Optional } from "delfi-core/utils/typeUtils";
+import { v4 as uuid } from "uuid";
 
 export const TransactionRuleDao = {
 	hasInit: false,
@@ -15,6 +16,8 @@ export const TransactionRuleDao = {
 
 	async upsertTransactionRule(workspace_id, data: Optional<TransactionRule, 'transaction_rule_id'>) {
 		await this.setupTestData();
+
+		console.log("Upserting rule", data);
 
 		return await prisma.transactionRule.upsert({
 			where: {
@@ -35,10 +38,16 @@ export const TransactionRuleDao = {
 			update: {
 				filter: data.filter,
 				actions: {
-					create: data.actions.map(action => ({
-						action: action.action,
-						value: action.value,
-					})),
+					deleteMany: {
+						transaction_rule_id: data.transaction_rule_id,
+					}, // Delete all existing actions
+					createMany: {
+						data: data.actions.map(action => ({
+							transaction_rule_action_id: uuid(),
+							action: action.action,
+							value: action.value,
+						}))
+					},
 				}
 			},
 		});
