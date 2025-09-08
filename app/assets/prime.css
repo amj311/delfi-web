@@ -10,5 +10,4 @@ body {
 .input-button {
 	border-color: var(--p-select-border-color) !important;
 	box-shadow: var(--p-select-shadow);
-	zoom: 1.08;
 }
