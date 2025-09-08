@@ -6,7 +6,12 @@ import { ddate } from "delfi-core/utils/dateUtils";
 import { BudgetGroupDao } from "./GroupDao";
 
 export class BudgetDao {
+	private static hasInit = false;
+
 	private static async setupTestData() {
+		if (this.hasInit) return;
+		this.hasInit = true;
+		
 		await BudgetGroupDao.setupTestData(); // Ensure budget groups are set up before budgets
 		// setup default budgets for the test workspace
 		const workspace_id = TestDataService.workspaceId;

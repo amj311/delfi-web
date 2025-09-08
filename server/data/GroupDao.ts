@@ -3,7 +3,11 @@ import { prisma } from "../../prisma/client";
 import { TestDataService } from "server/services/TestDataService";
 
 export const BudgetGroupDao = {
+	hasInit: false,
+	
 	async setupTestData() {
+		if (this.hasInit) return;
+		this.hasInit = true;
 		for (const group of await TestDataService.budgetGroups) {
 			const exists = Boolean(await BudgetGroupDao.getGroupById(group.group_id));
 			if (exists) {

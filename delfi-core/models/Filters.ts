@@ -5,6 +5,7 @@ import { TransactionUtils, type AttributionEvent, type DescriptionBreakdown } fr
 import type { Category } from "delfi-core/models/Category"
 import type { CommonEvent } from "delfi-core/models/Summary"
 import type { TransactionRule } from "delfi-core/models/TransactionRule"
+import Descriptor, { SpecialEntityTypes } from "delfi-core/utils/Descriptor"
 
 export type Predicate = {
 	property: Property,
@@ -137,27 +138,67 @@ export default class FilterUtils {
 	};
 
 
-	public static describeFilter(rule: FilterRule, defs: TransactionRule['defs'] = {}): string {
+	public static describeFilter(rule: FilterRule): Descriptor {
+		const descriptor = new Descriptor();
+		this.getRuleDescriptorNodes(rule, descriptor);
+		return descriptor;
+	}
+
+	private static getRuleDescriptorNodes(rule: FilterRule, descriptor: Descriptor): void {
 		if (rule === null) {
-			return '<empty rule>';
+			descriptor.push('<empty rule>');
 		}
-		if ('AND' in rule) {
-			return `${rule.AND.map(r => this.describeFilter(r, defs)).join(' AND ')}`;
+		else if ('AND' in rule) {
+			rule.AND.forEach((r, i) => {
+				this.getRuleDescriptorNodes(r, descriptor)
+				if (i < rule.AND.length - 1) {
+					descriptor.push(' AND ');
+				}
+			});
 		} else if ('OR' in rule) {
-			return `${rule.OR.map(r => this.describeFilter(r, defs)).join(' OR ')}`;
+			rule.OR.forEach((r, i) => {
+				this.getRuleDescriptorNodes(r, descriptor)
+				if (i < rule.OR.length - 1) {
+					descriptor.push(' OR ');
+				}
+			});
 		} else {
-			return this.describePredicate(rule, defs);
+			this.describePredicate(rule, descriptor);
 		}
 	}
 
-	private static describePredicate(rule: Predicate, defs: Record<string, any>): string {
+	private static describePredicate(rule: Predicate, descriptor: Descriptor): void {
 		const { property, operator, operand } = rule;
-		const operatorDescription = OperatorDescriptions[operator];
-		let operandString = Array.isArray(operand) ? `[${operand.map(o => defs[o]?.text || o).join(', ')}]` : (defs[operand?.toString() || '']?.text || operand);
-		if (typeof operand === 'string') {
-			operandString = `'${operandString}'`;
+		descriptor.push(`${Properties[property]?.label || property} `);
+		if (rule.not) {
+			descriptor.push('not ');
 		}
-		return `${Properties[property]?.label || property} ${rule.not ? 'not ' : ''}${operatorDescription} ${operandString}`;
+		descriptor.push(OperatorDescriptions[operator] || operator, ' ');
+		// Handle operand description(s)
+		if (Array.isArray(operand)) {
+			descriptor.push(' [');
+			operand.forEach((o, i) => {
+				this.addOperandDescriptionNodes(property, o, descriptor);
+				if (i < operand.length - 1) {
+					descriptor.push(', ');
+				}
+			});
+			descriptor.push('] ');
+		}
+		else {
+			this.addOperandDescriptionNodes(property, operand, descriptor);
+		}
+	}
+
+	private static addOperandDescriptionNodes(property: Property, operandItem: any, descriptor: Descriptor): void {
+		const type = Properties[property].type;
+		const entityType = SpecialEntityTypes.find(t => type.includes(t)); // Transaction.merchant_id -> merchant_id
+		console.log("filter type", type, entityType);
+		if (entityType) {
+			descriptor.push({ type: entityType, id: operandItem });
+		} else {
+			descriptor.push(JSON.stringify(operandItem));
+		}
 	}
 
 	public static extractPredicates(filter: FilterRule): Predicate[] {
@@ -256,18 +297,18 @@ export const Properties = {
 	'day': { label: 'Day', type: 'day' },
 	
 	'amount': { label: 'Amount', type: 'currency' },
-	'account_id': { label: 'Account', type: 'Account', allowedOperators: ['eq'] },
-	'origin_account_id': { label: 'Origin Account', type: 'Account', allowedOperators: ['eq'] },
-	'account_partition_id': { label: 'Account Partition', type: 'AccountPartition', allowedOperators: ['eq'] },
-	'origin_account_partition_id': { label: 'Origin Account Partition', type: 'AccountPartition', allowedOperators: ['eq'] },
+	'account_id': { label: 'Account', type: 'account_id', allowedOperators: ['eq'] },
+	'origin_account_id': { label: 'Origin Account', type: 'origin_account_id', allowedOperators: ['eq'] },
+	'account_partition_id': { label: 'Account Partition', type: 'account_partition_id', allowedOperators: ['eq'] },
+	'origin_account_partition_id': { label: 'Origin Account Partition', type: 'origin_account_partition_id', allowedOperators: ['eq'] },
 
-	'category_id': { label: 'Category', type: 'category', allowedOperators: ['eq', 'in'] },
+	'category_id': { label: 'Category', type: 'category_id', allowedOperators: ['eq', 'in'] },
 	'Category.type': { label: 'Category Type', type: 'Category.type', allowedOperators: ['eq', 'in'] },
-	'budget_id': { label: 'Budget', type: 'budget', allowedOperators: ['eq'] },
-	'group_id': { label: 'Group', type: 'group', allowedOperators: ['eq'] },
+	'budget_id': { label: 'Budget', type: 'budget_id', allowedOperators: ['eq'] },
+	'group_id': { label: 'Group', type: 'group_id', allowedOperators: ['eq'] },
 
 	// 'merchant_id': { label: 'Merchant', type: 'merchant', allowedOperators: ['eq'] },
-	'Transaction.merchant_id': { label: 'Merchant', type: 'merchant', allowedOperators: ['eq'] },
+	'Transaction.merchant_id': { label: 'Merchant', type: 'merchant_id', allowedOperators: ['eq'] },
 
 	'Transaction.original_description': { label: 'Description', type: 'string' },
 } as const;

@@ -17,39 +17,60 @@ export const TransactionRuleDao = {
 	async upsertTransactionRule(workspace_id, data: Optional<TransactionRule, 'transaction_rule_id'>) {
 		await this.setupTestData();
 
-		return await prisma.transactionRule.upsert({
+		const existingRule = data.transaction_rule_id && (await prisma.transactionRule.findUnique({
 			where: {
-				workspace_id: workspace_id,
-				transaction_rule_id: data.transaction_rule_id || uuid(),
-			},
-			create: {
-				workspace_id: workspace_id,
 				transaction_rule_id: data.transaction_rule_id,
-				filter: data.filter,
-				actions: {
-					create: data.actions.map(action => ({
-						action: action.action,
-						value: action.value,
-					})),
-				}
+				OR: [
+					{ workspace_id: workspace_id }, // Either specific to this workspace
+					{ workspace_id: null }, // Or global
+				]
 			},
-			update: {
-				filter: data.filter,
-				actions: {
-					deleteMany: {
-						transaction_rule_id: data.transaction_rule_id,
-					}, // Delete all existing actions
-					createMany: {
-						data: data.actions.map(action => ({
-							transaction_rule_action_id: uuid(),
+			include: {
+				actions: true,
+			}
+		}));
+
+		if (!existingRule) {
+			return await prisma.transactionRule.create({
+				data: {
+					workspace_id: workspace_id,
+					filter: data.filter,
+					actions: {
+						create: data.actions.map(action => ({
 							action: action.action,
 							value: action.value,
-						}))
-					},
-				}
-			},
-			include: { actions: true },
-		});
+						})),
+					}
+				},
+				include: { actions: true },
+			});
+		} else {
+			// First, delete existing actions
+			await prisma.transactionRuleAction.deleteMany({
+				where: {
+					transaction_rule_id: data.transaction_rule_id,
+				},
+			});
+
+			// Then, update the rule and create new actions
+			return await prisma.transactionRule.update({
+				where: {
+					transaction_rule_id: data.transaction_rule_id,
+				},
+				data: {
+					filter: data.filter,
+					actions: {
+						create: data.actions.map(action => ({
+							action: action.action,
+							value: action.value,
+						})),
+					}
+				},
+				include: {
+					actions: true,
+				},
+			});
+		}
 	},
 
 	async getWorkspaceRules(workspace_id?: string) {

@@ -2,7 +2,7 @@
 import { useCategoryStore } from '@/stores/category.store';
 import { computed, onBeforeMount, ref, watch } from 'vue';
 import AttributionAvatar from '@/components/AttributionAvatar.vue';
-import { Actions, type Action, type ActionType, type TransactionRule, type TransactionRuleDraft } from 'delfi-core/models/TransactionRule';
+import { Actions, TransactionRuleUtils, type Action, type ActionType, type TransactionRule, type TransactionRuleDraft } from 'delfi-core/models/TransactionRule';
 import request from '@/services/request';
 import FilterUtils from 'delfi-core/models/Filters';
 import Button from 'primevue/button';
@@ -19,6 +19,7 @@ import BudgetButton from '@/components/BudgetButton.vue';
 import { useBudgetStore } from '@/stores/budget.store';
 import { useMerchantStore } from '@/stores/merchant.store';
 import { usePrompt } from '@/components/utils/PromptModal.vue';
+import type { DescriptorEntityNode } from 'delfi-core/utils/Descriptor';
 
 const toast = useToast();
 const categoryStore = useCategoryStore();
@@ -60,15 +61,18 @@ function findActionDefs(rule: TransactionRule, action?: Action | ActionType): Re
 	return labels;
 }
 
-function getActionDescription(action: TransactionRule['actions'][0], rule: TransactionRule) {
-	const { action: actionName, value } = action;
-	const labels = findActionDefs(rule, action);
-	return {
-		actionVerb: Actions[actionName].verb || '',
-		actionTarget: Actions[actionName]?.label || actionName,
-		// TODO this will not match more complex action values
-		actionValue: (labels[actionName]?.text as string) || value[actionName],
-	};
+function descriptorGetter(node: DescriptorEntityNode) {
+	const { type, id } = node;
+	if (type === 'merchant_id') {
+		// if (id.startsWith('dec45eae')) return 'HERE';
+		return useMerchantStore().getMerchantById(id)?.name;
+	} else if (type === 'category_id') {
+		return useCategoryStore().getCategoryById(id)?.name;
+	} else if (type === 'budget_id') {
+		return useBudgetStore().getBudgetById(id)?.memo;
+	}
+	console.warn('No descriptor found for node', node);
+	return null;
 }
 
 /*******************
@@ -93,20 +97,28 @@ const isNewRule = computed(() => !editingRule.value?.transaction_rule_id);
 
 const isSavingRule = ref(false);
 async function saveRule() {
+	if (!editingRule.value) return;
+
 	try {
 		isSavingRule.value = true;
 		// This endpoint upserts
 		const { data } = await request.post('/transaction-rule', editingRule.value);
-		upsertRuleModal.value?.close();
 		toast.add({
 			severity: 'success',
 			summary: 'Success',
 			detail: 'Rule saved successfully.',
 			life: 3000,
 		});
-		if (isNewRule) {
+		if (!editingRule.value.transaction_rule_id) {
 			rules.value.push(data.data);
 		}
+		else {
+			const index = rules.value.findIndex((r) => r.transaction_rule_id === editingRule.value?.transaction_rule_id);
+			if (index !== -1) {
+				rules.value[index] = data.data;
+			}
+		}
+		upsertRuleModal.value?.close();
 	} catch (error) {
 		toast.add({
 			severity: 'error',
@@ -198,12 +210,12 @@ async function deleteRule(rule: TransactionRuleDraft) {
 					<AttributionAvatar v-else icon="material-symbols::manufacturing" :size="2.3" />
 					<div class="flex flex-column flex-grow-1 min-w-0 text-ellipsis">
 						<div class="text-ellipsis font-medium">
-							{{ getActionDescription(rule.actions?.[0], rule).actionVerb }}
-							{{ getActionDescription(rule.actions?.[0], rule).actionTarget }}
+							{{ TransactionRuleUtils.ruleDescription(rule).actions[0]?.verb }}
+							{{ TransactionRuleUtils.ruleDescription(rule).actions[0]?.target }}
 							→
-							{{ getActionDescription(rule.actions?.[0], rule).actionValue }}
+							{{ TransactionRuleUtils.ruleDescription(rule).actions[0]?.valueDescriptor.toString(descriptorGetter) }}
 						</div>
-						<small class="text-ellipsis">When: {{ FilterUtils.describeFilter(rule.filter, rule.defs) }}</small>
+						<small class="text-ellipsis">When: {{ FilterUtils.describeFilter(rule.filter).toString(descriptorGetter) }}</small>
 					</div>
 					<div class="flex-grow-1" />
 					<div class="hover-show">
@@ -241,9 +253,9 @@ async function deleteRule(rule: TransactionRuleDraft) {
 					</div>
 					<div class="flex flex-wrap gap-2 flex-grow-1">
 						<template v-for="field in Actions[action.action]?.form || []" :key="field.key">
-							<MerchantButton v-if="field.type === 'merchant'" v-model="action.value[field.key]" />
-							<CategoryButton v-if="field.type === 'category'" v-model="action.value[field.key]" />
-							<BudgetButton v-if="field.type === 'budget'" v-model="action.value[field.key]" />
+							<MerchantButton v-if="field.type === 'merchant_id'" v-model="action.value[field.key]" />
+							<CategoryButton v-if="field.type === 'category_id'" v-model="action.value[field.key]" />
+							<BudgetButton v-if="field.type === 'budget_id'" v-model="action.value[field.key]" />
 							<InputText v-if="field.type === 'string'" v-model="action.value[field.key]" :placeholder="field.placeholder || ''" />
 							<div v-else-if="field.type === 'number'" class="flex flex-column">
 								<label :for="`action-${index}-${field.key}`" class="text-sm">{{ field.label }}</label>

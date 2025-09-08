@@ -5,7 +5,6 @@ import request from '@/services/request';
 import { AuthService } from '@/services/authService';
 
 export const useUserStore = defineStore('user', () => {
-	let isLoadingSessionData = ref(true);
 	const hasLoadedSessionData = ref(false);
 	const loginError = ref<String>('');
 	const isAuthenticated = ref(false);
@@ -76,7 +75,6 @@ export const useUserStore = defineStore('user', () => {
 
 
 	return {
-		isLoadingSessionData,
 		hasLoadedSessionData,
 		hasAuth: isAuthenticated,
 		loginError,

@@ -3,7 +3,11 @@ import { categoriesArray, flatCategoriesMap, defaultKeyToSystemCategoryMap } fro
 import { WorkspaceDao } from "./WorkspaceDao";
 
 export const CategoryDao = {
+	hasInit: false,
+	
 	async setupTestData() {
+		if (this.hasInit) return;
+		this.hasInit = true;
 		// setup default categories for the test workspace
 		const workspaces = await WorkspaceDao.getAllWorkspaces();
 		const workspace_id = workspaces[0]!.workspace_id;

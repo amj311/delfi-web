@@ -16,7 +16,7 @@ export default (app, _, done) => {
 
     app.get('/', async function handler (request, reply) {
         const workspace_id = request.sessionUser.workspace_id;
-        const data = await TransactionRuleService.getWorkspaceRulesWithDefinitions(workspace_id);
+        const data = await TransactionRuleDao.getWorkspaceRules(workspace_id);
         return {
             success: true,
             data,
