@@ -370,6 +370,22 @@ const sourceAccount = computed(() => {
 
 <template>
 	<NavTriggerDrawer ref="triggerRef" :triggerKey="'transaction-details'">
+		<template #header>
+			<div class="flex w-full mr-3">
+				<div class="flex-grow-1"></div>
+				<div class="flex align-items-center gap-2 text-sm text-black-alpha-50">
+					<template v-if="saving">
+						<i class="pi pi-spin pi-spinner"></i>
+						Saving...
+					</template>
+					<template v-else-if="lastSaved" >
+						<i class="pi pi-check"></i>
+						<span>Saved</span>
+					</template>
+				</div>
+			</div>
+		</template>
+
 		<div class="flex flex-column h-full">
 			<div class="flex align-items-center gap-3">
 				<AttributionAvatar :event="avatarDetails" :size="3" />

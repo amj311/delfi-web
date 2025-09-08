@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useDelfiStore } from '@/stores/delfi.store';
 import { useAccountStore } from '@/stores/account.store';
-import { computed, reactive, ref, onMounted, watch } from 'vue';
+import { computed, reactive, ref, onMounted, watch, nextTick } from 'vue';
 import Forecast from '../../delfi-core/models/Forecast';
 import { type DelfiDate, ddate } from '../../delfi-core/utils/dateUtils';
 import Currency from '@/components/Currency.vue';
@@ -211,8 +211,12 @@ const isAccordionOpen = (key: string) => {
 };
 
 const transactionDetailsDrawer = ref<InstanceType<typeof TransactionDetailsDrawer> | null>(null);
+const viewingTransaction = ref<Transaction | null>(null);
 function viewTransaction(transaction: Transaction) {
-	transactionDetailsDrawer.value?.open(transaction);
+	viewingTransaction.value = transaction;
+	nextTick(() => {
+		transactionDetailsDrawer.value?.open(transaction);
+	})
 }
 
 const orderedBudgets = computed(() => {
@@ -957,7 +961,7 @@ const otherAccounts = computed(() => {
 			</div>
 		</template>
 
-		<TransactionDetailsDrawer ref="transactionDetailsDrawer" />
+		<TransactionDetailsDrawer ref="transactionDetailsDrawer" :key="viewingTransaction?.transaction_id" />
 
 		<div class="hidden">
 			<!-- <div style="padding: 20px; background: #ebe6fa" />
