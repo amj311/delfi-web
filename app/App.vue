@@ -7,6 +7,7 @@ import LoggedIn from './views/LoggedIn.vue';
 import PromptModal from './components/utils/PromptModal.vue';
 import Toast from 'primevue/toast';
 import Button from 'primevue/button';
+import { useAppStore } from './stores/app.store';
 
 const userStore = useUserStore();
 const sessionInterval = setInterval(userStore.loadSessionData, 60000);
@@ -16,28 +17,32 @@ setTimeout(() => {
 	waitingForAuth.value = false;
 }, 1000); // wait for 1 second before showing the app
 
-onBeforeMount(() => {
-	// the page has reloaded - remove any lingering drawer queries
-	// const query = new URLSearchParams(window.location.search);
-	// if (query.has('v')) {
-	// 	query.delete('v');
-	// 	window.history.replaceState({}, '', `${window.location.pathname}`);
-	// }
-});
-
 onBeforeUnmount(() => {
 	clearInterval(sessionInterval);
 });
 </script>
 
 <template>
-	<div v-if="!userStore.hasLoadedSessionData">Loading...</div>
-	<LoggedIn v-else-if="userStore.hasAuth && userStore.currentUser" />
-	<div v-else class="flex flex-column align-items-center" style="padding-top: calc(33vh - 5rem)">
-		<h1 class="text-5xl mb-4">Delfi</h1>
-		<div v-if="userStore.hasAuth && !userStore.currentUser" class="mt-4">Delfi is not available at this time.</div>
-		<div v-else>
-			<Button @click="AuthService.signInWithGoogle()">Sign in with Google</Button>
+	<div class="app" :class="{ touch: useAppStore().isTouch || true }">
+		<LoggedIn v-if="!waitingForAuth && userStore.hasAuth && userStore.currentUser" />
+		<div v-else class="flex flex-column align-items-center" style="padding-top: calc(33vh - 5rem)">
+			<div class="flex align-items-center gap-3">
+				<img src="./assets/gemini_logo_cropped.png" alt="Delfi Logo" class="mb-4 w-3rem" />
+				<h1
+					class="text-5xl mb-4"
+					style="background: linear-gradient(45deg, rgb(108 41 122), rgb(48, 207, 208)) text; -webkit-text-fill-color: transparent"
+				>
+					Delfi
+				</h1>
+			</div>
+			<div v-if="waitingForAuth || userStore.isLoading" class="flex align-items-center">
+				<i class="pi pi-spin pi-spinner mr-2"></i>
+				Loading...
+			</div>
+			<div v-else-if="userStore.hasAuth && !userStore.currentUser">Delfi is not available at this time.</div>
+			<div v-else>
+				<Button @click="AuthService.signInWithGoogle()">Sign in with Google</Button>
+			</div>
 		</div>
 	</div>
 
