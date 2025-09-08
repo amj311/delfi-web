@@ -22,13 +22,18 @@ a,
 	transition: 0.4s;
 }
 
-.hover-show-trigger .hover-show {
+
+
+
+.app:not(.touch) .hover-show-trigger .hover-show {
 	display: none;
 }
 
 .hover-show-trigger:hover .hover-show {
 	display: block;
 }
+
+
 
 @media (hover: hover) {
 	a:hover {
