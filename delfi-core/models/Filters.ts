@@ -152,14 +152,14 @@ export default class FilterUtils {
 			rule.AND.forEach((r, i) => {
 				this.getRuleDescriptorNodes(r, descriptor)
 				if (i < rule.AND.length - 1) {
-					descriptor.push(' AND ');
+					descriptor.push(' and ');
 				}
 			});
 		} else if ('OR' in rule) {
 			rule.OR.forEach((r, i) => {
 				this.getRuleDescriptorNodes(r, descriptor)
 				if (i < rule.OR.length - 1) {
-					descriptor.push(' OR ');
+					descriptor.push(' or ');
 				}
 			});
 		} else {
