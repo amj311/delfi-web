@@ -434,10 +434,10 @@ export class TestDataService {
 				Category: categoryByName("Babysitter & Daycare"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					schedule: { start: '2022-09-01', frequency: 'WEEKLY', byDayOfWeek: ['WE'] },
 					amountTemplate: {
 						type: 'fixed',
-						amount: -60,
+						amount: -15,
 					}
 				}],
 			},
