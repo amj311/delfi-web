@@ -26,14 +26,14 @@ onBeforeUnmount(() => {
 	<div class="app" :class="{ touch: useAppStore().isTouch || true }">
 		<LoggedIn v-if="!waitingForAuth && userStore.hasAuth && userStore.currentUser" />
 		<div v-else class="flex flex-column align-items-center" style="padding-top: calc(33vh - 5rem)">
-			<div class="flex align-items-center gap-3">
-				<img src="./assets/gemini_logo_cropped.png" alt="Delfi Logo" class="mb-4 w-3rem" />
-				<h1
-					class="text-5xl mb-4"
-					style="background: linear-gradient(45deg, rgb(108 41 122), rgb(48, 207, 208)) text; -webkit-text-fill-color: transparent"
+			<div class="flex align-items-center gap-3" style="font-size: 1.5em;">
+				<img src="./assets/gemini_logo_2_cropped.png" alt="Delfi Logo" class="mb-4" style="width: 3em" />
+				<div
+					class="mb-4 font-semibold"
+					style="font-size: 3em; background: linear-gradient(45deg, rgb(108 41 122), rgb(48, 207, 208)) text; -webkit-text-fill-color: transparent"
 				>
 					Delfi
-				</h1>
+				</div>
 			</div>
 			<div v-if="waitingForAuth || userStore.isLoading" class="flex align-items-center">
 				<i class="pi pi-spin pi-spinner mr-2"></i>
