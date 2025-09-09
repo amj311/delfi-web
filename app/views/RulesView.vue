@@ -20,6 +20,7 @@ import { useBudgetStore } from '@/stores/budget.store';
 import { useMerchantStore } from '@/stores/merchant.store';
 import { usePrompt } from '@/components/utils/PromptModal.vue';
 import type { DescriptorEntityNode } from 'delfi-core/utils/Descriptor';
+import RulesList from '@/components/RulesList.vue';
 
 const toast = useToast();
 const categoryStore = useCategoryStore();
@@ -182,105 +183,8 @@ async function deleteRule(rule: TransactionRuleDraft) {
 		</div>
 
 		<div v-if="isLoadingRules" class="loading">Loading rules...</div>
-
-		<div v-else class="rules-container">
-			<div class="flex flex-column gap-1" v-if="rules.length > 0">
-				<div
-					v-for="rule in rules"
-					:key="rule.transaction_rule_id"
-					class="flex align-items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 border-round hover-show-trigger"
-					@click="editRule(rule)"
-				>
-					<!-- Use avatars to indicate the result of the action -->
-					<AttributionAvatar
-						v-if="findAction(rule, 'merchant_id')"
-						:image="useMerchantStore().getMerchantById(findAction(rule, 'merchant_id')?.value.merchant_id as string)?.logo"
-						:size="2.3"
-					/>
-					<AttributionAvatar
-						v-else-if="findAction(rule, 'category_id')"
-						:category="useCategoryStore().getCategoryById(findAction(rule, 'category_id')?.value.category_id as string)"
-						:size="2.3"
-					/>
-					<AttributionAvatar
-						v-else-if="findAction(rule, 'budget_id')"
-						:category="useBudgetStore().getBudgetById(findAction(rule, 'budget_id')?.value.budget_id as string)?.Category"
-						:size="2.3"
-					/>
-					<AttributionAvatar v-else icon="material-symbols::manufacturing" :size="2.3" />
-					<div class="flex flex-column flex-grow-1 min-w-0 text-ellipsis">
-						<div class="text-ellipsis font-medium">
-							{{ TransactionRuleUtils.ruleDescription(rule).actions[0]?.verb }}
-							{{ TransactionRuleUtils.ruleDescription(rule).actions[0]?.target }}
-							→
-							{{ TransactionRuleUtils.ruleDescription(rule).actions[0]?.valueDescriptor.toString(descriptorGetter) }}
-						</div>
-						<small class="text-ellipsis">When: {{ FilterUtils.describeFilter(rule.filter).toString(descriptorGetter) }}</small>
-					</div>
-					<div class="flex-grow-1" />
-					<div class="hover-show">
-						<Button text :severity="'secondary'" icon="pi pi-pencil" />
-					</div>
-				</div>
-			</div>
-
-			<div v-else class="no-rules">
-				<p>No rules found. Add your first rule to get started.</p>
-			</div>
-		</div>
+		<RulesList v-else v-model="rules" />
 	</div>
-
-	<DrawerModal ref="upsertRuleModal" width="38rem">
-		<template #header>
-			<h3 class="flex align-items-center gap-2">
-				<Icon name="material-symbols::manufacturing" />
-				{{ isNewRule ? 'New' : 'Edit' }} Automation Rule
-			</h3>
-		</template>
-
-		<div v-if="editingRule" class="flex flex-column gap-3 mb-4">
-			<div>
-				<h4 class="mb-1">When...</h4>
-				<FilterBuilder v-model="editingRule.filter" />
-			</div>
-
-			<div>
-				<h4 class="mb-1">Then...</h4>
-				<div v-for="(action, index) in editingRule.actions" :key="index" class="flex align-items-start gap-2 mb-2">
-					<div class="flex align-items-center gap-2">
-						<Select v-model="action.action" :options="ActionOptions" option-label="label" option-value="value" class="w-11rem" placeholder="Action..." />
-						<b class="text-xl">→</b>
-					</div>
-					<div class="flex flex-wrap gap-2 flex-grow-1">
-						<template v-for="field in Actions[action.action]?.form || []" :key="field.key">
-							<MerchantButton v-if="field.type === 'merchant_id'" v-model="action.value[field.key]" />
-							<CategoryButton v-if="field.type === 'category_id'" v-model="action.value[field.key]" />
-							<BudgetButton v-if="field.type === 'budget_id'" v-model="action.value[field.key]" />
-							<InputText v-if="field.type === 'string'" v-model="action.value[field.key]" :placeholder="field.placeholder || ''" />
-							<div v-else-if="field.type === 'number'" class="flex flex-column">
-								<label :for="`action-${index}-${field.key}`" class="text-sm">{{ field.label }}</label>
-								<input
-									type="number"
-									:id="`action-${index}-${field.key}`"
-									v-model.number="action.value[field.key]"
-									:placeholder="field.placeholder || ''"
-									class="p-inputtext p-component w-20rem"
-								/>
-							</div>
-						</template>
-					</div>
-					<Button icon="pi pi-trash" severity="secondary" text @click="editingRule.actions.splice(index, 1)" />
-				</div>
-				<Button label="Add Action" icon="pi pi-plus-circle" text @click="editingRule.actions.push({ action: '', value: {} })" />
-			</div>
-		</div>
-		<div class="flex gap-2">
-			<Button v-if="!isNewRule && editingRule" icon="pi pi-trash" class="p-button-text" label="Delete" severity="secondary" @click="() => deleteRule(editingRule!)" />
-			<div class="flex-grow-1" />
-			<Button class="p-button-text" label="Cancel" @click="editingRule = null" />
-			<Button label="Save Rule" :loading="isSavingRule" :disabled="isSavingRule || !canSave" @click="saveRule" />
-		</div>
-	</DrawerModal>
 </template>
 
 <style scoped>

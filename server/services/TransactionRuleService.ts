@@ -24,10 +24,25 @@ export class TransactionRuleService {
 
 		await Promise.all(transactions.map(async (transaction) => {
 			// Iterate over ALL local rules first, so that they are set and global rules will not override them.
-			await this.applyRuleSetToTransaction(transaction, workspaceRules);
-			await this.applyRuleSetToTransaction(transaction, globalRules);
+			await this.applyRuleSetToTransaction(transaction, workspaceRules as any);
+			await this.applyRuleSetToTransaction(transaction, globalRules as any);
 			await TransactionDao.patchTransaction(workspace_id, transaction.transaction_id, transaction);
 		}));
+	}
+
+	/**
+	 * Finds all workspace rules that would apply to the given transaction
+	 */
+	public static async getApplicableRules(workspace_id: string, transaction_id: string) {
+		const transaction = await TransactionDao.getTransactionById(transaction_id);
+		if (!transaction) {
+			throw new Error(`Transaction with ID ${transaction_id} not found`);
+		}
+		const workspaceRules = await TransactionRuleDao.getWorkspaceRules(workspace_id);
+		const attributionEvents = TransactionUtils.processAttributionEvents([transaction]);
+		return workspaceRules.filter(rule => {
+			return attributionEvents.some(event => FilterUtils.matches(rule.filter as any, event));
+		});
 	}
 
 	private static async applyRuleSetToTransaction(transaction: Transaction, rules: TransactionRule[]) {

@@ -71,7 +71,7 @@ export const Actions = {
 } as const;
 
 export type ActionType = keyof typeof Actions;
-
+export const ActionTypes = Object.keys(Actions) as ActionType[];
 
 
 export class TransactionRuleUtils {

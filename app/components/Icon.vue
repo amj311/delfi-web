@@ -45,6 +45,7 @@ const color = computed(() => colors[props.color || ''] || props.color || 'inheri
 }
 .icon {
 	color: inherit;
+	vertical-align: middle;
 }
 .material-symbols-rounded {
 	padding-top: 0.07em;

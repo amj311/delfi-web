@@ -90,13 +90,7 @@ export default class FilterUtils {
 		const { property, operator, operand } = rule;
 
 		// Allow for some custom operators to extract complex values
-		let value;
-		const customGetter = property.split('.')[0];
-		if (CustomGetters[customGetter]) {
-			const getterProperty = property.split('.').slice(1).join('.');
-			value = CustomGetters[customGetter](obj, getterProperty);
-		}
-		else value = property ? getPropertyByPath(obj, property) : null;
+		const value = this.getFilterableValue(obj, property);
 
 		let result = false;
 
@@ -137,6 +131,17 @@ export default class FilterUtils {
 		return rule.not ? !result : result;
 	};
 
+	public static getFilterableValue(obj: Filterable, property: Property): any {
+		let value;
+		const customGetter = property.split('.')[0];
+		if (CustomGetters[customGetter]) {
+			const getterProperty = property.split('.').slice(1).join('.');
+			value = CustomGetters[customGetter](obj, getterProperty);
+		}
+		else value = property ? getPropertyByPath(obj, property) : null;
+		return value;
+	}
+
 
 	public static describeFilter(rule: FilterRule): Descriptor {
 		const descriptor = new Descriptor();
@@ -167,7 +172,7 @@ export default class FilterUtils {
 		}
 	}
 
-	private static describePredicate(rule: Predicate, descriptor: Descriptor): void {
+	public static describePredicate(rule: Predicate, descriptor: Descriptor = new Descriptor()) {
 		const { property, operator, operand } = rule;
 		descriptor.push(`${Properties[property]?.label || property} `);
 		if (rule.not) {
@@ -188,12 +193,12 @@ export default class FilterUtils {
 		else {
 			this.addOperandDescriptionNodes(property, operand, descriptor);
 		}
+		return descriptor;
 	}
 
 	private static addOperandDescriptionNodes(property: Property, operandItem: any, descriptor: Descriptor): void {
 		const type = Properties[property].type;
 		const entityType = SpecialEntityTypes.find(t => type.includes(t)); // Transaction.merchant_id -> merchant_id
-		console.log("filter type", type, entityType);
 		if (entityType) {
 			descriptor.push({ type: entityType, id: operandItem });
 		} else {
@@ -222,6 +227,26 @@ export default class FilterUtils {
 		}
 		return predicates;
 	}
+
+	public static combineFilters(filterA: FilterRule, filterB: FilterRule): FilterRule {
+		if (!filterA) return filterB;
+		if (!filterB) return filterA;
+
+		// If both are AND blocks, merge their contents
+		if ('AND' in filterA && 'AND' in filterB) {
+			return { AND: [...filterA.AND, ...filterB.AND] };
+		}
+		// If one is an AND block, add the other as a new condition
+		else if ('AND' in filterA) {
+			return { AND: [...filterA.AND, filterB] };
+		} else if ('AND' in filterB) {
+			return { AND: [filterA, ...filterB.AND] };
+		}
+		// Neither are AND blocks, create a new AND block
+		else {
+			return { AND: [filterA, filterB] };
+		}
+	}
 }
 
 /**
@@ -236,10 +261,11 @@ const CustomGetters: Record<string, (obj: Filterable, property: any) => any> = {
 	},
 
 	Transaction(obj: any, property: string) {
-		if (!(obj.sourceTransaction)) {
+		const transaction = obj.sourceTransaction || obj.attributionDetails.sourceTransaction;
+		if (!(transaction)) {
 			return null;
 		}
-		return getPropertyByPath(obj.sourceTransaction, property);
+		return getPropertyByPath(transaction, property);
 	},
 
 	DescriptionBreakdown(obj: any, property: keyof DescriptionBreakdown) {
@@ -291,25 +317,23 @@ export const OperatorDescriptions: Record<Operator, string> = {
 };
 
 export const Properties = {
-	'date': { label: 'Date', type: 'date' },
-	'year': { label: 'Year', type: 'year' },
-	'month': { label: 'Month', type: 'month' },
-	'day': { label: 'Day', type: 'day' },
-	
+	'Transaction.original_description': { label: 'Description', type: 'string' },
 	'amount': { label: 'Amount', type: 'currency' },
-	'account_id': { label: 'Account', type: 'account_id', allowedOperators: ['eq'] },
-	'origin_account_id': { label: 'Origin Account', type: 'origin_account_id', allowedOperators: ['eq'] },
-	'account_partition_id': { label: 'Account Partition', type: 'account_partition_id', allowedOperators: ['eq'] },
-	'origin_account_partition_id': { label: 'Origin Account Partition', type: 'origin_account_partition_id', allowedOperators: ['eq'] },
-
 	'category_id': { label: 'Category', type: 'category_id', allowedOperators: ['eq', 'in'] },
 	'Category.type': { label: 'Category Type', type: 'Category.type', allowedOperators: ['eq', 'in'] },
 	'budget_id': { label: 'Budget', type: 'budget_id', allowedOperators: ['eq'] },
 	'group_id': { label: 'Group', type: 'group_id', allowedOperators: ['eq'] },
-
 	// 'merchant_id': { label: 'Merchant', type: 'merchant', allowedOperators: ['eq'] },
 	'Transaction.merchant_id': { label: 'Merchant', type: 'merchant_id', allowedOperators: ['eq'] },
 
-	'Transaction.original_description': { label: 'Description', type: 'string' },
+	'account_id': { label: 'Account', type: 'account_id', allowedOperators: ['eq'] },
+	'origin_account_id': { label: 'Origin Account', type: 'origin_account_id', allowedOperators: ['eq'] },
+	'account_partition_id': { label: 'Partition', type: 'account_partition_id', allowedOperators: ['eq'] },
+	'origin_account_partition_id': { label: 'Origin Partition', type: 'origin_account_partition_id', allowedOperators: ['eq'] },
+
+	'date': { label: 'Date', type: 'date' },
+	'year': { label: 'Year', type: 'year' },
+	'month': { label: 'Month', type: 'month' },
+	'day': { label: 'Day', type: 'day' },
 } as const;
-type Property = keyof typeof Properties;
+export type Property = keyof typeof Properties;

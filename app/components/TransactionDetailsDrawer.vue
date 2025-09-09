@@ -22,6 +22,9 @@ import { v4 as uuid } from 'uuid';
 import MerchantSelectionDrawer from './MerchantSelectionDrawer.vue';
 import { useContextStore } from '@/stores/context.store';
 import { ddate } from 'delfi-core/utils/dateUtils';
+import { ActionTypes, type ActionType, type TransactionRule } from 'delfi-core/models/TransactionRule';
+import { useSnackbar } from './utils/Snackbar.vue';
+import RulesList from './RulesList.vue';
 
 const toast = useToast();
 
@@ -56,17 +59,18 @@ watch(
 			await TransactionService.updateTransaction(transaction.value.transaction_id, newTransaction);
 			lastSaved.value = new Date();
 			const diffKeys = Object.keys(diff(oldValue, newTransaction) || {});
-			const shouldCompute = diffKeys.reduce((acc, key) => {
-				return acc || !computeExclusions.includes(key);
-			}, false);
+			const shouldCompute = diffKeys.some((key) => !computeExclusions.includes(key));
 			if (shouldCompute) {
 				useDelfiStore().reCompute();
 			}
-			// toast.add({
-			// 	severity: 'success',
-			// 	summary: 'Transaction Updated',
-			// 	detail: 'The transaction has been successfully updated.',
-			// });
+
+			const changedRuleActions = ActionTypes.filter((key) => diffKeys.some((dKey) => dKey.includes(key)));
+			const existingRuleActions = applicableRules.value.flatMap((rule) => rule.actions.map((action) => action.action));
+			// Prompt to add rule if one does not exist for this action yet
+			const shouldPromptRule = !existingRuleActions.some((action) => changedRuleActions.some((dKey) => dKey.includes(action)));
+			if (shouldPromptRule) {
+				promptNewRule(changedRuleActions);
+			}
 		} catch (error) {
 			console.error('Error saving transaction:', error);
 		} finally {
@@ -299,13 +303,14 @@ async function breakTransferPair() {
 	transaction.value.TransferPair = null;
 }
 
-
 /****************
  * REVIEWS
  */
 
 const needsReview = computed(() => {
-	return transaction.value.TransactionReview && !transaction.value.TransactionReview.reviewed_at && !transaction.value.TransactionReview.dismissed_at;
+	return (
+		transaction.value.TransactionReview && !transaction.value.TransactionReview.reviewed_at && !transaction.value.TransactionReview.dismissed_at
+	);
 });
 
 async function reviewTransaction() {
@@ -327,6 +332,51 @@ async function reviewTransaction() {
 			summary: 'Error',
 			detail: 'Failed to mark transaction as reviewed. Please try again later.',
 		});
+	}
+}
+
+/****************
+ * RULES
+ */
+
+const ruleDrawerRef = ref<InstanceType<typeof NavTriggerDrawer> | null>(null);
+
+const applicableRules = ref<TransactionRule[]>([]);
+// Watch for transaction changes to load applicable rules
+watch(
+	() => transaction.value.transaction_id,
+	async (newTransactionId) => {
+		if (newTransactionId) {
+			try {
+				applicableRules.value = await TransactionService.getApplicableRules(newTransactionId);
+			} catch (error) {
+				console.error('Error loading applicable rules:', error);
+				applicableRules.value = [];
+			}
+		} else {
+			applicableRules.value = [];
+		}
+	},
+	{ immediate: true }
+);
+
+function promptNewRule(newActionFields: ActionType[]) {
+	useSnackbar().add({
+		message: 'Would you like to automate this assignment?',
+		okButtonProps: {
+			label: 'Create Rule',
+		},
+		onOk: () => draftNewRule(newActionFields),
+	});
+}
+
+function draftNewRule(newActionFields: ActionType[]) {
+	openRules();
+}
+
+function openRules() {
+	if (ruleDrawerRef.value) {
+		ruleDrawerRef.value.trigger()?.open();
 	}
 }
 
@@ -365,7 +415,6 @@ const targetAccount = computed(() => {
 const sourceAccount = computed(() => {
 	return useAccountStore().getAccountById(transferSource.value?.account_id);
 });
-
 </script>
 
 <template>
@@ -378,7 +427,7 @@ const sourceAccount = computed(() => {
 						<i class="pi pi-spin pi-spinner"></i>
 						Saving...
 					</template>
-					<template v-else-if="lastSaved" >
+					<template v-else-if="lastSaved">
 						<i class="pi pi-check"></i>
 						<span>Saved</span>
 					</template>
@@ -559,9 +608,21 @@ const sourceAccount = computed(() => {
 						<Textarea v-model="notesDraft" rows="3" class="w-full" />
 					</div>
 				</div>
-				<div v-if="transaction.TransactionReview?.reviewed_at" class="my-3 flex align-items-center gap-2 text-black-alpha-50">
+				<br />
+				<div v-if="transaction.TransactionReview?.reviewed_at" class="flex align-items-center gap-2 text-black-alpha-50">
 					<i class="pi pi-check-circle" />
-					<small>Reviewed by {{ transaction.TransactionReview.ReviewedBy?.given_name }} {{ transaction.TransactionReview.ReviewedBy?.family_name }} on {{ ddate(transaction.TransactionReview?.reviewed_at).formatFull() }}</small>
+					<small
+						>Reviewed by {{ transaction.TransactionReview.ReviewedBy?.given_name }}
+						{{ transaction.TransactionReview.ReviewedBy?.family_name }} on
+						{{ ddate(transaction.TransactionReview?.reviewed_at).formatFull() }}</small
+					>
+				</div>
+
+				<!-- APPLICABLE RULES COUNT -->
+				<div v-if="applicableRules.length > 0" class="text-black-alpha-50">
+					<Icon name="material-symbols::manufacturing" />
+					{{ applicableRules.length }} automation {{ applicableRules.length > 1 ? 'rules apply' : 'rule applies' }} to this transaction.
+					<Button size="small" text label="View Rules" @click="openRules" />
 				</div>
 			</div>
 
@@ -699,6 +760,14 @@ const sourceAccount = computed(() => {
 			<Button text label="Cancel" @click="cancelTransferPair" />
 		</div>
 	</DrawerModal>
+
+	<!-- TRANSACTION RULES -->
+	<NavTriggerDrawer ref="ruleDrawerRef" triggerKey="transaction-applicable-rules">
+		<p class="mb-2">These rules will apply to this transaction and others like it:</p>
+
+		<h3>Rules</h3>
+		<RulesList v-model="applicableRules" :templateEvent="TransactionUtils.createEventFromAttribution(largestAttribution, transaction)" />
+	</NavTriggerDrawer>
 
 	<TransactionAttributionDrawer ref="transactionAttributionDrawer" />
 	<MerchantSelectionDrawer ref="merchantSelectionDrawer" :key="transaction.transaction_id" />

@@ -8,6 +8,7 @@ import PromptModal from './components/utils/PromptModal.vue';
 import Toast from 'primevue/toast';
 import Button from 'primevue/button';
 import { useAppStore } from './stores/app.store';
+import Snackbar from './components/utils/Snackbar.vue';
 
 const userStore = useUserStore();
 const sessionInterval = setInterval(userStore.loadSessionData, 60000);
@@ -26,11 +27,15 @@ onBeforeUnmount(() => {
 	<div class="app" :class="{ touch: useAppStore().isTouch || true }">
 		<LoggedIn v-if="!waitingForAuth && userStore.hasAuth && userStore.currentUser" />
 		<div v-else class="flex flex-column align-items-center" style="padding-top: calc(33vh - 5rem)">
-			<div class="flex align-items-center gap-3" style="font-size: 1.5em;">
+			<div class="flex align-items-center gap-3" style="font-size: 1.5em">
 				<img src="./assets/gemini_logo_2_cropped.png" alt="Delfi Logo" class="mb-4" style="width: 3em" />
 				<div
 					class="mb-4 font-semibold"
-					style="font-size: 3em; background: linear-gradient(45deg, rgb(108 41 122), rgb(48, 207, 208)) text; -webkit-text-fill-color: transparent"
+					style="
+						font-size: 3em;
+						background: linear-gradient(45deg, rgb(108 41 122), rgb(48, 207, 208)) text;
+						-webkit-text-fill-color: transparent;
+					"
 				>
 					Delfi
 				</div>
@@ -48,7 +53,8 @@ onBeforeUnmount(() => {
 
 	<!-- Global Prompt Modal -->
 	<PromptModal />
-	<Toast></Toast>
+	<Snackbar />
+	<Toast />
 </template>
 
 <style scoped></style>

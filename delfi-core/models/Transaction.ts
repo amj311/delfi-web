@@ -320,7 +320,8 @@ export type DescriptionBreakdown = {
 	format: DescriptionFormat,
 	designation?: 'transfer' | 'loan_payment' | 'cash_advance',
 
-	simple_description?: string,
+	simple_description?: string, // A nice readable representation of the info
+	best_identifier?: string, // The most useful chunk of the description, verbatim
 	merchant_name?: string,
 	merchant_number?: string,
 
@@ -360,6 +361,7 @@ export const DescriptionFormats = {
 		return {
 			format: 'ACH_X_COMMA_SEC',
 			simple_description: match.groups.identifier?.trim(),
+			best_identifier: match.groups.identifier?.trim(),
 			ach_type: match.groups.type?.trim(),
 			ach_sec_code: match.groups.sec as AchSecCode,
 			ach_entry_type: match.groups.entry as AchEntryType,
@@ -405,6 +407,7 @@ export const DescriptionFormats = {
 		return {
 			format: 'CARD_DASH_DATE_X_REGION',
 			simple_description: match.groups.identifier?.trim(),
+			best_identifier: match.groups.identifier?.trim(),
 			merchant_name: name,
 			merchant_number: storeNumber,
 			phone_number: phone,
@@ -435,6 +438,7 @@ export const DescriptionFormats = {
 		return {
 			format: 'POS_REGION_COMMA_X_CODE',
 			simple_description: match.groups.identifier?.trim(),
+			best_identifier: match.groups.identifier?.trim(),
 			merchant_name: identifier_name,
 			merchant_number: number,
 			location_country: match.groups.country?.trim(),

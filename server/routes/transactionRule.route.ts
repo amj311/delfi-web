@@ -32,5 +32,15 @@ export default (app, _, done) => {
         };
     });
 
+    app.get('/applicable/:transaction_id', async function handler (request, reply) {
+        const transaction_id = request.params.transaction_id;
+        const workspace_id = request.sessionUser.workspace_id;
+        const data = await TransactionRuleService.getApplicableRules(workspace_id, transaction_id);
+        return {
+            success: true,
+            data,
+        };
+    });
+
     done();
 };
