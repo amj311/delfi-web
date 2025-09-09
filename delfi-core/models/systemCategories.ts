@@ -25,15 +25,15 @@ export const parentCategories = {
 		color: TagColor.yellow1,
 	},
 	"Personal Development": {
-		category_id: "f3c1b0d2-4a5e-4b8c-9f6d-7c8e1b2f3a4c",
+		category_id: "d011b0d2-4a5e-4b8c-9f6d-7c8e1b2f3d01",
 		name: "Personal Development",
 		type: "EXPENSE",
 		icon: "graduation-cap",
 		color: TagColor.navy1,
 	},
-	"Entertainment": {
+	"Recreation": {
 		category_id: "c1b2a2ca-c82b-4efd-9bbe-31928173eb9b",
-		name: "Entertainment",
+		name: "Recreation",
 		type: "EXPENSE",
 		icon: "smiley",
 		color: TagColor.orange1,
@@ -176,7 +176,8 @@ const defaultCategories = {
 		name: "Vehicle Registration",
 		category_id: "62ce18c1-8dc2-44a4-9ec7-cc355f59018b",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Transportation"].category_id
+		parent_category_id: parentCategories["Transportation"].category_id,
+		icon: "material-symbols::car_tag",
 	},
 	"Vehicle Purchase": {
 		name: "Vehicle Purchase",
@@ -220,7 +221,8 @@ const defaultCategories = {
 		name: "Service & Parts",
 		category_id: "68a5922f-88cb-4f93-abac-194ab7c5193a",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Transportation"].category_id
+		parent_category_id: parentCategories["Transportation"].category_id,
+		icon: "material-symbols::car_repair",
 	},
 
 
@@ -229,13 +231,15 @@ const defaultCategories = {
 		name: "Phone Plan",
 		category_id: "8ce8b6b3-3308-4b84-9d12-ce386b829d75",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Bills & Utilities"].category_id
+		parent_category_id: parentCategories["Bills & Utilities"].category_id,
+		icon: "material-symbols::mobile_2",
 	},
 	"Internet": {
 		name: "Internet",
 		category_id: "f1ac1ce7-b6b2-4fd1-abbc-0f624c7f7223",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Bills & Utilities"].category_id
+		parent_category_id: parentCategories["Bills & Utilities"].category_id,
+		icon: "material-symbols::wifi",
 	},
 	"Television": {
 		name: "Television",
@@ -243,13 +247,27 @@ const defaultCategories = {
 		type: "EXPENSE",
 		parent_category_id: parentCategories["Bills & Utilities"].category_id
 	},
-	"Utilities": {
-		name: "Utilities",
+	"Water Bill": {
+		name: "Water Bill",
 		category_id: "c1b2a2ca-c82b-4efd-9bbe-31928173eb9a",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Bills & Utilities"].category_id
+		parent_category_id: parentCategories["Bills & Utilities"].category_id,
+		icon: "material-symbols::water_drop"
 	},
-
+	"Electric Bill": {
+		name: "Electric Bill",
+		category_id: "cb02a2ca-c82b-4efd-9bbe-31928173cb02",
+		type: "EXPENSE",
+		parent_category_id: parentCategories["Bills & Utilities"].category_id,
+		icon: "material-symbols::electrical_services"
+	},
+	"Gas Bill": {
+		name: "Gas Bill",
+		category_id: "cb03a2ca-c82b-4efd-9bbe-31928173cb03",
+		type: "EXPENSE",
+		parent_category_id: parentCategories["Bills & Utilities"].category_id,
+		icon: "material-symbols::mode_heat"
+	},
 
 	// Business Services
 	"Software": {
@@ -313,46 +331,53 @@ const defaultCategories = {
 		name: "Sports and Activities",
 		category_id: "05c69d5a-4472-4dad-bbe7-35fa673afc17",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Personal Development"].category_id
+		parent_category_id: parentCategories["Personal Development"].category_id,
+		icon: "material-symbols::sports_football",
 	},
 
 
 	// Entertainment
-	"Amusement": {
-		name: "Amusement",
+	"Parks & Attractions": {
+		name: "Parks & Attractions",
 		category_id: "312482e9-9aa0-4710-a312-4a5dd308dedb",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Entertainment"].category_id
+		parent_category_id: parentCategories["Recreation"].category_id,
+		icon: "material-symbols::festival",
 	},
 	"Arts": {
 		name: "Arts",
 		category_id: "ee167832-1262-4caf-bb78-4a6e987cd172",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Entertainment"].category_id
+		parent_category_id: parentCategories["Recreation"].category_id,
+		icon: "material-symbols::theater_comedy",
 	},
-	"Movies & DVDs": {
-		name: "Movies & DVDs",
+	"Movies & TV": {
+		name: "Movies & TV",
 		category_id: "15510c92-62d3-49bc-8bdf-0891c1097dcf",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Entertainment"].category_id
+		parent_category_id: parentCategories["Recreation"].category_id,
+		icon: "material-symbols::theaters",
 	},
 	"Music": {
 		name: "Music",
 		category_id: "58198b08-ae3b-4a87-bc73-1504647e578e",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Entertainment"].category_id
+		parent_category_id: parentCategories["Recreation"].category_id,
+		icon: "material-symbols::music_note",
 	},
 	"Books": {
 		name: "Books",
 		category_id: "ae4c5e34-27ca-4652-a422-ec7673d90cc7",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Entertainment"].category_id
+		parent_category_id: parentCategories["Recreation"].category_id,
+		icon: "material-symbols::book_2",
 	},
 	"Newspapers & Magazines": {
 		name: "Newspapers & Magazines",
 		category_id: "bd4c5e34-27ca-4652-a422-ec7673d90cc7",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Entertainment"].category_id
+		parent_category_id: parentCategories["Recreation"].category_id,
+		icon: "material-symbols::newspaper",
 	},
 
 
@@ -361,13 +386,15 @@ const defaultCategories = {
 		name: "ATM Withdrawal",
 		category_id: "b3c2d3e4-f5a6-4b7c-8d9e-0f1a2b3c4d56",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Banking"].category_id
+		parent_category_id: parentCategories["Banking"].category_id,
+		icon: "material-symbols::atm",
 	},
 	"ATM Fee": {
 		name: "ATM Fee",
 		category_id: "5d0b38c6-cd30-446b-824a-a5e1c137663a",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Banking"].category_id
+		parent_category_id: parentCategories["Banking"].category_id,
+		icon: "material-symbols::atm",
 	},
 	"Banking Fee": {
 		name: "Banking Fee",
@@ -379,7 +406,8 @@ const defaultCategories = {
 		name: "Finance Charge",
 		category_id: "40676754-e08b-4928-826f-a23961a2a042",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Banking"].category_id
+		parent_category_id: parentCategories["Banking"].category_id,
+		icon: "material-symbols::paid",
 	},
 	"Credit Card Payment": {
 		name: "Credit Card Payment",
@@ -391,13 +419,15 @@ const defaultCategories = {
 		name: "Late Fee",
 		category_id: "5461213e-ffd5-464b-b3c4-bc2f6fc957cb",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Banking"].category_id
+		parent_category_id: parentCategories["Banking"].category_id,
+		icon: "material-symbols::paid",
 	},
 	"Service Fee": {
 		name: "Service Fee",
 		category_id: "b4e435b8-d774-407f-afeb-5d79e4288f5f",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Banking"].category_id
+		parent_category_id: parentCategories["Banking"].category_id,
+		icon: "material-symbols::paid",
 	},
 	"Trade Commissions": {
 		name: "Trade Commissions",
@@ -434,13 +464,15 @@ const defaultCategories = {
 		name: "Alcohol & Bars",
 		category_id: "4cc55ded-9014-4863-a0d6-4d084fea3ea6",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Food & Dining"].category_id
+		parent_category_id: parentCategories["Food & Dining"].category_id,
+		icon: "material-symbols::local_bar",
 	},
-	"Coffee Shops": {
-		name: "Coffee Shops",
+	"Cafes": {
+		name: "Cafes",
 		category_id: "ef5e7110-72f7-4fb8-a650-7e3db4f406f6",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Food & Dining"].category_id
+		parent_category_id: parentCategories["Food & Dining"].category_id,
+		icon: "material-symbols::local_cafe",
 	},
 	"Fast Food": {
 		name: "Fast Food",
@@ -453,7 +485,8 @@ const defaultCategories = {
 		name: "Restaurants",
 		category_id: "6f58cb2e-f20e-47c1-8584-078d419c4e30",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Food & Dining"].category_id
+		parent_category_id: parentCategories["Food & Dining"].category_id,
+		icon: "material-symbols::local_dining",
 	},
 
 
@@ -521,7 +554,8 @@ const defaultCategories = {
 		name: "Dentist",
 		category_id: "c795f728-f94e-48d1-9cd2-77221bb50a1b",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Health & Fitness"].category_id
+		parent_category_id: parentCategories["Health & Fitness"].category_id,
+		icon: "tooth",
 	},
 	"Doctor": {
 		name: "Doctor",
@@ -533,13 +567,15 @@ const defaultCategories = {
 		name: "Eyecare",
 		category_id: "b19e46a3-ce8f-4a96-b1d3-28cdd313fb85",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Health & Fitness"].category_id
+		parent_category_id: parentCategories["Health & Fitness"].category_id,
+		icon: "material-symbols::eyeglasses_2",
 	},
 	"Gym": {
 		name: "Gym",
 		category_id: "bdc8aade-ea65-4e20-bb4a-7c40ebadc0a1",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Health & Fitness"].category_id
+		parent_category_id: parentCategories["Health & Fitness"].category_id,
+		icon: "material-symbols::fitness_center",
 	},
 	"Health Insurance": {
 		name: "Health Insurance",
@@ -551,7 +587,8 @@ const defaultCategories = {
 		name: "Pharmacy",
 		category_id: "33736d95-667c-4f8d-8434-487cb9caff3d",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Health & Fitness"].category_id
+		parent_category_id: parentCategories["Health & Fitness"].category_id,
+		icon: "material-symbols::local_pharmacy",
 	},
 
 
@@ -627,7 +664,7 @@ const defaultCategories = {
 	},
 	"Retirement Income": {
 		name: "Retirement Income",
-		category_id: "f3c1b0d2-4a5e-4b8c-9f6d-7c8e1b2f3a4c",
+		category_id: "d3c1b0d2-4a5e-4b8c-9f6d-7c8e1b2f3a4c",
 		type: "INCOME",
 		parent_category_id: parentCategories["Income"].category_id
 	},
@@ -1084,16 +1121,16 @@ export const defaultKeyToSystemCategoryMap: Record<CategoryKey, SystemCategoryNa
   "BANK_FEES_OTHER_BANK_FEES": "Banking",
 
   // Entertainment
-  "ENTERTAINMENT_CASINOS_AND_GAMBLING": "Amusement",
+  "ENTERTAINMENT_CASINOS_AND_GAMBLING": "Recreation",
   "ENTERTAINMENT_MUSIC_AND_AUDIO": "Music",
-  "ENTERTAINMENT_SPORTING_EVENTS_AMUSEMENT_PARKS_AND_MUSEUMS": "Amusement",
-  "ENTERTAINMENT_TV_AND_MOVIES": "Movies & DVDs",
+  "ENTERTAINMENT_SPORTING_EVENTS_AMUSEMENT_PARKS_AND_MUSEUMS": "Parks & Attractions",
+  "ENTERTAINMENT_TV_AND_MOVIES": "Movies & TV",
   "ENTERTAINMENT_VIDEO_GAMES": "Electronics & Software",
-  "ENTERTAINMENT_OTHER_ENTERTAINMENT": "Entertainment",
+  "ENTERTAINMENT_OTHER_ENTERTAINMENT": "Recreation",
 
   // Food and drink
   "FOOD_AND_DRINK_BEER_WINE_AND_LIQUOR": "Alcohol & Bars",
-  "FOOD_AND_DRINK_COFFEE": "Coffee Shops",
+  "FOOD_AND_DRINK_COFFEE": "Cafes",
   "FOOD_AND_DRINK_FAST_FOOD": "Fast Food",
   "FOOD_AND_DRINK_GROCERIES": "Groceries",
   "FOOD_AND_DRINK_RESTAURANT": "Restaurants",
@@ -1171,11 +1208,11 @@ export const defaultKeyToSystemCategoryMap: Record<CategoryKey, SystemCategoryNa
   "TRAVEL_OTHER_TRAVEL": "Travel",
 
   // Rent and utilities
-  "RENT_AND_UTILITIES_GAS_AND_ELECTRICITY": "Utilities",
+  "RENT_AND_UTILITIES_GAS_AND_ELECTRICITY": "Bills & Utilities",
   "RENT_AND_UTILITIES_INTERNET_AND_CABLE": "Internet",
   "RENT_AND_UTILITIES_RENT": "Mortgage & Rent",
-  "RENT_AND_UTILITIES_SEWAGE_AND_WASTE_MANAGEMENT": "Utilities",
+  "RENT_AND_UTILITIES_SEWAGE_AND_WASTE_MANAGEMENT": "Bills & Utilities",
   "RENT_AND_UTILITIES_TELEPHONE": "Phone Plan",
-  "RENT_AND_UTILITIES_WATER": "Utilities",
-  "RENT_AND_UTILITIES_OTHER_UTILITIES": "Utilities",
+  "RENT_AND_UTILITIES_WATER": "Water Bill",
+  "RENT_AND_UTILITIES_OTHER_UTILITIES": "Bills & Utilities",
 };

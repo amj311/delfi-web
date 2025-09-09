@@ -1,5 +1,5 @@
 import type { PlaidCategory } from "server/services/PlaidService";
-import type { IconName, TagColor } from "delfi-core/utils/constants";
+import type { IconIdentifier, TagColor } from "delfi-core/utils/constants";
 import type { Replace } from "delfi-core/utils/typeUtils";
 
 type CategoryType = 'INCOME' | 'TRANSFER' | 'EXPENSE';
@@ -9,7 +9,7 @@ export type Category = {
 	name: string,
 	type: CategoryType,
 	color?: TagColor,
-	icon?: IconName,
+	icon?: IconIdentifier,
 	detection_keys?: [PlaidCategory],
 	Children?: Category[] // only present if included from DB
 	parent_category_id?: string,
@@ -21,7 +21,7 @@ export type ParentCategory = Replace<Category, {
 	parent_category_id: undefined,
 	Children: Category[],
 	color: TagColor,
-	icon: IconName,
+	icon: IconIdentifier,
 }>;
 
 export type ChildCategory = Replace<Category, {

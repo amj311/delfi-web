@@ -334,8 +334,8 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Gas Bill",
 				account_id: getAccountByName('Checking').account_id,
-				category_id: categoryByName("Utilities").category_id,
-				Category: categoryByName("Utilities"),
+				category_id: categoryByName("Gas Bill").category_id,
+				Category: categoryByName("Gas Bill"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-06-18', frequency: 'MONTHLY', byDayOfMonth: [18] },
@@ -350,8 +350,8 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Power Bill",
 				account_id: getAccountByName('Checking').account_id,
-				category_id: categoryByName("Utilities").category_id,
-				Category: categoryByName("Utilities"),
+				category_id: categoryByName("Electric Bill").category_id,
+				Category: categoryByName("Electric Bill"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] },
@@ -379,8 +379,8 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				memo: "Internet",
 				account_id: getAccountByName('Checking').account_id,
-				category_id: categoryByName("Utilities").category_id,
-				Category: categoryByName("Utilities"),
+				category_id: categoryByName("Internet").category_id,
+				Category: categoryByName("Internet"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] },
@@ -635,7 +635,7 @@ export class TestDataService {
 			{
 				budget_id: 'd21e1f2-4567-abcd-ef01-23456789d213',
 				memo: "Thanksgiving Point Membership",
-				category_id: categoryByName("Amusement").category_id,
+				category_id: categoryByName("Parks & Attractions").category_id,
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
