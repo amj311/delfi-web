@@ -322,7 +322,7 @@ export class TestDataService {
 				Category: categoryByName("Home Services"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-06-18', frequency: 'MONTHLY', byDayOfMonth: [18] },
+					schedule: { start: '2022-06-18', frequency: 'MONTHLY', byDayOfMonth: [3] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -240,
@@ -453,7 +453,7 @@ export class TestDataService {
 				origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [15] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: 1000,
@@ -470,7 +470,7 @@ export class TestDataService {
 				origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [15] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: 50,
@@ -487,7 +487,7 @@ export class TestDataService {
 				origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [15] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: 50,
@@ -504,7 +504,7 @@ export class TestDataService {
 				origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [15] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: 250,
