@@ -8,6 +8,7 @@ import PromptModal from './components/utils/PromptModal.vue';
 import Toast from 'primevue/toast';
 import Button from 'primevue/button';
 import { useAppStore } from './stores/app.store';
+import Icon from './components/Icon.vue';
 import Snackbar from './components/utils/Snackbar.vue';
 
 const userStore = useUserStore();
@@ -24,7 +25,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<div class="app" :class="{ touch: useAppStore().isTouch || true }">
+	<div class="app" :class="{ touch: useAppStore().isTouch }">
 		<LoggedIn v-if="!waitingForAuth && userStore.hasAuth && userStore.currentUser" />
 		<div v-else class="flex flex-column align-items-center" style="padding-top: calc(33vh - 5rem)">
 			<div class="flex align-items-center gap-3" style="font-size: 1.5em">

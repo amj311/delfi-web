@@ -11,3 +11,7 @@ body {
 	border-color: var(--p-select-border-color) !important;
 	box-shadow: var(--p-select-shadow);
 }
+
+.pi {
+	font-size: inherit !important;
+}

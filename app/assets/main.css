@@ -25,7 +25,7 @@ a,
 
 
 
-.app:not(.touch) .hover-show-trigger .hover-show {
+body:not(.touch) .hover-show-trigger .hover-show {
 	display: none;
 }
 

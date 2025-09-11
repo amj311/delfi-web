@@ -1,19 +1,20 @@
 <script lang="ts">
-import { defineComponent, ref, watch, onMounted, onUnmounted, computed, TransitionGroup } from 'vue';
+import { ref, TransitionGroup } from 'vue';
 import Dialog from 'primevue/dialog';
 import Drawer from 'primevue/drawer';
 import Button, { type ButtonProps } from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import { defineStore } from 'pinia';
 import DrawerModal from './DrawerModal.vue';
-import { jsonCopy } from 'delfi-core/utils/miscUtils';
-import type { Replace } from 'delfi-core/utils/typeUtils';
+import type { IconIdentifier } from 'delfi-core/utils/constants';
+import Icon from '../Icon.vue';
 
 // Define the store as a separate export
 export type SnackbarOptions = {
 	key?: string;
 	title?: string;
 	message?: string;
+	icon?: IconIdentifier;
 	onOk?: () => void;
 	okButtonProps?: ButtonProps;
 	cancelButtonProps?: ButtonProps;
@@ -45,7 +46,7 @@ const usePrivatePrompt = defineStore('privateSnackbar', () => {
 			...message,
 		});
 		setTimeout(() => {
-			removeMessage(messages.value[0].key || '');
+			removeMessage(key);
 		}, message.duration || 3000);
 		return key;
 	}
@@ -78,6 +79,7 @@ export default {
 		InputText,
 		Button,
 		DrawerModal,
+		Icon,
 	},
 	setup() {
 		// Use the store in the component
@@ -97,7 +99,10 @@ export default {
 				<div v-for="msg in store.messages" :key="msg.key" class="flex align-items-center gap-2 bg-white border-1-surface-300 shadow-2 py-2 pl-3 pr-1 mt-2 border-round">
 					<div>
 						<h4 v-if="msg.title">{{ msg.title }}</h4>
-						<div>{{ msg.message }}</div>
+						<div class="flex align-items-start gap-2">
+							<Icon v-if="msg.icon" :name="msg.icon" />
+							{{ msg.message }}
+						</div>
 					</div>
 					<div class="flex-grow-1"></div>
 					<Button

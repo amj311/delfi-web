@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { TransactionUtils, type Transaction } from 'delfi-core/models/Transaction';
 import Currency from './Currency.vue';
 import { useAccountStore } from '@/stores/account.store';
@@ -9,7 +9,7 @@ import { TransactionService } from '@/services/transaction.service';
 import { useDelfiStore } from '@/stores/delfi.store';
 import TransactionAttributionDrawer, { type Step } from './TransactionAttributionDrawer.vue';
 import { usePrompt } from './utils/PromptModal.vue';
-import { diff, jsonCopy } from 'delfi-core/utils/miscUtils';
+import { asAny, diff as getDiff, jsonCopy } from 'delfi-core/utils/miscUtils';
 import AttributionAvatar from './AttributionAvatar.vue';
 import Textarea from 'primevue/textarea';
 import debounce from '@/utils/debounce';
@@ -58,16 +58,29 @@ watch(
 		try {
 			await TransactionService.updateTransaction(transaction.value.transaction_id, newTransaction);
 			lastSaved.value = new Date();
-			const diffKeys = Object.keys(diff(oldValue, newTransaction) || {});
+			const diff = getDiff(oldValue, newTransaction) || {};
+			const diffKeys = Object.keys(diff);
 			const shouldCompute = diffKeys.some((key) => !computeExclusions.includes(key));
 			if (shouldCompute) {
 				useDelfiStore().reCompute();
 			}
 
-			const changedRuleActions = ActionTypes.filter((key) => diffKeys.some((dKey) => dKey.includes(key)));
+			const changedRuleActions = ActionTypes.map((key) => {
+				console.log(diff);
+				const change = Object.entries(diff).find(([dKey]) => dKey.includes(key)); // Attributions.0.merchant_id includes merchant_id
+				console.log(key, change);
+				if (!change) {
+					return null;
+				}
+				return {
+					actionType: key,
+					value: asAny(change[1]).new,
+				};
+			}).filter(Boolean) as Array<{ actionType: ActionType, value: any }>;
 			const existingRuleActions = applicableRules.value.flatMap((rule) => rule.actions.map((action) => action.action));
 			// Prompt to add rule if one does not exist for this action yet
-			const shouldPromptRule = !existingRuleActions.some((action) => changedRuleActions.some((dKey) => dKey.includes(action)));
+			const shouldPromptRule = changedRuleActions.some(({actionType}) => !existingRuleActions.some((action) => actionType === action));
+			console.log(changedRuleActions, existingRuleActions, shouldPromptRule);
 			if (shouldPromptRule) {
 				promptNewRule(changedRuleActions);
 			}
@@ -340,6 +353,7 @@ async function reviewTransaction() {
  */
 
 const ruleDrawerRef = ref<InstanceType<typeof NavTriggerDrawer> | null>(null);
+const rulesListRef = ref<InstanceType<typeof RulesList> | null>(null);
 
 const applicableRules = ref<TransactionRule[]>([]);
 // Watch for transaction changes to load applicable rules
@@ -360,18 +374,26 @@ watch(
 	{ immediate: true }
 );
 
-function promptNewRule(newActionFields: ActionType[]) {
+function promptNewRule(newActionFields: Array<{ actionType: ActionType, value: any }>) {
 	useSnackbar().add({
+		icon: 'material-symbols::manufacturing',
 		message: 'Would you like to automate this assignment?',
 		okButtonProps: {
 			label: 'Create Rule',
 		},
 		onOk: () => draftNewRule(newActionFields),
+		duration: 6000,
 	});
 }
 
-function draftNewRule(newActionFields: ActionType[]) {
+function draftNewRule(newActionFields: Array<{ actionType: ActionType, value: any }>) {
 	openRules();
+	nextTick(() => {
+		rulesListRef.value?.draftRule({
+			filter: { AND: [ { property: '' as any, operator: '' as any } ] },
+			actions: newActionFields.map(field => ({ action: field.actionType, value: { [field.actionType]: field.value } }))
+		});
+	})
 }
 
 function openRules() {
@@ -619,9 +641,9 @@ const sourceAccount = computed(() => {
 				</div>
 
 				<!-- APPLICABLE RULES COUNT -->
-				<div v-if="applicableRules.length > 0" class="text-black-alpha-50">
+				<div class="text-black-alpha-50">
 					<Icon name="material-symbols::manufacturing" />
-					{{ applicableRules.length }} automation {{ applicableRules.length > 1 ? 'rules apply' : 'rule applies' }} to this transaction.
+					{{ applicableRules.length }} automation {{ applicableRules.length === 1 ? 'rule applies' : 'rules apply' }} to this transaction.
 					<Button size="small" text label="View Rules" @click="openRules" />
 				</div>
 			</div>
@@ -763,10 +785,12 @@ const sourceAccount = computed(() => {
 
 	<!-- TRANSACTION RULES -->
 	<NavTriggerDrawer ref="ruleDrawerRef" triggerKey="transaction-applicable-rules">
-		<p class="mb-2">These rules will apply to this transaction and others like it:</p>
+		<p class="mb-2">These rules will apply to this transaction and others like it</p>
 
 		<h3>Rules</h3>
-		<RulesList v-model="applicableRules" :templateEvent="TransactionUtils.createEventFromAttribution(largestAttribution, transaction)" />
+		<RulesList ref="rulesListRef" v-model="applicableRules" :templateEvent="TransactionUtils.createEventFromAttribution(largestAttribution, transaction)" />
+		<br />
+		<Button icon="pi pi-plus" label="Add Rule" @click="rulesListRef?.draftRule()" />
 	</NavTriggerDrawer>
 
 	<TransactionAttributionDrawer ref="transactionAttributionDrawer" />

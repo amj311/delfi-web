@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { OperatorDescriptions, Operators, Properties, type EitherFilter as EitherBlock, type FilterRule, type Predicate, type TransactionFilter } from 'delfi-core/models/Filters';
+import { OperatorDescriptions, Operators, Properties, type EitherFilter as EitherBlock, type FilterBlock, type Predicate, type TransactionFilter } from 'delfi-core/models/Filters';
 import Button from 'primevue/button';
 import Select from 'primevue/select';
 import { computed, ref, useAttrs, watch } from 'vue';
@@ -37,7 +37,7 @@ function swapBlockType(rule: EitherBlock) {
 	delete rule[currentType];
 }
 
-function removeRule(rule: FilterRule, parent: EitherBlock) {
+function removeRule(rule: FilterBlock, parent: EitherBlock) {
 	const array = parent.AND || parent.OR;
 	const index = array!.indexOf(rule);
 	if (index !== -1) {
@@ -45,7 +45,7 @@ function removeRule(rule: FilterRule, parent: EitherBlock) {
 	}
 }
 
-function addRule(rule: FilterRule, parent: EitherBlock) {
+function addRule(rule: FilterBlock, parent: EitherBlock) {
 	const array = parent.AND || parent.OR;
 	array!.push(rule);
 }

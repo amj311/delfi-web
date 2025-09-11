@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 
 
@@ -14,9 +14,16 @@ export const useAppStore = defineStore('app', () => {
 	function detectTouch() {
 		if (isTouch.value) return;
 		isTouch.value = true;
-		window.removeEventListener('touchstart', detectTouch);
 	}
 	window.addEventListener('touchstart', detectTouch);
+
+	watch(isTouch, (newVal) => {
+		if (newVal) {
+			document.body.classList.add('touch');
+		} else {
+			document.body.classList.remove('touch');
+		}
+	}, { immediate: true });
 
 	return {
 		isTouch,

@@ -1,17 +1,16 @@
 <script setup lang="ts">
 import { useCategoryStore } from '@/stores/category.store';
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import AttributionAvatar from '@/components/AttributionAvatar.vue';
 import {
 	Actions,
 	TransactionRuleUtils,
-	type Action,
 	type ActionType,
 	type TransactionRule,
 	type TransactionRuleDraft,
 } from 'delfi-core/models/TransactionRule';
 import request from '@/services/request';
-import FilterUtils, { FilterRule, Properties, type Predicate, type Property } from 'delfi-core/models/Filters';
+import FilterUtils, { type Predicate, type Property } from 'delfi-core/models/Filters';
 import Button from 'primevue/button';
 import DrawerModal from '@/components/utils/DrawerModal.vue';
 import Icon from '@/components/Icon.vue';
@@ -39,6 +38,10 @@ watch(rules, (newVal) => {
 const props = defineProps<{
 	templateEvent?: AttributionEvent;
 }>();
+
+defineExpose({
+	draftRule,
+});
 
 function findAction(rule: TransactionRule, actionName: string) {
 	return rule.actions?.find((action) => action.action === actionName);
@@ -75,6 +78,10 @@ watch(editingRule, (newVal) => {
 function editRule(rule: TransactionRuleDraft) {
 	upsertRuleModal.value?.open();
 	editingRule.value = jsonCopy(rule);
+}
+function draftRule(rule?: TransactionRuleDraft) {
+	console.log("opening with new rule", rule);
+	editRule(rule || { filter: { AND: [ { property: '' as any, operator: '' as any } ] }, actions: [ { action: '' as any, value: {} } ] });
 }
 const isNewRule = computed(() => !editingRule.value?.transaction_rule_id);
 
@@ -245,19 +252,21 @@ const filterSuggestions = computed<Predicate[]>(() => {
 			<div>
 				<h4 class="mb-1">When...</h4>
 				<FilterBuilder v-model="editingRule.filter" :key="JSON.stringify(editingRule.filter)" />
-				<Button
-					v-for="predicate in filterSuggestions"
-					:key="predicate.property"
-					class="mt-2"
-					severity="secondary"
-					@click="editingRule.filter = FilterUtils.combineFilters(editingRule.filter, predicate)"
-					style="max-width: 100%"
-				>
-					<div class="flex align-items-center gap-2 w-full">
-						<i class="pi pi-lightbulb mr-2"></i>
-						<div class="text-ellipsis">{{ FilterUtils.describePredicate(predicate).toString(descriptorGetter) }}</div>
-					</div>
-				</Button>
+				<div class="flex flex-wrap gap-2">
+					<Button
+						v-for="predicate in filterSuggestions"
+						:key="predicate.property"
+						severity="secondary"
+						@click="editingRule.filter = FilterUtils.combineFilters(editingRule.filter, predicate)"
+						style="max-width: 100%"
+						size="small"
+					>
+						<div class="flex align-items-center gap-2 w-full">
+							<i class="pi pi-lightbulb"></i>
+							<div class="text-ellipsis">{{ FilterUtils.describePredicate(predicate).toString(descriptorGetter) }}</div>
+						</div>
+					</Button>
+				</div>
 			</div>
 
 			<div>
