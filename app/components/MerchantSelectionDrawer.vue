@@ -117,7 +117,8 @@ async function saveMerchant() {
 		toast.add({
 			severity: 'error',
 			summary: 'Error',
-			detail: 'Failed to save merchant. Please try again later.'
+			detail: 'Failed to save merchant. Please try again later.',
+			life: 3000,
 		});
 	} finally {
 		isSavingMerchant.value = false;

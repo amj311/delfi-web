@@ -47,7 +47,7 @@ const usePrivatePrompt = defineStore('privateSnackbar', () => {
 		});
 		setTimeout(() => {
 			removeMessage(key);
-		}, message.duration || 3000);
+		}, message.duration || 10000); // leave snackbar around for a while since it usually prompts for user action
 		return key;
 	}
 

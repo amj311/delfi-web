@@ -50,6 +50,7 @@ export const TransactionReviewDao = {
 				reviewed_at: new Date(),
 				reviewed_by_id: user_id,
 			},
+			include: { ReviewedBy: true }
 		});
 	},
 

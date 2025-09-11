@@ -66,9 +66,7 @@ watch(
 			}
 
 			const changedRuleActions = ActionTypes.map((key) => {
-				console.log(diff);
 				const change = Object.entries(diff).find(([dKey]) => dKey.includes(key)); // Attributions.0.merchant_id includes merchant_id
-				console.log(key, change);
 				if (!change) {
 					return null;
 				}
@@ -80,7 +78,6 @@ watch(
 			const existingRuleActions = applicableRules.value.flatMap((rule) => rule.actions.map((action) => action.action));
 			// Prompt to add rule if one does not exist for this action yet
 			const shouldPromptRule = changedRuleActions.some(({actionType}) => !existingRuleActions.some((action) => actionType === action));
-			console.log(changedRuleActions, existingRuleActions, shouldPromptRule);
 			if (shouldPromptRule) {
 				promptNewRule(changedRuleActions);
 			}
@@ -300,7 +297,6 @@ function setTransferPair(t: Transaction) {
 }
 
 async function breakTransferPair() {
-	console.log('Breaking transfer pair');
 	if (!isTransferPair.value) {
 		return;
 	}
@@ -337,6 +333,7 @@ async function reviewTransaction() {
 			severity: 'success',
 			summary: 'Transaction Reviewed',
 			detail: 'The transaction has been marked as reviewed.',
+			life: 3000,
 		});
 	} catch (error) {
 		console.error('Error reviewing transaction:', error);
@@ -344,6 +341,7 @@ async function reviewTransaction() {
 			severity: 'error',
 			summary: 'Error',
 			detail: 'Failed to mark transaction as reviewed. Please try again later.',
+			life: 3000,
 		});
 	}
 }
@@ -382,7 +380,6 @@ function promptNewRule(newActionFields: Array<{ actionType: ActionType, value: a
 			label: 'Create Rule',
 		},
 		onOk: () => draftNewRule(newActionFields),
-		duration: 6000,
 	});
 }
 
@@ -457,7 +454,7 @@ const sourceAccount = computed(() => {
 			</div>
 		</template>
 
-		<div class="flex flex-column h-full">
+		<div class="flex flex-column h-full overflow-y-auto">
 			<div class="flex align-items-center gap-3">
 				<AttributionAvatar :event="avatarDetails" :size="3" />
 				<div class="flex-frow-1 min-w-0">
@@ -603,12 +600,12 @@ const sourceAccount = computed(() => {
 
 			<br />
 
-			<Button link v-if="isSplit" class="flex align-items-center justify-content-center gap-2" @click="showMoreFields = !showMoreFields">
+			<!-- <Button link v-if="isSplit" class="flex align-items-center justify-content-center gap-2" @click="showMoreFields = !showMoreFields">
 				<div></div>
 				{{ showMoreFields ? 'Less Details' : 'More Details' }}
 				<i class="pi pi-angle-down transition-all transition-duration-300" :class="{ 'rotate-180': showMoreFields }" />
-			</Button>
-			<div class="max-h-0 overflow-hidden transition-all transition-duration-300" :class="{ 'max-h-30rem': showMoreFields || !isSplit }">
+			</Button> -->
+			<!-- <div class="max-h-0 overflow-hidden transition-all transition-duration-300" :class="{ 'max-h-30rem': showMoreFields || !isSplit }"> -->
 				<div class="details-rows">
 					<!-- No merchant for transfers! -->
 					<div class="row" v-if="!isTransferPair">
@@ -629,42 +626,45 @@ const sourceAccount = computed(() => {
 						<label>Notes</label>
 						<Textarea v-model="notesDraft" rows="3" class="w-full" />
 					</div>
-				</div>
+				<!-- </div> -->
 				<br />
-				<div v-if="transaction.TransactionReview?.reviewed_at" class="flex align-items-center gap-2 text-black-alpha-50">
-					<i class="pi pi-check-circle" />
-					<small
-						>Reviewed by {{ transaction.TransactionReview.ReviewedBy?.given_name }}
-						{{ transaction.TransactionReview.ReviewedBy?.family_name }} on
-						{{ ddate(transaction.TransactionReview?.reviewed_at).formatFull() }}</small
-					>
-				</div>
 
-				<!-- APPLICABLE RULES COUNT -->
 				<div class="text-black-alpha-50">
-					<Icon name="material-symbols::manufacturing" />
-					{{ applicableRules.length }} automation {{ applicableRules.length === 1 ? 'rule applies' : 'rules apply' }} to this transaction.
-					<Button size="small" text label="View Rules" @click="openRules" />
+					<div v-if="transaction.TransactionReview?.reviewed_at">
+						<i class="pi pi-check-circle" />&nbsp;
+						Reviewed by {{ transaction.TransactionReview.ReviewedBy?.given_name }}
+						{{ transaction.TransactionReview.ReviewedBy?.family_name }} on
+						{{ ddate(transaction.TransactionReview?.reviewed_at).formatFull() }}
+					</div>
+
+					<!-- APPLICABLE RULES COUNT -->
+					<div>
+						<Icon name="material-symbols::manufacturing" />&nbsp;
+						{{ applicableRules.length }} automation {{ applicableRules.length === 1 ? 'rule applies' : 'rules apply' }} to this transaction.
+						<Button size="small" text label="View Rules" @click="openRules" />
+					</div>
 				</div>
 			</div>
 
 			<div class="flex-grow-1" />
 
-			<!-- SPLITS -->
-			<Button v-if="!isTransferPair" class="w-full" text @click="openSplitModal">
-				<Icon source_id="arrow_split" source="material-symbols" />
-				{{ isSplit ? 'Manage Splits' : 'Split Transaction' }}
-			</Button>
+			<div>
+				<!-- SPLITS -->
+				<Button v-if="!isTransferPair" class="w-full" text @click="openSplitModal">
+					<Icon source_id="arrow_split" source="material-symbols" />
+					{{ isSplit ? 'Manage Splits' : 'Split Transaction' }}
+				</Button>
 
-			<!-- TRANSFER PAIRS -->
-			<Button v-if="!isSplit && !isTransferPair" class="w-full" text @click="openTransferPairModal">
-				<Icon source_id="compare_arrows" source="material-symbols" />
-				Create transfer pair
-			</Button>
-			<Button v-if="!isSplit && isTransferPair" class="w-full" text severity="danger" @click="breakTransferPair">
-				<Icon source_id="arrows_outward" source="material-symbols" />
-				Break transfer pair
-			</Button>
+				<!-- TRANSFER PAIRS -->
+				<Button v-if="!isSplit && !isTransferPair" class="w-full" text @click="openTransferPairModal">
+					<Icon source_id="compare_arrows" source="material-symbols" />
+					Create transfer pair
+				</Button>
+				<Button v-if="!isSplit && isTransferPair" class="w-full" text severity="danger" @click="breakTransferPair">
+					<Icon source_id="arrows_outward" source="material-symbols" />
+					Break transfer pair
+				</Button>
+			</div>
 		</div>
 	</NavTriggerDrawer>
 

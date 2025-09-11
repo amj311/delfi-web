@@ -80,8 +80,7 @@ function editRule(rule: TransactionRuleDraft) {
 	editingRule.value = jsonCopy(rule);
 }
 function draftRule(rule?: TransactionRuleDraft) {
-	console.log("opening with new rule", rule);
-	editRule(rule || { filter: { AND: [ { property: '' as any, operator: '' as any } ] }, actions: [ { action: '' as any, value: {} } ] });
+	editRule(rule || { filter: { AND: filterSuggestions.value.length ? [] : [ { property: '' as any, operator: '' as any } ] }, actions: [ { action: '' as any, value: {} } ] });
 }
 const isNewRule = computed(() => !editingRule.value?.transaction_rule_id);
 
@@ -161,8 +160,8 @@ async function deleteRule(rule: TransactionRuleDraft) {
 }
 
 const filterSuggestions = computed<Predicate[]>(() => {
-	if (!props.templateEvent || !editingRule.value) return [];
-	const existingPredicates = FilterUtils.extractPredicates(editingRule.value.filter);
+	if (!props.templateEvent) return [];
+	const existingPredicates = editingRule.value ? FilterUtils.extractPredicates(editingRule.value.filter) : [];
 	const suggestedProperties: Property[] = ['Transaction.original_description', 'Transaction.merchant_id', 'category_id', 'amount'];
 	return suggestedProperties
 		.map((p) => {
@@ -238,6 +237,8 @@ const filterSuggestions = computed<Predicate[]>(() => {
 				<p>No rules found. Add your first rule to get started.</p>
 			</div>
 		</div>
+
+		{{ filterSuggestions.length }}
 	</div>
 
 	<DrawerModal ref="upsertRuleModal" width="38rem">
@@ -251,8 +252,7 @@ const filterSuggestions = computed<Predicate[]>(() => {
 		<div v-if="editingRule" class="flex flex-column gap-3 mb-4">
 			<div>
 				<h4 class="mb-1">When...</h4>
-				<FilterBuilder v-model="editingRule.filter" :key="JSON.stringify(editingRule.filter)" />
-				<div class="flex flex-wrap gap-2">
+				<div class="flex flex-wrap gap-2 my-2">
 					<Button
 						v-for="predicate in filterSuggestions"
 						:key="predicate.property"
@@ -267,6 +267,7 @@ const filterSuggestions = computed<Predicate[]>(() => {
 						</div>
 					</Button>
 				</div>
+				<FilterBuilder v-model="editingRule.filter" :key="JSON.stringify(editingRule.filter)" />
 			</div>
 
 			<div>
