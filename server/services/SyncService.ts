@@ -7,6 +7,7 @@ import { WorkspaceService } from "./WorkspaceService";
 import { PlaidService } from "./PlaidService";
 import { WorkspaceDao } from "server/data/WorkspaceDao";
 import { TestDataService } from "./TestDataService";
+import type { Transaction } from "delfi-core/models/Transaction";
 
 export class SyncService {
 	public static async addAccountsFromInstitution(workspace_id: string, institution_id: string): Promise<void> {
@@ -27,6 +28,8 @@ export class SyncService {
 
 		const scrapeResults = await ScraperService.scrapeWorkspaceAccounts(workspace_id, workspaceAccounts);
 
+		const newTransactions: Array<Transaction> = [];
+		// Update account details and sync new transactions
 		await Promise.all(workspaceAccounts.map(async account => {
 			const result = scrapeResults[account.account_id];
 			if (!result.success) {
@@ -35,6 +38,10 @@ export class SyncService {
 					sync_error: result.error || 'Unknown error',
 				});
 			}
+
+			const results = await TransactionService.syncNewTransactionsForAccount(workspace_id, account.account_id, result.transactions);
+			newTransactions.push(...results.filter(r => r.created).map(r => r.transaction));
+
 			await AccountService.updateAccount(workspace_id, account.account_id, {
 				current_balance: result.accountDetails.current_balance,
 				available_balance: result.accountDetails.available_balance,
@@ -43,8 +50,10 @@ export class SyncService {
 				apy: result.accountDetails.apy,
 				last_successful_sync: new Date(),
 			});
-			await TransactionService.syncNewTransactionsForAccount(workspace_id, account.account_id, result.transactions);
 		}));
+
+		// Once all accounts are synced, find transfer pairs for new transactions
+		await TransactionService.findAndLinkTransferPairs(workspace_id, newTransactions);
 
 		// await PlaidService.searchForPlaidTransactionData(workspace_id);
 	}

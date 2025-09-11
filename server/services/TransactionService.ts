@@ -233,4 +233,17 @@ export class TransactionService {
 		}
 		return review;
 	}
+
+	public static async findAndLinkTransferPairs(workspace_id: string, transactions: Transaction[]) {
+		// Find potential transfer pairs
+		const pendingPairs = transactions.filter(t => t.transfer_pair_id === null && !t.pending);
+		for (const transaction of pendingPairs) {
+			console.log("Finding transfer pair for transaction", transaction.original_description, transaction.amount);
+			const potentialPairs = await TransactionDao.findPotentialTransferPairs(workspace_id, transaction);
+			console.log(`Found ${potentialPairs.length} potential pairs`);
+			if (potentialPairs.length === 1) {
+				await TransactionDao.setTransferPair(workspace_id, transaction.transaction_id, potentialPairs[0].transaction_id);
+			}
+		}
+	}
 };

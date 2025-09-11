@@ -87,7 +87,6 @@ export default class FilterUtils {
 
 	private static evaluatePredicate(block: Predicate, obj: Filterable): boolean {
 		const { property, operator, operand } = block;
-		if (property === 'Transaction.original_description') console.log("evaluating predicate", block, obj);
 
 		// Allow for some custom operators to extract complex values
 		const value = this.getFilterableValue(obj, property);

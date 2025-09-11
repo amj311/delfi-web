@@ -429,6 +429,29 @@ export const TransactionDao = {
 		});
 	},
 
+
+	async findPotentialTransferPairs(workspace_id: string, transaction: Transaction): Promise<Transaction[]> {
+		if (transaction.TransferPair) {
+			return []; // Already paired
+		}
+		const potentialPairs = await prisma.transaction.findMany({
+			where: {
+				workspace_id,
+				account_id: {
+					not: transaction.account_id,
+				},
+				amount: -transaction.amount,
+				// for now, only consider those on the same day
+				date: transaction.date.toString(),
+				pending: false,
+				transfer_pair_id: null,
+				done_pending: false,
+			},
+			include: commonInclude,
+		});
+		return potentialPairs.map(this.dbToTransaction);
+	},
+
 	async deleteTransaction(workspace_id: string, transaction_id: string): Promise<void> {
 		await prisma.transaction.delete({
 			where: {

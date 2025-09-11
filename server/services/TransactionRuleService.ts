@@ -48,7 +48,6 @@ export class TransactionRuleService {
 	}
 
 	private static async applyRuleSetToTransaction(transaction: Transaction, rules: TransactionRule[]) {
-		console.log("applying rules to transaction!", transaction.original_description)
 		// Rules may set properties that then trigger another rule, like setting a Merchant and then triggering a rule that sets a Category based on the Merchant.
 		// So we need to loop through the rules until no more changes are made, or a maximum number of iterations is reached.
 		let iterations = 0;
