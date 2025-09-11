@@ -1146,7 +1146,7 @@ export const defaultKeyToSystemCategoryMap: Record<CategoryKey, SystemCategoryNa
   "GENERAL_MERCHANDISE_ELECTRONICS": "Electronics & Software",
   "GENERAL_MERCHANDISE_GIFTS_AND_NOVELTIES": "Gifts",
   "GENERAL_MERCHANDISE_OFFICE_SUPPLIES": "Office Supplies",
-  "GENERAL_MERCHANDISE_ONLINE_MARKETPLACES": "Electronics & Software",
+  "GENERAL_MERCHANDISE_ONLINE_MARKETPLACES": "Shopping",
   "GENERAL_MERCHANDISE_PET_SUPPLIES": "Pet Food & Supplies",
   "GENERAL_MERCHANDISE_SPORTING_GOODS": "Sporting Goods",
   "GENERAL_MERCHANDISE_SUPERSTORES": "Groceries",

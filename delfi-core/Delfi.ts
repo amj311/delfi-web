@@ -9,7 +9,7 @@ import { type Budget, type ProjectionEvent, type BudgetOccurrence } from "./mode
 import Forecast from "./models/Forecast";
 import { type Category } from "./models/Category";
 import { ddate, type DelfiDate, instantiateDates } from "./utils/dateUtils";
-import type { FilterRule, TransactionFilter } from "./models/Filters";
+import type { FilterBlock, TransactionFilter } from "./models/Filters";
 import FilterUtils from "./models/Filters";
 import { TransactionUtils, type AttributionEvent, type Transaction } from "./models/Transaction";
 import { BudgetOccurrenceSummary, BudgetSnapshot, RealityTally, type BudgetEventSummary } from "./models/Summary";
@@ -274,7 +274,7 @@ class TransactionSource {
 		private readonly initialEnd: DelfiDate,
 	) {}
 
-	public async getAttributedEventsBetween(start: DelfiDate, end: DelfiDate, filter: FilterRule = null): Promise<Array<AttributionEvent>> {
+	public async getAttributedEventsBetween(start: DelfiDate, end: DelfiDate, filter: FilterBlock = null): Promise<Array<AttributionEvent>> {
 	// use a promise queue to make sure we don't double-load transactions
 	return await this.getEventsQueue.add(async () => {
 		// If we don't yet have transactions for this period, load them

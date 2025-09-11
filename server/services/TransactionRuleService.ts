@@ -16,16 +16,18 @@ export class TransactionRuleService {
 
 		// sort the rules sets so that CUSTOM actions are applied first, so that other user-rules can overwrite any
 		// properties set by the global rules.
-		// EG workspace rules could set both a merchant and a category. The merchant target maps to a custom rule which tries to set a category.
+		// EG Merchant rules could set both a merchant and a category, but a later rule may want to change the category.
 		// The category rule/action should apply last, so it can override the category set by the merchant rule.
 		[workspaceRules, globalRules].forEach(rules => rules.sort((a, b) => a.actions.some(c => c.action in CustomActions) ? -1 : 1).forEach(rule => {
 			rule.actions.sort((a, b) => a.action in CustomActions ? -1 : 1);
 		}));
 
 		await Promise.all(transactions.map(async (transaction) => {
-			// Iterate over ALL local rules first, so that they are set and global rules will not override them.
-			await this.applyRuleSetToTransaction(transaction, workspaceRules as any);
+			// global rules pretty much only exist to auto-select merchants and categories. Workspace rules may depend on these being set already...
+			// The user is not intended to know about global rules, they will just see them as internal magic that happens when a transaction is created
+			// They will write their rules based on the properties they expect to already be set by global rules
 			await this.applyRuleSetToTransaction(transaction, globalRules as any);
+			await this.applyRuleSetToTransaction(transaction, workspaceRules as any);
 			await TransactionDao.patchTransaction(workspace_id, transaction.transaction_id, transaction);
 		}));
 	}
@@ -46,6 +48,7 @@ export class TransactionRuleService {
 	}
 
 	private static async applyRuleSetToTransaction(transaction: Transaction, rules: TransactionRule[]) {
+		console.log("applying rules to transaction!", transaction.original_description)
 		// Rules may set properties that then trigger another rule, like setting a Merchant and then triggering a rule that sets a Category based on the Merchant.
 		// So we need to loop through the rules until no more changes are made, or a maximum number of iterations is reached.
 		let iterations = 0;
@@ -55,6 +58,9 @@ export class TransactionRuleService {
 		while (changed && iterations < maxIterations) {
 			changed = false;
 			for (const rule of rules) {
+				// Many attributes are applied at the attribution level, and filters can process attributions as well
+				// There should only be one attribution on new transactions, but this might be used on existing ones, or maybe
+				// an automatic split was created in a previous rule.
 				for (const attribution of transaction.Attributions) {
 					// Create AttributionEvent for filtering as it is is easier to filter on
 					if (!FilterUtils.matches(rule.filter, TransactionUtils.createEventFromAttribution(attribution, transaction))) {
@@ -97,13 +103,13 @@ export class TransactionRuleService {
 
 const CustomActions: Record<string, (attribution: TransactionAttribution, transaction: Transaction, value: any) => Promise<boolean>> = {
 	// If a merchant is set by any rule, checks if it has a determines which workspace category to use for that merchant, if any
-	merchant_id: async (attribution: TransactionAttribution, transaction: Transaction, merchant_id: string) => {
-		if (transaction.merchant_id || !merchant_id) {
+	merchant_id: async (attribution: TransactionAttribution, transaction: Transaction, value: { merchant_id: string }) => {
+		if (transaction.merchant_id || !value.merchant_id) {
 			return false; // Cannot set merchant
 		}
 
-		const categoryAssociation = await MerchantDao.getMerchantCategory(transaction.workspace_id, merchant_id);
-		transaction.merchant_id = merchant_id;
+		const categoryAssociation = await MerchantDao.getMerchantCategory(transaction.workspace_id, value.merchant_id);
+		transaction.merchant_id = value.merchant_id;
 		attribution.category_id = categoryAssociation?.category_id || null;
 		attribution.Category = categoryAssociation?.Category as Category || undefined;
 
@@ -112,19 +118,19 @@ const CustomActions: Record<string, (attribution: TransactionAttribution, transa
 
 
 	// If a rule sets a budget, the attribution should inherit the budget-able properties of the budget
-	budget_id: async (attribution: TransactionAttribution, transaction: Transaction, budget_id: string) => {
-		if (attribution.budget_id || !budget_id) {
+	budget_id: async (attribution: TransactionAttribution, transaction: Transaction, value: { budget_id: string }) => {
+		if (attribution.budget_id || !value.budget_id) {
 			return false; // Cannot set budget
 		}
 
 		// Lookup the budget to copy its properties
-		const budget = await BudgetDao.getBudgetById(transaction.workspace_id, budget_id);
+		const budget = await BudgetDao.getBudgetById(transaction.workspace_id, value.budget_id);
 		if (!budget) {
-			console.warn(`Budget with ID ${budget_id} not found`);
+			console.warn(`Budget with ID ${value.budget_id} not found`);
 			return false; // Budget not found
 		}
 
-		attribution.budget_id = budget_id;
+		attribution.budget_id = value.budget_id;
 
 		for (const prop of ["category_id", "group_id", "target_account_partition_id"]) {
 			if (budget[prop] && nullOrUndefined(attribution[prop])) {

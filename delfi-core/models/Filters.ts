@@ -4,27 +4,26 @@ import { getPropertyByPath } from "delfi-core/utils/miscUtils"
 import { TransactionUtils, type AttributionEvent, type DescriptionBreakdown } from "delfi-core/models/Transaction"
 import type { Category } from "delfi-core/models/Category"
 import type { CommonEvent } from "delfi-core/models/Summary"
-import type { TransactionRule } from "delfi-core/models/TransactionRule"
 import Descriptor, { SpecialEntityTypes } from "delfi-core/utils/Descriptor"
 
 export type Predicate = {
 	property: Property,
 	operator: Operator,
-	not?: boolean // If true, the rule is inverted
+	not?: boolean // If true, the block is inverted
 	operand?: number | string | string[] | DelfiDate
 }
 
-export type FilterRule = Predicate | AndBlock | OrBlock | null;
+export type FilterBlock = Predicate | AndBlock | OrBlock | null;
 
 export type AndBlock = {
-	AND: Array<FilterRule>;
+	AND: Array<FilterBlock>;
 }
 export type OrBlock = {
-	OR: Array<FilterRule>;
+	OR: Array<FilterBlock>;
 }
 export type EitherFilter = {
-	AND?: Array<FilterRule>;
-	OR?: Array<FilterRule>;
+	AND?: Array<FilterBlock>;
+	OR?: Array<FilterBlock>;
 }
 export type TransactionFilter = AndBlock | OrBlock | null; // Empty object for no filter
 
@@ -59,35 +58,36 @@ export default class FilterUtils {
 		return this.accumulate(matchingEvents, thisFilter);
 	}
 
-	public static matches(rule: FilterRule, transaction: Filterable): boolean {
-		if (rule === null) {
-			return true; // Null rule
+	public static matches(block: FilterBlock, transaction: Filterable): boolean {
+		if (block === null) {
+			return true; // Null block
 		}
-		// Check empty rules
-		if (Object.keys(rule).length === 0) {
-			return true; // Empty rule
+		// Check empty blocks
+		if (Object.keys(block).length === 0) {
+			return true; // Empty block
 		}
-		if ('AND' in rule) {
-			return this.evaluateAndFilter(rule.AND, transaction);
-		} else if ('OR' in rule) {
-			return this.evaluateOrFilter(rule.OR, transaction);
+		if ('AND' in block) {
+			return this.evaluateAndFilter(block.AND, transaction);
+		} else if ('OR' in block) {
+			return this.evaluateOrFilter(block.OR, transaction);
 		} else {
-			return this.evaluatePredicate(rule, transaction);
+			return this.evaluatePredicate(block, transaction);
 		}
 	}
 
-	private static evaluateAndFilter(filter: Array<FilterRule>, transaction: Filterable): boolean {
+	private static evaluateAndFilter(filter: Array<FilterBlock>, transaction: Filterable): boolean {
 		if (filter.length === 0) return true;
-		return filter.every(rule => this.matches(rule, transaction));
+		return filter.every(block => this.matches(block, transaction));
 	}
 
-	private static evaluateOrFilter(filter: Array<FilterRule>, transaction: Filterable): boolean {
+	private static evaluateOrFilter(filter: Array<FilterBlock>, transaction: Filterable): boolean {
 		if (filter.length === 0) return false;
-		return filter.some(rule => this.matches(rule, transaction));
+		return filter.some(block => this.matches(block, transaction));
 	}
 
-	private static evaluatePredicate(rule: Predicate, obj: Filterable): boolean {
-		const { property, operator, operand } = rule;
+	private static evaluatePredicate(block: Predicate, obj: Filterable): boolean {
+		const { property, operator, operand } = block;
+		if (property === 'Transaction.original_description') console.log("evaluating predicate", block, obj);
 
 		// Allow for some custom operators to extract complex values
 		const value = this.getFilterableValue(obj, property);
@@ -126,9 +126,9 @@ export default class FilterUtils {
 
 		// const operatorResult = Operators[operator](value, operand);
 		// if (operatorResult !== result) {
-		// 	console.log(`FilterService: Rule mismatch for property "${property}" with operator "${operator}". Expected: ${result}, got: ${operatorResult}`);
+		// 	console.log(`FilterService: Block mismatch for property "${property}" with operator "${operator}". Expected: ${result}, got: ${operatorResult}`);
 		// }
-		return rule.not ? !result : result;
+		return block.not ? !result : result;
 	};
 
 	public static getFilterableValue(obj: Filterable, property: Property): any {
@@ -143,39 +143,39 @@ export default class FilterUtils {
 	}
 
 
-	public static describeFilter(rule: FilterRule): Descriptor {
+	public static describeFilter(block: FilterBlock): Descriptor {
 		const descriptor = new Descriptor();
-		this.getRuleDescriptorNodes(rule, descriptor);
+		this.getBlockDescriptorNodes(block, descriptor);
 		return descriptor;
 	}
 
-	private static getRuleDescriptorNodes(rule: FilterRule, descriptor: Descriptor): void {
-		if (rule === null) {
-			descriptor.push('<empty rule>');
+	private static getBlockDescriptorNodes(block: FilterBlock, descriptor: Descriptor): void {
+		if (block === null) {
+			descriptor.push('<empty block>');
 		}
-		else if ('AND' in rule) {
-			rule.AND.forEach((r, i) => {
-				this.getRuleDescriptorNodes(r, descriptor)
-				if (i < rule.AND.length - 1) {
+		else if ('AND' in block) {
+			block.AND.forEach((r, i) => {
+				this.getBlockDescriptorNodes(r, descriptor)
+				if (i < block.AND.length - 1) {
 					descriptor.push(' and ');
 				}
 			});
-		} else if ('OR' in rule) {
-			rule.OR.forEach((r, i) => {
-				this.getRuleDescriptorNodes(r, descriptor)
-				if (i < rule.OR.length - 1) {
+		} else if ('OR' in block) {
+			block.OR.forEach((r, i) => {
+				this.getBlockDescriptorNodes(r, descriptor)
+				if (i < block.OR.length - 1) {
 					descriptor.push(' or ');
 				}
 			});
 		} else {
-			this.describePredicate(rule, descriptor);
+			this.describePredicate(block, descriptor);
 		}
 	}
 
-	public static describePredicate(rule: Predicate, descriptor: Descriptor = new Descriptor()) {
-		const { property, operator, operand } = rule;
+	public static describePredicate(block: Predicate, descriptor: Descriptor = new Descriptor()) {
+		const { property, operator, operand } = block;
 		descriptor.push(`${Properties[property]?.label || property} `);
-		if (rule.not) {
+		if (block.not) {
 			descriptor.push('not ');
 		}
 		descriptor.push(OperatorDescriptions[operator] || operator, ' ');
@@ -206,20 +206,20 @@ export default class FilterUtils {
 		}
 	}
 
-	public static extractPredicates(filter: FilterRule): Predicate[] {
+	public static extractPredicates(filter: FilterBlock): Predicate[] {
 		const predicates: Predicate[] = [];
-		const extract = (rule: FilterRule) => {
-			if (rule === null) {
+		const extract = (block: FilterBlock) => {
+			if (block === null) {
 				return;
 			}
-			if ('AND' in rule) {
-				rule.AND.forEach(extract);
-			} else if ('OR' in rule) {
-				rule.OR.forEach(extract);
-			} else if (Array.isArray(rule)) {
-				rule.forEach(extract);
+			if ('AND' in block) {
+				block.AND.forEach(extract);
+			} else if ('OR' in block) {
+				block.OR.forEach(extract);
+			} else if (Array.isArray(block)) {
+				block.forEach(extract);
 			} else {
-				predicates.push(rule);
+				predicates.push(block);
 			}
 		};
 		if (filter) {
@@ -228,7 +228,7 @@ export default class FilterUtils {
 		return predicates;
 	}
 
-	public static combineFilters(filterA: FilterRule, filterB: FilterRule): FilterRule {
+	public static combineFilters(filterA: FilterBlock, filterB: FilterBlock): FilterBlock {
 		if (!filterA) return filterB;
 		if (!filterB) return filterA;
 

@@ -144,8 +144,8 @@ export class TransactionService {
 			}));
 		}
 
-		// Request review for new transactions
-		const needsReview = savedNewTransactions.filter(result => !result.TransactionReview);
+		// Request review for new transactions, but NOT PENDING
+		const needsReview = savedNewTransactions.filter(result => !result.TransactionReview && !result.pending);
 		await Promise.all(needsReview.map(tx => TransactionService.requestTransactionReview(tx)));
 
 		return upsertResults;
@@ -227,6 +227,10 @@ export class TransactionService {
 		}
 
 		const review = await TransactionReviewDao.markTransactionReviewed(workspace_id, transaction_id, user_id);
+		// Because transfer pairs are hidden in the UI, if the user reviews on side of the pair we should review the other as well
+		if (transaction.transfer_pair_id) {
+			await TransactionReviewDao.markTransactionReviewed(workspace_id, transaction.transfer_pair_id, user_id);
+		}
 		return review;
 	}
 };
