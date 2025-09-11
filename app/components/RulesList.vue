@@ -237,8 +237,6 @@ const filterSuggestions = computed<Predicate[]>(() => {
 				<p>No rules found. Add your first rule to get started.</p>
 			</div>
 		</div>
-
-		{{ filterSuggestions.length }}
 	</div>
 
 	<DrawerModal ref="upsertRuleModal" width="38rem">
