@@ -272,6 +272,7 @@ export const TransactionDao = {
 		let amount = transactionData.amount;
 		if (!('amount' in transactionData)) {
 			if (!transactionData.transaction_id) {
+				console.error("Cannot lookup transaction amount", transactionData);
 				throw new Error("Cannot lookup transaction amount without transaction ID" );
 			}
 			// Fetch the transaction to get the amount
