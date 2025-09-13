@@ -695,7 +695,7 @@ const otherAccounts = computed(() => {
 				<div v-if="selectedSpendingView === 'budget'">
 					<Accordion multiple @update:value="(value) => (openAccordions = new Set(value))" :value="Array.from(openAccordions)">
 						<AccordionPanel value="0" v-if="!isFuture">
-							<AccordionHeader class="flex align-items-center gap-2">
+							<AccordionHeader class="flex align-items-center gap-2 font-bold">
 								<AttributionAvatar icon="question-circle" :size="2" :background="'cherry1'" />
 								<b>Unbudgeted</b>
 								<div class="flex-grow-1"></div>

@@ -270,9 +270,9 @@ export const TransactionDao = {
 
 	async verifyAttributionsTotal(transactionData: { amount?: number, transaction_id?: string }, attributions: NonNullable<CreateTransaction["Attributions"]>) {
 		let amount = transactionData.amount;
-		if (!amount) {
+		if (!('amount' in transactionData)) {
 			if (!transactionData.transaction_id) {
-				throw new Error("Transaction amount is required to verify attributions total");
+				throw new Error("Cannot lookup transaction amount without transaction ID" );
 			}
 			// Fetch the transaction to get the amount
 			const transaction = await this.getTransactionById(transactionData.transaction_id);
