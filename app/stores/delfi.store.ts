@@ -12,6 +12,8 @@ export const useDelfiStore = defineStore('delfi', () => {
 	const isInitializing: Ref<boolean> = ref(true);
 	const isGeneratingForecast: Ref<boolean> = ref(false);
 
+	const computeTimeout = ref<number | null>(null);
+
 	// begin with a few previous months as hindsight
 	const projectionStart = ref<DelfiDate>(ddate().startOf('month').subtract(3, 'month'));
 	const projectionEnd = ref<DelfiDate>(ddate().startOf('month').add(5, 'year'));
@@ -35,12 +37,24 @@ export const useDelfiStore = defineStore('delfi', () => {
 		isGeneratingForecast.value = true;
 		await delfi.computeForecast();
 		isGeneratingForecast.value = false;
+
+		scheduleCompute(); // schedule another compute in case things changed while we were computing
 	}
 
 	function reCompute() {
 		initDelfi().catch((error) => {
 			console.error("Error during re-computation:", error);
-		});
+		})
+	}
+
+
+	function scheduleCompute() {
+		if (computeTimeout.value) {
+			clearTimeout(computeTimeout.value);
+		}
+		computeTimeout.value = window.setTimeout(() => {
+			reCompute();
+		}, 60 * 60 * 1000); // every hour
 	}
 
 	return {
