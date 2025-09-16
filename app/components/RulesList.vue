@@ -223,6 +223,7 @@ const filterSuggestions = computed<Predicate[]>(() => {
 							{{ TransactionRuleUtils.ruleDescription(rule).actions[0]?.target }}
 							→
 							{{ TransactionRuleUtils.ruleDescription(rule).actions[0]?.valueDescriptor.toString(descriptorGetter) }}
+							<span v-if="rule.actions.length > 1">&nbsp;&nbsp;+{{ rule.actions.length - 1 }}</span>
 						</div>
 						<small class="text-ellipsis">When: {{ FilterUtils.describeFilter(rule.filter).toString(descriptorGetter) }}</small>
 					</div>
@@ -255,7 +256,7 @@ const filterSuggestions = computed<Predicate[]>(() => {
 						v-for="predicate in filterSuggestions"
 						:key="predicate.property"
 						severity="secondary"
-						@click="editingRule.filter = FilterUtils.combineFilters(editingRule.filter, predicate)"
+						@click="editingRule.filter = FilterUtils.combineFilters(editingRule.filter, { AND: [predicate] })"
 						style="max-width: 100%"
 						size="small"
 					>
@@ -265,7 +266,7 @@ const filterSuggestions = computed<Predicate[]>(() => {
 						</div>
 					</Button>
 				</div>
-				<FilterBuilder v-model="editingRule.filter" :key="JSON.stringify(editingRule.filter)" />
+				<FilterBuilder v-model="editingRule.filter" />
 			</div>
 
 			<div>

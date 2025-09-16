@@ -233,17 +233,42 @@ export default class FilterUtils {
 
 		// If both are AND blocks, merge their contents
 		if ('AND' in filterA && 'AND' in filterB) {
-			return { AND: [...filterA.AND, ...filterB.AND] };
+			return this.cleanFilter({ AND: [...filterA.AND, ...filterB.AND] });
 		}
 		// If one is an AND block, add the other as a new condition
 		else if ('AND' in filterA) {
-			return { AND: [...filterA.AND, filterB] };
+			return this.cleanFilter({ AND: [...filterA.AND, filterB] });
 		} else if ('AND' in filterB) {
-			return { AND: [filterA, ...filterB.AND] };
+			return this.cleanFilter({ AND: [filterA, ...filterB.AND] });
 		}
 		// Neither are AND blocks, create a new AND block
 		else {
-			return { AND: [filterA, filterB] };
+			return this.cleanFilter({ AND: [filterA, filterB] });
+		}
+	}
+
+	public static cleanFilter(filter: TransactionFilter): TransactionFilter {
+		if (!filter) return null;
+		const cleaned = this.cleanBlock(filter);
+		return cleaned as TransactionFilter;
+	}
+
+	private static cleanBlock(block: FilterBlock): FilterBlock {
+		if (!block) return null;
+		if ('AND' in block) {
+			block.AND = block.AND.map(b => this.cleanBlock(b)).filter(b => b !== null);
+			if (block.AND.length === 0) return null;
+			return block;
+		} else if ('OR' in block) {
+			block.OR = block.OR.map(b => this.cleanBlock(b)).filter(b => b !== null);
+			if (block.OR.length === 0) return null;
+			return block;
+		} else {
+			const predicate = block as Predicate;
+			if (!predicate.property || !predicate.operator || !('operand' in predicate)) {
+				return null;
+			}
+			return predicate;
 		}
 	}
 }

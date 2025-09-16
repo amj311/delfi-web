@@ -38,7 +38,7 @@ export const useDelfiStore = defineStore('delfi', () => {
 		await delfi.computeForecast();
 		isGeneratingForecast.value = false;
 
-		scheduleCompute(); // schedule another compute in case things changed while we were computing
+		scheduleCompute(); // schedule another compute to keep data fresh
 	}
 
 	function reCompute() {
@@ -54,7 +54,7 @@ export const useDelfiStore = defineStore('delfi', () => {
 		}
 		computeTimeout.value = window.setTimeout(() => {
 			reCompute();
-		}, 60 * 60 * 1000); // every hour
+		}, 60 * 60 * 1000); // every hour. Backend sync once an hour so this is the highest reasonable frequency
 	}
 
 	return {

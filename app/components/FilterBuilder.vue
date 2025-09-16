@@ -16,6 +16,13 @@ import BudgetButton from './BudgetButton.vue';
 
 const filter = defineModel<TransactionFilter>();
 const draft = ref<EitherBlock>(filter.value || { AND: [] });
+
+watch(filter, (newVal) => {
+	if (newVal && JSON.stringify(newVal) !== JSON.stringify(draft.value)) {
+		draft.value = newVal as EitherBlock;
+	}
+}, { immediate: true });
+
 watch(draft, (newVal) => {
 	if (!newVal) {
 		newVal = { AND: []};
