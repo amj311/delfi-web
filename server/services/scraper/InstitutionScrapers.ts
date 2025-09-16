@@ -3,6 +3,7 @@ import type { InstitutionScraper, ScrapedAccount, ScrapedTransaction } from "./S
 import { AccountSubtype, AccountType, type AccountDetails } from "delfi-core/models/Account";
 import { dollarsToNumber, find, stringToDate } from "./ScraperUtils";
 import { TransactionUtils } from "delfi-core/models/Transaction";
+import { wait } from "delfi-core/utils/miscUtils";
 
 export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 	'test-afcu-id': {
@@ -106,8 +107,19 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 			const transactions: Array<ScrapedTransaction> = [];
 			await page.waitForSelector('#PastTransactionsGrid');
 
+			// Option for pulling from farther back in time
+			const hardPull = true;
+			if (hardPull) {
+				const select = await page.locator('#TransactionFilter_TransactionDatePeriod');
+				await select.selectOption('Ninety');
+				await page.waitForResponse(response => response.url().includes('/FilterTransactionsExtension') && response.status() === 200);
+				console.log("Loaded 90 day transaction history");
+				await wait(1000); // sometimes the data takes a moment to appear even after the response
+			}
+
 			async function scrapeTable(tableId: string, pending: boolean) {
 				let rows = await page.locator(`#${tableId} tbody tr`).all();
+				console.log(`Found ${rows.length} rows in table ${tableId} (pending=${pending})`);
 				for (const row of rows) {
 					const exists = await row.locator('.column-date').count();
 					if (!exists) {
@@ -119,18 +131,45 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 					const amount = (await amountCols[amountCols.length - 1].innerText()).replaceAll(/[$,]/g, '');
 					const balance = await (await find(row, '.column-balance'))?.innerText();
 					const useInverseAmount = pending || account.type === AccountType.credit;
+
+					const mainTransactionAmount = useInverseAmount ? -dollarsToNumber(amount) : dollarsToNumber(amount);
+					const finalAccountBalance = dollarsToNumber(balance);
 					transactions.push({
 						date: stringToDate(date),
 						original_description: description,
-						amount: useInverseAmount ? -dollarsToNumber(amount) : dollarsToNumber(amount),
-						account_balance: dollarsToNumber(balance),
+						amount: mainTransactionAmount,
+						account_balance: finalAccountBalance,
 						source: 'scraper',
 						pending,
 					});
+
+					// LINE OF CREDIT
+					// AFCU's line of credit account shows interest and fees on the same row as payment transfers.
+					// We will treat the entire payment amount as one transfer (above) in order to pair it with the corresponding transaction on the other account.
+					// We will create a new transaction record here indicating the fee or interest charge as a debit to the account.
+					// We will insert it as if it occurred just prior to the payment.
+					// Because this scraper reads down the table in reverse chronological order, we will insert the fee/interest transaction just after the payment.
+					// We have never yet had a fee, so I'm not 100% sure what that will look like. For now only handle interest.
+					const interestAmount = (await row.locator('.column-interest').innerText()).replaceAll(/[$,]/g, '');
+					if (interestAmount && interestAmount !== '0.00') {
+						transactions.push({
+							date: stringToDate(date),
+							original_description: 'Line of Credit Interest',
+							amount: -dollarsToNumber(interestAmount),
+							// assume the balance to be the total end balance before this whole payment, minus this interest
+							account_balance: finalAccountBalance - mainTransactionAmount - dollarsToNumber(interestAmount),
+							source: 'scraper',
+							pending,
+						});
+					}
 				};
 			}
 
-			await scrapeTable('UpcomingTransactionsGrid', true);
+			// AFCU creates pending transactions on both the checking account and the line of credit account.
+			// Don't capture pending transactions on the line of credit account to avoid duplicates.
+			if (account.subtype !== AccountSubtype.line_of_credit) {
+				await scrapeTable('UpcomingTransactionsGrid', true);
+			}
 			await scrapeTable('PastTransactionsGrid', false);
 
 			return TransactionUtils.assignDateOrders(transactions.reverse()); // the list is most recent first, so reverse it to be chronological

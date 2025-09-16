@@ -95,7 +95,7 @@ function addRule(rule: FilterBlock, parent: EitherBlock) {
 						<CategoryButton v-if="Properties[rule.property].type === 'category_id'" v-model="rule.operand" />
 						<BudgetButton v-if="Properties[rule.property].type === 'budget_id'" v-model="rule.operand" />
 
-						<InputNumber v-if="Properties[rule.property].type === 'number'" v-model="rule.operand" class="w-7rem text-right" />
+						<!-- <InputNumber v-if="Properties[rule.property].type === 'number'" v-model="rule.operand" class="w-7rem text-right" /> -->
 						<InputNumber
 							v-if="Properties[rule.property].type === 'currency'"
 							v-model="rule.operand"
