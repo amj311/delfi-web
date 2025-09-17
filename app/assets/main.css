@@ -29,7 +29,7 @@ body:not(.touch) .hover-show-trigger .hover-show {
 	display: none;
 }
 
-.hover-show-trigger:hover .hover-show {
+body .hover-show-trigger:hover .hover-show {
 	display: block;
 }
 

@@ -5,6 +5,7 @@ import AttributionAvatar from '@/components/AttributionAvatar.vue';
 import {
 	Actions,
 	TransactionRuleUtils,
+	type Action,
 	type ActionType,
 	type TransactionRule,
 	type TransactionRuleDraft,
@@ -47,6 +48,11 @@ function findAction(rule: TransactionRule, actionName: string) {
 	return rule.actions?.find((action) => action.action === actionName);
 }
 
+function describeAction(action: Action) {
+	const description = TransactionRuleUtils.actionDescription(action);
+	return description.verb + ' ' + description.target + ' → ' + description.valueDescriptor.toString(descriptorGetter);
+}
+
 function descriptorGetter(node: DescriptorEntityNode) {
 	const { type, id } = node;
 	if (type === 'merchant_id') {
@@ -83,6 +89,16 @@ function draftRule(rule?: TransactionRuleDraft) {
 	editRule(rule || { filter: { AND: filterSuggestions.value.length ? [] : [ { property: '' as any, operator: '' as any } ] }, actions: [ { action: '' as any, value: {} } ] });
 }
 const isNewRule = computed(() => !editingRule.value?.transaction_rule_id);
+
+function addAction(action: Action = { action: '' as any, value: {} }) {
+	if (!editingRule.value) return;
+	if (editingRule.value.actions.length === 1 && !editingRule.value.actions[0].action) {
+		// First action is empty, just use the new one
+		editingRule.value.actions[0] = action;
+		return;
+	}
+	editingRule.value.actions.push(action);
+}
 
 const isSavingRule = ref(false);
 async function saveRule() {
@@ -188,6 +204,24 @@ const filterSuggestions = computed<Predicate[]>(() => {
 		})
 		.filter((r): r is Predicate => !!r);
 });
+
+
+const actionSuggestions = computed<Array<Action>>(() => {
+	if (!props.templateEvent) return [];
+	const existingActions = editingRule.value ? editingRule.value.actions.map((a) => a.action) : [];
+	return Object.keys(Actions)
+		.map((key) => {
+			if (existingActions.includes(key)) return null;
+			const eventValue = TransactionRuleUtils.extractActionValueFromEvent(key as ActionType, props.templateEvent!);
+			if (!eventValue) return null;
+			// TODO: Only suggest actions that can be populated from the event
+			return {
+				action: key as ActionType,
+				value: eventValue,
+			};
+		})
+		.filter((r) => !!r);
+});
 </script>
 
 <template>
@@ -219,10 +253,7 @@ const filterSuggestions = computed<Predicate[]>(() => {
 					<AttributionAvatar v-else icon="material-symbols::manufacturing" :size="2.3" />
 					<div class="flex flex-column flex-grow-1 min-w-0 text-ellipsis">
 						<div class="text-ellipsis font-medium">
-							{{ TransactionRuleUtils.ruleDescription(rule).actions[0]?.verb }}
-							{{ TransactionRuleUtils.ruleDescription(rule).actions[0]?.target }}
-							→
-							{{ TransactionRuleUtils.ruleDescription(rule).actions[0]?.valueDescriptor.toString(descriptorGetter) }}
+							{{ describeAction(rule.actions[0]) }}
 							<span v-if="rule.actions.length > 1">&nbsp;&nbsp;+{{ rule.actions.length - 1 }}</span>
 						</div>
 						<small class="text-ellipsis">When: {{ FilterUtils.describeFilter(rule.filter).toString(descriptorGetter) }}</small>
@@ -251,7 +282,7 @@ const filterSuggestions = computed<Predicate[]>(() => {
 		<div v-if="editingRule" class="flex flex-column gap-3 mb-4">
 			<div>
 				<h4 class="mb-1">When...</h4>
-				<div class="flex flex-wrap gap-2 my-2">
+				<div v-if="filterSuggestions.length > 0" class="flex flex-wrap gap-2 my-2">
 					<Button
 						v-for="predicate in filterSuggestions"
 						:key="predicate.property"
@@ -261,7 +292,7 @@ const filterSuggestions = computed<Predicate[]>(() => {
 						size="small"
 					>
 						<div class="flex align-items-center gap-2 w-full">
-							<i class="pi pi-lightbulb"></i>
+							<i class="pi pi-sparkles"></i>
 							<div class="text-ellipsis">{{ FilterUtils.describePredicate(predicate).toString(descriptorGetter) }}</div>
 						</div>
 					</Button>
@@ -271,6 +302,21 @@ const filterSuggestions = computed<Predicate[]>(() => {
 
 			<div>
 				<h4 class="mb-1">Then...</h4>
+				<div v-if="actionSuggestions.length > 0" class="flex flex-wrap gap-2 my-2">
+					<Button
+						v-for="action in actionSuggestions"
+						:key="action.action"
+						severity="secondary"
+						@click="() => addAction(action)"
+						style="max-width: 100%"
+						size="small"
+					>
+						<div class="flex align-items-center gap-2 w-full">
+							<i class="pi pi-sparkles"></i>
+							<div class="text-ellipsis">{{ describeAction(action) }}</div>
+						</div>
+					</Button>
+				</div>
 				<div v-for="(action, index) in editingRule.actions" :key="index" class="flex align-items-start gap-2 mb-2">
 					<div class="flex align-items-center gap-2">
 						<Select
@@ -303,7 +349,7 @@ const filterSuggestions = computed<Predicate[]>(() => {
 					</div>
 					<Button icon="pi pi-trash" severity="secondary" text @click="editingRule.actions.splice(index, 1)" />
 				</div>
-				<Button label="Add Action" icon="pi pi-plus-circle" text @click="editingRule.actions.push({ action: '', value: {} })" />
+				<Button label="Add Action" icon="pi pi-plus-circle" text @click="() => addAction()" />
 			</div>
 		</div>
 		<div class="flex gap-2">

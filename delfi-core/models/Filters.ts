@@ -227,9 +227,10 @@ export default class FilterUtils {
 		return predicates;
 	}
 
-	public static combineFilters(filterA: FilterBlock, filterB: FilterBlock): FilterBlock {
-		if (!filterA) return filterB;
-		if (!filterB) return filterA;
+	public static combineFilters(filterA: TransactionFilter, filterB: TransactionFilter): NonNullable<TransactionFilter> {
+		if (!filterA && !filterB) return { AND: [] };
+		if (!filterA) return filterB!;
+		if (!filterB) return filterA!;
 
 		// If both are AND blocks, merge their contents
 		if ('AND' in filterA && 'AND' in filterB) {
@@ -247,10 +248,10 @@ export default class FilterUtils {
 		}
 	}
 
-	public static cleanFilter(filter: TransactionFilter): TransactionFilter {
-		if (!filter) return null;
-		const cleaned = this.cleanBlock(filter);
-		return cleaned as TransactionFilter;
+	public static cleanFilter(filter: TransactionFilter): NonNullable<TransactionFilter> {
+		if (!filter) return { AND: [] };
+		const cleaned = this.cleanBlock(filter) as TransactionFilter;
+		return cleaned || { AND: [] } as NonNullable<TransactionFilter>;
 	}
 
 	private static cleanBlock(block: FilterBlock): FilterBlock {
