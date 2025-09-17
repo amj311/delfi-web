@@ -117,6 +117,27 @@ function viewTransaction(transaction: Transaction) {
 	transactionDetailsDrawer.value?.open(transaction);
 }
 
+const lastSync = computed(() => {
+	if (!account.value) return null;
+	const lastSuccess = account.value.last_successful_sync ? new Date(account.value.last_successful_sync) : null;
+	const lastFailed = account.value.last_failed_sync ? new Date(account.value.last_failed_sync) : null;
+
+	if (lastFailed && (!lastSuccess || lastFailed > lastSuccess)) {
+		return {
+			date: lastFailed,
+			success: false,
+			error: account.value.sync_error || 'Unknown error',
+		};
+	}
+
+	if (lastSuccess) {
+		return {
+			date: lastSuccess,
+			success: true,
+		};
+	}
+});
+
 </script>
 
 <template>
@@ -166,6 +187,7 @@ function viewTransaction(transaction: Transaction) {
 						<Currency
 							:amount="account.current_balance"
 							:currency="account.iso_currency_code"
+							:mode="'balance'"
 						/>
 					</div>
 				</div>
@@ -184,6 +206,21 @@ function viewTransaction(transaction: Transaction) {
 					<div class="detail-row" v-if="account.iso_currency_code">
 						<div class="detail-label">Currency</div>
 						<div class="detail-value">{{ account.iso_currency_code }}</div>
+					</div>
+
+					<div class="detail-row">
+						<div class="detail-label">Status</div>
+						<div class="detail-value">
+							<div v-if="lastSync?.success">
+								<i class="pi pi-check-circle" style="color: green;"></i>
+								Synced successfully on {{ lastSync.date.toLocaleString() }}
+							</div>
+							<div v-else-if="lastSync?.error">
+								<i class="pi pi-times-circle" style="color: red;"></i>
+								Sync failed on {{ lastSync.date.toLocaleString() }}: {{ lastSync.error }}
+							</div>
+							<div v-else>No sync attempts yet</div>
+						</div>
 					</div>
 				</div>
 			</div>

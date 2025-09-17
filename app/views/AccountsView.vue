@@ -116,6 +116,7 @@ const connectAccountsMenu = [
               <Currency
                 :amount="account.current_balance"
                 :currency="account.iso_currency_code"
+                :mode="'balance'"
               />
             </td>
             <td>
