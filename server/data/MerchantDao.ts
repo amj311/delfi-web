@@ -35,9 +35,15 @@ export const MerchantDao = {
 	},
 
 	async getMerchantByHostname(hostname: string) {
+		// remove protocol and www
+		hostname = hostname.replace(/(^\w+:|^)\/\//, '').replace(/^www\./, '');
+		// Find merchant with host that INCLUDES the given hostname (to match subdomains)
 		return await prisma.merchant.findFirst({
 			where: {
-				hostname,
+				hostname: {
+					contains: hostname,
+					mode: 'insensitive',
+				},
 			},
 		});
 	},

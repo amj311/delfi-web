@@ -124,3 +124,12 @@ export const diff = (objA: any, objB: any, maxDepth: number = 10): any => {
 export const nullOrUndefined = (value: any): boolean => {
 	return value === null || value === undefined;
 }
+
+export const coalesce = <T>(...values: (T | null | undefined)[]): T => {
+	for (const value of values) {
+		if (value !== null && value !== undefined) {
+			return value;
+		}
+	}
+	throw new Error('All values are null or undefined');
+}

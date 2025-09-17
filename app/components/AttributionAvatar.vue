@@ -102,7 +102,8 @@ const backgroundColor = computed(() => {
 
 		img {
 			width: 100%;
-			object-fit: cover;
+			height: 100%;
+			object-fit: contain;
 		}
 
 		.icon-wrapper {

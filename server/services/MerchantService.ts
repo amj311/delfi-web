@@ -66,7 +66,7 @@ export default class MerchantService {
 				}
 
 				// Load website HTML and find icons
-				const websiteData = await CompanySearchService.extractWebsiteData(bestWebsite);
+				const websiteData = await CompanySearchService.extractWebsiteData(bestWebsite.origin);
 
 				const bestName = CompanySearchService.chooseBestName([...websiteData.nameCandidates, identifier], identifier);
 				let logoPath = websiteData.logo;
@@ -104,6 +104,52 @@ export default class MerchantService {
 		// }
 
 		return successfulResults;
+	}
+
+	/**
+	 * Searches web for merchant details given name or website
+	 * @param name 
+	 * @param hostname 
+	 * @returns 
+	 */
+	public static async searchForMerchantDetails(name?: string, website?: string) {
+		if (!name && !website) {
+			console.error('Either name or hostname must be provided');
+			return null;
+		}
+
+		try {
+			let websiteTitle: string | undefined;
+			if (name && !website) {
+				const bestWebsite = await CompanySearchService.doCompanySearch(name);
+				if (bestWebsite) {
+					console.log(`\n\n\nBest website for "${name}":`, bestWebsite);
+					website = bestWebsite.origin;
+					websiteTitle = bestWebsite.title;
+				}
+			}
+			
+			if (!website) {
+				console.warn(`No website found for name: ${name}`);
+				return null;
+			}
+
+			// Load website HTML and find icons
+			const websiteData = await CompanySearchService.extractWebsiteData(website);
+
+			const bestName = CompanySearchService.chooseBestName([...websiteData.nameCandidates, websiteTitle || '', name || website], name || website);
+			let logoPath = websiteData.logo;
+
+			// Create new merchant
+			return {
+				name: bestName,
+				hostname: website,
+				logo: logoPath || null,
+			};
+		} catch (error) {
+			console.error(`Error searching for merchant details:`, error);
+			return null;
+		}
 	}
 
     public static async getMerchantById(workspace_id: string, merchant_id: string) {

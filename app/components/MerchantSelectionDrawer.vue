@@ -9,7 +9,7 @@ import Button from 'primevue/button';
 import request from '@/services/request';
 import { useToast } from 'primevue/usetoast';
 import DrawerModal from './utils/DrawerModal.vue';
-import { jsonCopy } from 'delfi-core/utils/miscUtils';
+import { coalesce, jsonCopy } from 'delfi-core/utils/miscUtils';
 import { CategoryKeys } from 'delfi-core/models/systemCategories';
 import Select from 'primevue/select';
 
@@ -31,7 +31,7 @@ defineExpose({
 			transactionId.value = currentTransactionId || null;
 			triggerRef.value?.trigger()?.open();
 		});
-	}
+	},
 });
 
 function selectMerchant(merchant?: Merchant) {
@@ -50,30 +50,63 @@ function cancelSelection() {
 	}
 }
 
-const search = ref<string>('');
-const merchants = computed(() => useMerchantStore().merchants.filter(m => {
-	return !search.value.trim() || m.name.toLowerCase().includes(search.value.trim().toLowerCase());
-}));
+const filter = ref<string>('');
+const merchants = computed(() =>
+	useMerchantStore().merchants.filter((m) => {
+		return !filter.value.trim() || m.name.toLowerCase().includes(filter.value.trim().toLowerCase());
+	})
+);
 
-// const webSearchedMerchant = ref<Merchant | null>(null);
-const isSearchingForWebMerchant = ref(false);
-async function searchMerchantDetails() {
-	if (!transactionId.value || !editingMerchant.value) return;
-	isSearchingForWebMerchant.value = true;
+/*************
+ * TRANSACTION SEARCH
+ */
+
+const transactionSearchMerchant = ref<Merchant | null>(null);
+const searchingForTransactionMerchant = ref(false);
+async function findForTransaction() {
+	if (!transactionId.value) return;
+	if (transactionSearchMerchant.value) {
+		setMerchantFromTransactionSearch();
+		return;
+	}
+	searchingForTransactionMerchant.value = true;
 	try {
 		const { data } = await request.get('/merchant/findTransactionMerchant/' + transactionId.value);
-		// webSearchedMerchant.value = data.data;
-		editingMerchant.value = data.data;
+		transactionSearchMerchant.value = data.data;
+		setMerchantFromTransactionSearch();
+		if (!transactionSearchMerchant.value) {
+			toast.add({
+				severity: 'info',
+				summary: 'No merchant found',
+				detail: 'No merchant could be detected from the transaction details.',
+				life: 3000,
+			});
+		}
 	} catch (error) {
-		useToast().add({
+		toast.add({
 			severity: 'error',
 			summary: 'Error',
-			detail: 'Failed to search for merchant on the web. Please try again later.'
+			detail: 'Failed to search for merchant on the web. Please try again later.',
+			life: 3000,
 		});
 	} finally {
-		isSearchingForWebMerchant.value = false;
+		searchingForTransactionMerchant.value = false;
 	}
 }
+
+function setMerchantFromTransactionSearch() {
+	if (!transactionSearchMerchant.value) return;
+	if (transactionSearchMerchant.value.merchant_id) {
+		selectedMerchantId.value = transactionSearchMerchant.value.merchant_id;
+	} else {
+		editingMerchant.value = jsonCopy(transactionSearchMerchant.value);
+	}
+}
+
+
+/*************
+ * EDITING MERCHANT
+ */
 
 const editingMerchantModal = ref<InstanceType<typeof DrawerModal> | null>(null);
 const isSavingMerchant = ref(false);
@@ -107,8 +140,7 @@ async function saveMerchant() {
 	try {
 		if (editingMerchant.value.merchant_id) {
 			await useMerchantStore().updateMerchant(editingMerchant.value as Merchant);
-		}
-		else {
+		} else {
 			await useMerchantStore().createMerchant(editingMerchant.value);
 		}
 		editingMerchant.value = null; // Close the editor
@@ -125,24 +157,66 @@ async function saveMerchant() {
 	}
 }
 
-const categoryOptions = computed(() => [{ value: undefined as any, label: 'None' }].concat(CategoryKeys.map(key => ({
-	value: key,
-	label: key,
-}))));
 
+
+
+/*****************
+ * DETAILS SEARCH
+ * Searches for additional merchant details based on existing info
+ */
+
+ const canSearchDetails = computed(() => {
+	return editingMerchant.value
+		&& (editingMerchant.value.name.trim().length > 0 || coalesce(editingMerchant.value.hostname?.trim(), '').length > 0);
+ });
+ const searchingMerchantDetails = ref(false);
+ async function searchMerchantDetails() {
+	if (!editingMerchant.value || !canSearchDetails.value || searchingMerchantDetails.value) return;
+	searchingMerchantDetails.value = true;
+	try {
+		const { data } = await request.get('/merchant/searchDetails', {
+			params: {
+				name: editingMerchant.value.name,
+				hostname: coalesce(editingMerchant.value.hostname?.trim(), ''),
+			},
+		});
+		editingMerchant.value = { ...editingMerchant.value, ...data.data };
+	} catch (error) {
+		toast.add({
+			severity: 'error',
+			summary: 'Error',
+			detail: 'Failed to search for merchant details. Please try again later.',
+			life: 3000,
+		});
+	} finally {
+		searchingMerchantDetails.value = false;
+	}
+}
+
+const categoryOptions = computed(() =>
+	[{ value: undefined as any, label: 'None' }].concat(
+		CategoryKeys.map((key) => ({
+			value: key,
+			label: key,
+		}))
+	)
+);
 </script>
 
 <template>
-	<NavTriggerDrawer ref="triggerRef" triggerKey="select-merchant" title="Select Merchant" @close="cancelSelection" :width="25">
+	<NavTriggerDrawer
+		ref="triggerRef"
+		triggerKey="select-merchant"
+		title="Select Merchant"
+		@close="cancelSelection"
+		:width="25"
+	>
 		<div class="flex flex-column h-full">
 			<div
 				class="flex align-items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 border-round"
 				@click="() => selectMerchant(undefined)"
 			>
-				<AttributionAvatar
-					:icon="'question-circle'"
-					style="width: 2rem; height: 2rem;"
-				/>
+				<AttributionAvatar :icon="'question-circle'" style="width: 2rem; height: 2rem" />
 				<div class="flex-grow-1">No merchant</div>
 				<i class="pi pi-check" v-if="!selectedMerchantId" />
 			</div>
@@ -151,30 +225,32 @@ const categoryOptions = computed(() => [{ value: undefined as any, label: 'None'
 				class="flex align-items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 border-round"
 				@click="() => selectMerchant(selectedMerchant)"
 			>
-				<AttributionAvatar
-					:image="selectedMerchant.logo"
-					style="width: 2rem; height: 2rem;"
-				/>
-				<div class="flex-grow-1">{{  selectedMerchant.name }}</div>
+				<AttributionAvatar :image="selectedMerchant.logo" style="width: 2rem; height: 2rem" />
+				<div class="flex-grow-1">{{ selectedMerchant.name }}</div>
 				<i class="pi pi-check" v-if="selectedMerchantId === selectedMerchant.merchant_id" />
 			</div>
 
-			<div v-if="transactionId">
+			<div>
+				<Button
+					v-if="transactionId && !selectedMerchantId"
+					severity="secondary"
+					@click="findForTransaction"
+					class="my-2"
+					:icon="searchingForTransactionMerchant ? 'pi pi-spinner pi-spin' : 'pi pi-sparkles'"
+					:label="searchingForTransactionMerchant ? 'Searching...' : 'Detect merchant from transaction'"
+					:disabled="searchingForTransactionMerchant"
+				/>
+
 				<Button
 					icon="pi pi-plus"
 					label="Create new merchant..."
 					severity="secondary"
-					class="mt-2 mb-2"
 					@click="draftNewMerchant"
 				/>
 			</div>
 
 			<div class="searchbar">
-				<InputText
-					v-model="search"
-					placeholder="Search..."
-					class="w-full"
-				/>
+				<InputText v-model="filter" placeholder="Search..." class="w-full" />
 				<i class="pi pi-search"></i>
 			</div>
 
@@ -185,11 +261,8 @@ const categoryOptions = computed(() => [{ value: undefined as any, label: 'None'
 					class="flex align-items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 border-round hover-show-trigger"
 					@click="() => selectMerchant(merchant)"
 				>
-					<AttributionAvatar
-						:image="merchant.logo"
-						style="width: 2rem; height: 2rem;"
-					/>
-					<div class="text-ellipsis flex-grow-1 min-w-0">{{  merchant.name }}</div>
+					<AttributionAvatar :image="merchant.logo" style="width: 2rem; height: 2rem" />
+					<div class="text-ellipsis flex-grow-1 min-w-0">{{ merchant.name }}</div>
 					<i class="pi pi-pencil hover-show" @click.stop="editMerchant(merchant)" />
 					<i class="pi pi-check" v-if="selectedMerchantId === merchant.merchant_id" />
 				</div>
@@ -197,10 +270,7 @@ const categoryOptions = computed(() => [{ value: undefined as any, label: 'None'
 		</div>
 	</NavTriggerDrawer>
 
-	<DrawerModal
-		ref="editingMerchantModal"
-		:title="isCreatingMerchant ? 'New Merchant' : 'Edit Merchant'"
-	>
+	<DrawerModal ref="editingMerchantModal" :title="isCreatingMerchant ? 'New Merchant' : 'Edit Merchant'">
 		<template #default v-if="editingMerchant">
 			<div class="flex flex-column gap-2 details-rows">
 				<div class="row">
@@ -230,30 +300,21 @@ const categoryOptions = computed(() => [{ value: undefined as any, label: 'None'
 					/>
 				</div>
 			</div>
+
 			<br />
-			<div class="flex gap-2">
+			<div class="flex align-items-center gap-2">
 				<Button
-					icon="pi pi-globe"
-					:label="isSearchingForWebMerchant ? 'Searching...' : 'Search web'"
-					:disabled="isSearchingForWebMerchant"
+					:icon="searchingMerchantDetails ? 'pi pi-spinner pi-spin' : 'pi pi-globe'"
+					:label="searchingMerchantDetails ? 'Searching...' : 'Search web'"
+					:disabled="searchingMerchantDetails || !canSearchDetails"
 					severity="secondary"
-					class="mt-2 mb-2"
 					@click="searchMerchantDetails"
 				/>
-				
+
 				<div class="flex-grow-1" />
-				
-				<Button
-					class="p-button-text"
-					label="Cancel"
-					@click="editingMerchant = null"
-				/>
-				<Button
-					label="Save"
-					:loading="isSavingMerchant"
-					:disabled="isSavingMerchant"
-					@click="saveMerchant"
-				/>
+
+				<Button class="p-button-text" label="Cancel" @click="editingMerchant = null" />
+				<Button label="Save" :loading="isSavingMerchant" :disabled="isSavingMerchant" @click="saveMerchant" />
 			</div>
 		</template>
 	</DrawerModal>

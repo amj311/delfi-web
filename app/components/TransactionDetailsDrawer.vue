@@ -209,10 +209,11 @@ function openSplitModal() {
 }
 async function saveSplitChanges() {
 	if (!splitsAreFull.value) {
-		return useToast().add({
+		return toast.add({
 			severity: 'error',
 			summary: 'Error',
 			detail: 'Splits must sum to the total transaction amount.',
+			life: 3000,
 		});
 	}
 

@@ -160,20 +160,21 @@ export default class CompanySearchService {
 		return Math.min(100, Math.max(0, score));
 	}
 
-	public static async extractWebsiteData(result: CompanySearchResult): Promise<{ nameCandidates: string[], logo: string | null }> {
+	public static async extractWebsiteData(origin: string): Promise<{ nameCandidates: string[], logo: string | null }> {
 		let html;
+		const url = origin.startsWith('http') ? origin : `https://${origin}`;
 		try {
-			const { data } = await axios.get(result.origin, { timeout: 5000 });
+			const { data } = await axios.get(url, { timeout: 5000 });
 			html = data as string;
 		}
 		catch (error) {
-			console.error(`Could not fetch website HTML for ${result.origin}`);
+			console.error(`Could not fetch website HTML for ${origin}`);
 			return { nameCandidates: [], logo: null };
 		}
 		const namesFromHtml = CompanySearchService.extractNamesFromHtml(html);
 		let logoPath = CompanySearchService.extractLogoFromHtml(html);
 		if (logoPath && !logoPath.startsWith('http')) {
-			logoPath = new URL(logoPath, result.origin).href; // Make absolute URL
+			logoPath = new URL(logoPath, url).href; // Make absolute URL
 		}
 
 		return {

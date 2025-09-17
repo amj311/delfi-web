@@ -54,10 +54,23 @@ export default (fastify, _, done) => {
 		const results = await MerchantService.searchForTransactionMerchants([transaction]);
 		return {
 			success: true,
-			data: results[0]?.newMerchant || null,
+			data: results[0]?.newMerchant || results[0]?.existingMerchant || null,
 		};
 	});
 
+	// Search for merchant details from edit form
+	fastify.get('/searchDetails', async function handler (request, reply) {
+		const name = request.query.name;
+		const hostname = request.query.hostname;
+		if (!name && !hostname) {
+			throw new Error('Either name or hostname must be provided');
+		}
+		const results = await MerchantService.searchForMerchantDetails(name, hostname);
+		return {
+			success: true,
+			data: results,
+		};
+	});
 
     // fastify.delete('/:id', async function handler (request, reply) {
 	// 	const workspace_id = request.sessionUser.workspace_id;
