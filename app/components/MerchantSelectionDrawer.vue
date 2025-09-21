@@ -240,7 +240,7 @@ const categoryOptions = computed(() =>
 					:label="searchingForTransactionMerchant ? 'Searching...' : 'Detect merchant from transaction'"
 					:disabled="searchingForTransactionMerchant"
 				/>
-
+				<br />
 				<Button
 					icon="pi pi-plus"
 					label="Create new merchant..."

@@ -102,7 +102,8 @@ export class TestDataService {
 						// 	type: BudgetBudgetType.TRANSFER,
 						// 	origin_account_id: getAccountByName('Checking').account_id,
 						// 	workspace_id: 'myself',
-						// 	schedule: { start: '2021-04-25', frequency: 'MONTHLY', byDayOfMonth: [25] },
+						// 	schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+						// 	projectionSchedule: { byDayOfMonth: [25] },
 						// 	category_id: categoryByName("Transfer").category_id,
 						// 	Category: categoryByName("Transfer"),
 						// },
@@ -168,7 +169,8 @@ export class TestDataService {
 				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2021-04-05', frequency: 'MONTHLY', byDayOfMonth: [5] },
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [5] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -300,
@@ -184,7 +186,8 @@ export class TestDataService {
 				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2021-04-05', frequency: 'MONTHLY', byDayOfMonth: [5] },
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [5] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -70,
@@ -200,7 +203,8 @@ export class TestDataService {
 				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2021-04-08', frequency: 'MONTHLY', byDayOfMonth: [8] },
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [8] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -55,
@@ -217,10 +221,11 @@ export class TestDataService {
 				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2021-04-08', frequency: 'MONTHLY', byDayOfMonth: [14, 27] },
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+					projectionSchedule: { frequency: 'MONTHLY', byDayOfMonth: [14, 27] },
 					amountTemplate: {
 						type: 'fixed',
-						amount: 3593,
+						amount: 3593 * 2,
 					}
 				}],
 				category_id: categoryByName("Paycheck").category_id,
@@ -234,7 +239,8 @@ export class TestDataService {
 				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2021-01-01', frequency: 'MONTHLY', byDayOfMonth: [27], interval: 3 },
+					schedule: { start: '2021-01-01', frequency: 'MONTHLY', interval: 3, },
+					projectionSchedule: { byDayOfMonth: [27] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: 800,
@@ -253,7 +259,8 @@ export class TestDataService {
 				Category: categoryByName("Church Donations"),
 				recurrence_type: RecurrenceType.TRIGGER,
 				scheduleVariants: [{
-					schedule: { start: '2021-04-08', frequency: 'MONTHLY', byDayOfMonth: [14, 27] },
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [14, 27] },
 					amountTemplate: {
 						type: 'triggered',
 						trigger: {
@@ -289,7 +296,8 @@ export class TestDataService {
 				Category: categoryByName("Charitable Donations"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-05-07', frequency: 'MONTHLY', byDayOfMonth: [7] },
+					schedule: { start: '2022-05-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [7] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -100,
@@ -306,7 +314,8 @@ export class TestDataService {
 				Category: categoryByName("Mortgage & Rent"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-06-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					schedule: { start: '2022-06-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [2] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -2725,
@@ -322,7 +331,8 @@ export class TestDataService {
 				Category: categoryByName("Home Services"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-06-18', frequency: 'MONTHLY', byDayOfMonth: [3] },
+					schedule: { start: '2022-06-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [3] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -240,
@@ -338,7 +348,8 @@ export class TestDataService {
 				Category: categoryByName("Gas Bill"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-06-18', frequency: 'MONTHLY', byDayOfMonth: [18] },
+					schedule: { start: '2022-06-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [18] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -50,
@@ -354,7 +365,8 @@ export class TestDataService {
 				Category: categoryByName("Electric Bill"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] },
+					schedule: { start: '2022-06-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [17] },
 					amountTemplate: {
 						type: 'seasonal',
 						monthAmounts: {
@@ -383,7 +395,8 @@ export class TestDataService {
 				Category: categoryByName("Internet"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] },
+					schedule: { start: '2022-06-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [17] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -50,
@@ -400,7 +413,8 @@ export class TestDataService {
 				Category: categoryByName("Phone Plan"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-06-17', frequency: 'MONTHLY', byDayOfMonth: [17] },
+					schedule: { start: '2022-06-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [17] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -50,
@@ -417,7 +431,8 @@ export class TestDataService {
 				Category: categoryByName("Tuition"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2024-09-01', end: '2025-05-31', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					schedule: { start: '2024-09-01', end: '2025-05-31', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [1] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -170,
@@ -453,7 +468,8 @@ export class TestDataService {
 				origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [15] },
+					schedule: { start: '2022-09-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [15] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: 1000,
@@ -470,7 +486,8 @@ export class TestDataService {
 				origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [15] },
+					schedule: { start: '2022-09-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [15] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: 50,
@@ -487,7 +504,8 @@ export class TestDataService {
 				origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [15] },
+					schedule: { start: '2022-09-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [15] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: 50,
@@ -504,7 +522,8 @@ export class TestDataService {
 				origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [15] },
+					schedule: { start: '2022-09-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [15] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: 250,
@@ -522,19 +541,16 @@ export class TestDataService {
 			{
 				budget_id: 'f9e8d7c6-5b4a-3210-9876-543210fedcba',
 				memo: 'Groceries',
-				schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+				schedule: { start: '2022-09-01', frequency: 'MONTHLY', },
 				category_id: categoryByName("Groceries").category_id,
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2022-09-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					schedule: { start: '2022-09-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [1] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -350,
-					},
-					projectionInterval: {
-						interval: 'week',
-						quantity: 2,
 					},
 				}],
 				account_id: getAccountByName('Checking').account_id,
@@ -546,7 +562,8 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [1] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -50,
@@ -562,7 +579,8 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [1] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -50,
@@ -577,7 +595,8 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [1] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -50,
@@ -592,7 +611,8 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [1] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -50,
@@ -607,7 +627,8 @@ export class TestDataService {
 				budgetType: BudgetType.TRANSACTION,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+					projectionSchedule: { byDayOfMonth: [1] },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -50,
@@ -623,7 +644,8 @@ export class TestDataService {
 			// 	budgetType: BudgetType.TRANSACTION,
 			// 	recurrence_type: RecurrenceType.SCHEDULE,
 			// 	scheduleVariants: [{
-			// 		schedule: { start: '2021-04-01', frequency: 'MONTHLY', byDayOfMonth: [1] },
+			// 		schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+			// 		projectionSchedule: { byDayOfMonth: [1] },
 			// 		amount: -50,
 			// 	}],
 			// 	account_id: getAccountByName('Checking').account_id,
@@ -758,9 +780,9 @@ export class TestDataService {
 						type: 'fixed',
 						amount: -2000,
 					},
-					projectionInterval: {
-						interval: 'month',
-						quantity: 3,
+					projectionSchedule: {
+						frequency: 'MONTHLY',
+						interval: 3,
 					},
 				}],
 				childItems: [

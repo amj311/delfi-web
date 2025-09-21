@@ -73,22 +73,23 @@ export type SeasonalAmount = {
 
 export type BudgetAmountTemplate = FixedAmount | TriggeredAmount | SeasonalAmount;
 
+type BudgetOccurrenceSchedule = Pick<SingleSchedule, 'start' | 'end' | 'frequency' | 'interval'>;
+
+/** Used to compute the projected dates within a budget occurrence */
+type BudgetProjectionSchedule = Pick<SingleSchedule, 'byMonthOfYear' | 'byDayOfMonth' | 'byDayOfWeek' | 'interval' | 'frequency'>;
+
 type ScheduleVariant = {
 	schedule_variant_id?: string, // Unique ID for the variant
-	schedule: SingleSchedule, // Schedule start and end dates define the variant's boundaries. Variants may not overlap.
+	schedule: BudgetOccurrenceSchedule, // Schedule start and end dates define the variant's boundaries. Variants may not overlap.
+	/** If missing, budget will be projected on start date */
+	projectionSchedule?: BudgetProjectionSchedule,
 	amountTemplate: BudgetAmountTemplate, // TODO: support variable amounts, like a heating bill
-	// Defines how long each budget occurrence is open for after it opens
-	// TODO I don't actually compute this yet
-	window?: {
-		quantity: number,
-		interval: 'day' | 'week' | 'month' | 'year',
-	},
-	// Defines how to project depletions across the window, i.e. a grocery trip every 2 weeks.
-	// Especially for very large budgets, like yearly vacation and travel, which doesn't make sense to come out all at once
-	projectionInterval?: {
-		quantity: number,
-		interval: 'day' | 'week' | 'month' | 'year',
-	},
+	// // Defines how long each budget occurrence is open for after it opens
+	// // TODO I don't actually compute this yet
+	// window?: {
+	// 	quantity: number,
+	// 	interval: 'day' | 'week' | 'month' | 'year',
+	// },
 }
 type TriggeredSchedule = Replace<ScheduleVariant, {
 	amountTemplate: TriggeredAmount, // The amount is determined by the trigger
@@ -166,9 +167,8 @@ export default class BudgetUtils {
 	static createScheduledOccurrences(start: DelfiDate, end: DelfiDate, budget: ScheduledBudget): BudgetOccurrence[] {
 		const occurrences: BudgetOccurrence[] = [];
 		for (const variant of budget.scheduleVariants) {
-			const recurrenceDates = ScheduleService.delfi.getOccurrences(variant.schedule, { start, end }, true); // include ongoing occurrences
-			occurrences.push(...recurrenceDates.map((startDate) => {
-				const endDate = BudgetUtils.getBudgetOccurrenceEndDate(variant, startDate);
+			const recurrenceDates = BudgetUtils.getBudgetOccurrences(variant.schedule, start, end); // include ongoing occurrences
+			occurrences.push(...recurrenceDates.map(({ start: startDate, end: endDate }) => {
 				const occurrence: BudgetOccurrence = {
 					occurrence_id: BudgetUtils.createOccurrenceId(budget, startDate, endDate),
 					budget: budget,
@@ -201,6 +201,29 @@ export default class BudgetUtils {
 	}
 
 	/**
+	 * Computes all occurrences for a given schedule within a time window.
+	 * NOTE: occurrences are locked to the beginning and end of their interval! Beginning of week, or month, or year.
+	 * Other properties will be used for the exact dates of projections.
+	 * @param schedule 
+	 */
+	static getBudgetOccurrences(schedule: BudgetOccurrenceSchedule, start: DelfiDate, end: DelfiDate): Array<{ start: DelfiDate, end: DelfiDate }> {
+		const occurrenceSchedule = {
+			start: schedule.start,
+			end: schedule.end,
+			frequency: schedule.frequency,
+			interval: schedule.interval,
+		}
+		const occurrences = ScheduleService.delfi.getOccurrences(occurrenceSchedule, { start, end }, true);
+		return occurrences.map(startDate => {
+			const occurrenceEnd = this.getBudgetOccurrenceEndDate(schedule, startDate);
+			return {
+				start: startDate,
+				end: occurrenceEnd,
+			}
+		});
+	}
+
+	/**
 	 * Computes the projection events for a given budget occurrence within a specified time window.
 	 * @param windowAmount The total budget amount allocated for the time window.
 	 * @param windowStart The start date of the time window.
@@ -209,17 +232,15 @@ export default class BudgetUtils {
 	 * @returns An array of partial budget event constructions representing the projected events.
 	 */
 	private static computeProjectionEvents(windowAmount: number, windowStart: DelfiDate, windowEnd: DelfiDate, occurrence: BudgetOccurrence): ProjectionEvent[] {
-		// Short circuit for windows with no special projection rules
-		if (!occurrence.sourceSchedule.projectionInterval) {
-			const events = BudgetUtils.createDateEventsFromOccurrenceDetails(windowStart, windowAmount, occurrence.budget, occurrence);
-			return events.map(event => ({
-				...event,
-				sourceOccurrence: occurrence,
-			} as ProjectionEvent));
-		}
+		// // Short circuit for windows with no special projection rules
+		// if (!occurrence.sourceSchedule.projectionSchedule) {
+		// 	const events = BudgetUtils.createDateEventsFromOccurrenceDetails(windowStart, windowAmount, occurrence.budget, occurrence);
+		// 	return events.map(event => ({
+		// 		...event,
+		// 		sourceOccurrence: occurrence,
+		// 	} as ProjectionEvent));
+		// }
 
-		const intervalQty = occurrence.sourceSchedule.projectionInterval!.quantity;
-		const interval = occurrence.sourceSchedule.projectionInterval!.interval;
 		const projectionEvents: ProjectionEvent[] = [];
 		// Get child items within this window
 		const childItems = occurrence.budget.childItems?.filter(item => ddate(item.date).isBetweenInclusive(windowStart, windowEnd)) || [];
@@ -239,18 +260,24 @@ export default class BudgetUtils {
 			projectionEvents.push(...childEvents);
 		}
 
-		// If children exceed or equal the budget, do not create projection events
-		// Calculate how many intervals fit between windowStart and windowEnd
-		// add 1 day to windowEnd to include the last day in the projection
-		const totalIntervals = Math.floor(windowEnd.add(1, 'day').diff(windowStart, interval, true) / intervalQty);
+		const budgetSchedule = occurrence.sourceSchedule.schedule;
+		const projectionSchedule = occurrence.sourceSchedule.projectionSchedule;
 
-		if (budgetUsedSoFar > windowAmount && totalIntervals > 0) {
+		// Compute projection events based on the projection schedule, or just once on the start date
+		const scheduledProjectionDates = projectionSchedule ?
+			ScheduleService.delfi.getOccurrences({ start: budgetSchedule.start, ...projectionSchedule, frequency: projectionSchedule.frequency || budgetSchedule.frequency }, { start: windowStart, end: windowEnd }, false)
+			: [windowStart];
+
+		// If children exceed or equal the budget, do not create projection events
+		// NOTE the current logic will USUALLY work, unless the child items budget for some reason has a different sign than the main budget.
+		// I don't really see anyone entering child budget items that are negative for a positive budget, or vice versa.
+		if (Math.abs(budgetUsedSoFar) < Math.abs(windowAmount) && scheduledProjectionDates.length > 0) {
 			// Remaining amount for projections
 			const remainingAmount = windowAmount - budgetUsedSoFar;
-			const eventAmount = remainingAmount / totalIntervals;
+			const eventAmount = remainingAmount / scheduledProjectionDates.length;
 
-			for (let i = 0; i < totalIntervals; i++) {
-				const intervalDate = ddate(windowStart.add(i * intervalQty, interval));
+			for (let i = 0; i < scheduledProjectionDates.length; i++) {
+				const intervalDate = scheduledProjectionDates[i];
 				budgetUsedSoFar += eventAmount;
 				projectionEvents.push(...BudgetUtils.createDateEventsFromOccurrenceDetails(intervalDate, eventAmount, occurrence.budget, occurrence).map(event => ({
 					...event,
@@ -283,7 +310,7 @@ export default class BudgetUtils {
 			}
 
 			// This variant matches the month, so we can create an occurrence for it
-			const endDate = BudgetUtils.getBudgetOccurrenceEndDate(variant, monthStart);
+			const endDate = BudgetUtils.getBudgetOccurrenceEndDate(variant.schedule, monthStart);
 			const occurrence: BudgetOccurrence = {
 				occurrence_id: BudgetUtils.createOccurrenceId(budget, monthStart, endDate),
 				budget,
@@ -314,8 +341,8 @@ export default class BudgetUtils {
 		return undefined; // No matching schedule variant found
 	}
 
-	private static getBudgetOccurrenceEndDate(variant:ScheduleVariant, occurrenceStart: DelfiDate): DelfiDate {
-		return occurrenceStart.add(variant.schedule.interval || 1, toDelfiInterval(variant.schedule.frequency)).subtract(1, 'day'); // Subtract one day to get the end of the occurrence, not the start of the next one
+	private static getBudgetOccurrenceEndDate(schedule: BudgetOccurrenceSchedule, occurrenceStart: DelfiDate): DelfiDate {
+		return occurrenceStart.add(schedule.interval || 1, toDelfiInterval(schedule.frequency)).subtract(1, 'day'); // Subtract one day to get the end of the occurrence, not the start of the next one
 	}
 
 	private static createDateEventsFromOccurrenceDetails(eventDate: DelfiDate, amount: number, details: BudgetedTransactionDetails, sourceOccurrence: BudgetOccurrence): ProjectionEvent[] {

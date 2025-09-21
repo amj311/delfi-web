@@ -185,7 +185,7 @@ model Budget {
     recurrence_type  RecurrenceType
 
     scheduleVariants BudgetScheduleVariant[]
-    triggerVariants  BudgetTriggerVariant[]
+    // triggerVariants  BudgetTriggerVariant[]
 
     // workspace
     Workspace    Workspace? @relation(fields: [workspace_id], references: [workspace_id])
@@ -228,27 +228,28 @@ model BudgetScheduleVariant {
     trigger_operand  Float?
 
     schedule            Json // e.g. cron expression, interval, etc.
-    window_interval     String?
-    window_quantity     Int?
-    projection_interval String?
-    projection_quantity Int?
+	projectionSchedule Json? // e.g. cron expression, interval, etc. for projections
+    // window_interval     String?
+    // window_quantity     Int?
+    // projection_interval String?
+    // projection_quantity Int?
 }
 
-model BudgetTriggerVariant {
-    trigger_variant_id String   @id @default(uuid())
-    created_at         DateTime @default(now())
-    updated_at         DateTime @default(now()) @updatedAt
+// model BudgetTriggerVariant {
+//     trigger_variant_id String   @id @default(uuid())
+//     created_at         DateTime @default(now())
+//     updated_at         DateTime @default(now()) @updatedAt
 
-    Budget    Budget @relation(fields: [budget_id], references: [budget_id])
-    budget_id String
+//     Budget    Budget @relation(fields: [budget_id], references: [budget_id])
+//     budget_id String
 
-    // TODO CHECK THESE AT SAVE
-    start            String? // date only e.g. "2023-10-01"
-    end              String? // date only e.g. "2023-12-31"
-    trigger_filter   Json // e.g. filter to apply to transactions, like category, amount, etc.
-    trigger_operator String // e.g. add, subtract, multiply, divide
-    trigger_operand  Float
-}
+//     // TODO CHECK THESE AT SAVE
+//     start            String? // date only e.g. "2023-10-01"
+//     end              String? // date only e.g. "2023-12-31"
+//     trigger_filter   Json // e.g. filter to apply to transactions, like category, amount, etc.
+//     trigger_operator String // e.g. add, subtract, multiply, divide
+//     trigger_operand  Float
+// }
 
 model BudgetChildItem {
     budget_child_item_id String   @id @default(uuid())

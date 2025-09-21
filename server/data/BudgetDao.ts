@@ -73,14 +73,15 @@ export class BudgetDao {
 					} : undefined
 				},
 				schedule: variant.schedule as any,
-				window: variant.window_interval ? {
-					interval: variant.window_interval as any,
-					quantity: variant.window_quantity as any,
-				} : undefined,
-				projectionInterval: variant.projection_interval ? {
-					interval: variant.projection_interval as any,
-					quantity: variant.projection_quantity as any,
-				} : undefined,
+				projectionSchedule: variant.projectionSchedule as any,
+				// window: variant.window_interval ? {
+				// 	interval: variant.window_interval as any,
+				// 	quantity: variant.window_quantity as any,
+				// } : undefined,
+				// projectionInterval: variant.projection_interval ? {
+				// 	interval: variant.projection_interval as any,
+				// 	quantity: variant.projection_quantity as any,
+				// } : undefined,
 			})),
 			childItems: budget.childItems?.map(BudgetDao.dbToBudgetChildItem),
 			// childItems: budget.childItems?.map((item: any) => ({
@@ -117,7 +118,7 @@ export class BudgetDao {
 				},
 				Tags: true,
 				scheduleVariants: true,
-				triggerVariants: true,
+				// triggerVariants: true,
 				childItems: true,
 			}
 		})).map(BudgetDao.dbToBudget);
@@ -138,7 +139,7 @@ export class BudgetDao {
 				},
 				Tags: true,
 				scheduleVariants: true,
-				triggerVariants: true,
+				// triggerVariants: true,
 				childItems: true,
 			}
 		});
@@ -255,10 +256,11 @@ export class BudgetDao {
 				trigger_operator: (variant.amountTemplate as TriggeredAmount).trigger?.computation.operator,
 
 				schedule: variant.schedule as any,
-				window_interval: variant.window?.interval,
-				window_quantity: variant.window?.quantity,
-				projection_interval: variant.projectionInterval?.interval,
-				projection_quantity: variant.projectionInterval?.quantity,
+				projectionSchedule: variant.projectionSchedule as any,
+				// window_interval: variant.window?.interval,
+				// window_quantity: variant.window?.quantity,
+				// projection_interval: variant.projectionInterval?.interval,
+				// projection_quantity: variant.projectionInterval?.quantity,
 			})),
 		});
 	}

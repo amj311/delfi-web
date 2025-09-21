@@ -82,7 +82,7 @@ class Forecast {
 		return new Promise<MonthForecast>(res => {
 			const waitTime = 500;
 			const ctx = this;
-			async function poll(){
+			async function poll() {
 				const monthRecord = ctx.readyMonths.get(month.toString());
 				if (monthRecord) {
 					return res(monthRecord);

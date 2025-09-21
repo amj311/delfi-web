@@ -150,17 +150,19 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 					// We will insert it as if it occurred just prior to the payment.
 					// Because this scraper reads down the table in reverse chronological order, we will insert the fee/interest transaction just after the payment.
 					// We have never yet had a fee, so I'm not 100% sure what that will look like. For now only handle interest.
-					const interestAmount = (await row.locator('.column-interest').innerText()).replaceAll(/[$,]/g, '');
-					if (interestAmount && interestAmount !== '0.00') {
-						transactions.push({
-							date: stringToDate(date),
-							original_description: 'Line of Credit Interest',
-							amount: -dollarsToNumber(interestAmount),
-							// assume the balance to be the total end balance before this whole payment, minus this interest
-							account_balance: finalAccountBalance - mainTransactionAmount - dollarsToNumber(interestAmount),
-							source: 'scraper',
-							pending,
-						});
+					if (account.subtype === AccountSubtype.line_of_credit) {
+						const interestAmount = (await row.locator('.column-interest').innerText()).replaceAll(/[$,]/g, '');
+						if (interestAmount && interestAmount !== '0.00') {
+							transactions.push({
+								date: stringToDate(date),
+								original_description: 'Line of Credit Interest',
+								amount: -dollarsToNumber(interestAmount),
+								// assume the balance to be the total end balance before this whole payment, minus this interest
+								account_balance: finalAccountBalance - mainTransactionAmount - dollarsToNumber(interestAmount),
+								source: 'scraper',
+								pending,
+							});
+						}
 					}
 				};
 			}

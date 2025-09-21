@@ -330,6 +330,30 @@ export class RealityTally<Grouper = any> {
 		return netChange(this.attributionEvents);
 	}
 
+	get budgetedIncome(): number {
+		return this.budgetEventsWithoutTransferCopies
+			.filter((e) => e.Budget.Category?.type === 'INCOME')
+			.reduce((sum, e) => sum + e.amount, 0);
+	}
+	
+	get budgetedExpense(): number {
+		return this.budgetEventsWithoutTransferCopies
+			.filter((e) => !e.Budget.Category || e.Budget.Category.type === 'EXPENSE')
+			.reduce((sum, e) => sum + e.amount, 0);
+	}
+
+	get attributedIncome(): number {
+		return this.attributionEvents
+			.filter((e) => e.Category?.type === 'INCOME')
+			.reduce((sum, e) => sum + e.amount, 0);
+	}
+	
+	get attributedExpense(): number {
+		return this.attributionEvents
+			.filter((e) => !e.Category || e.Category.type === 'EXPENSE')
+			.reduce((sum, e) => sum + e.amount, 0);
+	}
+
 	get budgetRemaining(): number {
 		return this.budgetedNet - this.attributedNet;
 	}

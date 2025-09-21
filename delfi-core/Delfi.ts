@@ -140,7 +140,7 @@ export class Delfi {
 		// 	);
 		// });
 
-		const monthBudgetEvents = consolidatedBudgetSnapshots.flatMap(snapshot => snapshot.budgetEvents);
+		const monthBudgetEvents = consolidatedBudgetSnapshots.flatMap(snapshot => snapshot.budgetEvents).sort((a, b) => a.date.diff(b.date));
 
 		const categorySummaries = this.categories.map((category: Category) => ({
 			category,
@@ -243,6 +243,29 @@ export class Delfi {
 			}
 		}));
 
+		// FORECAST COMPUTING
+		// don't use consolidated snapshots, because they lose some projection details
+		const unfinishedBudgets = monthBudgetSnapshots.filter(b => !b.rangeStart?.isFuture() && b.progress().percent < 100);
+		const unfinishedBudgetEvents = unfinishedBudgets.flatMap(b => {
+			// Include all events that push the budget beyond the attributed amount
+			// Only include the amount of the event that is over the attributed amount
+			const events: ProjectionEvent[] = [];
+			let budgetSoFar = 0;
+			b.budgetEvents.forEach(e => {
+				// support both pos and neg budgets
+				budgetSoFar += e.amount;
+				if (Math.abs(budgetSoFar) > Math.abs(b.attributedAtEnd)) {
+					events.push({
+						...e,
+						amount: Math.abs(budgetSoFar - b.attributedAtEnd) < Math.abs(e.amount) ? budgetSoFar - b.attributedAtEnd : e.amount,
+					})
+				}
+			})
+			return events;
+		}).sort((a, b) => a.date.diff(b.date));
+		// Without transfer
+		const unfinishedNetEvents = unfinishedBudgetEvents.filter(t => !t.Budget.Category || t.Budget.Category.type !== 'TRANSFER');
+
 		return {
 			// Net growth = income + spending (negative). Ignore Transfers!
 			budgetedNet: incomeSummary.tally.budgetedNet + spendingSummary.tally.budgetedNet,
@@ -250,7 +273,16 @@ export class Delfi {
 			budgetEvents: monthBudgetEvents,
 			attributionEvents: monthAttributionEvents,
 			budgetSummaries: consolidatedBudgetSnapshots,
+			unfinishedBudgets,
+			unfinishedBudgetEvents,
+			unfinishedNetEvents,
 			totalTally: new RealityTally(monthBudgetEvents, monthAttributionEvents),
+			// tally of non-transfer events
+			netTally: new RealityTally(
+				monthBudgetEvents.filter(t => !t.Budget.Category || t.Budget.Category.type !== 'TRANSFER'),
+				monthAttributionEvents.filter(t => !t.Category || t.Category.type !== 'TRANSFER'),
+			),
+			// tally of unbudgeted events
 			allUnbudgeted: new RealityTally([], monthAttributionEvents.filter(t => !t.budget_id && (!t.category_id || t.Category?.type === 'EXPENSE'))),
 			accountSummaries,
 			categorySummaries,

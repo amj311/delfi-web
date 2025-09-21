@@ -4,9 +4,10 @@ import 'primeicons/primeicons.css'
 import 'primeflex/primeflex.css'
 import './assets/main.css'
 
+import VueApexCharts from "vue3-apexcharts";
+
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import request from './services/request'
 
 import App from './App.vue'
 import router from './router/router'
@@ -36,6 +37,7 @@ app.use(createPinia());
 app.use(router);
 app.use(ConfirmationService);
 app.use(ToastService);
+app.use(VueApexCharts as any);
 
 (async () => {
 	AuthService.setupAuth();
