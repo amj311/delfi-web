@@ -11,6 +11,7 @@ export const useDelfiStore = defineStore('delfi', () => {
 	const delfi = new Delfi();
 	const isInitializing: Ref<boolean> = ref(true);
 	const isGeneratingForecast: Ref<boolean> = ref(false);
+	const extendingProjection = ref(false);
 
 	const computeTimeout = ref<number | null>(null);
 
@@ -57,6 +58,36 @@ export const useDelfiStore = defineStore('delfi', () => {
 		}, 60 * 60 * 1000); // every hour. Backend sync once an hour so this is the highest reasonable frequency
 	}
 
+	/**
+	 * Handles getting the summary out of Delfi or computing additional dates if needed.
+	 */
+	async function getMonthSummary(monthStart: DelfiDate) {
+		if (monthStart.isBefore(projectionStart.value) || monthStart.isAfter(projectionEnd.value)) {
+			// If the month is out of the projected range, we need to compute it
+			await extendProjection(monthStart);
+		}
+		return delfi.getMonthSummary(monthStart);
+	}
+
+	/**
+	 * Adds additional dates to the projection period and computes the additional timeframe in Delfi.
+	 */
+	async function extendProjection(newDate: DelfiDate) {
+		if (extendingProjection.value) {
+			return; // already extending
+		}
+		extendingProjection.value = true;
+		try {
+			await delfi.extendForecast(newDate);
+		}
+		catch (error) {
+			console.error("Error extending projection:", error);
+		}
+		finally {
+			extendingProjection.value = false;
+		}
+	}
+
 	return {
 		delfi,
 		initDelfi,
@@ -66,5 +97,6 @@ export const useDelfiStore = defineStore('delfi', () => {
 		projectionEnd,
 		reCompute,
 		reComputed,
+		getMonthSummary,
 	}
 })

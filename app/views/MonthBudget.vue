@@ -74,7 +74,7 @@ async function getSummary(month: DelfiDate, silent = false) {
 	if (!month || !delfiStore.delfi) {
 		return null;
 	}
-	let summary = await delfiStore.delfi.getMonthSummary(month);
+	let summary = await delfiStore.getMonthSummary(month);
 	state.summaryData = summary;
 	useContextStore().setCurrentSummary(summary);
 	state.loading = false;
@@ -134,7 +134,8 @@ const canGoBack = computed(() => {
 	if (!state.viewingMonth) {
 		return false;
 	}
-	return state.viewingMonth.isAfter(delfiStore.delfi.start);
+	// return state.viewingMonth.isAfter(delfiStore.delfi.start);
+	return true;
 });
 
 const canGoForward = computed(() => {

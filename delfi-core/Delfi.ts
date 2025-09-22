@@ -25,8 +25,8 @@ export type DelfiConfig = {
 	 * Remember that end date is INCLUSIVE.
 	 */
 	loadTransactions: (start: DelfiDate, end: DelfiDate, accounts?: Array<string>) => Promise<Transaction[]>,
-	readonly start: DelfiDate,
-	readonly end: DelfiDate,
+	start: DelfiDate,
+	end: DelfiDate,
 }
 
 export interface Delfi extends DelfiConfig {}
@@ -36,6 +36,8 @@ export class Delfi {
 	private transactionSource!: TransactionSource;
 	private budgetOccurrenceSummaries: Map<string, BudgetOccurrenceSummary> = new Map();
 	// private budgetEventSummaries: Map<string, BudgetEventSummary> = new Map();
+
+	private summaryCache = new Map<string, any>();
 
 	constructor(config?: DelfiConfig) {
 		if (config) {
@@ -59,15 +61,26 @@ export class Delfi {
 			start: this.start,
 			end: this.end,
 		});
+		this.summaryCache = new Map();
 	}
 
-	public async computeForecast(): Promise<Forecast> {
-		await this.forecast.computeForecast().catch(err => {
+	public async computeForecast(newDateRange?: { start?: DelfiDate, end?: DelfiDate }): Promise<Forecast> {
+		await this.forecast.computeForecast(newDateRange).catch(err => {
 			console.error('Error computing forecast:', err);
 			throw err;
 		});
 		console.log('Forecast computed successfully');
 		return this.forecast;
+	}
+
+	public async extendForecast(newDate: DelfiDate) {
+		if (newDate.isAfter(this.end)) {
+			this.end = newDate;
+		}
+		if (newDate.isBefore(this.start)) {
+			this.start = newDate;
+		}
+		await this.computeForecast({ start: this.start, end: this.end });
 	}
 
 
@@ -94,6 +107,12 @@ export class Delfi {
 		// make extra sure we have the start and end date
 		const monthStart = ddate(monthDate.startOf('month'));
 		const monthEnd = ddate(monthDate.endOf('month'));
+
+		const cached = this.getMonthSummaryCache(monthStart);
+		if (cached) {
+			return cached;
+		}
+
 		const monthForecast = await this.forecast.pollMonthReady(monthStart);
 		const monthAttributionEvents = await this.transactionSource.getAttributedEventsBetween(monthStart, monthEnd);
 
@@ -276,7 +295,7 @@ export class Delfi {
 			monthAttributionEvents.filter(t => !t.Category || t.Category.type !== 'TRANSFER'),
 		);
 
-		return {
+		const summary = {
 			// Net growth = income + spending (negative). Ignore Transfers!
 			budgetedNet: incomeSummary.tally.budgetedNet + spendingSummary.tally.budgetedNet,
 			attributedNet: incomeSummary.tally.attributedNet + spendingSummary.tally.attributedNet,
@@ -299,6 +318,23 @@ export class Delfi {
 			spendingSummary,
 			groupSummaries
 		};
+
+		this.setMonthSummaryCache(monthStart, summary);
+		return summary;
+	}
+
+	private summaryKey(monthStart: DelfiDate) {
+		return monthStart.format('YYYY-MM-DD') + '__' + monthStart.endOf('month').format('YYYY-MM-DD');
+	}
+
+	private setMonthSummaryCache(monthStart: DelfiDate, summary: any) {
+		const key = this.summaryKey(monthStart);
+		this.summaryCache.set(key, summary);
+	}
+
+	private getMonthSummaryCache(monthStart: DelfiDate): any | null {
+		const key = this.summaryKey(monthStart);
+		return this.summaryCache.get(key) || null;
 	}
 }
 
