@@ -64,7 +64,7 @@ const isPending = computed(() => props.event.attributionDetails?.sourceTransacti
 				<div class="flex align-items-center w-full min-w-0">
 					<div class="text-ellipsis">
 						<span class="font-medium" :class="{'review-bold': event.attributionDetails?.needsReview}">{{ event.displayName }}</span>
-						<small v-if="event.attributionDetails?.memo"> &nbsp;- {{ event.attributionDetails.softDescription }} </small>
+						<small v-if="event.attributionDetails?.memo"> &nbsp; {{ event.attributionDetails.softDescription }} </small>
 					</div>
 				</div>
 				<div style="flex-grow: 1"></div>

@@ -409,12 +409,6 @@ const defaultCategories = {
 		parent_category_id: parentCategories["Banking"].category_id,
 		icon: "material-symbols::paid",
 	},
-	"Credit Card Payment": {
-		name: "Credit Card Payment",
-		category_id: "4b45bab9-fe7e-4224-a9d5-8738dd0f56a7",
-		type: "EXPENSE",
-		parent_category_id: parentCategories["Banking"].category_id
-	},
 	"Late Fee": {
 		name: "Late Fee",
 		category_id: "5461213e-ffd5-464b-b3c4-bc2f6fc957cb",
@@ -677,7 +671,7 @@ const defaultCategories = {
 	"ATM Deposit": {
 		name: "ATM Deposit",
 		category_id: "c2d3e4f5-a6b7-4c8-9d0e-1f2a3b4c5d67",
-		type: "TRANSFER",
+		type: "INCOME",
 		parent_category_id: parentCategories["Banking"].category_id
 	},
 	"Gifted Money": {
@@ -695,12 +689,6 @@ const defaultCategories = {
 	"Returned Purchase": {
 		name: "Returned Purchase",
 		category_id: "ceb21839-7cc0-4534-986d-4ecaac759a46",
-		type: "INCOME",
-		parent_category_id: parentCategories["Income"].category_id
-	},
-	"Cash Advance": {
-		name: "Cash Advance",
-		category_id: "d3d3e4f5-a6b7-4c8-9d0e-1f2a3b4c5d78",
 		type: "INCOME",
 		parent_category_id: parentCategories["Income"].category_id
 	},
@@ -912,6 +900,19 @@ const defaultCategories = {
 	"Mortgage Payment": {
 		name: "Mortgage Payment",
 		category_id: "5826e87d-17e4-4ade-84bc-8e2a2309792d",
+		type: "TRANSFER",
+		parent_category_id: parentCategories["Transfer"].category_id
+	},
+	"Cash Advance": {
+		name: "Cash Advance",
+		category_id: "d3d3e4f5-a6b7-4c8-9d0e-1f2a3b4c5d78",
+		type: "TRANSFER",
+		parent_category_id: parentCategories["Transfer"].category_id,
+		icon: "dollar-bills",
+	},
+	"Credit Card Payment": {
+		name: "Credit Card Payment",
+		category_id: "4b45bab9-fe7e-4224-a9d5-8738dd0f56a7",
 		type: "TRANSFER",
 		parent_category_id: parentCategories["Transfer"].category_id
 	},

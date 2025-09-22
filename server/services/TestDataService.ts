@@ -351,8 +351,21 @@ export class TestDataService {
 					schedule: { start: '2022-06-01', frequency: 'MONTHLY', },
 					projectionSchedule: { byDayOfMonth: [18] },
 					amountTemplate: {
-						type: 'fixed',
-						amount: -50,
+						type: 'seasonal',
+						monthAmounts: {
+							0: -45,
+							1: -60,
+							2: -45,
+							3: -40,
+							4: -20,
+							5: -17,
+							6: -19,
+							7: -16,
+							8: -17,
+							9: -20,
+							10: -20,
+							11: -30,
+						},
 					}
 				}],
 			},
@@ -482,15 +495,16 @@ export class TestDataService {
 				budget_id: 'f13a34a5-67b8-90cd-ef12-345678901335',
 				budgetType: BudgetType.TRANSFER,
 				memo: "Hannah-Claire Savings",
-				account_id: getAccountByName('Expense Savings').account_id,
-				origin_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
+				// account_id: getAccountByName('Expense Savings').account_id,
+				// origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-09-01', frequency: 'MONTHLY', },
 					projectionSchedule: { byDayOfMonth: [15] },
 					amountTemplate: {
 						type: 'fixed',
-						amount: 50,
+						amount: -50,
 					}
 				}],
 				category_id: categoryByName("Savings").category_id,
@@ -500,15 +514,16 @@ export class TestDataService {
 				budget_id: 'a14f34a5-67b8-90cd-ef12-34567890a144',
 				budgetType: BudgetType.TRANSFER,
 				memo: "August Savings",
-				account_id: getAccountByName('Expense Savings').account_id,
-				origin_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
+				// account_id: getAccountByName('Expense Savings').account_id,
+				// origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-09-01', frequency: 'MONTHLY', },
 					projectionSchedule: { byDayOfMonth: [15] },
 					amountTemplate: {
 						type: 'fixed',
-						amount: 50,
+						amount: -50,
 					}
 				}],
 				category_id: categoryByName("Savings").category_id,
@@ -518,15 +533,16 @@ export class TestDataService {
 				budget_id: '42f56a78-90b1-2c3d-e4f5-678901234567',
 				budgetType: BudgetType.TRANSFER,
 				memo: "Emergency Savings",
-				account_id: getAccountByName('Expense Savings').account_id,
-				origin_account_id: getAccountByName('Checking').account_id,
+				account_id: getAccountByName('Checking').account_id,
+				// account_id: getAccountByName('Expense Savings').account_id,
+				// origin_account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-09-01', frequency: 'MONTHLY', },
 					projectionSchedule: { byDayOfMonth: [15] },
 					amountTemplate: {
 						type: 'fixed',
-						amount: 250,
+						amount: -250,
 					}
 				}],
 				category_id: categoryByName("Savings").category_id,
@@ -695,6 +711,22 @@ export class TestDataService {
 					amountTemplate: {
 						type: 'fixed',
 						amount: -100,
+					}
+				}],
+				account_id: getAccountByName('Checking').account_id,
+			},
+			{
+				budget_id: '01251f2-4567-abcd-ef01-234567890901',
+				memo: "Hyundai Registration",
+				category_id: categoryByName("Vehicle Registration").category_id,
+				budgetType: BudgetType.TRANSACTION,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-08-01', frequency: 'YEARLY' },
+					projectionSchedule: { byMonthOfYear: [8] },
+					amountTemplate: {
+						type: 'fixed',
+						amount: -200,
 					}
 				}],
 				account_id: getAccountByName('Checking').account_id,
