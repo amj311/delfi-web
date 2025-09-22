@@ -95,7 +95,6 @@ export class BudgetSnapshot {
 		/** Always just the events applicable to the snapshot (date range or other common attribute) */
 		readonly budgetEvents: BudgetEventSummary[],
 		readonly _attributedEvents: AttributionEvent[],
-		readonly asFullContext: boolean = false,
 	) {}
 
 	/** Set of occurrences from which the budget events are drawn */
@@ -156,8 +155,6 @@ export class BudgetSnapshot {
 	 * multiple one-offs or a high-level view of multiple recurring.
 	 */
 	private get context(): BudgetSnapshot {
-		if (this.asFullContext) return this;
-
 		const start = Math.min(...this.occurrences.map(o => o.start.millisecond()));
 		const end = Math.max(...this.occurrences.map(o => o.end.millisecond()));
 		const allBudgetEvents = this.occurrences.flatMap(o => o.budgetEvents);
@@ -230,6 +227,7 @@ export class BudgetSnapshot {
 
 	progress(onDate: DelfiDate = ddate()) {
 		const res = {
+			isComplete: false,
 			percent: 0,
 			pace: 0,
 			status: 'underPace' as 'underPace' | 'onPace' | 'overPace' | 'overBudget',
@@ -281,6 +279,14 @@ export class BudgetSnapshot {
 			normalizedPercent: attributedNet / max * 100,
 			normalizedBudgetedNet: normalizedBudgetedNet,
 			normalizedPace: res.pace * normalizedBudgetedNet / 100, // pace is a percentage of the budgeted net
+		}
+
+		// DETERMINE COMPLETION
+		// consider complete if it was scheduled for a single day (like a bill) and already has at least some attribution
+		// ATTEMPT: use projection schedule to detect once-only bills	
+		const considerOnlyOnce = this.budget.onceAndDone || (this.occurrences.length === 1 && this.occurrences[0].sourceSchedule.projectionSchedule?.byDayOfMonth && this.occurrences[0].sourceSchedule.projectionSchedule.byDayOfMonth.length === 1);
+		if (res.percent > 0 && considerOnlyOnce) {
+			res.isComplete = true;
 		}
 
 		return res;

@@ -107,6 +107,8 @@ export type Budget = BudgetedTransactionDetails & {
 	// A repeating schedule determines the beginning of each new window.
 	scheduleVariants: Array<ScheduleVariant>,
 	childItems?: Array<BudgetChildItem>,
+	/** If true, this budget is considered complete after its first attribution. Alternatively, check projection rules for a single date...? */
+	onceAndDone?: boolean,
 }
 
 export type ScheduledBudget = Budget & {

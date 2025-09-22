@@ -244,8 +244,9 @@ export class Delfi {
 		}));
 
 		// FORECAST COMPUTING
-		// don't use consolidated snapshots, because they lose some projection details
-		const unfinishedBudgets = monthBudgetSnapshots.filter(b => !b.rangeStart?.isFuture() && b.progress().percent < 100);
+		// don't use consolidated snapshots, because they lose some projection details.
+		// TODO investigate why this is
+		const unfinishedBudgets = monthBudgetSnapshots.filter(b => !b.rangeStart?.isFuture() && !b.progress().isComplete);
 		const unfinishedBudgetEvents = unfinishedBudgets.flatMap(b => {
 			// Include all events that push the budget beyond the attributed amount
 			// Only include the amount of the event that is over the attributed amount

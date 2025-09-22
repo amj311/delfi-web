@@ -514,7 +514,7 @@ const accumulationChart = computed(() => {
 				<div>
 					<!-- Show only those events with a future date in the next two weeks -->
 					<CommonEventRow
-						v-for="event of state.summaryData.forecast.unfinishedNetEvents.filter(e => e.date.isAfter(ddate()) && e.date.isBefore(ddate().add(14, 'day')))"
+						v-for="event of state.summaryData.forecast.unfinishedNetEvents.filter(e => e.date.isAfter(ddate().subtract(1, 'week')) && e.date.isBefore(ddate().add(14, 'day')))"
 						:event="event"
 					/>
 				</div>
