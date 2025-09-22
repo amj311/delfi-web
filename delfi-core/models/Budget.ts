@@ -265,7 +265,7 @@ export default class BudgetUtils {
 
 		// Compute projection events based on the projection schedule, or just once on the start date
 		const scheduledProjectionDates = projectionSchedule ?
-			ScheduleService.delfi.getOccurrences({ start: budgetSchedule.start, ...projectionSchedule, frequency: projectionSchedule.frequency || budgetSchedule.frequency }, { start: windowStart, end: windowEnd }, false)
+			ScheduleService.delfi.getOccurrences({ start: budgetSchedule.start, ...projectionSchedule, frequency: projectionSchedule.frequency || budgetSchedule.frequency, interval: projectionSchedule.interval || budgetSchedule.interval }, { start: windowStart, end: windowEnd }, false)
 			: [windowStart];
 
 		// If children exceed or equal the budget, do not create projection events

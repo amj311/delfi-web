@@ -266,6 +266,15 @@ export class Delfi {
 		// Without transfer
 		const unfinishedNetEvents = unfinishedBudgetEvents.filter(t => !t.Budget.Category || t.Budget.Category.type !== 'TRANSFER');
 
+		const totalTally = new RealityTally(monthBudgetEvents, monthAttributionEvents);
+		// tally of unbudgeted events
+		const allUnbudgeted = new RealityTally([], monthAttributionEvents.filter(t => !t.budget_id && (!t.category_id || t.Category?.type === 'EXPENSE')));
+		// tally of non-transfer events
+		const netTally = new RealityTally(
+			monthBudgetEvents.filter(t => !t.Budget.Category || t.Budget.Category.type !== 'TRANSFER'),
+			monthAttributionEvents.filter(t => !t.Category || t.Category.type !== 'TRANSFER'),
+		);
+
 		return {
 			// Net growth = income + spending (negative). Ignore Transfers!
 			budgetedNet: incomeSummary.tally.budgetedNet + spendingSummary.tally.budgetedNet,
@@ -273,17 +282,15 @@ export class Delfi {
 			budgetEvents: monthBudgetEvents,
 			attributionEvents: monthAttributionEvents,
 			budgetSummaries: consolidatedBudgetSnapshots,
-			unfinishedBudgets,
-			unfinishedBudgetEvents,
-			unfinishedNetEvents,
-			totalTally: new RealityTally(monthBudgetEvents, monthAttributionEvents),
-			// tally of non-transfer events
-			netTally: new RealityTally(
-				monthBudgetEvents.filter(t => !t.Budget.Category || t.Budget.Category.type !== 'TRANSFER'),
-				monthAttributionEvents.filter(t => !t.Category || t.Category.type !== 'TRANSFER'),
-			),
-			// tally of unbudgeted events
-			allUnbudgeted: new RealityTally([], monthAttributionEvents.filter(t => !t.budget_id && (!t.category_id || t.Category?.type === 'EXPENSE'))),
+			forecast: {
+				unfinishedBudgets,
+				unfinishedBudgetEvents,
+				unfinishedNetEvents,
+				endNet: unfinishedNetEvents.reduce((sum, e) => sum + e.amount, 0) + (netTally.attributedNet || 0)
+			},
+			totalTally,
+			allUnbudgeted,
+			netTally,
 			accountSummaries,
 			categorySummaries,
 			incomeSummary,

@@ -133,3 +133,7 @@ export const coalesce = <T>(...values: (T | null | undefined)[]): T => {
 	}
 	throw new Error('All values are null or undefined');
 }
+
+export const currency = (value: number = 0, currencyCode: string = 'USD', locale: string = 'en-US'): string => {
+	return new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode }).format(value);
+}

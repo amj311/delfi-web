@@ -26,6 +26,7 @@ import { BudgetEventSummary, RealityTally, type BudgetSnapshot } from 'delfi-cor
 import { useContextStore } from '@/stores/context.store';
 import CommonEventRow from '@/components/CommonEventRow.vue';
 import Button from 'primevue/button';
+import { currency } from 'delfi-core/utils/miscUtils';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -288,7 +289,7 @@ const dailyAccumulation = computed(() => {
 	let runningAttributed = 0;
 	return days.map((day) => {
 		const tally = new RealityTally(day.budgetEvents, day.attributedEvents);
-		const previousUnfinishedEvents = state.summaryData!.unfinishedNetEvents.filter((e) =>
+		const previousUnfinishedEvents = state.summaryData!.forecast.unfinishedNetEvents.filter((e) =>
 			e.date.isSameOrBefore(day.day)
 		);
 		const forecastNet = day.day.isFuture() ? runningAttributed + previousUnfinishedEvents.reduce((sum, e) => sum + e.amount, 0) : null;
@@ -315,6 +316,13 @@ const accumulationChart = computed(() => {
 	const dailyForecasted = dailyAccumulation.value.map((d) => d.runningForecasted === null ? null : Math.round(d.runningForecasted));
 	// const dailyIncome = dailyAccumulation.value.map((d) => d.attributedIncome === null ? null : Math.round(d.attributedIncome));
 	// const dailyExpense = dailyAccumulation.value.map((d) => d.attributedExpense === null ? null : Math.round(d.attributedExpense));
+
+	if (!state.summaryData) {
+		return {
+			options: {},
+			series: [],
+		};
+	}
 
 	return {
 		options: {
@@ -350,19 +358,35 @@ const accumulationChart = computed(() => {
 			},
 			annotations: {
 				yaxis: [
-					{
-						y: 0,
-						borderColor: '#00E396',
+					// {
+					// 	y: state.summaryData.netTally.attributedNet,
+					// 	borderColor: '#00E396',
+					// 	borderWidth: 2,
+					// 	borderStyle: 'solid',
+					// 	label: {
+					// 		position: 'center',
+					// 		borderColor: '#00E396',
+					// 		style: {
+					// 			color: '#fff',
+					// 			background: '#00E396',
+					// 		},
+					// 		text: currency(state.summaryData.netTally.attributedNet),
+					// 	},
+					// },
+					isCurrentMonth.value && {
+						y: state.summaryData.forecast.endNet,
+						borderColor: '#feb019',
 						borderWidth: 2,
 						borderStyle: 'solid',
-						// label: {
-						// 	borderColor: '#00E396',
-						// 	style: {
-						// 		color: '#fff',
-						// 		background: '#00E396',
-						// 	},
-						// 	// text: 'Y-axis annotation on 8800',
-						// },
+						label: {
+							position: 'center',
+							borderColor: '#feb019',
+							style: {
+								color: '#fff',
+								background: '#feb019',
+							},
+							text: currency(state.summaryData.forecast.endNet),
+						},
 					},
 				],
 			},
@@ -374,16 +398,16 @@ const accumulationChart = computed(() => {
 				name: 'Budgeted',
 				data: [0, ...dailyBudgeted],
 			},
-			{
+			...!isFuture.value ? [{
 				type: 'line',
 				name: 'Attributed',
 				data: [0, ...dailyAttributed],
-			},
-			{
+			}] : [],
+		 	...isCurrentMonth.value ? [{
 				type: 'line',
 				name: 'Forecast',
 				data: [0, ...dailyForecasted],
-			},
+			}] : [],
 			// {
 			// 	type: 'bar',
 			// 	name: 'Income',
@@ -481,18 +505,21 @@ const accumulationChart = computed(() => {
 			<br />
 
 			<apexchart class="w-full" type="bar" v-bind="accumulationChart"></apexchart>
-			<div v-if="isCurrentMonth">
+
+			<template v-if="isCurrentMonth">
 				<br />
-				<h3>Upcoming Budgets</h3>
+				<div class="flex align-items-center py-2">
+					<h3>Upcoming Budgets</h3>
+				</div>
 				<div>
 					<!-- Show only those events with a future date in the next two weeks -->
 					<CommonEventRow
-						v-for="event of state.summaryData.unfinishedNetEvents.filter(e => e.date.isAfter(ddate()) && e.date.isBefore(ddate().add(14, 'day')))"
+						v-for="event of state.summaryData.forecast.unfinishedNetEvents.filter(e => e.date.isAfter(ddate()) && e.date.isBefore(ddate().add(14, 'day')))"
 						:event="event"
 					/>
 				</div>
 				<br />
-			</div>
+			</template>
 
 			<div>
 				<div class="flex align-items-center py-2">

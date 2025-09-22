@@ -16,6 +16,9 @@ ENV DISPLAY=:99
 
 # Create a startup script
 RUN echo '#!/bin/bash\n\
+# Unlock previous XServer
+rm -f /tmp/.X99-lock\n\
+\n\
 # Start Xvfb\n\
 Xvfb :99 -screen 0 1280x720x24 -ac &\n\
 \n\
