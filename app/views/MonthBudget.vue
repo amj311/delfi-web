@@ -48,6 +48,12 @@ const isFuture = computed(() => {
 	}
 	return state.viewingMonth.isAfter(ddate());
 });
+const isPast = computed(() => {
+	if (!state.viewingMonth) {
+		return false;
+	}
+	return state.viewingMonth.isBefore(ddate(), 'month');
+});
 const isCurrentMonth = computed(() => {
 	if (!state.viewingMonth) {
 		return false;
@@ -358,21 +364,21 @@ const accumulationChart = computed(() => {
 			},
 			annotations: {
 				yaxis: [
-					// {
-					// 	y: state.summaryData.netTally.attributedNet,
-					// 	borderColor: '#00E396',
-					// 	borderWidth: 2,
-					// 	borderStyle: 'solid',
-					// 	label: {
-					// 		position: 'center',
-					// 		borderColor: '#00E396',
-					// 		style: {
-					// 			color: '#fff',
-					// 			background: '#00E396',
-					// 		},
-					// 		text: currency(state.summaryData.netTally.attributedNet),
-					// 	},
-					// },
+					isPast.value &&  {
+						y: state.summaryData.netTally.attributedNet,
+						borderColor: '#00E396',
+						borderWidth: 2,
+						borderStyle: 'solid',
+						label: {
+							position: 'center',
+							borderColor: '#00E396',
+							style: {
+								color: '#fff',
+								background: '#00E396',
+							},
+							text: currency(state.summaryData.netTally.attributedNet),
+						},
+					},
 					isCurrentMonth.value && {
 						y: state.summaryData.forecast.endNet,
 						borderColor: '#feb019',
@@ -386,6 +392,21 @@ const accumulationChart = computed(() => {
 								background: '#feb019',
 							},
 							text: currency(state.summaryData.forecast.endNet),
+						},
+					},
+					isFuture.value && {
+						y: state.summaryData.netTally.budgetedNet,
+						borderColor: '#038ffb',
+						borderWidth: 2,
+						borderStyle: 'solid',
+						label: {
+							position: 'center',
+							borderColor: '#038ffb',
+							style: {
+								color: '#fff',
+								background: '#038ffb',
+							},
+							text: currency(state.summaryData.netTally.budgetedNet),
 						},
 					},
 				],
