@@ -16,6 +16,14 @@ export const TransactionRuleDao = {
 
 	async upsertTransactionRule(workspace_id, data: Optional<TransactionRule, 'transaction_rule_id'>) {
 		await this.setupTestData();
+		for (const action of data.actions) {
+			if (!action.action) {
+				throw new Error("Action type is required");
+			}
+		}
+		if (!data.filter) {
+			throw new Error("Filter is required");
+		}
 
 		const existingRule = data.transaction_rule_id && (await prisma.transactionRule.findUnique({
 			where: {

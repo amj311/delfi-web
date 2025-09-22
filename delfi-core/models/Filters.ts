@@ -1,6 +1,6 @@
 import type { DelfiDate } from "delfi-core/utils/dateUtils"
 import { type BudgetedTransactionDetails, type ProjectionEvent, type ScheduledBudget } from "./Budget"
-import { getPropertyByPath } from "delfi-core/utils/miscUtils"
+import { currency, getPropertyByPath } from "delfi-core/utils/miscUtils"
 import { TransactionUtils, type AttributionEvent, type DescriptionBreakdown } from "delfi-core/models/Transaction"
 import type { Category } from "delfi-core/models/Category"
 import type { CommonEvent } from "delfi-core/models/Summary"
@@ -200,7 +200,11 @@ export default class FilterUtils {
 		const entityType = SpecialEntityTypes.find(t => type.includes(t)); // Transaction.merchant_id -> merchant_id
 		if (entityType) {
 			descriptor.push({ type: entityType, id: operandItem });
-		} else {
+		}
+		else if (type === 'currency') {
+			descriptor.push(currency(operandItem));
+		}
+		else {
 			descriptor.push(JSON.stringify(operandItem));
 		}
 	}

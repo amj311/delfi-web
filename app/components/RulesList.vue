@@ -138,9 +138,13 @@ async function saveRule() {
 function isFilterComplete(filter) {
 	return !!filter && FilterUtils.extractPredicates(filter).every((rule) => rule.property && rule.operator && rule.operand);
 }
+function areActionsComplete(actions) {
+	return !!actions && actions.length > 0 && actions.every((action) => action.action && action.value);
+}
 
 const canSave = computed(() => {
 	if (!isFilterComplete(editingRule.value?.filter)) return false;
+	if (!areActionsComplete(editingRule.value?.actions)) return false;
 	return true;
 });
 
