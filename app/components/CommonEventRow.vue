@@ -7,6 +7,8 @@ import { useAccountStore } from '@/stores/account.store';
 import { useCategoryStore } from '@/stores/category.store';
 import type { CommonEvent } from 'delfi-core/models/Summary';
 import { useGroupStore } from '@/stores/group.store';
+import { ddate } from 'delfi-core/utils/dateUtils';
+import { colors } from 'delfi-core/utils/constants';
 
 interface Props {
 	event: CommonEvent;
@@ -18,6 +20,7 @@ interface Props {
 	hideAccount?: boolean;
 	clickable?: boolean;
 	expand?: boolean;
+	showPastDue?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -37,6 +40,7 @@ const currencyModeComputed = computed(() => {
 });
 
 const isPending = computed(() => props.event.attributionDetails?.sourceTransaction.pending);
+const isPastDue = computed(() => props.showPastDue && props.event.date.isBefore(ddate()));
 </script>
 
 <template>
@@ -94,7 +98,8 @@ const isPending = computed(() => props.event.attributionDetails?.sourceTransacti
 					</template>
 				</small>
 				<div class="flex-grow-1"></div>
-				<small class="white-space-nowrap" v-if="!hideDate && !isPending">
+				<small class="white-space-nowrap" v-if="!hideDate && !isPending" :style="{ color: isPastDue ? colors.cherry3 : '' }">
+					<span v-if="isPastDue">Due</span>
 					{{ event.date.formatShort() }}
 				</small>
 				<small v-if="isPending">PENDING</small>
