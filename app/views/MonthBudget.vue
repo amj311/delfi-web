@@ -528,21 +528,6 @@ const accumulationChart = computed(() => {
 
 			<apexchart class="w-full" type="bar" v-bind="accumulationChart"></apexchart>
 
-			<template v-if="isCurrentMonth">
-				<br />
-				<div class="flex align-items-center py-2">
-					<h3>Upcoming Budgets</h3>
-				</div>
-				<div>
-					<!-- Show only those events with a future date in the next two weeks -->
-					<CommonEventRow
-						v-for="event of state.summaryData.forecast.unfinishedNetEvents.filter(e => e.date.isAfter(ddate().subtract(1, 'week')) && e.date.isBefore(ddate().add(14, 'day')))"
-						:event="event"
-					/>
-				</div>
-				<br />
-			</template>
-
 			<div>
 				<div class="flex align-items-center py-2">
 					<h3>Income</h3>
@@ -1080,7 +1065,7 @@ const accumulationChart = computed(() => {
 								<AttributionAvatar icon="question-circle" :size="2" :background="'cherry1'" />
 								<b>Unbudgeted</b>
 								<div class="flex-grow-1"></div>
-								<Currency :amount="state.summaryData.allUnbudgeted.unBudgetedNet" mode="transaction" />
+								<Currency :amount="state.summaryData.allUnbudgeted.unBudgetedNet" mode="transaction" :style="{ color: colors.cherry3 }" />
 							</AccordionHeader>
 							<AccordionContent>
 								<template

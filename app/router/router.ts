@@ -8,15 +8,13 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
-	  children: [
-		{
-			name: 'Budget',
-			path: 'month/:month?',
-			component: () => import('../views/MonthBudget.vue'),
-			props: true
-		}
-	  ]
     },
+	{
+		name: 'Budget',
+		path: '/month/:month?',
+		component: () => import('../views/MonthBudget.vue'),
+		props: true
+	},
     {
       path: '/accounts',
       name: 'accounts',

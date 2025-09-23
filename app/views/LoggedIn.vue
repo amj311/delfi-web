@@ -39,6 +39,10 @@ onBeforeMount(() => {
 	<div class="app-container">
 		<header class="app-header">
 			<nav class="main-nav">
+				<router-link to="/" class="nav-link flex align-items-center gap-2">
+					<i class="pi pi-home" />
+					Home
+				</router-link>
 				<router-link to="/month" class="nav-link flex align-items-center gap-2">
 					<i class="pi pi-wallet" />
 					Budget

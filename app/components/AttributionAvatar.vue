@@ -25,6 +25,7 @@ const props = defineProps<{
 	category?: Category | null;
 	categoryId?: string | null;
 	size?: number; // rems
+	square?: boolean;
 }>();
 
 const width = computed(() => {
@@ -65,7 +66,7 @@ const backgroundColor = computed(() => {
 
 <template>
 	<div class="avatar-wrapper" :style="{ width: `${props.size}rem`, height: `${props.size}rem`, fontSize: `${fontSize}rem` }">
-		<div class="attribution-avatar">
+		<div class="attribution-avatar" :class="{ square }">
 			<img v-if="finalImage && !imageError" :src="finalImage" @error="setImageError" />
 			<template v-else>
 				<div
@@ -99,6 +100,10 @@ const backgroundColor = computed(() => {
 		justify-content: center;
 		align-items: center;
 		border-radius: 50%;
+
+		&.square {
+			border-radius: 5px;
+		}
 
 		img {
 			width: 100%;

@@ -6,6 +6,7 @@ import Icon from './Icon.vue';
 import { useAccountStore } from '@/stores/account.store';
 import { useCategoryStore } from '@/stores/category.store';
 import type { CommonEvent } from 'delfi-core/models/Summary';
+import { useGroupStore } from '@/stores/group.store';
 
 interface Props {
 	event: CommonEvent;
@@ -85,6 +86,11 @@ const isPending = computed(() => props.event.attributionDetails?.sourceTransacti
 							→
 							{{ accountStore.getAccountName(event.attributionDetails?.sourceTransaction.TransferPair!.account_id) }}
 						</template>
+					</template>
+					<template v-if="event.Group">
+						&nbsp;
+						<small><Icon name="tag" /></small>
+						{{ useGroupStore().getGroupById(event.Group.group_id)?.name }}
 					</template>
 				</small>
 				<div class="flex-grow-1"></div>
