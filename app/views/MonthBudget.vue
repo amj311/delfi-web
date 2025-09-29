@@ -317,6 +317,12 @@ const dailyAccumulation = computed(() => {
 	});
 });
 
+const chartColors = {
+	budgeted: '#038ffb',
+	attributed: '#00E396',
+	forecast: '#feb019',
+}
+
 const accumulationChart = computed(() => {
 	const dailyBudgeted = dailyAccumulation.value.map((d) => d.runningBudgeted === null ? null : Math.round(d.runningBudgeted));
 	const dailyAttributed = dailyAccumulation.value.map((d) => d.runningAttributed === null ? null : Math.round(d.runningAttributed));
@@ -336,6 +342,9 @@ const accumulationChart = computed(() => {
 			dataLabels: {
 				enabled: false,
 			},
+			fill: {
+				opacity: 0.3,
+            },
 			chart: {
 				id: 'vuechart-example',
 				zoom: {
@@ -347,7 +356,7 @@ const accumulationChart = computed(() => {
 				stacked: true,
 			},
 			tooltip: {
-				enabled: true,
+				// enabled: true,
 			},
 			xaxis: {
 				categories: [],
@@ -367,45 +376,45 @@ const accumulationChart = computed(() => {
 				yaxis: [
 					isPast.value &&  {
 						y: state.summaryData.netTally.attributedNet,
-						borderColor: '#00E396',
+						borderColor: chartColors.attributed,
 						borderWidth: 2,
 						borderStyle: 'solid',
 						label: {
 							position: 'center',
-							borderColor: '#00E396',
+							borderColor: chartColors.attributed,
 							style: {
 								color: '#fff',
-								background: '#00E396',
+								background: chartColors.attributed,
 							},
 							text: currency(state.summaryData.netTally.attributedNet),
 						},
 					},
 					isCurrentMonth.value && {
 						y: state.summaryData.forecast.endNet,
-						borderColor: '#feb019',
+						borderColor: chartColors.forecast,
 						borderWidth: 2,
 						borderStyle: 'solid',
 						label: {
 							position: 'center',
-							borderColor: '#feb019',
+							borderColor: chartColors.forecast,
 							style: {
 								color: '#fff',
-								background: '#feb019',
+								background: chartColors.forecast,
 							},
 							text: currency(state.summaryData.forecast.endNet),
 						},
 					},
 					isFuture.value && {
 						y: state.summaryData.netTally.budgetedNet,
-						borderColor: '#038ffb',
+						borderColor: chartColors.budgeted,
 						borderWidth: 2,
 						borderStyle: 'solid',
 						label: {
 							position: 'center',
-							borderColor: '#038ffb',
+							borderColor: chartColors.budgeted,
 							style: {
 								color: '#fff',
-								background: '#038ffb',
+								background: chartColors.budgeted,
 							},
 							text: currency(state.summaryData.netTally.budgetedNet),
 						},
@@ -415,21 +424,24 @@ const accumulationChart = computed(() => {
 		},
 		// include zeros as starting point
 		series: [
-			{
-				type: 'line',
-				name: 'Budgeted',
-				data: [0, ...dailyBudgeted],
-			},
-			...!isFuture.value ? [{
-				type: 'line',
-				name: 'Attributed',
-				data: [0, ...dailyAttributed],
-			}] : [],
 		 	...isCurrentMonth.value ? [{
-				type: 'line',
+				type: 'area',
 				name: 'Forecast',
 				data: [0, ...dailyForecasted],
+				color: chartColors.forecast,
 			}] : [],
+			...!isFuture.value ? [{
+				type: 'area',
+				name: 'Attributed',
+				data: [0, ...dailyAttributed],
+				color: chartColors.attributed,
+			}] : [],
+			{
+				type: 'area',
+				name: 'Budgeted',
+				data: [0, ...dailyBudgeted],
+				color: chartColors.budgeted,
+			},
 			// {
 			// 	type: 'bar',
 			// 	name: 'Income',
