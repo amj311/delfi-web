@@ -42,7 +42,9 @@ export const useDelfiStore = defineStore('delfi', () => {
 		scheduleCompute(); // schedule another compute to keep data fresh
 	}
 
-	function reCompute() {
+	async function reCompute() {
+		// load new accounts as well, to update the sync statuses
+		await useAccountStore().loadAccounts();
 		initDelfi().catch((error) => {
 			console.error("Error during re-computation:", error);
 		})

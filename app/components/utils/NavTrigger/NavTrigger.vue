@@ -80,10 +80,12 @@ export default {
 			return props.triggerKey + '-' + Math.random().toString(36).substring(2, 8);
 		});
 
+		const show = computed(() => {
+			return store.viewStack.includes(trueKey.value);
+		});
+
 		return {
-			show: computed(() => {
-				return store.viewStack.includes(trueKey.value);
-			}),
+			show,
 			open: () => store.open(trueKey.value),
 			close: () => store.close(props.onClose),
 		};

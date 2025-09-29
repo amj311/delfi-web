@@ -17,11 +17,13 @@ import { computed, nextTick, onBeforeMount, ref, watch } from 'vue';
 const upcomingBudgets = ref<ProjectionEvent[]>([]);
 
 const isDelfiLoading = computed(() => !useDelfiStore().delfi || useDelfiStore().isInitializing || useDelfiStore().isGeneratingForecast);
+const isLoadingNextBudgets = ref(false);
 
 watch(() => useDelfiStore().isGeneratingForecast, async () => {
 	if (isDelfiLoading.value) {
 		return [];
 	}
+	isLoadingNextBudgets.value = true;
 	const thisMonth = ddate().startOf('month');
 	const nextMonth = thisMonth.add(1, 'month');
 	const thisMonthSummary = await useDelfiStore().getMonthSummary(thisMonth);
@@ -30,14 +32,14 @@ watch(() => useDelfiStore().isGeneratingForecast, async () => {
 		...thisMonthSummary.forecast.unfinishedBudgetEvents,
 		...nextMonthSummary.forecast.unfinishedBudgetEvents,
 	]
-
 	// from the previous or next two weeks
 	upcomingBudgets.value = allUnfinished.filter(e => e.date >= ddate().subtract(1, 'week') && e.date <= ddate().add(2, 'week'));
+	isLoadingNextBudgets.value = false;
 }, { immediate: true });
 
 const isLoadingRecentTransactions = ref(false);
 const recentTransactions = ref<AttributionEvent[]>([]);
-onBeforeMount(async () => {
+async function loadRecentTransactions() {
 	try {
 		isLoadingRecentTransactions.value = true;
 		const transactions = await TransactionService.getTransactionsInRange(ddate().subtract(1, 'week'), ddate());
@@ -47,8 +49,8 @@ onBeforeMount(async () => {
 	} finally {
 		isLoadingRecentTransactions.value = false;
 	}
-});
-
+};
+onBeforeMount(loadRecentTransactions);
 
 const transactionDetailsDrawer = ref<InstanceType<typeof TransactionDetailsDrawer> | null>(null);
 const viewingTransaction = ref<Transaction | null>(null);
@@ -82,9 +84,10 @@ function viewTransaction(transaction: Transaction) {
 
 	<div v-if="isDelfiLoading" class="flex align-items-center gap-2 my-4 justify-content-center"><i class="pi pi-spin pi-spinner"></i>Computing forecast...</div>
 
-	<template v-if="upcomingBudgets.length">
+	<template v-if="isLoadingNextBudgets || upcomingBudgets.length">
 		<br />
 		<h3 class="my-2">Upcoming Budgets</h3>
+		<div v-if="isLoadingNextBudgets" class="flex align-items-center gap-2 my-2"><i class="pi pi-spin pi-spinner"></i>Loading upcoming budgets...</div>
 		<CollapseList :items="upcomingBudgets">
 			<template #default="{ item }">
 				<CommonEventRow :event="item" showPastDue />
@@ -102,5 +105,5 @@ function viewTransaction(transaction: Transaction) {
 		</CollapseList>
 	</template>
 
-	<TransactionDetailsDrawer ref="transactionDetailsDrawer" :key="viewingTransaction?.transaction_id" />
+	<TransactionDetailsDrawer ref="transactionDetailsDrawer" :key="viewingTransaction?.transaction_id" @close="loadRecentTransactions" />
 </template>

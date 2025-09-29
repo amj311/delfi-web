@@ -1,23 +1,31 @@
 // Simple Playwright scraper to navigate to American First Credit Union login page
-import { chromium, type Page, type ElementHandle, type BrowserContext } from 'playwright';
+import { chromium, type Page, type ElementHandle, type BrowserContext, type Browser } from 'playwright';
 import { ddate, type DelfiDate } from 'delfi-core/utils/dateUtils';
 
-async function createBrowserContext(): Promise<BrowserContext> {
-	const browser = await chromium.launch({
-		headless: false,           // Set to true to run in headless mode
-		slowMo: 50,                // Reduce the slowdown for more natural behavior
-		timeout: 30000,            // Increased timeout for better reliability
-		args: [
-			'--disable-blink-features=AutomationControlled',  // Hide automation flags
-			'--disable-features=IsolateOrigins,site-per-process', // Disables site isolation
-			'--no-sandbox',          // Less restrictive sandbox
-			'--disable-web-security', // Bypass some CORS restrictions
-			'--disable-features=site-per-process',
-			'--start-maximized'      // Start with maximized window
-		],
-	});
+let browserInstance: Browser | null = null;
 
-	return await browser.newContext({
+async function createBrowserContext(): Promise<BrowserContext> {
+	if (!browserInstance) {
+		browserInstance = await chromium.launch({
+			headless: false,           // Set to true to run in headless mode
+			slowMo: 50,                // Reduce the slowdown for more natural behavior
+			timeout: 30000,            // Increased timeout for better reliability
+			args: [
+				'--disable-blink-features=AutomationControlled',  // Hide automation flags
+				'--disable-features=IsolateOrigins,site-per-process', // Disables site isolation
+				'--no-sandbox',          // Less restrictive sandbox
+				'--disable-web-security', // Bypass some CORS restrictions
+				'--disable-features=site-per-process',
+				'--start-maximized'      // Start with maximized window
+			],
+		});
+        // Cleanup on process exit
+        process.on('exit', cleanupBrowser);
+        process.on('SIGINT', cleanupBrowser);
+        process.on('SIGTERM', cleanupBrowser);
+	}
+
+	return await browserInstance.newContext({
 		userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
 		viewport: { width: 1280, height: 800 },
 		deviceScaleFactor: 1.75,  // Higher for retina-like display
@@ -37,6 +45,17 @@ async function createBrowserContext(): Promise<BrowserContext> {
 		}
 	});
 };
+
+async function cleanupBrowser(): Promise<void> {
+    if (browserInstance) {
+        try {
+            await browserInstance.close();
+            browserInstance = null;
+        } catch (error) {
+            console.error('Error closing browser:', error);
+        }
+    }
+}
 
 export type UsePage = (pageOperation: (page: Page) => Promise<void>) => Promise<void>;
 
@@ -66,12 +85,12 @@ export async function useBrowser(operation: (usePage: UsePage) => Promise<void>)
 		throw error; // Re-throw to ensure the error is not swallowed
 	} finally {
 		// Close the browser
-		context.close().then(() => {
-			console.log('Browser context closed after operation.');
-		}).catch(err => {
-			console.error('Error closing browser context:', err);
-			throw err; // Re-throw to ensure the error is not swallowed
-		});
+		try {
+			await context.close();
+			console.log('Browser context closed');
+		} catch (closeError) {
+			console.error('Error closing browser context:', closeError);
+		}
 	}
 }
 

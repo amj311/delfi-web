@@ -31,6 +31,10 @@ const toast = useToast();
 const triggerRef = ref<InstanceType<typeof NavTriggerDrawer> | null>(null);
 const transaction = ref<Transaction>({} as Transaction);
 
+const props = defineProps<{
+	onClose?: () => void;
+}>();
+
 defineExpose({
 	open: (_transaction: Transaction) => {
 		transaction.value = _transaction;
@@ -438,7 +442,7 @@ const sourceAccount = computed(() => {
 </script>
 
 <template>
-	<NavTriggerDrawer ref="triggerRef" :triggerKey="'transaction-details'">
+	<NavTriggerDrawer ref="triggerRef" :triggerKey="'transaction-details'" @close="() => onClose && onClose()">
 		<template #header>
 			<div class="flex w-full mr-3">
 				<div class="flex-grow-1"></div>
@@ -633,8 +637,8 @@ const sourceAccount = computed(() => {
 				<div class="text-black-alpha-50">
 					<div v-if="transaction.TransactionReview?.reviewed_at">
 						<i class="pi pi-check-circle" />&nbsp;
-						Reviewed by {{ transaction.TransactionReview.ReviewedBy?.given_name }}
-						{{ transaction.TransactionReview.ReviewedBy?.family_name }} on
+						<!-- Reviewed by {{ transaction.TransactionReview.ReviewedBy?.given_name }} -->
+						Reviewed {{ transaction.TransactionReview.ReviewedBy?.family_name }} on
 						{{ ddate(transaction.TransactionReview?.reviewed_at).formatFull() }}
 					</div>
 

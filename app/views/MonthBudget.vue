@@ -473,6 +473,8 @@ const accumulationChart = computed(() => {
 			</div>
 			<br />
 
+			<apexchart class="w-full" type="bar" v-bind="accumulationChart"></apexchart>
+
 			<div>
 				<div class="flex align-items-center py-2">
 					<h3>Accounts</h3>
@@ -502,12 +504,14 @@ const accumulationChart = computed(() => {
 									hideCurrency
 									class="font-medium"
 								/>
-								<small v-if="!isFuture"
-									>&nbsp;&nbsp;/&nbsp;<Currency
+								<small v-if="!isFuture">
+									&nbsp;&nbsp;/&nbsp;
+									<Currency
 										:amount="summary.budgetedChange"
 										mode="net_change"
 										hideCurrency
-								/></small>
+									/>
+								</small>
 							</div>
 						</div>
 						<!-- <small v-for="partition of summary.partitions" class="flex align-items-center">
@@ -525,8 +529,6 @@ const accumulationChart = computed(() => {
 				</div>
 			</div>
 			<br />
-
-			<apexchart class="w-full" type="bar" v-bind="accumulationChart"></apexchart>
 
 			<div>
 				<div class="flex align-items-center py-2">

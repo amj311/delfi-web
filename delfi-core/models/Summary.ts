@@ -59,7 +59,7 @@ export class BudgetOccurrenceSummary {
 	snapshot(start: DelfiDate, end: DelfiDate): BudgetSnapshot {
 		const budgetEvents = this.budgetEvents.filter(event => event.date.isBetweenInclusive(start, end));
 		const attributedEvents = this.attributedEvents.filter(event => event.date.isBetweenInclusive(start, end));
-		return new BudgetSnapshot(start, end, this.occurrence.budget, budgetEvents, attributedEvents);
+		return new BudgetSnapshot(start, end, this.occurrence.budget, budgetEvents, attributedEvents, this);
 	}
 }
 
@@ -95,17 +95,25 @@ export class BudgetSnapshot {
 		/** Always just the events applicable to the snapshot (date range or other common attribute) */
 		readonly budgetEvents: BudgetEventSummary[],
 		readonly _attributedEvents: AttributionEvent[],
+		readonly sourceOccurrence?: BudgetOccurrenceSummary, // only if this snapshot is of a single occurrence
 	) {}
 
 	/** Set of occurrences from which the budget events are drawn */
 	private get occurrences(): BudgetOccurrenceSummary[] {
+		if (this.sourceOccurrence) {
+			return [this.sourceOccurrence];
+		}
 		const presentOccurrences = new Set<BudgetOccurrenceSummary>();
 		this.budgetEvents.forEach(event => {
 			if (event.projectionDetails.sourceOccurrence) {
 				presentOccurrences.add(event.occurrenceSummary);
 			}
 		});
-		return Array.from(presentOccurrences);
+		const compiledOccurrences = Array.from(presentOccurrences);
+		if (compiledOccurrences.length === 0) {
+			console.warn(`BudgetSnapshot for budget ${this.budget.budget_id} has no occurrences associated with its events.`);
+		}
+		return compiledOccurrences;
 	}
 
 
@@ -148,6 +156,9 @@ export class BudgetSnapshot {
 		return new RealityTally(this.budgetEvents, this.attributedEvents);
 	}
 
+	public get windowStart(): DelfiDate { return ddate(Math.min(...this.occurrences.map(o => o.start.valueOf()))) }
+	public get windowEnd(): DelfiDate { return ddate(Math.max(...this.occurrences.map(o => o.end.valueOf()))) };
+
 
 	/**
 	 * Represents the full context that this snapshot window is a part of as "snapshot" of the whole.
@@ -155,14 +166,12 @@ export class BudgetSnapshot {
 	 * multiple one-offs or a high-level view of multiple recurring.
 	 */
 	private get context(): BudgetSnapshot {
-		const start = Math.min(...this.occurrences.map(o => o.start.millisecond()));
-		const end = Math.max(...this.occurrences.map(o => o.end.millisecond()));
 		const allBudgetEvents = this.occurrences.flatMap(o => o.budgetEvents);
 		const allAttributedEvents = this.occurrences.flatMap(o => o.attributedEvents);
 
 		return new BudgetSnapshot(
-			ddate(start),
-			ddate(end),
+			ddate(this.windowStart),
+			ddate(this.windowEnd),
 			this.budget,
 			allBudgetEvents,
 			allAttributedEvents

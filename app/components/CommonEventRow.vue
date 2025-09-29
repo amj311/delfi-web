@@ -10,7 +10,7 @@ import { useGroupStore } from '@/stores/group.store';
 import { ddate } from 'delfi-core/utils/dateUtils';
 import { colors } from 'delfi-core/utils/constants';
 
-interface Props {
+const { event, size = 1.9, currencyMode = 'transaction', clickable = true, ...props } = defineProps<{
 	event: CommonEvent;
 	size?: number;
 	currencyMode?: 'transaction' | 'none' | 'net_change';
@@ -21,26 +21,30 @@ interface Props {
 	clickable?: boolean;
 	expand?: boolean;
 	showPastDue?: boolean;
-}
-
-const props = withDefaults(defineProps<Props>(), {
-	size: 1.9,
-	currencyMode: 'transaction',
-	clickable: true,
-});
+}>();
 
 const accountStore = useAccountStore();
 const categoryStore = useCategoryStore();
 
 const currencyModeComputed = computed(() => {
-	if (!props.showTransferCopy && props.event.attributionDetails?.isTransferPair) {
+	if (!props.showTransferCopy && event.attributionDetails?.isTransferPair) {
 		return 'none';
 	}
-	return props.currencyMode;
+	return currencyMode;
 });
 
-const isPending = computed(() => props.event.attributionDetails?.sourceTransaction.pending);
-const isPastDue = computed(() => props.showPastDue && props.event.date.isBefore(ddate()));
+const isPending = computed(() => event.attributionDetails?.sourceTransaction.pending);
+const isPastDue = computed(() => props.showPastDue && (event.projectionDetails?.windowEnd || event.date).isBefore(ddate()));
+
+const displayDate = computed(() => {
+	if (!event.projectionDetails) {
+		return event.date.formatShort();
+	}
+	else if (event.projectionDetails.windowStart !== event.date || event.projectionDetails.windowEnd !== event.date) {
+		return `${event.date.formatShort()}-${event.projectionDetails.windowEnd.formatShort()}`;
+	}
+	return event.date.formatShort();
+})
 </script>
 
 <template>
@@ -98,9 +102,9 @@ const isPastDue = computed(() => props.showPastDue && props.event.date.isBefore(
 					</template>
 				</small>
 				<div class="flex-grow-1"></div>
-				<small class="white-space-nowrap" v-if="!hideDate && !isPending" :style="{ color: isPastDue ? colors.cherry3 : '' }">
-					<span v-if="isPastDue">Due</span>
-					{{ event.date.formatShort() }}
+				<small class="white-space-nowrap" v-if="!hideDate && !isPending" :style="{ color: isPastDue ? colors.yellow3 : '' }">
+					<!-- <span v-if="isPastDue">Expected</span> -->
+					{{ displayDate }}
 				</small>
 				<small v-if="isPending">PENDING</small>
 			</div>

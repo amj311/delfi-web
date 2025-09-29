@@ -83,7 +83,7 @@ type ScheduleVariant = {
 	schedule: BudgetOccurrenceSchedule, // Schedule start and end dates define the variant's boundaries. Variants may not overlap.
 	/** If missing, budget will be projected on start date */
 	projectionSchedule?: BudgetProjectionSchedule,
-	amountTemplate: BudgetAmountTemplate, // TODO: support variable amounts, like a heating bill
+	amountTemplate: BudgetAmountTemplate, // TODO: support itemized amounts amounts
 	// // Defines how long each budget occurrence is open for after it opens
 	// // TODO I don't actually compute this yet
 	// window?: {
@@ -108,7 +108,7 @@ export type Budget = BudgetedTransactionDetails & {
 	scheduleVariants: Array<ScheduleVariant>,
 	childItems?: Array<BudgetChildItem>,
 	/** If true, this budget is considered complete after its first attribution. Alternatively, check projection rules for a single date...? */
-	onceAndDone?: boolean,
+	onceAndDone?: boolean, // not yet used anywhere
 }
 
 export type ScheduledBudget = Budget & {
@@ -154,9 +154,11 @@ export type ProjectionEventDetails = BudgetedTransactionDetails & {
 	sourceOccurrence: BudgetOccurrence, // The occurrence this event is associated with
 	triggerEvent?: ProjectionEvent
 	isTransferCopy?: boolean, // If true, this event is a copy of a transfer event, i.e. the target of a transfer
-	isPartial?: true, // indicates that this event is a partial event, i.e. it is not the full amount of the budget
-	budgetCap?: number, // the total cap for the budget
-	budgetUsedSoFar?: number, // the accumulation of this and previous events for the same window
+	// isPartial?: true, // indicates that this event is a partial event, i.e. it is not the full amount of the budget
+	// budgetCap?: number, // the total cap for the budget
+	// budgetUsedSoFar?: number, // the accumulation of this and previous events for the same window
+	windowStart: DelfiDate, // The earliest date this is projected to occur. If the date is explicitly set, this is the same as date
+	windowEnd: DelfiDate, // The latest date this is projected to occur. If the date is explicitly set, this is the same as date
 }
 
 export type ProjectionEvent = Replace<CommonEvent, {
@@ -168,6 +170,7 @@ export type ProjectionEvent = Replace<CommonEvent, {
 export default class BudgetUtils {
 	static createScheduledOccurrences(start: DelfiDate, end: DelfiDate, budget: ScheduledBudget): BudgetOccurrence[] {
 		const occurrences: BudgetOccurrence[] = [];
+		// TODO filter out variants that don't apply in this date range
 		for (const variant of budget.scheduleVariants) {
 			const recurrenceDates = BudgetUtils.getBudgetOccurrences(variant.schedule, start, end); // include ongoing occurrences
 			occurrences.push(...recurrenceDates.map(({ start: startDate, end: endDate }) => {
@@ -234,15 +237,6 @@ export default class BudgetUtils {
 	 * @returns An array of partial budget event constructions representing the projected events.
 	 */
 	private static computeProjectionEvents(windowAmount: number, windowStart: DelfiDate, windowEnd: DelfiDate, occurrence: BudgetOccurrence): ProjectionEvent[] {
-		// // Short circuit for windows with no special projection rules
-		// if (!occurrence.sourceSchedule.projectionSchedule) {
-		// 	const events = BudgetUtils.createDateEventsFromOccurrenceDetails(windowStart, windowAmount, occurrence.budget, occurrence);
-		// 	return events.map(event => ({
-		// 		...event,
-		// 		sourceOccurrence: occurrence,
-		// 	} as ProjectionEvent));
-		// }
-
 		const projectionEvents: ProjectionEvent[] = [];
 		// Get child items within this window
 		const childItems = occurrence.budget.childItems?.filter(item => ddate(item.date).isBetweenInclusive(windowStart, windowEnd)) || [];
@@ -252,9 +246,9 @@ export default class BudgetUtils {
 		for (const child of childItems) {
 			const childEvents = BudgetUtils.createDateEventsFromOccurrenceDetails(ddate(child.date), child.amount, child, occurrence);
 			childEvents.forEach(event => {
-				event.projectionDetails.isPartial = true;
-				event.projectionDetails.budgetCap = windowAmount;
-				event.projectionDetails.budgetUsedSoFar = budgetUsedSoFar + child.amount;
+				// event.projectionDetails.isPartial = true;
+				// event.projectionDetails.budgetCap = windowAmount;
+				// event.projectionDetails.budgetUsedSoFar = budgetUsedSoFar + child.amount;
 				event.BudgetChildItem = child;
 
 				budgetUsedSoFar += child.amount;
@@ -271,8 +265,8 @@ export default class BudgetUtils {
 			: [windowStart];
 
 		// If children exceed or equal the budget, do not create projection events
-		// NOTE the current logic will USUALLY work, unless the child items budget for some reason has a different sign than the main budget.
-		// I don't really see anyone entering child budget items that are negative for a positive budget, or vice versa.
+		// NOTE the current logic will USUALLY work, unless the total child items budget for some reason has a different sign than the main budget.
+		// I don't really see anyone entering ALL child budget items that are negative for a positive budget, or vice versa.
 		if (Math.abs(budgetUsedSoFar) < Math.abs(windowAmount) && scheduledProjectionDates.length > 0) {
 			// Remaining amount for projections
 			const remainingAmount = windowAmount - budgetUsedSoFar;
@@ -283,9 +277,9 @@ export default class BudgetUtils {
 				budgetUsedSoFar += eventAmount;
 				projectionEvents.push(...BudgetUtils.createDateEventsFromOccurrenceDetails(intervalDate, eventAmount, occurrence.budget, occurrence).map(event => ({
 					...event,
-					isPartial: true as true,
-					budgetCap: windowAmount,
-					budgetSoFar: budgetUsedSoFar,
+					// isPartial: true as true,
+					// budgetCap: windowAmount,
+					// budgetSoFar: budgetUsedSoFar,
 				})));
 			}
 		}
@@ -362,6 +356,7 @@ export default class BudgetUtils {
 				...BudgetUtils.copyTransactionDetails(details),
 				budget_event_id: sourceOccurrence.occurrence_id + '-' + sourceOccurrence.budgetEvents.length,
 				sourceOccurrence,
+				...BudgetUtils.getProjectionEventWindowDates(eventDate, sourceOccurrence),
 			},
 			attributionDetails: undefined,
 		}
@@ -384,6 +379,35 @@ export default class BudgetUtils {
 			amount: amount,
 		});
 		return events;
+	}
+
+	private static getProjectionEventWindowDates(date: DelfiDate, occurrence: BudgetOccurrence): { windowStart: DelfiDate, windowEnd: DelfiDate } {
+		if (!occurrence.sourceSchedule.projectionSchedule) {
+			// If no projection schedule, the event could land anywhere within the occurrence
+			return { windowStart: occurrence.start, windowEnd: occurrence.end };
+		}
+		// If the projection schedule defines specific days of the month or week, the event is on a solid date
+		if (
+			(occurrence.sourceSchedule.projectionSchedule.byDayOfMonth && occurrence.sourceSchedule.projectionSchedule.byDayOfMonth.length > 0) ||
+			(occurrence.sourceSchedule.projectionSchedule.byDayOfWeek && occurrence.sourceSchedule.projectionSchedule.byDayOfWeek.length > 0)
+		) {
+			return { windowStart: date, windowEnd: date };
+		}
+		// If there IS a projection schedule, but it doesn't define specific days, the event could land anywhere within the projection frequency (i.e. month or week)
+		// Use that frequency to determine the window from the event date
+		if (occurrence.sourceSchedule.projectionSchedule.frequency) {
+			const interval = toDelfiInterval(occurrence.sourceSchedule.projectionSchedule.frequency);
+			const windowStart = date.startOf(interval);
+			const windowEnd = date.endOf(interval);
+			// Clamp to occurrence start and end
+			return {
+				windowStart: windowStart.isBefore(occurrence.start) ? occurrence.start : windowStart,
+				windowEnd: windowEnd.isAfter(occurrence.end) ? occurrence.end : windowEnd,
+			};
+		}
+
+		// Default to the entire occurrence if we can't determine a better window
+		return { windowStart: occurrence.start, windowEnd: occurrence.end };
 	}
 
 	static copyTransactionDetails(source: BudgetedTransactionDetails): BudgetedTransactionDetails {

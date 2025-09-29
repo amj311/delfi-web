@@ -263,9 +263,9 @@ export class Delfi {
 		}));
 
 		// FORECAST COMPUTING
-		// don't use consolidated snapshots, because they lose some projection details.
-		// TODO investigate why this is
-		const unfinishedBudgets = monthBudgetSnapshots.filter(b => !b.progress().isComplete);
+		// don't use consolidated snapshots, so we can see individual windows
+		// exclude budgets considered completed or that are beyond there window (i.e. a weekly babysitting budget that went unused last week.)
+		const unfinishedBudgets = monthBudgetSnapshots.filter(b => !b.windowEnd.isBefore(ddate()) && !b.progress().isComplete);
 		const unfinishedBudgetEvents = unfinishedBudgets.flatMap(b => {
 			// Include all events that push the budget beyond the attributed amount
 			// Only include the amount of the event that is over the attributed amount
@@ -282,7 +282,7 @@ export class Delfi {
 				}
 			})
 			return events;
-		}).sort((a, b) => a.date.diff(b.date));
+		}).sort((a, b) => (a.projectionDetails?.windowEnd || a.date).diff((b.projectionDetails?.windowEnd || b.date)));
 		// Without transfer
 		const unfinishedNetEvents = unfinishedBudgetEvents.filter(t => !t.Budget.Category || t.Budget.Category.type !== 'TRANSFER');
 

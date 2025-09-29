@@ -447,6 +447,13 @@ const defaultCategories = {
 
 
 	// Food & Dining
+	"Groceries": {
+		name: "Groceries",
+		category_id: "93d35092-b4a7-424e-a86b-c3d4ff99e4e5",
+		type: "EXPENSE",
+		parent_category_id: parentCategories["Food & Dining"].category_id,
+		icon: 'grocery',
+	},
 	"Treats and Sweets": {
 		name: "Treats and Sweets",
 		category_id: "3d8d6a00-d0d4-4908-a8c1-ff3d830d3ad3",
@@ -766,17 +773,26 @@ const defaultCategories = {
 		type: "EXPENSE",
 		parent_category_id: parentCategories["Personal Care"].category_id
 	},
+	"Clothing": {
+		name: "Clothing",
+		category_id: "b83f3fad-f06b-4052-b35b-01d261009c50",
+		type: "EXPENSE",
+		parent_category_id: parentCategories["Personal Care"].category_id,
+		icon: 'shirt',
+	},
 	"Laundry": {
 		name: "Laundry",
 		category_id: "f0ed5497-ce37-41ad-91a3-4fd9675ac609",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Personal Care"].category_id
+		parent_category_id: parentCategories["Personal Care"].category_id,
+		icon: 'material-symbols::laundry',
 	},
 	"Spa & Massage": {
 		name: "Spa & Massage",
 		category_id: "253feafa-5ae0-4f9e-9b60-336e9949c580",
 		type: "EXPENSE",
-		parent_category_id: parentCategories["Personal Care"].category_id
+		parent_category_id: parentCategories["Personal Care"].category_id,
+		icon: 'material-symbols::spa',
 	},
 
 
@@ -802,20 +818,6 @@ const defaultCategories = {
 
 
 	// Shopping
-	"Groceries": {
-		name: "Groceries",
-		category_id: "93d35092-b4a7-424e-a86b-c3d4ff99e4e5",
-		type: "EXPENSE",
-		parent_category_id: parentCategories["Shopping"].category_id,
-		icon: 'grocery',
-	},
-	"Clothing": {
-		name: "Clothing",
-		category_id: "b83f3fad-f06b-4052-b35b-01d261009c50",
-		type: "EXPENSE",
-		parent_category_id: parentCategories["Shopping"].category_id,
-		icon: 'shirt',
-	},
 	"Electronics & Software": {
 		name: "Electronics & Software",
 		category_id: "ddd1f2b7-f087-49fe-86dc-318fb574dd9f",
