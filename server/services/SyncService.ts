@@ -3,11 +3,22 @@ import { AccountService } from "./AccountService";
 import { JobService } from "./JobService";
 import { ScraperService } from "./scraper/ScraperService";
 import { TransactionService } from "./TransactionService";
-import { WorkspaceService } from "./WorkspaceService";
-import { PlaidService } from "./PlaidService";
 import { WorkspaceDao } from "server/data/WorkspaceDao";
-import { TestDataService } from "./TestDataService";
-import type { Transaction } from "delfi-core/models/Transaction";
+import type { Transaction, TransactionDetails } from "delfi-core/models/Transaction";
+import type { AccountDetails } from "delfi-core/models/Account";
+
+
+type AccountSyncFailed = {
+	account_id: string;
+	error: string;
+}
+type AccountSyncSuccess = {
+	account_id: string;
+	accountDetails: AccountDetails;
+	transactions: Array<TransactionDetails>;
+}
+export type AccountSyncResult = AccountSyncFailed | AccountSyncSuccess;
+
 
 export class SyncService {
 	public static async addAccountsFromInstitution(workspace_id: string, institution_id: string): Promise<void> {
@@ -26,36 +37,11 @@ export class SyncService {
 		console.log(`\n\nSyncing accounts for workspace: ${workspace_id}`);
 		const workspaceAccounts = (await AccountService.getAllAccounts(workspace_id)).filter(account => !ids || ids.includes(account.account_id));
 
-		const scrapeResults = await ScraperService.scrapeWorkspaceAccounts(workspace_id, workspaceAccounts);
+		// filter out different sync sources
+		const scraperAccounts = workspaceAccounts.filter(account => account.Institution?.scraper === 'scraper');
+		const scrapeResults = await ScraperService.scrapeWorkspaceAccounts(workspace_id, scraperAccounts);
 
-		const newTransactions: Array<Transaction> = [];
-		// Update account details and sync new transactions
-		await Promise.all(workspaceAccounts.map(async account => {
-			const result = scrapeResults[account.account_id];
-			if (!result.success) {
-				return await AccountService.updateAccount(workspace_id, account.account_id, {
-					last_failed_sync: new Date(),
-					sync_error: result.error || 'Unknown error',
-				});
-			}
-
-			const results = await TransactionService.syncNewTransactionsForAccount(workspace_id, account.account_id, result.transactions);
-			newTransactions.push(...results.filter(r => r.created).map(r => r.transaction));
-
-			await AccountService.updateAccount(workspace_id, account.account_id, {
-				current_balance: result.accountDetails.current_balance,
-				available_balance: result.accountDetails.available_balance,
-				limit: result.accountDetails.limit,
-				external_name: result.accountDetails.external_name,
-				apy: result.accountDetails.apy,
-				last_successful_sync: new Date(),
-			});
-		}));
-
-		// Once all accounts are synced, find transfer pairs for new transactions
-		await TransactionService.findAndLinkTransferPairs(workspace_id, newTransactions);
-
-		// await PlaidService.searchForPlaidTransactionData(workspace_id);
+		await this.ingestAccountSyncs(workspace_id, scrapeResults);
 	}
 
 	public static async syncAllWorkspacesAccounts(): Promise<void> {
@@ -69,7 +55,41 @@ export class SyncService {
 		}
 		console.log('Finished syncing all workspaces\' accounts');
 	}
-}
+
+
+	public static async ingestAccountSyncs(workspace_id: string, accountSyncs: Array<AccountSyncResult>) {
+		const newTransactions: Array<Transaction> = [];
+		// Update account details and sync new transactions
+		await Promise.all(accountSyncs.map(async result => {
+			if ('error' in result) {
+				return await AccountService.updateAccount(workspace_id, result.account_id, {
+					last_failed_sync: new Date(),
+					sync_error: result.error || 'Unknown error',
+				});
+			} else {
+				const results = await TransactionService.syncNewTransactionsForAccount(workspace_id, result.account_id, result.transactions);
+				newTransactions.push(...results.filter(r => r.created).map(r => r.transaction));
+
+				await AccountService.updateAccount(workspace_id, result.account_id, {
+					current_balance: result.accountDetails.current_balance,
+					available_balance: result.accountDetails.available_balance,
+					limit: result.accountDetails.limit,
+					external_name: result.accountDetails.external_name,
+					apy: result.accountDetails.apy,
+					last_successful_sync: new Date(),
+				});
+
+				await AccountService.recordBalance(result.account_id, result.accountDetails.current_balance);
+			}
+		}));
+
+		// Once all accounts are synced, find transfer pairs for new transactions
+		await TransactionService.findAndLinkTransferPairs(workspace_id, newTransactions);
+
+		// await PlaidService.searchForPlaidTransactionData(workspace_id);
+		return newTransactions;
+	}
+};
 
 
 // QUEUE UP SYNC JOBS!

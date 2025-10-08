@@ -247,15 +247,23 @@ export class TransactionUtils {
 
 	/**
 	 * For a given array of transactions, assigns each an order string based on it's date and the order it appears on that day.
-	 * Assumes array is provided in chronological order! Reverse it first if you must.
+	 * Assumes transactions are all from the same account and they represent ALL sequential transactions for their dates
 	 * Date order looks like this: "2025-04-12-01" (e.g. 01 for the first transaction of the day).
 	 * @param transactions 
 	 * @returns 
 	 */
 	public static assignDateOrders<T extends {date: DelfiDate}>(transactions: Array<T>): Array<T & {date_order: string}> {
+		// Make sure transactions are sorted by most recent LAST
+		// detect if they are not and then reverse if needed
+		const firstDate = transactions[0]?.date;
+		const lastDate = transactions[transactions.length - 1]?.date;
+		if (firstDate > lastDate) {
+			transactions = transactions.reverse();
+		}
+		
 		const dateTallies = new Map<string, number>();
 		return transactions.map(transaction => {
-			const dateKey = transaction.date.toString();
+			const dateKey = ddate(transaction.date).toString();
 			const order = dateTallies.get(dateKey) || 0;
 			dateTallies.set(dateKey, order + 1);
 			const date_order = `${dateKey}-${String(order + 1).padStart(2, '0')}`;

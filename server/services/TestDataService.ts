@@ -33,12 +33,40 @@ export class TestDataService {
 	}];
 
 
-	public static my_institutions: Array<Institution> = [{
-		institution_id: 'test-afcu-id',
-		name: "America First Credit Union",
-		logo: "https://www.abc4.com/wp-content/uploads/sites/4/2022/07/AFCU_Logo.jpg?resize=258",
-		plaid_institution_id: null,
-	}];
+	public static my_institutions: Array<Institution> = [
+		{
+			institution_id: 'test-afcu-id',
+			name: "America First Credit Union",
+			logo: "https://www.abc4.com/wp-content/uploads/sites/4/2022/07/AFCU_Logo.jpg?resize=258",
+			plaid_institution_id: null,
+			loginUrl: 'https://secure.americafirst.com/#/login',
+			scraper: 'scraper'
+		},
+		{
+			institution_id: 'test-betterment-id',
+			name: "Betterment",
+			logo: "https://media.licdn.com/dms/image/C4D0BAQHD-kRGjmwQtQ/company-logo_200_200/0/1637070868010/betterment_logo?e=2147483647&v=beta&t=R_wIOyd244kG2zZBj0dlgDubceiCtMmUrjHwBmPqm3w",
+			plaid_institution_id: null,
+			loginUrl: 'https://wwws.betterment.com/app/login',
+			scraper: 'extension',
+		},
+		{
+			institution_id: 'test-health-equity-id',
+			name: "HealthEquity",
+			logo: "https://yt3.ggpht.com/a/AGF-l79C93rU0jgcw3XA46Jx6HXf1u3kBmfwJvoCxg=s900-c-k-c0xffffffff-no-rj-mo",
+			plaid_institution_id: null,
+			loginUrl: 'https://my.healthequity.com/ClientLogin.aspx',
+			scraper: 'extension',
+		},
+		{
+			institution_id: 'test-principal-id',
+			name: "Principal",
+			logo: "https://www.principalcdn.com/css/principal-design-system/apple-touch-icon.png",
+			plaid_institution_id: null,
+			loginUrl: 'https://accounts.principal.com/app/bookmark/0oadm2qe1orihoKba5d7/login',
+			scraper: 'extension',
+		}
+	];
 
 	public static async getAccounts(existingAccounts: Account[] = []): Promise<Account[]> {
 		// 	const accountStuff = {

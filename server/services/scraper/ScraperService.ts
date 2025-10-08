@@ -3,34 +3,29 @@ import { doPageActions, useBrowser as useBrowser, type PageAction, type UsePage 
 import type { Page } from "playwright";
 import { InstitutionService } from "../InstitutionService";
 import { InstitutionScrapers } from "./InstitutionScrapers";
-import type { Account, AccountDetails } from "delfi-core/models/Account";
+import type { Account, AccountDetails, Institution } from "delfi-core/models/Account";
 import { TestDataService } from "../TestDataService";
+import { InstitutionDao } from "server/data/InstitutionDao";
+import type { AccountSyncResult } from "../SyncService";
 
 export type ScrapedTransaction = Omit<TransactionDetails, 'account_id'>;
 export type ScrapedAccount = Omit<AccountDetails, 'institution_id' | 'source'>;
 
+export type InstitutionCredentials = {
+	username?: string;
+	password?: string;
+}
+
 export type InstitutionScraper = {
-	loginUrl: string;
 	hasLoggedInElement: string;
 	isAtLoginElement: string;
 	isLoggedOutElement: string;
-	getLoginSequence: (username: string, password: string) => PageAction[];
+	getLoginSequence: (creds: InstitutionCredentials) => PageAction[];
 	listAccounts: (page: Page) => Promise<Array<ScrapedAccount>>;
 	getAccountDetails: (page: Page, external_account_id: string) => Promise<ScrapedAccount>;
 	getAccountTransactions: (page: Page, account: AccountDetails) => Promise<Array<ScrapedTransaction>>;
 	[key: string]: any; // Allow additional properties for flexibility
 }
-
-type AccountSyncFailed = {
-	success: false;
-	error: string;
-}
-type AccountSyncSuccess = {
-	success: true;
-	accountDetails: AccountDetails;
-	transactions: Array<TransactionDetails>;
-}
-type AccountSyncResult = AccountSyncFailed | AccountSyncSuccess;
 
 export class ScraperService {
 
@@ -80,15 +75,13 @@ export class ScraperService {
 	 * @param accounts 
 	 * @returns 
 	 */
-	public static async scrapeWorkspaceAccounts(workspace_id: string, accounts: Array<Account>) {
-		const accountResults: Record<string, AccountSyncResult> = {};
-
+	public static async scrapeWorkspaceAccounts(workspace_id: string, accounts: Array<Account>): Promise<Array<AccountSyncResult>> {
 		// Just to be safe, make sure all accounts belong to the same user
 		if (accounts.some((account) => account.workspace_id !== workspace_id)) {
 			throw new Error('All accounts must belong to the same user');
 		}
 
-		await useBrowser(async (usePage) => {
+		return await useBrowser(async (usePage) => {
 			// First log in to each institution just once
 			const institutionIds = Array.from(new Set(accounts.map((account) => account.institution_id)));
 			const failedLogins = new Map<string, string>();
@@ -105,7 +98,7 @@ export class ScraperService {
 			}));
 
 			// Then scrape each account
-			await Promise.all(accounts.map(async (account) => {
+			return await Promise.all(accounts.map(async (account) => {
 				try {
 					if (failedLogins.has(account.institution_id)) {
 						throw new Error(`Failed to log in to institution: ${failedLogins.get(account.institution_id)}`);
@@ -113,7 +106,8 @@ export class ScraperService {
 
 					try {
 						const result = await this.scrapeAccount(account, usePage);
-						accountResults[account.account_id] = {
+						return {
+							account_id: account.account_id,
 							success: true,
 							...result,
 						};
@@ -123,15 +117,15 @@ export class ScraperService {
 					}
 
 				} catch (error: any) {
-					accountResults[account.account_id] = {
+					console.warn(`Error scraping account ${account.account_id}:`, error);
+					return {
+						account_id: account.account_id,
 						success: false,
 						error: error.message,
 					};
 				}
 			}));
 		});
-
-		return accountResults;
 	}
 
 
@@ -167,10 +161,17 @@ export class ScraperService {
 		try {
 			await InstitutionService.getAllInstitutions(); // Ensure institutions are loaded
 			const scraper = InstitutionScrapers[institutionId];
+			const institution = await InstitutionDao.getInstitution(institutionId);
+			if (!institution) {
+				throw new Error(`Institution not found: ${institutionId}`);
+			}
+			if (!scraper) {
+				throw new Error(`No scraper found for institution: ${institutionId}`);
+			}
 			const creds = InstitutionService.getInstitutionCreds(institutionId, workspaceId);
 
 			await usePage(async (page) => {
-				await page.goto(scraper.loginUrl);
+				await page.goto(institution.loginUrl!);
 
 				// First check to see if we are already logged in
 				const loggedInElement = await page.waitForSelector(scraper.hasLoggedInElement, { timeout: 15000 }).catch(() => null);
@@ -178,7 +179,7 @@ export class ScraperService {
 					// check for login element
 					await page.waitForSelector(scraper.isAtLoginElement, { timeout: 15000 });
 					// Perform the login sequence
-					await doPageActions(page, scraper.getLoginSequence(creds.username!, creds.password!));
+					await doPageActions(page, scraper.getLoginSequence(creds));
 
 					// check for logged in element again
 					const loggedInElement = await page.waitForSelector(scraper.hasLoggedInElement, { timeout: 15000 }).catch(() => null);

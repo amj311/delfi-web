@@ -59,14 +59,14 @@ async function cleanupBrowser(): Promise<void> {
 
 export type UsePage = (pageOperation: (page: Page) => Promise<void>) => Promise<void>;
 
-export async function useBrowser(operation: (usePage: UsePage) => Promise<void>): Promise<void> {
+export async function useBrowser<T>(operation: (usePage: UsePage) => Promise<T>): Promise<T> {
 	const context = await createBrowserContext();
 
 	// Provide this function to consumers to handle disposing pages
-	async function usePage(pageOperation: (page: Page) => Promise<void>) {
+	async function usePage(pageOperation: (page: Page) => Promise<any>) {
 		const newPage = await context.newPage();
 		try {
-			await pageOperation(newPage);
+			return await pageOperation(newPage);
 		}
 		catch (error) {
 			console.error('Error occurred while using page:', error);
@@ -78,7 +78,7 @@ export async function useBrowser(operation: (usePage: UsePage) => Promise<void>)
 	}
 
 	try {
-		await operation(usePage);
+		return await operation(usePage);
 	} catch (error) {
 		// Log any errors that occur
 		console.error('Scraping error:', error);

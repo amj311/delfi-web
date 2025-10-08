@@ -96,7 +96,7 @@ export const TransactionDao = {
 				account_id: search.account_id,
 				original_description: search.original_description,
 				amount: search.amount,
-				date: ddate(search.date).toString(),
+				date: search.date.toString(),
 				date_order: search.date_order, // Crucial for catching transactions that look the same otherwise!
 			},
 		});
@@ -181,7 +181,7 @@ export const TransactionDao = {
 		const created = await prisma.transaction.create({
             data: {
     			amount: transactionData.amount,
-    			date: transactionData.date.toString(),
+    			date: ddate(transactionData.date).toString(),
 				date_order: transactionData.date_order || null, // For sorting transactions from the same date
     			authorized_date: transactionData.authorized_date?.toString(),
     			iso_currency_code: transactionData.iso_currency_code,

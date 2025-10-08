@@ -6,6 +6,8 @@ export type Institution = {
 	name: string,
 	logo: string | null,
 	plaid_institution_id: string | null,
+	scraper?: string | null,
+	loginUrl?: string | null,
 }
 
 type SavingsGoal  = {
@@ -34,17 +36,27 @@ export enum AccountType {
 }
 
 export enum AccountSubtype {
+	// depository
 	checking = 'checking',
 	savings = 'savings',
+
+	// investment
 	money_market = 'money_market',
-	credit_card = 'credit_card',
-	line_of_credit = 'line_of_credit',
 	cd = 'cd',
 	ira = 'ira',
+	_401k = '401k',
+	hsa = 'hsa',
 	stock = 'stock',
+	
+	// loan
 	mortgage = 'mortgage',
 	personal_loan = 'personal_loan',
 	auto_loan = 'auto_loan',
+	
+	// credit
+	credit_card = 'credit_card',
+	line_of_credit = 'line_of_credit',
+	
 	other = 'other',
 }
 

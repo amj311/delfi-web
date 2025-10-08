@@ -637,8 +637,8 @@ const sourceAccount = computed(() => {
 				<div class="text-black-alpha-50">
 					<div v-if="transaction.TransactionReview?.reviewed_at">
 						<i class="pi pi-check-circle" />&nbsp;
-						<!-- Reviewed by {{ transaction.TransactionReview.ReviewedBy?.given_name }} -->
-						Reviewed {{ transaction.TransactionReview.ReviewedBy?.family_name }} on
+						<!-- Reviewed by {{ transaction.TransactionReview.ReviewedBy?.given_name }} on -->
+						Reviewed on
 						{{ ddate(transaction.TransactionReview?.reviewed_at).formatFull() }}
 					</div>
 

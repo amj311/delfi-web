@@ -1,4 +1,4 @@
-import { type CreateTransaction, type Transaction } from "delfi-core/models/Transaction";
+import { TransactionUtils, type CreateTransaction, type Transaction } from "delfi-core/models/Transaction";
 import { ddate, type DelfiDate } from "delfi-core/utils/dateUtils";
 import { TransactionDao } from "server/data/TransactionDao";
 import { TransactionRuleService } from "./TransactionRuleService";
@@ -85,6 +85,10 @@ export class TransactionService {
 	}
 
 	public static async syncNewTransactionsForAccount(workspace_id: string, account_id: string, incomingTransactions: CreateTransaction[]) {
+		// First, assign date orders to incoming transactions. When doing so, make sure to preserve any existing date orders.
+		// THE TRANSACTIONS MUST BE A COMPLETE SET OF ALL TRANSACTIONS FOR THE DATES INVOLVED
+		incomingTransactions = TransactionUtils.assignDateOrders(incomingTransactions);
+
 		const oldPendingTransactions = await TransactionDao.getPendingForAccount(workspace_id, account_id);
 
 		// FIRST UPDATE PENDING TRANSACTIONS!

@@ -32,13 +32,13 @@ model Workspace {
     name  String
     Users User[]
 
-    accounts                 Account[]
-    Budgets                  Budget[]
-    categories               Category[]
-    tags                     Tag[]
+    accounts                  Account[]
+    Budgets                   Budget[]
+    categories                Category[]
+    tags                      Tag[]
     Transactions              Transaction[]
     PlaidItems                PlaidItem[]
-    CategoryDetectionMappings  CategoryDetectionMapping[]
+    CategoryDetectionMappings CategoryDetectionMapping[]
     Groups                    BudgetGroup[]
     TransactionRules          TransactionRule[]
     TransactionReviews        TransactionReview[]
@@ -52,6 +52,8 @@ model Institution {
     name                 String
     logo                 String?
     plaid_institution_id String?   @unique // e.g. plaid institution id
+    loginUrl             String? // e.g. institution login url
+    scraper              String? // e.g. "finicity", "mx", etc.
     Account              Account[]
 }
 
@@ -109,9 +111,23 @@ model Account {
     BudgetChildAsOrigin BudgetChildItem[]   @relation("BudgetChildOriginAccount")
     Transaction         Transaction[]
     BalanceAdjustment   BalanceAdjustment[]
+    BalanceRecord       BalanceRecord[]
 }
 
-// Especially for Partitions, which the user can control the balance of a will
+// Reports the recorded balance for an account at a given date, based on scraper data.
+// Intended to be useful for tracking the value of investment accounts over time when precise transactions are not available.
+model BalanceRecord {
+    balance_report_id String   @id @default(uuid())
+    created_at        DateTime @default(now())
+    updated_at        DateTime @default(now()) @updatedAt
+
+    date       DateTime
+    balance    Float
+    Account    Account  @relation(fields: [account_id], references: [account_id])
+    account_id String
+}
+
+// Especially for Partitions, which the user can control the balance of at will
 // Allows the balance to be specified for different points in time, so past balances still exist
 model BalanceAdjustment {
     // TODO is this ever needed for accounts?
@@ -227,8 +243,8 @@ model BudgetScheduleVariant {
     trigger_operator String? // e.g. add, subtract, multiply, divide
     trigger_operand  Float?
 
-    schedule            Json // e.g. cron expression, interval, etc.
-	projectionSchedule Json? // e.g. cron expression, interval, etc. for projections
+    schedule           Json // e.g. cron expression, interval, etc.
+    projectionSchedule Json? // e.g. cron expression, interval, etc. for projections
     // window_interval     String?
     // window_quantity     Int?
     // projection_interval String?
@@ -464,7 +480,7 @@ model TransactionRuleAction {
     TransactionRule     TransactionRule @relation(fields: [transaction_rule_id], references: [transaction_rule_id])
 
     action String // e.g. "budget_id"
-    value Json? // JSON object containing the value to set, e.g. { "budget_id": "uuid" }
+    value  Json? // JSON object containing the value to set, e.g. { "budget_id": "uuid" }
 }
 
 model TransactionReview {

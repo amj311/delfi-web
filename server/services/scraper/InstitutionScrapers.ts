@@ -7,30 +7,35 @@ import { wait } from "delfi-core/utils/miscUtils";
 
 export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 	'test-afcu-id': {
-		loginUrl: 'https://secure.americafirst.com/#/login',
 		hasLoggedInElement: 'a[title="Log Out"]',
 		isAtLoginElement: 'input#name-callback-1',
 		isLoggedOutElement: 'a[data-aa-tracking="login"]',
-		getLoginSequence: (username, password) => [
-			{
-				action: 'type',
-				selector: 'input#name-callback-1',
-				text: username,
-			},
-			{
-				action: 'click',
-				selector: 'button#btn-next',
-			},
-			{
-				action: 'type',
-				selector: 'input#password-callback-1',
-				text: password,
-			},
-			{
-				action: 'click',
-				selector: 'button#btn-next',
+
+		getLoginSequence: (creds) => {
+			if (!creds.username || !creds.password) {
+				throw new Error("Missing credentials for AFCU login");
 			}
-		],
+			return [
+				{
+					action: 'type',
+					selector: 'input#name-callback-1',
+					text: creds.username,
+				},
+				{
+					action: 'click',
+					selector: 'button#btn-next',
+				},
+				{
+					action: 'type',
+					selector: 'input#password-callback-1',
+					text: creds.password,
+				},
+				{
+					action: 'click',
+					selector: 'button#btn-next',
+				}
+			]
+		},
 
 		async listAccounts(page: Page): Promise<Array<ScrapedAccount>> {
 			// Make sure we start on the accounts page
@@ -174,9 +179,7 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 			}
 			await scrapeTable('PastTransactionsGrid', false);
 
-			return TransactionUtils.assignDateOrders(transactions.reverse()); // the list is most recent first, so reverse it to be chronological
+			return transactions;
 		},
-		
-		
-	},
+	}
 }

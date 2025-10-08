@@ -6,7 +6,7 @@ import type { Replace } from "delfi-core/utils/typeUtils";
 export const InstitutionDao = {
 	async prepTestData() {
 		const my_institutions = TestDataService.my_institutions;
-		
+
 		for (const institution of my_institutions) {
 			// Check if institution already exists
 			const existingInstitution = await prisma.institution.findUnique({
@@ -15,23 +15,44 @@ export const InstitutionDao = {
 
 			// If it exists, skip to the next one
 			if (existingInstitution) {
-				continue;
+				await prisma.institution.update({
+					where: { institution_id: institution.institution_id },
+					data: {
+						name: institution.name,
+						logo: institution.logo,
+						plaid_institution_id: institution.plaid_institution_id,
+						loginUrl: institution.loginUrl,
+						scraper: institution.scraper,
+					},
+				});
 			}
-
-			await prisma.institution.create({
-				data: {
-					institution_id: institution.institution_id,
-					name: institution.name,
-					logo: institution.logo,
-					plaid_institution_id: institution.plaid_institution_id,
-				},
-			});
+			else {
+				await prisma.institution.create({
+					data: {
+						institution_id: institution.institution_id,
+						name: institution.name,
+						logo: institution.logo,
+						plaid_institution_id: institution.plaid_institution_id,
+						loginUrl: institution.loginUrl,
+						scraper: institution.scraper,
+					},
+				});
+			}
 		}
 	},
 
-    async getAllInstitutions(): Promise<Institution[]> {
-        return await prisma.institution.findMany();
-    },
+	async getInstitution(institutionId: string): Promise<Institution | null> {
+		await this.prepTestData();
+		const institution = await prisma.institution.findUnique({
+			where: { institution_id: institutionId },
+		});
+		return institution || null;
+	},
+
+	async getAllInstitutions(): Promise<Institution[]> {
+		await this.prepTestData();
+		return await prisma.institution.findMany();
+	},
 
 	async matchAny(search: Partial<Institution>): Promise<Institution | null> {
 		console.log("Searching for institution with criteria:", search);

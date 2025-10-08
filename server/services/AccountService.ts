@@ -1,6 +1,7 @@
 import type { Account } from "delfi-core/models/Account";
 import { TestDataService } from "./TestDataService";
 import { AccountDao } from "server/data/AccountDao";
+import { BalanceRecordDao } from "server/data/BalanceRecordDao";
 
 export type CreateAccountData = Omit<Account, 'account_id' | 'partitions' | 'Institution' | 'workspace_id'>;
 
@@ -39,4 +40,14 @@ export class AccountService {
     public static async deleteAccount(workspace_id: string, accountId: string) {
         await AccountDao.deleteAccount(workspace_id, accountId);
     }
+
+	public static async recordBalance(account_id: string, balance: number, date = new Date()) {
+		// Create a new balance record IF the balance is different from the latest record
+		const latestRecord = await BalanceRecordDao.getLatestBalanceRecord(account_id);
+		if (latestRecord && latestRecord.balance === balance) {
+			// No change in balance, do not record
+			return latestRecord;
+		}
+		return await BalanceRecordDao.createBalanceRecord({ account_id, balance, date });
+	}
 };

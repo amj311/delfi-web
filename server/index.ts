@@ -51,7 +51,7 @@ app.register((api, _, done) => {
 	api.register(require('./routes/group.route'), { prefix: '/group' });
 	api.register(require('./routes/merchant.route'), { prefix: '/merchant' });
 	api.register(require('./routes/transactionRule.route'), { prefix: '/transaction-rule' });
-
+	api.register(require('./routes/ext-manage.route'), { prefix: '/ext' });
 
 	api.setNotFoundHandler((req, reply) => {
 		reply.status(404).send({ message: 'Not Found' });
@@ -60,6 +60,8 @@ app.register((api, _, done) => {
 	done();
 }, { prefix: '/api' });
 
+// External module routes (i.e. chrome extension)
+app.register(require('./routes/ext.route'), { prefix: '/ext' });
 
 // Serving the static app in PROD
 app.register(require('@fastify/static'), {
