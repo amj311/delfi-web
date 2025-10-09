@@ -1,6 +1,6 @@
 import type { Page } from "playwright";
 import type { InstitutionScraper, ScrapedAccount, ScrapedTransaction } from "./ScraperService";
-import { AccountSubtype, AccountType, type AccountDetails } from "delfi-core/models/Account";
+import { AccountSubtype, AccountType, type AccountDetails, type Account } from "delfi-core/models/Account";
 import { dollarsToNumber, find, stringToDate } from "./ScraperUtils";
 import { TransactionUtils } from "delfi-core/models/Transaction";
 import { wait } from "delfi-core/utils/miscUtils";
@@ -105,7 +105,7 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 			}
 		},
 
-		async getAccountTransactions(page, account: AccountDetails): Promise<Array<ScrapedTransaction>> {
+		async getAccountTransactions(page, account: Account): Promise<Array<ScrapedTransaction>> {
 			const accountPageUrl = `https://webaccess45.americafirst.com/banking/Accounts/Details/Index/${account.external_account_id}`;
 			await page.goto(accountPageUrl);
 
@@ -139,7 +139,9 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 
 					const mainTransactionAmount = useInverseAmount ? -dollarsToNumber(amount) : dollarsToNumber(amount);
 					const finalAccountBalance = dollarsToNumber(balance);
+
 					transactions.push({
+						account_id: account.account_id,
 						date: stringToDate(date),
 						original_description: description,
 						amount: mainTransactionAmount,
@@ -166,6 +168,8 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 								account_balance: finalAccountBalance - mainTransactionAmount - dollarsToNumber(interestAmount),
 								source: 'scraper',
 								pending,
+								category_key: 'BANK_FEES_INTEREST_CHARGE',
+								account_id: account.account_id,
 							});
 						}
 					}

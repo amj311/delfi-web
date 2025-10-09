@@ -11,7 +11,7 @@ export class TransactionService {
 		if (!transactionData.Attributions || transactionData.Attributions.length === 0) {
 			transactionData.Attributions = [{
 				amount: transactionData.amount,
-				category_id: null,
+				category_id: transactionData.category_id || null,
 			}];
 		}
 		const attributionTotal = transactionData.Attributions!.reduce((sum, attr) => sum + attr.amount, 0);
@@ -246,7 +246,8 @@ export class TransactionService {
 			const potentialPairs = await TransactionDao.findPotentialTransferPairs(workspace_id, transaction);
 			console.log(`Found ${potentialPairs.length} potential pairs`);
 			if (potentialPairs.length === 1) {
-				await TransactionDao.setTransferPair(workspace_id, transaction.transaction_id, potentialPairs[0].transaction_id);
+				// For incoming transactions, place the existing one first so that its attributes are used
+				await TransactionDao.setTransferPair(workspace_id, potentialPairs[0].transaction_id, transaction.transaction_id);
 			}
 		}
 	}

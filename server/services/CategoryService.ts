@@ -1,10 +1,25 @@
-import { categoriesArray } from "delfi-core/models/systemCategories";
+import { categoriesArray, type CategoryKey } from "delfi-core/models/systemCategories";
 import { prisma } from "../../prisma/client";
 import type { Category } from "delfi-core/models/Category";
 import { CategoryDao } from "server/data/CategoryDao";
+import { MerchantDao } from "server/data/MerchantDao";
 
 
 export const CategoryService = {
+	async getMerchantCategory(workspace_id: string, merchant_id: string) {
+		const merchant = await MerchantDao.getMerchantById(merchant_id);
+
+		if (!merchant) {
+			throw new Error(`Merchant with ID ${merchant_id} not found`);
+		}
+
+		const categoryAssociation = merchant.detection_key;
+		if (!categoryAssociation) {
+			return null;
+		}
+		return await CategoryDao.getWorkspaceCategoryMappingByDetectionKey(workspace_id, categoryAssociation as CategoryKey);
+	},
+
     async createWorkspaceCategory(categoryData: Omit<Category, 'category_id'>) {
         // return await prisma.category.create({
         //     data: categoryData,

@@ -53,7 +53,7 @@ export class TestDataService {
 		{
 			institution_id: 'test-health-equity-id',
 			name: "HealthEquity",
-			logo: "https://yt3.ggpht.com/a/AGF-l79C93rU0jgcw3XA46Jx6HXf1u3kBmfwJvoCxg=s900-c-k-c0xffffffff-no-rj-mo",
+			logo: "https://m.bbb.org/prod/ProfileImages/38f8bb37-8e33-46e4-8d7e-c9d2ff7bf962.png",
 			plaid_institution_id: null,
 			loginUrl: 'https://my.healthequity.com/ClientLogin.aspx',
 			scraper: 'extension',
@@ -65,7 +65,23 @@ export class TestDataService {
 			plaid_institution_id: null,
 			loginUrl: 'https://accounts.principal.com/app/bookmark/0oadm2qe1orihoKba5d7/login',
 			scraper: 'extension',
-		}
+		},
+		{
+			institution_id: 'test-wealthfront-id',
+			name: "Wealthfront",
+			logo: "https://logodix.com/logo/2119922.png",
+			plaid_institution_id: null,
+			loginUrl: 'https://www.wealthfront.com/login',
+			scraper: 'extension',
+		},
+		// {
+		// 	institution_id: 'test-carta-id',
+		// 	name: "Carta",
+		// 	logo: "https://images.ctfassets.net/y88td1zx1ufe/3NUunpYQon5SRBWGU061bP/eff07a366b9521eccf493bfe7e6707d0/carta-logo.png",
+		// 	plaid_institution_id: null,
+		// 	loginUrl: 'https://login.app.carta.com/credentials/login',
+		// 	scraper: 'extension',
+		// }
 	];
 
 	public static async getAccounts(existingAccounts: Account[] = []): Promise<Account[]> {

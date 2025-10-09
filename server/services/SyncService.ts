@@ -4,9 +4,16 @@ import { JobService } from "./JobService";
 import { ScraperService } from "./scraper/ScraperService";
 import { TransactionService } from "./TransactionService";
 import { WorkspaceDao } from "server/data/WorkspaceDao";
-import type { Transaction, TransactionDetails } from "delfi-core/models/Transaction";
+import type { CreateTransaction, Transaction, TransactionDetails } from "delfi-core/models/Transaction";
 import type { AccountDetails } from "delfi-core/models/Account";
+import type { CategoryKey } from "delfi-core/models/systemCategories";
+import { CategoryDao } from "server/data/CategoryDao";
 
+export type SyncedTransactionDetails = CreateTransaction & {
+	/** Incoming transaction may have default categories supplied by scrapers */
+	category_key?: CategoryKey;
+	account_id?: string; // will be filled in during sync
+}
 
 type AccountSyncFailed = {
 	account_id: string;
@@ -15,7 +22,7 @@ type AccountSyncFailed = {
 type AccountSyncSuccess = {
 	account_id: string;
 	accountDetails: AccountDetails;
-	transactions: Array<TransactionDetails>;
+	transactions: Array<SyncedTransactionDetails>;
 }
 export type AccountSyncResult = AccountSyncFailed | AccountSyncSuccess;
 
@@ -67,7 +74,14 @@ export class SyncService {
 					sync_error: result.error || 'Unknown error',
 				});
 			} else {
-				const results = await TransactionService.syncNewTransactionsForAccount(workspace_id, result.account_id, result.transactions);
+				const transactionsWithCategories = await Promise.all(result.transactions.map(async (tx): Promise<CreateTransaction> => {
+					const categoryMapping = await CategoryDao.getWorkspaceCategoryMappingByDetectionKey(workspace_id, tx.category_key);
+					return {
+						...tx,
+						category_id: categoryMapping?.category_id || null,
+					};
+				}));
+				const results = await TransactionService.syncNewTransactionsForAccount(workspace_id, result.account_id, transactionsWithCategories);
 				newTransactions.push(...results.filter(r => r.created).map(r => r.transaction));
 
 				await AccountService.updateAccount(workspace_id, result.account_id, {

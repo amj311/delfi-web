@@ -402,8 +402,8 @@ const defaultCategories = {
 		type: "EXPENSE",
 		parent_category_id: parentCategories["Banking"].category_id
 	},
-	"Finance Charge": {
-		name: "Finance Charge",
+	"Interest Charge": {
+		name: "Interest Charge",
 		category_id: "40676754-e08b-4928-826f-a23961a2a042",
 		type: "EXPENSE",
 		parent_category_id: parentCategories["Banking"].category_id,
@@ -419,6 +419,13 @@ const defaultCategories = {
 	"Service Fee": {
 		name: "Service Fee",
 		category_id: "b4e435b8-d774-407f-afeb-5d79e4288f5f",
+		type: "EXPENSE",
+		parent_category_id: parentCategories["Banking"].category_id,
+		icon: "material-symbols::paid",
+	},
+	"Advisory Fee": {
+		name: "Advisory Fee",
+		category_id: "000135b8-d774-407f-afeb-5d79e4280001",
 		type: "EXPENSE",
 		parent_category_id: parentCategories["Banking"].category_id,
 		icon: "material-symbols::paid",
@@ -657,11 +664,11 @@ const defaultCategories = {
 		type: "INCOME",
 		parent_category_id: parentCategories["Income"].category_id
 	},
-	"Interest Earned": {
-		name: "Interest Earned",
-		category_id: "f26d6a29-64e9-443f-b2c3-81d2b9921142",
+	"Employee Benefits": {
+		name: "Employee Benefits",
+		category_id: "000190d0-64d9-436b-a8d4-982b11270001",
 		type: "INCOME",
-		parent_category_id: parentCategories["Income"].category_id
+		parent_category_id: parentCategories["Income"].category_id,
 	},
 	"Retirement Income": {
 		name: "Retirement Income",
@@ -701,6 +708,24 @@ const defaultCategories = {
 	},
 
 	// Investments
+	"Interest Earned": {
+		name: "Interest Earned",
+		category_id: "f26d6a29-64e9-443f-b2c3-81d2b9921142",
+		type: "INCOME",
+		parent_category_id: parentCategories["Investments"].category_id
+	},
+	"Dividend & Cap Gains": {
+		name: "Dividend & Cap Gains",
+		category_id: "a06575b1-b94f-4f08-91c7-27b58a1ef6ab",
+		type: "INCOME",
+		parent_category_id: parentCategories["Investments"].category_id
+	},
+	"Sell": {
+		name: "Sell",
+		category_id: "11bda97c-7de0-4004-89fc-56191b2e1b3a",
+		type: "INCOME",
+		parent_category_id: parentCategories["Investments"].category_id
+	},
 	"Buy": {
 		name: "Buy",
 		category_id: "53b6de9b-0761-42e0-b724-e5badf1a11fd",
@@ -710,25 +735,13 @@ const defaultCategories = {
 	"Deposit": {
 		name: "Deposit",
 		category_id: "05c3c8b1-002f-424b-9ca0-556f5ddbb21b",
-		type: "EXPENSE",
-		parent_category_id: parentCategories["Investments"].category_id
-	},
-	"Dividend & Cap Gains": {
-		name: "Dividend & Cap Gains",
-		category_id: "a06575b1-b94f-4f08-91c7-27b58a1ef6ab",
-		type: "EXPENSE",
-		parent_category_id: parentCategories["Investments"].category_id
-	},
-	"Sell": {
-		name: "Sell",
-		category_id: "11bda97c-7de0-4004-89fc-56191b2e1b3a",
-		type: "EXPENSE",
+		type: "TRANSFER",
 		parent_category_id: parentCategories["Investments"].category_id
 	},
 	"Withdrawal": {
 		name: "Withdrawal",
 		category_id: "b0ef4648-5801-4745-8fd6-9c23c0d8c23a",
-		type: "EXPENSE",
+		type: "TRANSFER",
 		parent_category_id: parentCategories["Investments"].category_id
 	},
 
@@ -973,121 +986,13 @@ export function categoryByName(name: SystemCategoryName): Category {
 }
 
 
-export const CategoryKeys = [
-	"INCOME_DIVIDENDS",
-	"INCOME_INTEREST_EARNED",
-	"INCOME_RETIREMENT_PENSION",
-	"INCOME_TAX_REFUND",
-	"INCOME_UNEMPLOYMENT",
-	"INCOME_WAGES",
-	"INCOME_OTHER_INCOME",
-	"TRANSFER_IN_CASH_ADVANCES_AND_LOANS",
-	"TRANSFER_IN_DEPOSIT",
-	"TRANSFER_IN_INVESTMENT_AND_RETIREMENT_FUNDS",
-	"TRANSFER_IN_SAVINGS",
-	"TRANSFER_IN_ACCOUNT_TRANSFER",
-	"TRANSFER_IN_OTHER_TRANSFER_IN",
-	"TRANSFER_OUT_INVESTMENT_AND_RETIREMENT_FUNDS",
-	"TRANSFER_OUT_SAVINGS",
-	"TRANSFER_OUT_WITHDRAWAL",
-	"TRANSFER_OUT_ACCOUNT_TRANSFER",
-	"TRANSFER_OUT_OTHER_TRANSFER_OUT",
-	"LOAN_PAYMENTS_CAR_PAYMENT",
-	"LOAN_PAYMENTS_CREDIT_CARD_PAYMENT",
-	"LOAN_PAYMENTS_PERSONAL_LOAN_PAYMENT",
-	"LOAN_PAYMENTS_MORTGAGE_PAYMENT",
-	"LOAN_PAYMENTS_STUDENT_LOAN_PAYMENT",
-	"LOAN_PAYMENTS_OTHER_PAYMENT",
-	"BANK_FEES_ATM_FEES",
-	"BANK_FEES_FOREIGN_TRANSACTION_FEES",
-	"BANK_FEES_INSUFFICIENT_FUNDS",
-	"BANK_FEES_INTEREST_CHARGE",
-	"BANK_FEES_OVERDRAFT_FEES",
-	"BANK_FEES_OTHER_BANK_FEES",
-	"ENTERTAINMENT_CASINOS_AND_GAMBLING",
-	"ENTERTAINMENT_MUSIC_AND_AUDIO",
-	"ENTERTAINMENT_SPORTING_EVENTS_AMUSEMENT_PARKS_AND_MUSEUMS",
-	"ENTERTAINMENT_TV_AND_MOVIES",
-	"ENTERTAINMENT_VIDEO_GAMES",
-	"ENTERTAINMENT_OTHER_ENTERTAINMENT",
-	"FOOD_AND_DRINK_BEER_WINE_AND_LIQUOR",
-	"FOOD_AND_DRINK_COFFEE",
-	"FOOD_AND_DRINK_FAST_FOOD",
-	"FOOD_AND_DRINK_GROCERIES",
-	"FOOD_AND_DRINK_RESTAURANT",
-	"FOOD_AND_DRINK_VENDING_MACHINES",
-	"FOOD_AND_DRINK_OTHER_FOOD_AND_DRINK",
-	"GENERAL_MERCHANDISE_BOOKSTORES_AND_NEWSSTANDS",
-	"GENERAL_MERCHANDISE_CLOTHING_AND_ACCESSORIES",
-	"GENERAL_MERCHANDISE_CONVENIENCE_STORES",
-	"GENERAL_MERCHANDISE_DEPARTMENT_STORES",
-	"GENERAL_MERCHANDISE_DISCOUNT_STORES",
-	"GENERAL_MERCHANDISE_ELECTRONICS",
-	"GENERAL_MERCHANDISE_GIFTS_AND_NOVELTIES",
-	"GENERAL_MERCHANDISE_OFFICE_SUPPLIES",
-	"GENERAL_MERCHANDISE_ONLINE_MARKETPLACES",
-	"GENERAL_MERCHANDISE_PET_SUPPLIES",
-	"GENERAL_MERCHANDISE_SPORTING_GOODS",
-	"GENERAL_MERCHANDISE_SUPERSTORES",
-	"GENERAL_MERCHANDISE_TOBACCO_AND_VAPE",
-	"GENERAL_MERCHANDISE_OTHER_GENERAL_MERCHANDISE",
-	"HOME_IMPROVEMENT_FURNITURE",
-	"HOME_IMPROVEMENT_HARDWARE",
-	"HOME_IMPROVEMENT_REPAIR_AND_MAINTENANCE",
-	"HOME_IMPROVEMENT_SECURITY",
-	"HOME_IMPROVEMENT_OTHER_HOME_IMPROVEMENT",
-	"MEDICAL_DENTAL_CARE",
-	"MEDICAL_EYE_CARE",
-	"MEDICAL_NURSING_CARE",
-	"MEDICAL_PHARMACIES_AND_SUPPLEMENTS",
-	"MEDICAL_PRIMARY_CARE",
-	"MEDICAL_VETERINARY_SERVICES",
-	"MEDICAL_OTHER_MEDICAL",
-	"PERSONAL_CARE_GYMS_AND_FITNESS_CENTERS",
-	"PERSONAL_CARE_HAIR_AND_BEAUTY",
-	"PERSONAL_CARE_LAUNDRY_AND_DRY_CLEANING",
-	"PERSONAL_CARE_OTHER_PERSONAL_CARE",
-	"GENERAL_SERVICES_ACCOUNTING_AND_FINANCIAL_PLANNING",
-	"GENERAL_SERVICES_AUTOMOTIVE",
-	"GENERAL_SERVICES_CHILDCARE",
-	"GENERAL_SERVICES_CONSULTING_AND_LEGAL",
-	"GENERAL_SERVICES_EDUCATION",
-	"GENERAL_SERVICES_INSURANCE",
-	"GENERAL_SERVICES_POSTAGE_AND_SHIPPING",
-	"GENERAL_SERVICES_STORAGE",
-	"GENERAL_SERVICES_OTHER_GENERAL_SERVICES",
-	"GOVERNMENT_AND_NON_PROFIT_DONATIONS",
-	"GOVERNMENT_AND_NON_PROFIT_GOVERNMENT_DEPARTMENTS_AND_AGENCIES",
-	"GOVERNMENT_AND_NON_PROFIT_TAX_PAYMENT",
-	"GOVERNMENT_AND_NON_PROFIT_OTHER_GOVERNMENT_AND_NON_PROFIT",
-	"TRANSPORTATION_BIKES_AND_SCOOTERS",
-	"TRANSPORTATION_GAS",
-	"TRANSPORTATION_PARKING",
-	"TRANSPORTATION_PUBLIC_TRANSIT",
-	"TRANSPORTATION_TAXIS_AND_RIDE_SHARES",
-	"TRANSPORTATION_TOLLS",
-	"TRANSPORTATION_OTHER_TRANSPORTATION",
-	"TRAVEL_FLIGHTS",
-	"TRAVEL_LODGING",
-	"TRAVEL_RENTAL_CARS",
-	"TRAVEL_OTHER_TRAVEL",
-	"RENT_AND_UTILITIES_GAS_AND_ELECTRICITY",
-	"RENT_AND_UTILITIES_INTERNET_AND_CABLE",
-	"RENT_AND_UTILITIES_RENT",
-	"RENT_AND_UTILITIES_SEWAGE_AND_WASTE_MANAGEMENT",
-	"RENT_AND_UTILITIES_TELEPHONE",
-	"RENT_AND_UTILITIES_WATER",
-	"RENT_AND_UTILITIES_OTHER_UTILITIES",
-] as const;
-export type CategoryKey = (typeof CategoryKeys)[number];
-
-
 // Maps system categories to detection keys
 // The Typescript here helps alert us if we're missing any
-export const defaultKeyToSystemCategoryMap: Record<CategoryKey, SystemCategoryName | 'OPTOUT'> = {
+export const defaultKeyToSystemCategoryMap = {
   // Income categories
   "INCOME_DIVIDENDS": "Dividend & Cap Gains",
   "INCOME_INTEREST_EARNED": "Interest Earned",
+  "INCOME_EMPLOYEE_BENEFITS": "Employee Benefits",
   "INCOME_RETIREMENT_PENSION": "Paycheck",
   "INCOME_TAX_REFUND": "Tax Refund",
   "INCOME_UNEMPLOYMENT": "Paycheck",
@@ -1119,8 +1024,9 @@ export const defaultKeyToSystemCategoryMap: Record<CategoryKey, SystemCategoryNa
   "BANK_FEES_ATM_FEES": "ATM Fee",
   "BANK_FEES_FOREIGN_TRANSACTION_FEES": "Service Fee",
   "BANK_FEES_INSUFFICIENT_FUNDS": "Banking Fee",
-  "BANK_FEES_INTEREST_CHARGE": "Finance Charge",
+  "BANK_FEES_INTEREST_CHARGE": "Interest Charge",
   "BANK_FEES_OVERDRAFT_FEES": "Banking Fee",
+  "BANK_FEES_ADVISORY_FEES": "Advisory Fee",
   "BANK_FEES_OTHER_BANK_FEES": "Banking",
 
   // Entertainment
@@ -1218,4 +1124,7 @@ export const defaultKeyToSystemCategoryMap: Record<CategoryKey, SystemCategoryNa
   "RENT_AND_UTILITIES_TELEPHONE": "Phone Plan",
   "RENT_AND_UTILITIES_WATER": "Water Bill",
   "RENT_AND_UTILITIES_OTHER_UTILITIES": "Bills & Utilities",
-};
+} as const;
+
+export type CategoryKey = keyof typeof defaultKeyToSystemCategoryMap;
+export const CategoryKeys = Object.keys(defaultKeyToSystemCategoryMap) as CategoryKey[];

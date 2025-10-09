@@ -6,9 +6,9 @@ import { InstitutionScrapers } from "./InstitutionScrapers";
 import type { Account, AccountDetails, Institution } from "delfi-core/models/Account";
 import { TestDataService } from "../TestDataService";
 import { InstitutionDao } from "server/data/InstitutionDao";
-import type { AccountSyncResult } from "../SyncService";
+import type { AccountSyncResult, SyncedTransactionDetails } from "../SyncService";
 
-export type ScrapedTransaction = Omit<TransactionDetails, 'account_id'>;
+export type ScrapedTransaction = SyncedTransactionDetails;
 export type ScrapedAccount = Omit<AccountDetails, 'institution_id' | 'source'>;
 
 export type InstitutionCredentials = {
@@ -23,7 +23,7 @@ export type InstitutionScraper = {
 	getLoginSequence: (creds: InstitutionCredentials) => PageAction[];
 	listAccounts: (page: Page) => Promise<Array<ScrapedAccount>>;
 	getAccountDetails: (page: Page, external_account_id: string) => Promise<ScrapedAccount>;
-	getAccountTransactions: (page: Page, account: AccountDetails) => Promise<Array<ScrapedTransaction>>;
+	getAccountTransactions: (page: Page, account: Account) => Promise<Array<ScrapedTransaction>>;
 	[key: string]: any; // Allow additional properties for flexibility
 }
 

@@ -1,5 +1,5 @@
 import { prisma } from "../../prisma/client";
-import { categoriesArray, flatCategoriesMap, defaultKeyToSystemCategoryMap } from "delfi-core/models/systemCategories";
+import { categoriesArray, flatCategoriesMap, defaultKeyToSystemCategoryMap, type CategoryKey } from "delfi-core/models/systemCategories";
 import { WorkspaceDao } from "./WorkspaceDao";
 
 export const CategoryDao = {
@@ -88,5 +88,22 @@ export const CategoryDao = {
 				ParentCategory: true
 			}
 		});
-	}
+	},
+
+	async getWorkspaceCategoryMappingByDetectionKey(workspace_id: string, detection_key?: CategoryKey) {
+		await this.setupTestData(); // Ensure test data is set up before fetching mappings
+		if (!detection_key) return null;
+
+		return await prisma.categoryDetectionMapping.findUnique({
+			where: {
+				workspace_id_detection_key: {
+					workspace_id,
+					detection_key: detection_key,
+				},
+			},
+			include: {
+				Category: true, // Include the category details
+			},
+		});
+	},
 };

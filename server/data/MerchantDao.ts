@@ -48,31 +48,6 @@ export const MerchantDao = {
 		});
 	},
 
-	async getMerchantCategory(workspace_id: string, merchant_id: string) {
-		const merchant = await prisma.merchant.findUnique({
-			where: {
-				merchant_id, // could be either global or workspace
-			},
-		});
-
-		if (!merchant) {
-			throw new Error(`Merchant with ID ${merchant_id} not found`);
-		}
-
-		const categoryAssociation = merchant.detection_key;
-		return await prisma.categoryDetectionMapping.findUnique({
-			where: {
-				workspace_id_detection_key: {
-					workspace_id,
-					detection_key: categoryAssociation || '',
-				},
-			},
-			include: {
-				Category: true, // Include the category details
-			},
-		});
-	},
-
     async updateMerchant(merchantId: string, merchantData: Merchant) {
 		return await prisma.merchant.update({
             where: {

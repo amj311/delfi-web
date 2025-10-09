@@ -2,12 +2,11 @@ import type { Category } from "delfi-core/models/Category";
 import { TransactionUtils, type Transaction, type TransactionAttribution } from "delfi-core/models/Transaction";
 import { type TransactionRule } from "delfi-core/models/TransactionRule";
 import FilterUtils from "delfi-core/models/Filters";
-import { asAny, nullOrUndefined } from "delfi-core/utils/miscUtils";
+import { nullOrUndefined } from "delfi-core/utils/miscUtils";
 import { BudgetDao } from "server/data/BudgetDao";
-import { MerchantDao } from "server/data/MerchantDao";
 import { TransactionDao } from "server/data/TransactionDao";
 import { TransactionRuleDao } from "server/data/TransactionRuleDao";
-import { CategoryDao } from "server/data/CategoryDao";
+import { CategoryService } from "./CategoryService";
 
 export class TransactionRuleService {
 	public static async applyRulesToTransactions(workspace_id: string, transactions: Transaction[]) {
@@ -107,7 +106,7 @@ const CustomActions: Record<string, (attribution: TransactionAttribution, transa
 			return false; // Cannot set merchant
 		}
 
-		const categoryAssociation = await MerchantDao.getMerchantCategory(transaction.workspace_id, value.merchant_id);
+		const categoryAssociation = await CategoryService.getMerchantCategory(transaction.workspace_id, value.merchant_id);
 		transaction.merchant_id = value.merchant_id;
 		attribution.category_id = categoryAssociation?.category_id || null;
 		attribution.Category = categoryAssociation?.Category as Category || undefined;

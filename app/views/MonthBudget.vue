@@ -258,9 +258,15 @@ const changedAccounts = computed(() => {
 	if (!state.summaryData || !state.summaryData.accountSummaries) {
 		return [];
 	}
-	return state.summaryData.accountSummaries.filter(
+	const changed = state.summaryData.accountSummaries.filter(
 		(summary) => summary.budgetedChange !== 0 || summary.attributedChange !== 0
-	);
+	).map(summary => ({
+		...summary,
+		totalFlow: Math.abs(isFuture.value ? summary.budgetedChange : summary.attributedChange),
+	}));
+	// sort by cash flow descending
+	changed.sort((a, b) => b.totalFlow - a.totalFlow);
+	return changed;
 });
 const otherAccounts = computed(() => {
 	if (!state.summaryData || !state.summaryData.accountSummaries) {

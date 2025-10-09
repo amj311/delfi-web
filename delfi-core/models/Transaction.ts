@@ -151,6 +151,8 @@ export type Transaction = TrueBudgetableDetails & TrueEventDetails & {
 
 export type CreateTransaction = Omit<Transaction, 'transaction_id' | 'Attributions' | 'workspace_id'> & {
 	Attributions?: Array<Omit<TransactionAttribution, 'transaction_attribution_id' | 'transaction_id'>>,
+	/** Will be applied to all attributions that don't already have a category set */
+	category_id?: string | null,
 }
 
 /**
