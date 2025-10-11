@@ -13,6 +13,7 @@ import { useCategoryStore } from '@/stores/category.store';
 import MerchantButton from './MerchantButton.vue';
 import CategoryButton from './CategoryButton.vue';
 import BudgetButton from './BudgetButton.vue';
+import AccountButton from './AccountButton.vue';
 
 const filter = defineModel<TransactionFilter>();
 const draft = ref<EitherBlock>(filter.value || { AND: [] });
@@ -93,6 +94,7 @@ function addRule(rule: FilterBlock, parent: EitherBlock) {
 					<template v-if="rule.operator">
 						<MerchantButton v-if="Properties[rule.property].type === 'merchant_id'" v-model="rule.operand" />
 						<CategoryButton v-if="Properties[rule.property].type === 'category_id'" v-model="rule.operand" />
+						<AccountButton v-if="Properties[rule.property].type === 'account_id'" v-model="rule.operand" />
 						<BudgetButton v-if="Properties[rule.property].type === 'budget_id'" v-model="rule.operand" />
 
 						<!-- <InputNumber v-if="Properties[rule.property].type === 'number'" v-model="rule.operand" class="w-7rem text-right" /> -->

@@ -106,12 +106,23 @@ export class Delfi {
 	async getMonthSummary(monthDate: DelfiDate) {
 		// make extra sure we have the start and end date
 		const monthStart = ddate(monthDate.startOf('month'));
-		const monthEnd = ddate(monthDate.endOf('month'));
 
 		const cached = this.getMonthSummaryCache(monthStart);
 		if (cached) {
 			return cached;
 		}
+
+		const summary = await this.createMonthSummary(monthDate);
+
+		this.setMonthSummaryCache(monthStart, summary);
+		return summary;
+	}
+
+
+	private async createMonthSummary(monthDate: DelfiDate) {
+		// make extra sure we have the start and end date
+		const monthStart = ddate(monthDate.startOf('month'));
+		const monthEnd = ddate(monthDate.endOf('month'));
 
 		const monthForecast = await this.forecast.pollMonthReady(monthStart);
 		const monthAttributionEvents = await this.transactionSource.getAttributedEventsBetween(monthStart, monthEnd);
@@ -319,7 +330,6 @@ export class Delfi {
 			groupSummaries
 		};
 
-		this.setMonthSummaryCache(monthStart, summary);
 		return summary;
 	}
 
@@ -327,12 +337,12 @@ export class Delfi {
 		return monthStart.format('YYYY-MM-DD') + '__' + monthStart.endOf('month').format('YYYY-MM-DD');
 	}
 
-	private setMonthSummaryCache(monthStart: DelfiDate, summary: any) {
+	private setMonthSummaryCache(monthStart: DelfiDate, summary: Awaited<ReturnType<typeof this.createMonthSummary>>) {
 		const key = this.summaryKey(monthStart);
 		this.summaryCache.set(key, summary);
 	}
 
-	private getMonthSummaryCache(monthStart: DelfiDate): any | null {
+	private getMonthSummaryCache(monthStart: DelfiDate): Awaited<ReturnType<typeof this.createMonthSummary>> | null {
 		const key = this.summaryKey(monthStart);
 		return this.summaryCache.get(key) || null;
 	}

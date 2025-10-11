@@ -27,6 +27,7 @@ import { useContextStore } from '@/stores/context.store';
 import CommonEventRow from '@/components/CommonEventRow.vue';
 import Button from 'primevue/button';
 import { currency } from 'delfi-core/utils/miscUtils';
+import CollapseList from '@/components/utils/CollapseList.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -254,27 +255,16 @@ const orderedBudgets = computed(() => {
 	return output;
 });
 
-const changedAccounts = computed(() => {
-	if (!state.summaryData || !state.summaryData.accountSummaries) {
-		return [];
+const accounts = computed(() => {
+	const accountSummaries = state.summaryData?.accountSummaries;
+	if (!accountSummaries) {
+		return [] as NonNullable<typeof accountSummaries>;
 	}
-	const changed = state.summaryData.accountSummaries.filter(
-		(summary) => summary.budgetedChange !== 0 || summary.attributedChange !== 0
-	).map(summary => ({
-		...summary,
-		totalFlow: Math.abs(isFuture.value ? summary.budgetedChange : summary.attributedChange),
-	}));
-	// sort by cash flow descending
-	changed.sort((a, b) => b.totalFlow - a.totalFlow);
-	return changed;
-});
-const otherAccounts = computed(() => {
-	if (!state.summaryData || !state.summaryData.accountSummaries) {
-		return [];
-	}
-	return state.summaryData.accountSummaries.filter(
-		(summary) => summary.budgetedChange === 0 && summary.attributedChange === 0
-	);
+	return accountSummaries.sort((a, b) => {
+		const aFlow = Math.abs(isFuture.value ? a.budgetedChange : a.attributedChange);
+		const bFlow = Math.abs(isFuture.value ? b.budgetedChange : b.attributedChange);
+		return bFlow - aFlow;
+	});
 });
 
 const dailyAccumulation = computed(() => {
@@ -305,7 +295,9 @@ const dailyAccumulation = computed(() => {
 		const previousUnfinishedEvents = state.summaryData!.forecast.unfinishedNetEvents.filter((e) =>
 			e.date.isSameOrBefore(day.day)
 		);
-		const forecastNet = day.day.isFuture() ? runningAttributed + previousUnfinishedEvents.reduce((sum, e) => sum + e.amount, 0) : null;
+		const forecastNet = day.day.isFuture()
+			? runningAttributed + previousUnfinishedEvents.reduce((sum, e) => sum + e.amount, 0)
+			: null;
 
 		runningAttributed += tally.attributedNet;
 
@@ -327,12 +319,18 @@ const chartColors = {
 	budgeted: '#038ffb',
 	attributed: '#00E396',
 	forecast: '#feb019',
-}
+};
 
 const accumulationChart = computed(() => {
-	const dailyBudgeted = dailyAccumulation.value.map((d) => d.runningBudgeted === null ? null : Math.round(d.runningBudgeted));
-	const dailyAttributed = dailyAccumulation.value.map((d) => d.runningAttributed === null ? null : Math.round(d.runningAttributed));
-	const dailyForecasted = dailyAccumulation.value.map((d) => d.runningForecasted === null ? null : Math.round(d.runningForecasted));
+	const dailyBudgeted = dailyAccumulation.value.map((d) =>
+		d.runningBudgeted === null ? null : Math.round(d.runningBudgeted)
+	);
+	const dailyAttributed = dailyAccumulation.value.map((d) =>
+		d.runningAttributed === null ? null : Math.round(d.runningAttributed)
+	);
+	const dailyForecasted = dailyAccumulation.value.map((d) =>
+		d.runningForecasted === null ? null : Math.round(d.runningForecasted)
+	);
 	// const dailyIncome = dailyAccumulation.value.map((d) => d.attributedIncome === null ? null : Math.round(d.attributedIncome));
 	// const dailyExpense = dailyAccumulation.value.map((d) => d.attributedExpense === null ? null : Math.round(d.attributedExpense));
 
@@ -349,8 +347,8 @@ const accumulationChart = computed(() => {
 				enabled: false,
 			},
 			fill: {
-				opacity: 0.3,
-            },
+				opacity: 0.5,
+			},
 			chart: {
 				id: 'vuechart-example',
 				zoom: {
@@ -380,7 +378,7 @@ const accumulationChart = computed(() => {
 			},
 			annotations: {
 				yaxis: [
-					isPast.value &&  {
+					isPast.value && {
 						y: state.summaryData.netTally.attributedNet,
 						borderColor: chartColors.attributed,
 						borderWidth: 2,
@@ -430,18 +428,26 @@ const accumulationChart = computed(() => {
 		},
 		// include zeros as starting point
 		series: [
-		 	...isCurrentMonth.value ? [{
-				type: 'area',
-				name: 'Forecast',
-				data: [0, ...dailyForecasted],
-				color: chartColors.forecast,
-			}] : [],
-			...!isFuture.value ? [{
-				type: 'area',
-				name: 'Attributed',
-				data: [0, ...dailyAttributed],
-				color: chartColors.attributed,
-			}] : [],
+			...(isCurrentMonth.value
+				? [
+						{
+							type: 'area',
+							name: 'Forecast',
+							data: [0, ...dailyForecasted],
+							color: chartColors.forecast,
+						},
+				  ]
+				: []),
+			...(!isFuture.value
+				? [
+						{
+							type: 'area',
+							name: 'Attributed',
+							data: [0, ...dailyAttributed],
+							color: chartColors.attributed,
+						},
+				  ]
+				: []),
 			{
 				type: 'area',
 				name: 'Budgeted',
@@ -485,9 +491,10 @@ const accumulationChart = computed(() => {
 					mode="net_change"
 					class="font-semibold"
 				/>
-				<small v-if="!isFuture"
-					>/&nbsp;<Currency :amount="state.summaryData.budgetedNet" mode="net_change"
-				/></small>
+				<small v-if="!isFuture" class="flex align-items-center">
+					/&nbsp;
+					<Currency :amount="state.summaryData.budgetedNet" mode="net_change" />
+				</small>
 			</div>
 			<br />
 
@@ -498,52 +505,52 @@ const accumulationChart = computed(() => {
 					<h3>Accounts</h3>
 				</div>
 				<div class="list">
-					<div v-for="summary of changedAccounts" class="list-row px-2">
-						<div class="flex">
-							<div class="flex align-items-center gap-2">
-								<div
-									class="border-round-sm square w-2rem"
-									:style="{
-										backgroundImage: `url(${
-											accountStore.getAccountById(summary.account_id)?.Institution.logo
-										})`,
-										backgroundSize: 'cover',
-									}"
-								></div>
-								<div class="text-semibold">
-									{{ accountStore.getAccountName(summary.account_id) }}
+					<CollapseList :items="accounts">
+						<template #default="{ item: summary }">
+							<div class="list-row px-2">
+								<div class="flex">
+									<div class="flex align-items-center gap-2">
+										<div
+											class="border-round-sm square w-2rem"
+											:style="{
+												backgroundImage: `url(${
+													accountStore.getAccountById(summary.account_id)?.Institution.logo
+												})`,
+												backgroundSize: 'cover',
+											}"
+										></div>
+										<div class="text-semibold">
+											{{ accountStore.getAccountName(summary.account_id) }}
+										</div>
+									</div>
+									<div class="flex-grow-1"></div>
+									<div class="flex align-items-center">
+										<Currency
+											:amount="isFuture ? summary.budgetedChange : summary.attributedChange"
+											mode="net_change"
+											hideCurrency
+											class="font-medium"
+										/>
+										<small v-if="!isFuture" class="flex align-items-center">
+											&nbsp;&nbsp;/&nbsp;
+											<Currency :amount="summary.budgetedChange" mode="net_change" hideCurrency />
+										</small>
+									</div>
 								</div>
+								<!-- <small v-for="partition of summary.partitions" class="flex align-items-center">
+									&emsp13;- {{ partition.name }}
+									<div class="flex-grow-1"></div>
+									<div class="flex align-items-center">
+										<small v-if="partition.netChange !== 0">
+											<Currency :amount="partition.netChange" mode="net_change" hideCurrency />
+											&emsp13;
+										</small>
+										<span><Currency :amount="partition.endingBalance" mode="balance" /></span>
+									</div>
+								</small> -->
 							</div>
-							<div class="flex-grow-1"></div>
-							<div class="flex align-items-center">
-								<Currency
-									:amount="isFuture ? summary.budgetedChange : summary.attributedChange"
-									mode="net_change"
-									hideCurrency
-									class="font-medium"
-								/>
-								<small v-if="!isFuture">
-									&nbsp;&nbsp;/&nbsp;
-									<Currency
-										:amount="summary.budgetedChange"
-										mode="net_change"
-										hideCurrency
-									/>
-								</small>
-							</div>
-						</div>
-						<!-- <small v-for="partition of summary.partitions" class="flex align-items-center">
-							&emsp13;- {{ partition.name }}
-							<div class="flex-grow-1"></div>
-							<div class="flex align-items-center">
-								<small v-if="partition.netChange !== 0">
-									<Currency :amount="partition.netChange" mode="net_change" hideCurrency />
-									&emsp13;
-								</small>
-								<span><Currency :amount="partition.endingBalance" mode="balance" /></span>
-							</div>
-						</small> -->
-					</div>
+						</template>
+					</CollapseList>
 				</div>
 			</div>
 			<br />
@@ -562,7 +569,7 @@ const accumulationChart = computed(() => {
 						mode="transaction"
 						class="font-semibold"
 					/>
-					<small v-if="!isFuture"
+					<small v-if="!isFuture" class="flex align-items-center"
 						>&nbsp;&nbsp;/&nbsp;<Currency :amount="state.summaryData.incomeSummary.tally.budgetedNet"
 					/></small>
 				</div>
@@ -1067,7 +1074,7 @@ const accumulationChart = computed(() => {
 							mode="net_change"
 							class="font-semibold"
 						/>
-						<small v-if="!isFuture"
+						<small v-if="!isFuture" class="flex align-items-center"
 							>&nbsp;&nbsp;/&nbsp;<Currency
 								:amount="state.summaryData.spendingSummary.tally.budgetedNet"
 								mode="net_change"
@@ -1085,7 +1092,11 @@ const accumulationChart = computed(() => {
 								<AttributionAvatar icon="question-circle" :size="2" :background="'cherry1'" />
 								<b>Unbudgeted</b>
 								<div class="flex-grow-1"></div>
-								<Currency :amount="state.summaryData.allUnbudgeted.unBudgetedNet" mode="transaction" :style="{ color: colors.cherry3 }" />
+								<Currency
+									:amount="state.summaryData.allUnbudgeted.unBudgetedNet"
+									mode="transaction"
+									:style="{ color: colors.cherry3 }"
+								/>
 							</AccordionHeader>
 							<AccordionContent>
 								<template

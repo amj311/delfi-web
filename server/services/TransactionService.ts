@@ -4,6 +4,7 @@ import { TransactionDao } from "server/data/TransactionDao";
 import { TransactionRuleService } from "./TransactionRuleService";
 import MerchantService from "./MerchantService";
 import { TransactionReviewDao } from "server/data/TransactionReviewDao";
+import { AccountDao } from "server/data/AccountDao";
 
 export class TransactionService {
 	private static async createTransaction(workspace_id: string, transactionData: CreateTransaction) {
@@ -85,6 +86,8 @@ export class TransactionService {
 	}
 
 	public static async syncNewTransactionsForAccount(workspace_id: string, account_id: string, incomingTransactions: CreateTransaction[]) {
+		const shouldRequestReviews = await TransactionService.shouldRequestReviews(workspace_id, account_id);
+
 		// First, assign date orders to incoming transactions. When doing so, make sure to preserve any existing date orders.
 		// THE TRANSACTIONS MUST BE A COMPLETE SET OF ALL TRANSACTIONS FOR THE DATES INVOLVED
 		incomingTransactions = TransactionUtils.assignDateOrders(incomingTransactions);
@@ -150,7 +153,9 @@ export class TransactionService {
 
 		// Request review for new transactions, but NOT PENDING
 		const needsReview = savedNewTransactions.filter(result => !result.TransactionReview && !result.pending);
-		await Promise.all(needsReview.map(tx => TransactionService.requestTransactionReview(tx)));
+		if (shouldRequestReviews) {
+			await Promise.all(needsReview.map(tx => TransactionService.requestTransactionReview(tx)));
+		}
 
 		return upsertResults;
 	}
@@ -215,9 +220,28 @@ export class TransactionService {
 		return await TransactionDao.getTransactionsForAccount(workspace_id, account_id);
 	}
 
+	private static async shouldRequestReviews(workspace_id: string, account_id: string): Promise<boolean> {
+		// don't request reviews if this is the first account sync. That would be overwhelming.
+		const totalTransactions = await TransactionDao.countTransactionsForAccount(workspace_id, account_id);
+		if (totalTransactions === 0) {
+			return false;
+		};
+
+		// Some accounts may never need reviews
+		const account = await AccountDao.getAccountById(workspace_id, account_id);
+		if (!account) {
+			throw new Error(`Account with ID ${account_id} not found`);
+		}
+		if (account.never_request_reviews) {
+			return false;
+		}
+		
+		return true;
+	}
+
 	/** Looks up workspace rules for assigning transactions and finds the user to assign the review to */
 	private static async requestTransactionReview(transaction: Transaction): Promise<void> {
-		// TODO implement workspace rules and settings for transaction reviews. For now create the pending review record without an assignment
+		// TODO implement workspace rules and filters for transaction reviews. For now create the pending review record without an assignment
 		await TransactionReviewDao.createTransactionReview(transaction.workspace_id, transaction.transaction_id);
 	}
 

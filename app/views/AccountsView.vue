@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useAccountStore } from "@/stores/account.store";
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import PlaidLink from "@/components/plaid/PlaidLink.vue";
 import UpsertAccountForm from "@/components/UpsertAccountForm.vue";
 import type { Account } from "delfi-core/models/Account";
@@ -67,6 +67,20 @@ const connectAccountsMenu = [
 	}
 ]
 
+const accounts = computed(() => {
+	return accountStore.accounts.sort((a, b) => {
+		if (a.institution_id !== b.institution_id) {
+			return (a.Institution?.name || "").localeCompare(b.Institution?.name || "");
+		}
+		if (a.type !== b.type) {
+			return a.type.localeCompare(b.type);
+		}
+		const nameA = (a.display_name || a.external_name || "").toLowerCase();
+		const nameB = (b.display_name || b.external_name || "").toLowerCase();
+		return nameA.localeCompare(nameB);
+	});
+});
+
 </script>
 
 <template>
@@ -102,7 +116,7 @@ const connectAccountsMenu = [
         </thead>
         <tbody>
           <tr
-            v-for="account in accountStore.accounts"
+            v-for="account in accounts"
             :key="account.account_id"
             @click="$router.push(`/accounts/${account.account_id}`)"
             class="account-row"

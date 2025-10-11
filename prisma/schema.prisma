@@ -88,6 +88,8 @@ model Account {
 
     partitions   AccountPartition[]
     savings_goal SavingsGoal?
+	never_request_reviews Boolean @default(false)
+	sync_cadence_hours   Int     @default(24) // how often to sync this account, in hours
 
     source      String // e.g. "plaid", "manual", "imported"
     source_id   String? // e.g. plaid account id, manual account id, imported account id

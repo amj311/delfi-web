@@ -32,6 +32,7 @@ export enum AccountType {
 	credit = 'credit',
 	investment = 'investment',
 	loan = 'loan',
+	property = 'property',
 	other = 'other',
 }
 
@@ -56,34 +57,75 @@ export enum AccountSubtype {
 	// credit
 	credit_card = 'credit_card',
 	line_of_credit = 'line_of_credit',
-	
+
+	// property
+	real_estate = 'real_estate',
+	vehicle = 'vehicle',
+
+	// other
 	other = 'other',
 }
 
+export const AccountLabels = {
+	[AccountType.depository]: 'Depository',
+	[AccountType.investment]: 'Investment',
+	[AccountType.credit]: 'Credit',
+	[AccountType.loan]: 'Loan',
+	[AccountType.property]: 'Property',
+	[AccountType.other]: 'Other',
+
+	[AccountSubtype.checking]: 'Checking',
+	[AccountSubtype.savings]: 'Savings',
+	[AccountSubtype.money_market]: 'Money Market',
+	[AccountSubtype.cd]: 'CD',
+	[AccountSubtype.ira]: 'IRA',
+	[AccountSubtype._401k]: '401(k)',
+	[AccountSubtype.hsa]: 'HSA',
+	[AccountSubtype.stock]: 'Stock',
+	[AccountSubtype.mortgage]: 'Mortgage',
+	[AccountSubtype.personal_loan]: 'Personal Loan',
+	[AccountSubtype.auto_loan]: 'Auto Loan',
+	[AccountSubtype.credit_card]: 'Credit Card',
+	[AccountSubtype.line_of_credit]: 'Line of Credit',
+	[AccountSubtype.real_estate]: 'Real Estate',
+	[AccountSubtype.vehicle]: 'Vehicle',
+};
+
 export const AccountTypes = {
 	[AccountType.depository]: {
+		designation: 'asset',
 		type: AccountType.depository,
-		subtypes: [AccountSubtype.checking, AccountSubtype.savings] as const,
+		subtypes: [AccountSubtype.checking, AccountSubtype.savings, AccountSubtype.money_market] as const,
+	},
+	[AccountType.investment]: {
+		designation: 'investment',
+		type: AccountType.investment,
+		subtypes: [AccountSubtype.cd, AccountSubtype.ira, AccountSubtype.stock] as const,
 	},
 	[AccountType.credit]: {
+		designation: 'liability',
 		type: AccountType.credit,
 		subtypes: [AccountSubtype.credit_card, AccountSubtype.line_of_credit] as const,
 	},
-	[AccountType.investment]: {
-		type: AccountType.investment,
-		subtypes: [AccountSubtype.cd, AccountSubtype.ira, AccountSubtype.stock, AccountSubtype.money_market] as const,
-	},
 	[AccountType.loan]: {
+		designation: 'liability',
 		type: AccountType.loan,
 		subtypes: [AccountSubtype.mortgage, AccountSubtype.personal_loan, AccountSubtype.auto_loan] as const,
 	},
+	[AccountType.property]: {
+		designation: 'asset',
+		type: AccountType.property,
+		subtypes: [AccountSubtype.real_estate, AccountSubtype.vehicle] as const,
+	},
 	[AccountType.other]: {
+		designation: 'other',
 		type: AccountType.other,
 		subtypes: [AccountSubtype.other] as const,
 	},
-}
+} as const;
 
 
+/** The types of details defined the by institutions. Not internal settings */
 export type AccountDetails = {
 	institution_id: string,
 	external_name: string,
@@ -115,6 +157,8 @@ export type Account = AccountDetails & {
 	sync_error?: string | null,
 	created_at: Date,
 	Institution: Institution,
+	never_request_reviews?: boolean,
+	sync_cadence_hours?: number,
 }
 
 export class AccountUtils {

@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import request from '@/services/request';
 import type { Account, Account as DelfiAccount } from '../../delfi-core/models/Account';
@@ -28,11 +28,11 @@ export const useAccountStore = defineStore('account', () => {
 
 	}
 
-	function getAccountById (id?: string) {
+	function getAccountById (id?: string | null) {
 		return accounts.value.find(a => a.account_id === id);
 	}
 
-	function getAccountName(id?: string): string {
+	function getAccountName(id?: string | null): string {
 		const account = getAccountById(id);
 		return account?.display_name || account?.external_name || 'Unknown Account';
 	}
@@ -98,6 +98,24 @@ export const useAccountStore = defineStore('account', () => {
 		} 
 	}
 
+	const accountsByInstitution = computed(() => {
+		const institutions = new Map();
+		
+		accounts.value.forEach(account => {
+			const institutionName = account.Institution?.name || 'Unknown Institution';
+			if (!institutions.has(institutionName)) {
+				institutions.set(institutionName, {
+					name: institutionName,
+					institution: account.Institution,
+					accounts: []
+				});
+			}
+			institutions.get(institutionName).accounts.push(account);
+		});
+		
+		return Array.from(institutions.values()).sort((a, b) => a.name.localeCompare(b.name));
+	});
+
 	return {
 		accounts,
 		isLoadingAccounts,
@@ -107,6 +125,7 @@ export const useAccountStore = defineStore('account', () => {
 		getAccountById,
 		getAccountName,
 		upsertAccount,
-		deleteAccount
+		deleteAccount,
+		accountsByInstitution
 	};
 })

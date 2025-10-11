@@ -141,6 +141,15 @@ export const TransactionDao = {
 		return transactions.map(this.dbToTransaction);
 	},
 
+	async countTransactionsForAccount(workspace_id: string, account_id: string): Promise<number> {
+		return await prisma.transaction.count({
+			where: {
+				workspace_id,
+				account_id,
+			},
+		});
+	},
+
 	async getTransactionsInRange(workspace_id: string, startDate: string, endDate: string, includePending = false): Promise<Transaction[]> {
 		const transactions = await prisma.transaction.findMany({
 			where: {
@@ -346,6 +355,9 @@ export const TransactionDao = {
 				transaction_id: t2_id,
 				workspace_id,
 			},
+			include: {
+				Attributions: true,
+			},
 		});
 
 		if (!t1 || !t2) {
@@ -356,6 +368,14 @@ export const TransactionDao = {
 		}
 		if (t1.account_id === t2.account_id) {
 			throw new Error("Transactions must be from different accounts");
+		}
+
+		// DETERMINE IS THIS PAIR ALREADY EXISTS!
+		// If it does, we will simply write T1 attribution data into T2
+		// But if not, we will merge data from both together.
+		let isNewPairing = false;
+		if (t1.transfer_pair_id === t2.transaction_id) {
+			isNewPairing = true;
 		}
 
 		await prisma.transaction.update({
@@ -382,12 +402,13 @@ export const TransactionDao = {
 
 
 		// let there be only one attribution
+		// Merge data from both if this is a new pairing, not editing an existing pairing.
 		const attrAttrs = {
-			category_id: t1.Attributions[0].category_id,
-			memo: t1.Attributions[0].memo,
-			budget_id: t1.Attributions[0].budget_id,
-			budget_child_item_id: t1.Attributions[0].budget_child_item_id,
-			group_id: t1.Attributions[0].group_id,
+			category_id: t1.Attributions[0].category_id || (isNewPairing ? t2.Attributions[0]?.category_id : null),
+			memo: t1.Attributions[0].memo || (isNewPairing ? t2.Attributions[0]?.memo : null),
+			budget_id: t1.Attributions[0].budget_id || (isNewPairing ? t2.Attributions[0]?.budget_id : null),
+			budget_child_item_id: t1.Attributions[0].budget_child_item_id || (isNewPairing ? t2.Attributions[0]?.budget_child_item_id : null),
+			group_id: t1.Attributions[0].group_id || (isNewPairing ? t2.Attributions[0]?.group_id : null),
 		};
 		await this.setAllAttributionsForTransaction(t1_id, [{
 			...attrAttrs as any,

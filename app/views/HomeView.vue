@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AttributionAvatar from '@/components/AttributionAvatar.vue';
-import CollapseList from '@/components/CollapseList.vue';
+import CollapseList from '@/components/utils/CollapseList.vue';
 import CommonEventRow from '@/components/CommonEventRow.vue';
 import Currency from '@/components/Currency.vue';
 import TransactionDetailsDrawer from '@/components/TransactionDetailsDrawer.vue';

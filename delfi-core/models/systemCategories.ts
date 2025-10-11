@@ -720,6 +720,18 @@ const defaultCategories = {
 		type: "INCOME",
 		parent_category_id: parentCategories["Investments"].category_id
 	},
+	"Capital Gain": {
+		name: "Capital Gain",
+		category_id: "000175b1-b94f-4f08-91c7-27b58a1e0001",
+		type: "INCOME",
+		parent_category_id: parentCategories["Investments"].category_id
+	},
+	"Capital Loss": {
+		name: "Capital Loss",
+		category_id: "000175b1-b94f-4f08-91c7-27b58a1e0001",
+		type: "EXPENSE",
+		parent_category_id: parentCategories["Investments"].category_id
+	},
 	"Sell": {
 		name: "Sell",
 		category_id: "11bda97c-7de0-4004-89fc-56191b2e1b3a",
