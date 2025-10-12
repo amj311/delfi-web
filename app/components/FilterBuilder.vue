@@ -89,7 +89,6 @@ function addRule(rule: FilterBlock, parent: EitherBlock) {
 						option-label="label"
 						option-value="value"
 						v-model="rule.operator"
-						@change="() => (rule.operand = null)"
 					/>
 					<template v-if="rule.operator">
 						<MerchantButton v-if="Properties[rule.property].type === 'merchant_id'" v-model="rule.operand" />

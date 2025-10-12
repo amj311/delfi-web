@@ -46,6 +46,29 @@ export class TransactionRuleService {
 		});
 	}
 
+	/**
+	 * Applies specific rules to a single transaction
+	 */
+	public static async applySpecificRulesToTransaction(workspace_id: string, transaction_id: string, ruleIds: string[]) {
+		const transaction = await TransactionDao.getTransactionById(transaction_id);
+		if (!transaction) {
+			throw new Error(`Transaction with ID ${transaction_id} not found`);
+		}
+
+		const rules = await TransactionRuleDao.getRulesByIds(workspace_id, ruleIds);
+		if (rules.length === 0) {
+			throw new Error('No valid rules found with the provided IDs');
+		}
+
+		// Apply the specific rules to the transaction
+		await this.applyRuleSetToTransaction(transaction, rules as any);
+		
+		// Save the updated transaction
+		await TransactionDao.patchTransaction(workspace_id, transaction.transaction_id, transaction);
+		
+		return await TransactionDao.getTransactionById(transaction.transaction_id) as Transaction; // re-fetch to get any DB-set properties like updated_at
+	}
+
 	private static async applyRuleSetToTransaction(transaction: Transaction, rules: TransactionRule[]) {
 		// Rules may set properties that then trigger another rule, like setting a Merchant and then triggering a rule that sets a Category based on the Merchant.
 		// So we need to loop through the rules until no more changes are made, or a maximum number of iterations is reached.

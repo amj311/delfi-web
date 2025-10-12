@@ -103,6 +103,22 @@ export const TransactionRuleDao = {
 		return [];
 	},
 
+	async getRulesByIds(workspace_id: string, ruleIds: string[]) {
+		await this.setupTestData();
+
+		return await prisma.transactionRule.findMany({
+			where: {
+				transaction_rule_id: {
+					in: ruleIds,
+				},
+				workspace_id: workspace_id,
+			},
+			include: {
+				actions: true,
+			}
+		});
+	},
+
 	async deleteTransactionRule(workspace_id: string, transactionRuleId: string) {
 		await prisma.transactionRuleAction.deleteMany({
 			where: {

@@ -21,7 +21,7 @@ import { useToast } from 'primevue/usetoast';
 import { v4 as uuid } from 'uuid';
 import MerchantSelectionDrawer from './MerchantSelectionDrawer.vue';
 import { useContextStore } from '@/stores/context.store';
-import { ddate } from 'delfi-core/utils/dateUtils';
+import { ddate, instantiateDates } from 'delfi-core/utils/dateUtils';
 import { ActionTypes, type ActionType, type TransactionRule } from 'delfi-core/models/TransactionRule';
 import { useSnackbar } from './utils/Snackbar.vue';
 import RulesList from './RulesList.vue';
@@ -53,6 +53,7 @@ const computeExclusions = ['notes'];
 watch(
 	() => jsonCopy(transaction.value),
 	async (newTransaction, oldValue) => {
+		console.log("transaction changed!!!!!!!!")
 		// abort when changing transaction
 		if (newTransaction.transaction_id !== oldValue.transaction_id) {
 			return;
@@ -793,9 +794,18 @@ const sourceAccount = computed(() => {
 		<p class="mb-2">These rules will apply to this transaction and others like it</p>
 
 		<h3>Rules</h3>
-		<RulesList ref="rulesListRef" v-model="applicableRules" :templateEvent="TransactionUtils.createEventFromAttribution(largestAttribution, transaction)" />
+		<RulesList
+			ref="rulesListRef"
+			v-model="applicableRules"
+			:templateEvent="TransactionUtils.createEventFromAttribution(largestAttribution, transaction)"
+			@rulesApplied="(newTransaction) => {
+				transaction = instantiateDates(newTransaction) as Transaction;
+			}"
+		/>
 		<br />
-		<Button icon="pi pi-plus" label="Add Rule" @click="rulesListRef?.draftRule()" />
+		<div>
+			<Button icon="pi pi-plus" label="Add Rule" @click="rulesListRef?.draftRule()" />
+		</div>
 	</NavTriggerDrawer>
 
 	<TransactionAttributionDrawer ref="transactionAttributionDrawer" />

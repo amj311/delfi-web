@@ -27,7 +27,7 @@ import { useBudgetStore } from '@/stores/budget.store';
 import { useMerchantStore } from '@/stores/merchant.store';
 import { usePrompt } from '@/components/utils/PromptModal.vue';
 import type { DescriptorEntityNode } from 'delfi-core/utils/Descriptor';
-import { TransactionUtils, type AttributionEvent } from 'delfi-core/models/Transaction';
+import { TransactionUtils, type AttributionEvent, type Transaction } from 'delfi-core/models/Transaction';
 
 const toast = useToast();
 const rulesModel = defineModel<TransactionRule[]>();
@@ -38,6 +38,7 @@ watch(rules, (newVal) => {
 
 const props = defineProps<{
 	templateEvent?: AttributionEvent;
+	onRulesApplied?: (newTransaction: Transaction) => void;
 }>();
 
 defineExpose({
@@ -148,6 +149,10 @@ const canSave = computed(() => {
 	return true;
 });
 
+const notMatchTransaction = computed(() => {
+	return props.templateEvent && editingRule.value?.filter && !FilterUtils.matches(editingRule.value.filter, props.templateEvent);
+})
+
 const ActionOptions = Object.keys(Actions).map((key) => ({
 	label: Actions[key as ActionType].label,
 	value: key,
@@ -191,13 +196,11 @@ const filterSuggestions = computed<Predicate[]>(() => {
 				if (p === 'Transaction.original_description') {
 					// Suggest includes identifier from description
 					const bestIdentifier = TransactionUtils.extractDescriptionInfo(value)?.best_identifier;
-					if (bestIdentifier) {
-						return {
-							property: p,
-							operator: 'inc',
-							operand: bestIdentifier,
-						} as Predicate;
-					}
+					return {
+						property: p,
+						operator: 'inc',
+						operand: bestIdentifier || value,
+					} as Predicate;
 				}
 				return {
 					property: p,
@@ -226,6 +229,36 @@ const actionSuggestions = computed<Array<Action>>(() => {
 		})
 		.filter((r) => !!r);
 });
+
+const isApplyingRule = ref(false);
+async function applyRules(rulesToApply: Array<TransactionRule>) {
+	// only applies to transactions
+	if (!props.templateEvent?.attributionDetails) return;
+	try {
+		isApplyingRule.value = true;
+		const { data } = await request.post('/transaction-rule/apply', {
+			transaction_id: props.templateEvent.attributionDetails.sourceTransaction.transaction_id,
+			rules: rulesToApply.map((r) => r.transaction_rule_id),
+		});
+		// data is a transaction with Attributions
+		props.onRulesApplied?.call(null, data.data);
+		toast.add({
+			severity: 'success',
+			summary: 'Success',
+			detail: `Rules applied successfully.`,
+			life: 5000,
+		});
+	} catch (error) {
+		toast.add({
+			severity: 'error',
+			summary: 'Error',
+			detail: 'Failed to apply rules. Please try again later.',
+			life: 3000,
+		});
+	} finally {
+		isApplyingRule.value = false;
+	}
+}
 </script>
 
 <template>
@@ -264,7 +297,12 @@ const actionSuggestions = computed<Array<Action>>(() => {
 					</div>
 					<div class="flex-grow-1" />
 					<div class="hover-show">
-						<Button text :severity="'secondary'" icon="pi pi-pencil" />
+						<div class="flex align-items-center">
+							<Button text :severity="'secondary'" @click.stop="applyRules([rule])">
+								<template #icon><Icon name="material-symbols::read_more" /></template>
+							</Button>
+							<Button text :severity="'secondary'" icon="pi pi-pencil" />
+						</div>
 					</div>
 				</div>
 			</div>
@@ -356,7 +394,7 @@ const actionSuggestions = computed<Array<Action>>(() => {
 				<Button label="Add Action" icon="pi pi-plus-circle" text @click="() => addAction()" />
 			</div>
 		</div>
-		<div class="flex gap-2">
+		<div class="flex align-items-center gap-2">
 			<Button
 				v-if="!isNewRule && editingRule"
 				icon="pi pi-trash"
@@ -366,6 +404,7 @@ const actionSuggestions = computed<Array<Action>>(() => {
 				@click="() => deleteRule(editingRule!)"
 			/>
 			<div class="flex-grow-1" />
+			<div class="text-xl" v-tooltip.top="'This rule does not match the current transaction.'"><i v-if="notMatchTransaction" class="pi pi-exclamation-triangle text-yellow-500" /></div>
 			<Button class="p-button-text" label="Cancel" @click="editingRule = null" />
 			<Button label="Save Rule" :loading="isSavingRule" :disabled="isSavingRule || !canSave" @click="saveRule" />
 		</div>

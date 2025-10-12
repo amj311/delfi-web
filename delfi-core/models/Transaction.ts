@@ -519,6 +519,7 @@ export const DescriptionFormats = {
 
 		return {
 			format: 'P2P_PAYMENT',
+			best_identifier: description.split(match.groups.transaction_id)[0].trim(), // just take up to the transaction_id
 			simple_description: `${match.groups.service} Payment ${type === 'CR' ? 'from' : 'to'} ${match.groups.recipient.trim()}`,
 			p2p_service: match.groups.service,
 			p2p_recipient: match.groups.recipient.trim(),

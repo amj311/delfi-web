@@ -42,5 +42,30 @@ export default (app, _, done) => {
         };
     });
 
+    app.post('/apply', async function handler (request, reply) {
+        const { transaction_id, rules } = request.body;
+        const workspace_id = request.sessionUser.workspace_id;
+        
+        if (!transaction_id) {
+            return reply.code(400).send({
+                success: false,
+                error: 'transaction_id is required',
+            });
+        }
+        
+        if (!rules || !Array.isArray(rules) || rules.length === 0) {
+            return reply.code(400).send({
+                success: false,
+                error: 'rules array is required and must not be empty',
+            });
+        }
+
+        const data = await TransactionRuleService.applySpecificRulesToTransaction(workspace_id, transaction_id, rules);
+        return {
+            success: true,
+            data,
+        };
+    });
+
     done();
 };
