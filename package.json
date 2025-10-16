@@ -13,7 +13,7 @@
     "type-check": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
     "db:push": "cd prisma && npx prisma db push",
     "db:generate": "cd prisma && npx prisma generate",
-    "local-prod": "docker compose -f docker-compose-prod.yml up -d --build --force-recreate > /dev/null"
+    "local-prod": "docker compose -f docker-compose-prod-local.yml up -d --build --force-recreate > /dev/null"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",

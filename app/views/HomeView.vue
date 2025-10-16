@@ -12,6 +12,7 @@ import type { ProjectionEvent } from 'delfi-core/models/Budget';
 import { TransactionUtils, type AttributionEvent, type Transaction } from 'delfi-core/models/Transaction';
 import { ddate } from 'delfi-core/utils/dateUtils';
 import { computed, nextTick, onBeforeMount, ref, watch } from 'vue';
+import SwipeAction from '@/components/utils/SwipeAction.vue';
 
 
 const upcomingBudgets = ref<ProjectionEvent[]>([]);
@@ -33,7 +34,7 @@ watch(() => useDelfiStore().isGeneratingForecast, async () => {
 		...nextMonthSummary.forecast.unfinishedBudgetEvents,
 	]
 	// from the previous or next two weeks
-	upcomingBudgets.value = allUnfinished.filter(e => e.date >= ddate().subtract(1, 'week') && e.date <= ddate().add(2, 'week'));
+	upcomingBudgets.value = allUnfinished.filter(e => e.date >= ddate().subtract(1, 'week') && e.date <= ddate().add(1, 'week'));
 	isLoadingNextBudgets.value = false;
 }, { immediate: true });
 
@@ -61,19 +62,32 @@ function viewTransaction(transaction: Transaction) {
 	});
 }
 
+const listAccounts = computed(() => useAccountStore().accounts
+	.sort((a,b) => {
+		if (!a.mostRecentTransaction) {
+			return 1;
+		}
+		if (!b.mostRecentTransaction) {
+			return -1;
+		}
+		return dayjs(b.mostRecentTransaction.date).diff(dayjs(a.mostRecentTransaction.date));
+	})
+	.slice(0, 5)
+);
+
 </script>
 
 <template>
 	<br />
 	<h3>Accounts</h3>
 	<div v-if="useAccountStore().isLoadingAccounts" class="flex align-items-center gap-2"><i class="pi pi-spin pi-spinner"></i>Loading accounts...</div>
-	<div v-for="account in useAccountStore().accounts" :key="account.account_id">
+	<div v-for="account in listAccounts" :key="account.account_id">
 		<div class="flex align-items-center gap-2 border-bottom-1 border-gray-200 py-2" @click="() => $router.push(`/accounts/${account.account_id}`)" style="cursor: pointer;">
 			<AttributionAvatar :image="account.Institution.logo":size="2.5" square />
 			<div class="flex flex-column">
 				<div>
 					<span class="font-semibold">{{ account.display_name || account.external_name }}</span>
-					**** {{ account.mask }}
+					<span v-if="account.mask">&nbsp;****{{ account.mask }}</span>
 				</div>
 				<small>{{ dayjs(account.last_successful_sync).fromNow() }}</small>
 			</div>

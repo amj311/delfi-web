@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { useCategoryStore } from '@/stores/category.store';
 import { onBeforeMount, ref } from 'vue';
 import { type TransactionRule } from 'delfi-core/models/TransactionRule';
 import request from '@/services/request';
 import Button from 'primevue/button';
-import { useToast } from 'primevue/usetoast';
 import RulesList from '@/components/RulesList.vue';
 
-const toast = useToast();
-const categoryStore = useCategoryStore();
 const rules = ref<Array<TransactionRule>>([]);
 const isLoadingRules = ref(false);
 

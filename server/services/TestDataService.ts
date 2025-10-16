@@ -258,6 +258,8 @@ export class TestDataService {
 				Category: categoryByName("Auto Insurance"),
 			},
 
+			// MONTHLY INCOME AND BENEFITS
+
 			{
 				budget_id: 'd4e5f6a7-8901-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
@@ -274,6 +276,61 @@ export class TestDataService {
 				}],
 				category_id: categoryByName("Paycheck").category_id,
 				Category: categoryByName("Paycheck"),
+			},
+			{
+				budget_id: '0023f6a7-8901-abcd-ef01-234567895002',
+				budgetType: BudgetType.TRANSACTION,
+				memo: "HSA Contribution",
+				account_id: getAccountByName('Health Savings Account').account_id,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+					projectionSchedule: { frequency: 'MONTHLY', byDayOfMonth: [14, 27] },
+					amountTemplate: {
+						type: 'fixed',
+						amount: 256 * 2,
+					}
+				}],
+				category_id: categoryByName("Employee Benefits").category_id,
+				Category: categoryByName("Employee Benefits"),
+			},
+			{
+				budget_id: '0033f6a7-8901-abcd-ef01-234567895003',
+				budgetType: BudgetType.TRANSACTION,
+				memo: "401(k) Contribution",
+				account_id: getAccountByName('401(k)').account_id,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+					projectionSchedule: { frequency: 'MONTHLY', byDayOfMonth: [14, 27] },
+					amountTemplate: {
+						type: 'fixed',
+						amount: 168 * 2,
+					}
+				}],
+				category_id: categoryByName("Employee Benefits").category_id,
+				Category: categoryByName("Employee Benefits"),
+			},
+
+
+			// QUARTERLY INCOME AND BENEFITS
+
+			{
+				budget_id: '0013f6a7-8901-abcd-ef01-234567895001',
+				budgetType: BudgetType.TRANSACTION,
+				memo: "Clozd HSA Contribution",
+				account_id: getAccountByName('Health Savings Account').account_id,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-01-01', frequency: 'MONTHLY', interval: 3, },
+					projectionSchedule: { byDayOfMonth: [27] },
+					amountTemplate: {
+						type: 'fixed',
+						amount: 600,
+					}
+				}],
+				category_id: categoryByName("Employee Benefits").category_id,
+				Category: categoryByName("Employee Benefits"),
 			},
 
 			{

@@ -16,7 +16,6 @@ import Button from 'primevue/button';
 import DrawerModal from '@/components/utils/DrawerModal.vue';
 import Icon from '@/components/Icon.vue';
 import { jsonCopy } from 'delfi-core/utils/miscUtils';
-import { useToast } from 'primevue/usetoast';
 import FilterBuilder from '@/components/FilterBuilder.vue';
 import Select from 'primevue/select';
 import InputText from 'primevue/inputtext';
@@ -28,6 +27,7 @@ import { useMerchantStore } from '@/stores/merchant.store';
 import { usePrompt } from '@/components/utils/PromptModal.vue';
 import type { DescriptorEntityNode } from 'delfi-core/utils/Descriptor';
 import { TransactionUtils, type AttributionEvent, type Transaction } from 'delfi-core/models/Transaction';
+import { useToast } from './utils/Toast.vue';
 
 const toast = useToast();
 const rulesModel = defineModel<TransactionRule[]>();
@@ -111,9 +111,8 @@ async function saveRule() {
 		const { data } = await request.post('/transaction-rule', editingRule.value);
 		toast.add({
 			severity: 'success',
-			summary: 'Success',
-			detail: 'Rule saved successfully.',
-			life: 3000,
+			title: 'Rule saved successfully.',
+			duration: 3000,
 		});
 		if (!editingRule.value.transaction_rule_id) {
 			rules.value.push(data.data);
@@ -127,9 +126,8 @@ async function saveRule() {
 	} catch (error) {
 		toast.add({
 			severity: 'error',
-			summary: 'Error',
-			detail: 'Failed to save rule. Please try again later.',
-			life: 3000,
+			title: 'Failed to save rule.',
+			duration: 3000,
 		});
 	} finally {
 		isSavingRule.value = false;
@@ -168,16 +166,14 @@ async function deleteRule(rule: TransactionRuleDraft) {
 		editingRule.value = null;
 		toast.add({
 			severity: 'success',
-			summary: 'Success',
-			detail: 'Rule deleted successfully.',
-			life: 3000,
+			title: 'Rule deleted successfully.',
+			duration: 3000,
 		});
 	} catch (error) {
 		toast.add({
 			severity: 'error',
-			summary: 'Error',
-			detail: 'Failed to delete rule. Please try again later.',
-			life: 3000,
+			title: 'Failed to delete rule.',
+			duration: 3000,
 		});
 	} finally {
 		isSavingRule.value = false;
@@ -244,16 +240,14 @@ async function applyRules(rulesToApply: Array<TransactionRule>) {
 		props.onRulesApplied?.call(null, data.data);
 		toast.add({
 			severity: 'success',
-			summary: 'Success',
-			detail: `Rules applied successfully.`,
-			life: 5000,
+			title: `Rules applied successfully.`,
+			duration: 5000,
 		});
 	} catch (error) {
 		toast.add({
 			severity: 'error',
-			summary: 'Error',
-			detail: 'Failed to apply rules. Please try again later.',
-			life: 3000,
+			title: 'Failed to apply rules.',
+			duration: 3000,
 		});
 	} finally {
 		isApplyingRule.value = false;

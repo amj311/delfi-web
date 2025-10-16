@@ -174,17 +174,21 @@ export class ScraperService {
 				await page.goto(institution.loginUrl!);
 
 				// First check to see if we are already logged in
-				const loggedInElement = await page.waitForSelector(scraper.hasLoggedInElement, { timeout: 15000 }).catch(() => null);
+				const loggedInElement = await page.waitForSelector(scraper.hasLoggedInElement, { timeout: 5000 }).catch(() => null);
+				await page.screenshot({ path: `pre-login-${institutionId}.png` }).catch(() => { });
 				if (!loggedInElement) {
 					// check for login element
-					await page.waitForSelector(scraper.isAtLoginElement, { timeout: 15000 });
+					await page.waitForSelector(scraper.isAtLoginElement, { timeout: 5000 });
 					// Perform the login sequence
 					await doPageActions(page, scraper.getLoginSequence(creds));
+					await page.screenshot({ path: `post-login-${institutionId}.png` }).catch(() => { });
 
 					// check for logged in element again
-					const loggedInElement = await page.waitForSelector(scraper.hasLoggedInElement, { timeout: 15000 }).catch(() => null);
+					const loggedInElement = await page.waitForSelector(scraper.hasLoggedInElement, { timeout: 30000 }).catch(() => null);
 					if (!loggedInElement) {
 						console.error('Login failed, did not find logged in element');
+						// take a screenshot for debugging
+						await page.screenshot({ path: `login-failed-${institutionId}.png` }).catch(() => { });
 						return;
 					}
 				}

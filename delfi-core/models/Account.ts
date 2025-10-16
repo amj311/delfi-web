@@ -159,6 +159,7 @@ export type Account = AccountDetails & {
 	Institution: Institution,
 	never_request_reviews?: boolean,
 	sync_cadence_hours?: number,
+	mostRecentTransaction: any | null, // populated dynamically
 }
 
 export class AccountUtils {

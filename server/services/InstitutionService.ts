@@ -8,7 +8,6 @@ export class InstitutionService {
     }
 
 	public static getInstitutionCreds(institution_id: string, workspace_id: string) {
-		console.log(`INSTITUTION_${institution_id}_PASSWORD`, process.env[`INSTITUTION_${institution_id}_PASSWORD`]);
 		return {
 			username: process.env[`INSTITUTION_${institution_id}_USERNAME`],
 			password: process.env[`INSTITUTION_${institution_id}_PASSWORD`],

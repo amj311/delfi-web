@@ -16,7 +16,6 @@ import { AuthService } from './services/authService'
 
 
 import ConfirmationService from 'primevue/confirmationservice';
-import ToastService from 'primevue/toastservice';
 import Tooltip from 'primevue/tooltip';
 
 
@@ -38,7 +37,6 @@ app.use(PrimeVue, {
 app.use(createPinia());
 app.use(router);
 app.use(ConfirmationService);
-app.use(ToastService);
 app.use(VueApexCharts as any);
 app.directive('tooltip', Tooltip);
 

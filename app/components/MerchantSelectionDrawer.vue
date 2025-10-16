@@ -7,11 +7,11 @@ import { useMerchantStore } from '@/stores/merchant.store';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import request from '@/services/request';
-import { useToast } from 'primevue/usetoast';
 import DrawerModal from './utils/DrawerModal.vue';
 import { coalesce, jsonCopy } from 'delfi-core/utils/miscUtils';
 import { CategoryKeys } from 'delfi-core/models/systemCategories';
 import Select from 'primevue/select';
+import { useToast } from './utils/Toast.vue';
 
 const toast = useToast();
 
@@ -77,17 +77,15 @@ async function findForTransaction() {
 		if (!transactionSearchMerchant.value) {
 			toast.add({
 				severity: 'info',
-				summary: 'No merchant found',
-				detail: 'No merchant could be detected from the transaction details.',
-				life: 3000,
+				title: 'No merchant found',
+				duration: 3000,
 			});
 		}
 	} catch (error) {
 		toast.add({
 			severity: 'error',
-			summary: 'Error',
-			detail: 'Failed to search for merchant on the web. Please try again later.',
-			life: 3000,
+			title: 'Failed to search for merchant on the web.',
+			duration: 3000,
 		});
 	} finally {
 		searchingForTransactionMerchant.value = false;
@@ -148,9 +146,8 @@ async function saveMerchant() {
 		console.error('Failed to save merchant:', error);
 		toast.add({
 			severity: 'error',
-			summary: 'Error',
-			detail: 'Failed to save merchant. Please try again later.',
-			life: 3000,
+			title: 'Failed to save merchant.',
+			duration: 3000,
 		});
 	} finally {
 		isSavingMerchant.value = false;
@@ -184,9 +181,8 @@ async function saveMerchant() {
 	} catch (error) {
 		toast.add({
 			severity: 'error',
-			summary: 'Error',
-			detail: 'Failed to search for merchant details. Please try again later.',
-			life: 3000,
+			title: 'Failed to search for merchant details.',
+			duration: 3000,
 		});
 	} finally {
 		searchingMerchantDetails.value = false;

@@ -36,6 +36,10 @@ async function createBrowserContext(): Promise<BrowserContext> {
 		permissions: ['geolocation'],
 		acceptDownloads: true,
 		ignoreHTTPSErrors: true,  // Ignore HTTPS errors
+		recordVideo: {
+			dir: './videos',
+			size: { width: 1280, height: 800 }
+		},
 		extraHTTPHeaders: {       // Add common headers
 			'Accept-Language': 'en-US,en;q=0.9',
 			'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',

@@ -1071,13 +1071,11 @@ const accumulationChart = computed(() => {
 									? state.summaryData.spendingSummary.tally.budgetedNet
 									: state.summaryData.spendingSummary.tally.attributedNet
 							"
-							mode="net_change"
 							class="font-semibold"
 						/>
 						<small v-if="!isFuture" class="flex align-items-center"
 							>&nbsp;&nbsp;/&nbsp;<Currency
 								:amount="state.summaryData.spendingSummary.tally.budgetedNet"
-								mode="net_change"
 						/></small>
 					</div>
 				</div>

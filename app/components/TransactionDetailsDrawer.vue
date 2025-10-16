@@ -17,16 +17,13 @@ import NavTriggerDrawer from './utils/NavTrigger/NavTriggerDrawer.vue';
 import DrawerModal from './utils/DrawerModal.vue';
 import { useCategoryStore } from '@/stores/category.store';
 import InputNumber from 'primevue/inputnumber';
-import { useToast } from 'primevue/usetoast';
 import { v4 as uuid } from 'uuid';
 import MerchantSelectionDrawer from './MerchantSelectionDrawer.vue';
 import { useContextStore } from '@/stores/context.store';
 import { ddate, instantiateDates } from 'delfi-core/utils/dateUtils';
 import { ActionTypes, type ActionType, type TransactionRule } from 'delfi-core/models/TransactionRule';
-import { useSnackbar } from './utils/Snackbar.vue';
+import { useToast } from './utils/Toast.vue';
 import RulesList from './RulesList.vue';
-
-const toast = useToast();
 
 const triggerRef = ref<InstanceType<typeof NavTriggerDrawer> | null>(null);
 const transaction = ref<Transaction>({} as Transaction);
@@ -53,7 +50,6 @@ const computeExclusions = ['notes'];
 watch(
 	() => jsonCopy(transaction.value),
 	async (newTransaction, oldValue) => {
-		console.log("transaction changed!!!!!!!!")
 		// abort when changing transaction
 		if (newTransaction.transaction_id !== oldValue.transaction_id) {
 			return;
@@ -214,11 +210,10 @@ function openSplitModal() {
 }
 async function saveSplitChanges() {
 	if (!splitsAreFull.value) {
-		return toast.add({
+		return useToast().add({
 			severity: 'error',
-			summary: 'Error',
-			detail: 'Splits must sum to the total transaction amount.',
-			life: 3000,
+			title: 'Splits must sum to the total transaction amount.',
+			duration: 3000,
 		});
 	}
 
@@ -335,19 +330,17 @@ async function reviewTransaction() {
 			...transaction.value.TransactionReview!,
 			reviewed_at: new Date(),
 		};
-		toast.add({
+		useToast().add({
 			severity: 'success',
-			summary: 'Transaction Reviewed',
-			detail: 'The transaction has been marked as reviewed.',
-			life: 3000,
+			title: 'Transaction Reviewed',
+			duration: 3000,
 		});
 	} catch (error) {
 		console.error('Error reviewing transaction:', error);
-		toast.add({
+		useToast().add({
 			severity: 'error',
-			summary: 'Error',
-			detail: 'Failed to mark transaction as reviewed. Please try again later.',
-			life: 3000,
+			title: 'Failed to mark transaction as reviewed.',
+			message: 'Please try again later.',
 		});
 	}
 }
@@ -379,9 +372,9 @@ watch(
 );
 
 function promptNewRule(newActionFields: Array<{ actionType: ActionType, value: any }>) {
-	useSnackbar().add({
+	useToast().add({
 		icon: 'material-symbols::manufacturing',
-		message: 'Would you like to automate this assignment?',
+		title: 'Attributions updated',
 		okButtonProps: {
 			label: 'Create Rule',
 		},
@@ -472,9 +465,11 @@ const sourceAccount = computed(() => {
 				<Currency :amount="displayAmount" mode="transaction" />
 			</div>
 
+
+			<!-- TRANSFER PAIR ACCOUNTS -->
 			<template v-if="isTransferPair">
 				<div class="flex align-items-center justify-content-between gap-3">
-					<div class="flex align-items-center gap-2 min-w-0">
+					<div class="flex align-items-center gap-2 min-w-0" style="width: 50%">
 						<div
 							class="border-round-sm square"
 							:style="{
@@ -492,7 +487,7 @@ const sourceAccount = computed(() => {
 
 					<i class="pi pi-arrow-right text-2xl"></i>
 
-					<div class="flex align-items-center gap-2 min-w-0">
+					<div class="flex align-items-center gap-2 min-w-0" style="width: 50%">
 						<div
 							class="border-round-sm square"
 							:style="{
@@ -696,6 +691,7 @@ const sourceAccount = computed(() => {
 					class="w-7rem text-right"
 					:class="{ showFillButton: splitTotalDiff < 0 }"
 					@input="({ value }) => handleSplitAmountChange(value as number, attribution)"
+					@blur="({ value }) => { handleSplitAmountChange(value as unknown as number, attribution) }"
 					style="order: 1"
 					size="large"
 				/>
@@ -813,7 +809,7 @@ const sourceAccount = computed(() => {
 </template>
 
 <style scoped lang="scss">
-:deep(.p-inputwrapper-focus.showFillButton) + .fill-split-button {
+:deep(.showFillButton) + .fill-split-button {
 	max-width: 3rem !important;
 }
 </style>

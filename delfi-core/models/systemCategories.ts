@@ -1012,17 +1012,13 @@ export const defaultKeyToSystemCategoryMap = {
   "INCOME_OTHER_INCOME": "Income",
 
   // Transfer categories
-  "TRANSFER_IN_CASH_ADVANCES_AND_LOANS": "Transfer",
-  "TRANSFER_IN_DEPOSIT": "Transfer",
-  "TRANSFER_IN_INVESTMENT_AND_RETIREMENT_FUNDS": "Transfer",
-  "TRANSFER_IN_SAVINGS": "Transfer",
-  "TRANSFER_IN_ACCOUNT_TRANSFER": "Transfer",
-  "TRANSFER_IN_OTHER_TRANSFER_IN": "Transfer",
-  "TRANSFER_OUT_INVESTMENT_AND_RETIREMENT_FUNDS": "Transfer",
-  "TRANSFER_OUT_SAVINGS": "Transfer",
-  "TRANSFER_OUT_WITHDRAWAL": "Transfer",
-  "TRANSFER_OUT_ACCOUNT_TRANSFER": "Transfer",
-  "TRANSFER_OUT_OTHER_TRANSFER_OUT": "Transfer",
+  "TRANSFER_CASH_ADVANCES_AND_LOANS": "Cash Advance",
+  "TRANSFER_DEPOSIT": "Deposit",
+  "TRANSFER_INVESTMENT_AND_RETIREMENT_FUNDS": "Transfer",
+  "TRANSFER_SAVINGS": "Savings",
+  "TRANSFER_ACCOUNT_TRANSFER": "Transfer",
+  "TRANSFER_WITHDRAWAL": "Withdrawal",
+  "TRANSFER_OTHER_TRANSFER": "Transfer",
 
   // Loan payments
   "LOAN_PAYMENTS_CAR_PAYMENT": "Auto Payment",

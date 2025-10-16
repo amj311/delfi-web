@@ -228,20 +228,20 @@ export class TransactionUtils {
 			month: transaction.date.month(),
 
 			account_id: transaction.account_id,
-			Merchant: transaction.Merchant || null,
-			merchant_id: transaction.Merchant?.merchant_id || null,
+			get Merchant() { return transaction.Merchant || null },
+			get merchant_id() { return transaction.Merchant?.merchant_id || null },
 
 			...attribution,
 	
 			attributionDetails: {
 				...attribution,
 				sourceTransaction: transaction,
-				isSplit: transaction.Attributions.length > 1,
-				softDescription: breakdown?.simple_description || transaction.original_description,
-				isTransferPair: Boolean(transaction.transfer_pair_id),
-				isTransferCopy: Boolean(transaction.transfer_pair_id) && transaction.amount < 0,
+				get isSplit() { return transaction.Attributions.length > 1 },
+				get softDescription() { return breakdown?.simple_description || transaction.original_description },
+				get isTransferPair() { return Boolean(transaction.transfer_pair_id) },
+				get isTransferCopy() { return Boolean(transaction.transfer_pair_id) && transaction.amount < 0 },
 				BudgetChildItem,
-				needsReview: Boolean(transaction.TransactionReview && !transaction.TransactionReview.reviewed_at && !transaction.TransactionReview.dismissed_at),
+				get needsReview() { return Boolean(transaction.TransactionReview && !transaction.TransactionReview.reviewed_at && !transaction.TransactionReview.dismissed_at) },
 			},
 			projectionDetails: undefined,
 		};

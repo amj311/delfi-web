@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SwipeAction from './components/utils/SwipeAction.vue';
 import { useUserStore } from './stores/user.store';
 import { AuthService } from './services/authService';
 import Registration from './views/Registration.vue';
@@ -8,8 +9,8 @@ import PromptModal from './components/utils/PromptModal.vue';
 import Toast from 'primevue/toast';
 import Button from 'primevue/button';
 import { useAppStore } from './stores/app.store';
-import Icon from './components/Icon.vue';
-import Snackbar from './components/utils/Snackbar.vue';
+import Snackbar from './components/utils/Toast.vue';
+import Message from 'primevue/message';
 
 const userStore = useUserStore();
 const sessionInterval = setInterval(userStore.loadSessionData, 60000);
@@ -22,6 +23,7 @@ setTimeout(() => {
 onBeforeUnmount(() => {
 	clearInterval(sessionInterval);
 });
+
 </script>
 
 <template>
@@ -52,10 +54,8 @@ onBeforeUnmount(() => {
 		</div>
 	</div>
 
-	<!-- Global Prompt Modal -->
 	<PromptModal />
 	<Snackbar />
-	<Toast />
 </template>
 
 <style scoped></style>

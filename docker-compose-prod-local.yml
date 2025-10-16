@@ -47,7 +47,7 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=delfi
     volumes:
-      - /home/arthur/backups:/backup-dir
+      - /Users/Arthur/code/delfi-web/backups:/backup-dir
     depends_on:
       - db
     links:

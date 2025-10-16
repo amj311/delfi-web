@@ -23,6 +23,10 @@ a,
 }
 
 
+.bg {
+	background-color: var(--color-background);
+}
+
 
 
 body:not(.touch) .hover-show-trigger .hover-show {

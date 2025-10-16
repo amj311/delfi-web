@@ -19,7 +19,7 @@ const shownItems = computed(() => {
 		<template v-for="(item, index) in shownItems" :key="index">
 			<slot :item="item" :index="index">{{ item }}</slot>
 		</template>
-		<div v-if="items.length > max" class="text-center mt-2 cursor-pointer" @click="expand = !expand">
+		<div v-if="items.length > max" class="text-center p-2 cursor-pointer" @click="expand = !expand">
 			<Button text>
 				{{ expand ? 'Show Less' : `Show All (${items.length})` }}
 			</Button>

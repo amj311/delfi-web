@@ -8,6 +8,7 @@ export const AccountDao = {
 	dbToAccount(dbAccount: NonNullable<{ [key: string]: any }>): Account {
 		return {
 			...dbAccount,
+			mostRecentTransaction: dbAccount.Transaction?.[0] || null,
 		} as Account;
 	},
 
@@ -62,9 +63,16 @@ export const AccountDao = {
 				partitions: true,
 				savings_goal: true,
 				Institution: true,
+				// include the most recent transaction
+				Transaction: {
+					take: 1,
+					orderBy: {
+						date: 'desc'
+					}
+				}
 			}
         });
-        return await TestDataService.getAccounts(accounts);
+        return (await TestDataService.getAccounts(accounts)).map(a => this.dbToAccount(a));
     },
 
     async getAccountById(workspace_id: string, accountId: string) {
