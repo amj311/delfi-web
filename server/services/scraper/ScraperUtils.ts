@@ -1,8 +1,30 @@
 // Simple Playwright scraper to navigate to American First Credit Union login page
 import { chromium, type Page, type ElementHandle, type BrowserContext, type Browser } from 'playwright';
 import { ddate, type DelfiDate } from 'delfi-core/utils/dateUtils';
+import * as fs from 'fs';
+import * as path from 'path';
 
 let browserInstance: Browser | null = null;
+
+function clearVideosDirectory(): void {
+	const videosDir = './videos';
+	if (fs.existsSync(videosDir)) {
+		const files = fs.readdirSync(videosDir);
+		for (const file of files) {
+			if (file.endsWith('.webm')) {
+				try {
+					fs.unlinkSync(path.join(videosDir, file));
+					console.log(`Deleted old video: ${file}`);
+				} catch (error) {
+					console.error(`Error deleting video ${file}:`, error);
+				}
+			}
+		}
+	} else {
+		// Create the videos directory if it doesn't exist
+		fs.mkdirSync(videosDir, { recursive: true });
+	}
+}
 
 async function createBrowserContext(): Promise<BrowserContext> {
 	if (!browserInstance) {
@@ -77,7 +99,12 @@ export async function useBrowser<T>(operation: (usePage: UsePage) => Promise<T>)
 			throw error; // Re-throw to handle it in the main operation
 		}
 		finally {
-			await newPage.close();
+			try {
+				await newPage.close();
+			}
+			catch (e) {
+				console.error("Error while closing tab:", e)
+			}
 		}
 	}
 
@@ -88,6 +115,9 @@ export async function useBrowser<T>(operation: (usePage: UsePage) => Promise<T>)
 		console.error('Scraping error:', error);
 		throw error; // Re-throw to ensure the error is not swallowed
 	} finally {
+		// video is only used because it helps the sync process. We can delete videos when done
+		clearVideosDirectory();
+	
 		// Close the browser
 		try {
 			await context.close();
