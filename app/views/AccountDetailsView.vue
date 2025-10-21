@@ -10,6 +10,7 @@ import { instantiateDates } from 'delfi-core/utils/dateUtils';
 import CommonEventRow from '@/components/CommonEventRow.vue';
 import Divider from 'primevue/divider';
 import TransactionDetailsDrawer from '@/components/TransactionDetailsDrawer.vue';
+import { useToast } from '@/components/utils/Toast.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -98,10 +99,14 @@ async function syncAccount() {
 	try {
 		await accountStore.syncAccount(accountId.value);
 		// Optionally, reload transactions after sync
+		await accountStore.loadAccounts();
 		await loadTransactions();
 	} catch (error) {
 		console.error('Error syncing account:', error);
-		alert('Failed to sync account. Please try again later.');
+		useToast().add({
+			title: 'Failed to sync account',
+			severity: 'error',
+		})
 	}
 }
 
@@ -112,8 +117,6 @@ const attributedEvents = computed(() => {
 
 const transactionDetailsDrawer = ref<InstanceType<typeof TransactionDetailsDrawer> | null>(null);
 function viewTransaction(transaction: Transaction) {
-	console.log('Viewing transaction:', transaction);
-	console.log('Drawer ref:', transactionDetailsDrawer.value);
 	transactionDetailsDrawer.value?.open(transaction);
 }
 

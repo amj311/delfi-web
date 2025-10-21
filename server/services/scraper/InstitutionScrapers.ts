@@ -79,6 +79,7 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 			const afcuName = await getMatchingRowValue('Nickname:');
 			// const currentBalance = await page.locator('.primary-label-amount .money').innerText() || await getMatchingRowValue('Current Balance:');
 			const currentBalance = await getMatchingRowValue('Balance:');
+			const balanceAmount = currentBalance ? dollarsToNumber(currentBalance) : 0;
 			// const availableBalance = await getMatchingRowValue('Available Balance:');
 			const limit = await getMatchingRowValue('Limit:');
 
@@ -92,9 +93,12 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 
 			const typeMatch = typeMap[Object.keys(typeMap).find(key => afcuType?.includes(key)) || ''] as any;
 
+			// Credit Card balances are shown as positive for a debt
+			const negateBalance = typeMatch?.subtype === AccountSubtype.credit_card;
+
 			return {
 				mask: mask || '',
-				current_balance: currentBalance ? dollarsToNumber(currentBalance) : 0,
+				current_balance: negateBalance ? -balanceAmount : balanceAmount,
 				// available_balance: availableBalance ? dollarsToNumber(availableBalance) : undefined,
 				limit: limit ? dollarsToNumber(limit) : undefined,
 				external_name: afcuName || '',

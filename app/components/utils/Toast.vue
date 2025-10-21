@@ -108,7 +108,6 @@ export default {
 					v-for="msg in store.messages"
 					:key="msg.key!"
 					@left="store.removeMessage(msg.key!)"
-					:shadow="false"
 				>
 					<template #content>
 						<div class="p-2">

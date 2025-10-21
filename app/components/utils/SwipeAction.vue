@@ -8,35 +8,55 @@ const props = defineProps<{
 	rightBackground?: string;
 }>();
 
-const slider = ref<HTMLElement | null>(null);
-
 const swipeDistance = 100;
 const threshold = 90;
-const leftSlidePercent = ref(0);
-const isLeftFull = computed(() => leftSlidePercent.value >= threshold);
-const rightSlidePercent = ref(0);
-const isRightFull = computed(() => rightSlidePercent.value >= threshold);
+// const leftSlidePercent = computed(() => (swipeDelta.value > 0 ? (swipeDelta.value / swipeDistance) * 100 : 0));
+const isLeftFull = computed(() => swipeDelta.value >= threshold);
+// const rightSlidePercent = computed(() => (swipeDelta.value < 0 ? (-swipeDelta.value / swipeDistance) * 100 : 0));
+const isRightFull = computed(() => swipeDelta.value <= -threshold);
 
 const hasBackground = computed(() => Boolean(useSlots().left) || Boolean(useSlots().right));
 
-onMounted(() => {
-	if (slider.value) {
-		// initialize scroll position to center
-		slider.value.scrollLeft = (slider.value.scrollWidth - slider.value.clientWidth) / 2;
+const swipeDelta = ref(0);
+let touchStartX = 0;
+let touchStartY = 0;
+const sliderRef = ref<HTMLElement | null>(null);
 
-		slider.value.addEventListener('scroll', () => {
-			if (!slider.value) {
-				return;
+function updateSwipeDelta(val) {
+	swipeDelta.value = Math.min(props.onLeft ? swipeDistance : 0, Math.max(props.onRight ? -swipeDistance : 0, val));
+}
+
+onMounted(() => {
+	if (sliderRef.value) {
+		sliderRef.value.addEventListener('touchstart', (e) => {
+			e.stopPropagation();
+			const touch = e.touches[0];
+			touchStartX = touch.clientX;
+			touchStartY = touch.clientY;
+			sliderRef.value?.classList.add('no-transition');
+		}, { passive: true });
+
+		sliderRef.value.addEventListener('touchmove', (e) => {
+			e.stopPropagation();
+			const touch = e.touches[0];
+			const deltaX = touch.clientX - touchStartX as number;
+			const deltaY = touch.clientY - touchStartY as number;
+			if (deltaX > deltaY) {
+				document.body.classList.add('prevent-scroll');
+				updateSwipeDelta(deltaX);
+			} else {
+				document.body.classList.remove('prevent-scroll');
+				updateSwipeDelta(0);
 			}
-			const maxScroll = slider.value.scrollWidth - slider.value.clientWidth;
-			const scrollLeft = slider.value.scrollLeft;
-			leftSlidePercent.value = (1 - Math.min(1, scrollLeft / swipeDistance)) * 100;
-			rightSlidePercent.value = (1 - Math.min(1, (maxScroll - scrollLeft) / swipeDistance)) * 100;
-		});
-	
-		slider.value.addEventListener('touchend', () => {
+		}, { passive: true });
+
+		document.addEventListener('touchend', (e) => {
+			e.stopPropagation();
+			sliderRef.value?.classList.remove('no-transition');
+			document.body.classList.remove('prevent-scroll');
 			attemptTriggers();
-		});
+			updateSwipeDelta(0);
+		}, { passive: true });
 	}
 })
 
@@ -52,22 +72,22 @@ function attemptTriggers() {
 </script>
 
 <template>
-<div class="slide-action">
-    <div ref="slider" class="slider">
-        <div class="buffer" v-if="onLeft"></div>
-        <div class="content" :class="{ 'shadow-1 bg': hasBackground }">
+<div class="slide-action" ref="sliderRef">
+    <!-- <div ref="slider" class="slider"> -->
+        <!-- <div class="buffer" v-if="onLeft"></div> -->
+        <div class="content" :class="{ 'shadow-1 bg': hasBackground }" :style="{ translate: swipeDelta + 'px 0' }">
 			<slot name="content"></slot>
 		</div>
-        <div class="buffer" v-if="onRight"></div>
-    </div>
-	<div class="action left" :style="{ opacity: (50 + leftSlidePercent / 2) / 100, background: leftBackground }">
+        <!-- <div class="buffer" v-if="onRight"></div> -->
+    <!-- </div> -->
+	<div class="action left" :style="{ opacity: isLeftFull ? 1 : .5, background: leftBackground }">
 		<div class="action-content" :class="{ full: isLeftFull, activated: isLeftFull }">
-			<slot name="left" :percent="leftSlidePercent"></slot>
+			<slot name="left"></slot>
 		</div>
 	</div>
-	<div class="action right" :style="{ opacity: (50 + rightSlidePercent / 2) / 100, background: rightBackground }">
+	<div class="action right" :style="{ opacity: isRightFull ? 1 : .5, background: rightBackground }">
 		<div class="action-content" :class="{ full: isRightFull, activated: isRightFull }">
-			<slot name="right" :percent="rightSlidePercent"></slot>
+			<slot name="right"></slot>
 		</div>
 	</div>
 </div>
@@ -77,16 +97,7 @@ function attemptTriggers() {
 .slide-action {
     position: relative;
     width: 100%;
-}
-
-
-.slider {
-    width: 100%;
-    overflow-x: scroll;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    display: flex;
-    scrollbar-width: none;
+	overflow: hidden;
 
 	.content {
 		width: 100%;
@@ -97,38 +108,42 @@ function attemptTriggers() {
 		scroll-snap-align: center;
 		flex: 1 0 100%;
 	}
-}
 
-.buffer {
-    display: inline-block;
-    flex: 0 0 100px;
-}
-
-.action {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-	width: 50%;
-	padding: 0 20px;
-	display: flex;
-	align-items: center;
-	pointer-events: none; // disable interaction
-	user-select: none;
-
-	&.right {
-		right: 0;
-		justify-content: flex-end;
+	&:not(.no-transition) .content {
+		transition: translate 300ms;
 	}
 
+	.buffer {
+		display: inline-block;
+		flex: 0 0 100px;
+	}
 
-	.action-content {
-		transition: 300ms;
-		
-		&.full {
-			transform: scale(1.2);
+	.action {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 50%;
+		padding: 0 20px;
+		display: flex;
+		align-items: center;
+		pointer-events: none; // disable interaction
+		user-select: none;
+
+		&.right {
+			right: 0;
+			justify-content: flex-end;
 		}
+
+
+		.action-content {
+			transition: 300ms;
+			
+			&.full {
+				transform: scale(1.25);
+			}
+		}
+		
 	}
-	
 }
 
 

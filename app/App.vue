@@ -27,6 +27,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+	<!-- Message styles used for Toast are not bundled unless the component is used somewhere -->
+	<Message severity="info" style="display: none;" />
+
 	<div class="app" :class="{ touch: useAppStore().isTouch }">
 		<LoggedIn v-if="!waitingForAuth && userStore.hasAuth && userStore.currentUser" />
 		<div v-else class="flex flex-column align-items-center" style="padding-top: calc(33vh - 5rem)">

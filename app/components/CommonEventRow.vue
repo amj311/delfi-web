@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import AttributionAvatar from './AttributionAvatar.vue';
 import Currency from './Currency.vue';
 import Icon from './Icon.vue';
@@ -12,6 +12,9 @@ import { colors } from 'delfi-core/utils/constants';
 import SwipeAction from './utils/SwipeAction.vue';
 import { TransactionService } from '@/services/transaction.service';
 import { useToast } from './utils/Toast.vue';
+import { jsonCopy, wait } from 'delfi-core/utils/miscUtils';
+import TransactionAttributionDrawer from './TransactionAttributionDrawer.vue';
+import type { Transaction } from 'delfi-core/models/Transaction';
 
 const toast = useToast();
 
@@ -33,6 +36,8 @@ const {
 	expand?: boolean;
 	showPastDue?: boolean;
 }>();
+
+const showLoading = ref(false);
 
 const isAttribution = computed(() => Boolean(event.attributionDetails));
 
@@ -65,6 +70,7 @@ async function reviewTransaction() {
 		return;
 	}
 	try {
+		showLoading.value = true;
 		const transaction = event.attributionDetails.sourceTransaction;
 		await TransactionService.markTransactionReviewed(transaction.transaction_id);
 		transaction.TransactionReview = {
@@ -74,21 +80,24 @@ async function reviewTransaction() {
 		toast.add({
 			severity: 'success',
 			title: 'Transaction Reviewed',
-			duration: 3000,
 		});
 	} catch (error) {
 		console.error('Error reviewing transaction:', error);
 		toast.add({
 			severity: 'error',
 			title: 'Failed to mark transaction as reviewed.',
-			duration: 3000,
 		});
+	} finally {
+		showLoading.value = false;
 	}
 }
 
 const leftAction = computed(() => {
 	if (isAttribution.value) {
-		return !Boolean(event.attributionDetails?.sourceTransaction.TransactionReview?.reviewed_at) ? reviewTransaction : undefined;
+		const reviewRecord = event.attributionDetails?.sourceTransaction.TransactionReview;
+		if (reviewRecord && !reviewRecord.reviewed_at) {
+			return reviewTransaction;
+		}
 	}
 	return undefined;
 });
@@ -96,101 +105,111 @@ const leftAction = computed(() => {
 </script>
 
 <template>
-	<SwipeAction v-if="showTransferCopy || !event.attributionDetails?.isTransferCopy" :onLeft="leftAction" leftBackground="var(--p-sky-300)">
-		<template #content>
+	<div>
+		<SwipeAction
+			v-if="showTransferCopy || !event.attributionDetails?.isTransferCopy"
+			:onLeft="leftAction"
+			leftBackground="var(--p-sky-300)"
+		>
+			<template #content>
+				<div
+					class="event-row flex align-items-center gap-3"
+					:class="{ 'opacity-70': isPending, clickable, expand }"
+				>
+					<!-- Avatar with badges -->
+					<div class="loading-center relative">
+						<AttributionAvatar :event="event" :size="size" :style="{ opacity: showLoading ? 0.5 : 1 }">
+							<template #badge v-if="event.attributionDetails?.isSplit">
+								<Icon source_id="arrow_split" source="material-symbols" />
+							</template>
+							<template #badge v-if="event.attributionDetails?.isTransferPair">
+								<Icon source_id="sync_alt" source="material-symbols" />
+							</template>
+							<template #badge v-if="event.projectionDetails">
+								<i class="pi pi-wallet" style="font-size: 0.95em" />
+							</template>
+						</AttributionAvatar>
+						<i v-if="showLoading" class="pi pi-spin pi-spinner absolute-center" />
+					</div>
 
-			<div
-				class="event-row flex align-items-center gap-3"
-				:class="{ 'opacity-70': isPending, clickable, expand }"
-			>
-				<!-- Avatar with badges -->
-				<AttributionAvatar :event="event" :size="size">
-					<template #badge v-if="event.attributionDetails?.isSplit">
-						<Icon source_id="arrow_split" source="material-symbols" />
-					</template>
-					<template #badge v-if="event.attributionDetails?.isTransferPair">
-						<Icon source_id="sync_alt" source="material-symbols" />
-					</template>
-					<template #badge v-if="event.projectionDetails">
-						<i class="pi pi-wallet" style="font-size: 0.95em" />
-					</template>
-				</AttributionAvatar>
-
-				<!-- Main content area -->
-				<div class="flex flex-column w-full min-w-0">
-					<!-- Line 1: Transaction name + amount -->
-					<div class="flex align-items-center gap-2">
-						<div class="flex align-items-center w-full min-w-0">
-							<div class="text-ellipsis">
-								<span class="font-medium" :class="{ 'review-bold': event.attributionDetails?.needsReview }">{{
-									event.displayName
-								}}</span>
-								<small v-if="event.attributionDetails?.memo">
-									&nbsp; {{ event.attributionDetails.softDescription }}
-								</small>
+					<!-- Main content area -->
+					<div class="flex flex-column w-full min-w-0">
+						<!-- Line 1: Transaction name + amount -->
+						<div class="flex align-items-center gap-2">
+							<div class="flex align-items-center w-full min-w-0">
+								<div class="text-ellipsis">
+									<span class="font-medium" :class="{ 'review-bold': event.attributionDetails?.needsReview }">{{
+										event.displayName
+									}}</span>
+									<small v-if="event.attributionDetails?.memo">
+										&nbsp; {{ event.attributionDetails.softDescription }}
+									</small>
+								</div>
+							</div>
+							<div style="flex-grow: 1"></div>
+							<div
+								class="font-medium flex align-items-center gap-1"
+								:class="{ 'review-bold': event.attributionDetails?.needsReview }"
+							>
+								<Icon
+									v-if="!props.showTransferCopy && event.attributionDetails?.isTransferPair"
+									source_id="sync_alt"
+									source="material-symbols"
+								/>
+								<Currency :amount="event.amount" :mode="currencyModeComputed" />
 							</div>
 						</div>
-						<div style="flex-grow: 1"></div>
-						<div
-							class="font-medium flex align-items-center gap-1"
-							:class="{ 'review-bold': event.attributionDetails?.needsReview }"
-						>
-							<Icon
-								v-if="!props.showTransferCopy && event.attributionDetails?.isTransferPair"
-								source_id="sync_alt"
-								source="material-symbols"
-							/>
-							<Currency :amount="event.amount" :mode="currencyModeComputed" />
+
+						<!-- Line 2: Budget/Category - Account [→ Transfer Target] + Date -->
+						<div class="flex align-items-center gap-2">
+							<small class="text-ellipsis">
+								{{ (!hideBudget && event.Budget?.memo) || categoryStore.getCategoryById(event.category_id).name }}
+								<template v-if="!hideAccount">
+									-
+									{{ accountStore.getAccountName(event.account_id) }}
+									<template v-if="event.attributionDetails?.isTransferPair">
+										→
+										{{
+											accountStore.getAccountName(
+												event.attributionDetails?.sourceTransaction.TransferPair!.account_id
+											)
+										}}
+									</template>
+								</template>
+								<template v-if="event.Group">
+									&nbsp;
+									<small><Icon name="tag" /></small>
+									{{ useGroupStore().getGroupById(event.Group.group_id)?.name }}
+								</template>
+							</small>
+							<div class="flex-grow-1"></div>
+							<small
+								class="white-space-nowrap"
+								v-if="!hideDate && !isPending"
+								:style="{ color: isPastDue ? colors.yellow3 : '' }"
+							>
+								<!-- <span v-if="isPastDue">Expected</span> -->
+								{{ displayDate }}
+							</small>
+							<small v-if="isPending">PENDING</small>
 						</div>
 					</div>
 
-					<!-- Line 2: Budget/Category - Account [→ Transfer Target] + Date -->
-					<div class="flex align-items-center gap-2">
-						<small class="text-ellipsis">
-							{{ (!hideBudget && event.Budget?.memo) || categoryStore.getCategoryById(event.category_id).name }}
-							<template v-if="!hideAccount">
-								-
-								{{ accountStore.getAccountName(event.account_id) }}
-								<template v-if="event.attributionDetails?.isTransferPair">
-									→
-									{{
-										accountStore.getAccountName(
-											event.attributionDetails?.sourceTransaction.TransferPair!.account_id
-										)
-									}}
-								</template>
-							</template>
-							<template v-if="event.Group">
-								&nbsp;
-								<small><Icon name="tag" /></small>
-								{{ useGroupStore().getGroupById(event.Group.group_id)?.name }}
-							</template>
-						</small>
-						<div class="flex-grow-1"></div>
-						<small
-							class="white-space-nowrap"
-							v-if="!hideDate && !isPending"
-							:style="{ color: isPastDue ? colors.yellow3 : '' }"
-						>
-							<!-- <span v-if="isPastDue">Expected</span> -->
-							{{ displayDate }}
-						</small>
-						<small v-if="isPending">PENDING</small>
-					</div>
+					<div v-if="event.attributionDetails?.needsReview" class="review-dot" />
 				</div>
 
-				<div v-if="event.attributionDetails?.needsReview" class="review-dot" />
-			</div>
 
-
-		</template>
-		<template #left>
-			<i class="pi pi-check-circle" />
-		</template>
-		<template #right>
-			<i class="pi pi-check-circle" />
-		</template>
-	</SwipeAction>
+			</template>
+			<template #left>
+				<i class="pi pi-check-circle" />
+			</template>
+			<template #right>
+				<Icon name="category" />
+			</template>
+		</SwipeAction>
+		
+		<TransactionAttributionDrawer ref="transactionAttributionDrawer" />
+	</div>
 </template>
 
 <style scoped lang="scss">

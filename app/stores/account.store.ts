@@ -49,12 +49,7 @@ export const useAccountStore = defineStore('account', () => {
 
 	async function syncAccount(accountId: string) {
 		try {
-			const { data } = await request.post(`/account/${accountId}/sync`);
-			const account = data.data;
-			// Update the account in the store
-			accounts.value = accounts.value.map(a => a.account_id === accountId ? account : a);
-			// Also update the delfi store
-			// delfiStore.updateAccount(account);
+			await request.post(`/account/${accountId}/sync`);
 		}
 		catch (e) {
 			console.error("Could not sync account!")
