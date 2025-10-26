@@ -37,11 +37,12 @@ onMounted(() => {
 		}, { passive: true });
 
 		sliderRef.value.addEventListener('touchmove', (e) => {
+			if (!props.onLeft && !props.onRight) return;
 			e.stopPropagation();
 			const touch = e.touches[0];
 			const deltaX = touch.clientX - touchStartX as number;
 			const deltaY = touch.clientY - touchStartY as number;
-			if (deltaX > deltaY) {
+			if (deltaX > deltaY && deltaX > 5) {
 				document.body.classList.add('prevent-scroll');
 				updateSwipeDelta(deltaX);
 			} else {
