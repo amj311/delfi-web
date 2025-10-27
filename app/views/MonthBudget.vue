@@ -1429,7 +1429,7 @@ const accumulationChart = computed(() => {
 						position: 'sticky',
 						top: '0',
 						backgroundColor: '#ffff',
-						zIndex: 1,
+						zIndex: 3,
 						marginLeft: '-5px',
 						marginRight: '-5px',
 					}"
