@@ -3,7 +3,7 @@ import { useGroupStore } from '@/stores/group.store';
 import Icon from './Icon.vue';
 import DrawerModal from './utils/DrawerModal.vue';
 import { computed, reactive, ref } from 'vue';
-import type { BudgetGroupPartial } from 'delfi-core/models/Transaction';
+import type { BudgetGroup, BudgetGroupPartial } from 'delfi-core/models/Transaction';
 import { useToast } from './utils/Toast.vue';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
@@ -21,12 +21,20 @@ defineEmits<{
 	'select': [groupId: string | null];
 }>();
 
-const groups = computed(() => useGroupStore().groups.filter(group => {
-	if (props.allowedGroups) {
-		return props.allowedGroups.some(g => g.group_id === group.group_id);
-	}
-	return true;
-}));
+
+const filter = ref<string>('');
+const groups = computed(() =>
+	useGroupStore().groups
+		.filter(group => {
+		if (props.allowedGroups) {
+			return props.allowedGroups.some(g => g.group_id === group.group_id);
+		}
+		return true;
+	})
+	.filter((m) => {
+		return !filter.value.trim() || m.name.toLowerCase().includes(filter.value.trim().toLowerCase());
+	})
+);
 
 const editingGroupModal = ref<InstanceType<typeof DrawerModal>>();
 const editingGroup = ref<BudgetGroupPartial | null>(null);
@@ -38,6 +46,11 @@ function draftNewGroup() {
 		name: "",
 		color: undefined,
 	}
+	editingGroupModal.value?.open();
+}
+
+function editGroup(group: BudgetGroup) {
+	editingGroup.value = group;
 	editingGroupModal.value?.open();
 }
 
@@ -75,7 +88,7 @@ async function saveGroup() {
 </script>
 
 <template>
-	<div class="flex flex-column">
+	<div class="flex flex-column h-full overflow-hidden">
 		<div
 			v-if="!allowedGroups"
 			class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round"
@@ -91,20 +104,28 @@ async function saveGroup() {
 				severity="secondary"
 				class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round"
 				@click="draftNewGroup"
-			>
-				<Icon name="material-symbols::new_label" fill color="#aaa" />
-				<div class="flex-grow-1">New Group</div>
-			</Button>
+				icon="pi pi-plus"
+				label="Create group"
+			/>
 		</div>
 		
 
-		<div v-for="group in groups" :key="group.name" class="flex flex-column gap-2">
-			<div
-				class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round"
+		<div class="searchbar">
+			<InputText v-model="filter" placeholder="Search..." class="w-full" />
+			<i class="pi pi-search"></i>
+		</div>
+
+		<div class="flex flex-column overflow-y-auto">
+			<div v-for="group in groups" :key="group.name" class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round hover-show-trigger"
 				@click="() => $emit('select', group.group_id)"
 			>
 				<Icon name="tag" fill :color="group.color" />
 				<div class="flex-grow-1">{{  group.name }}</div>
+				<div class="hover-show">
+					<div class="flex align-items-center" @click.stop>
+						<Button text severity="secondary" icon="pi pi-pencil" @click="editGroup(group)" style="margin: -.5rem" />
+					</div>
+				</div>
 				<i class="pi pi-check" v-if="currentGroupId === group.group_id" />
 			</div>
 		</div>
@@ -128,4 +149,17 @@ async function saveGroup() {
 </template>
 
 <style scoped lang="scss">
+.searchbar {
+	position: relative;
+	padding: 0.5rem 0;
+	background: var(--color-background);
+
+	> i.pi {
+		position: absolute;
+		right: 0.7rem;
+		top: 50%;
+		transform: translateY(-50%);
+		color: var(--p-text-color);
+	}
+}
 </style>

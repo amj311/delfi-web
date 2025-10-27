@@ -11,7 +11,7 @@ import { UncategorizedCategory } from 'delfi-core/models/systemCategories';
 const props = defineProps<{
 	event?: Partial<CommonEvent>;
 	image?: string | null;
-	icon?: IconIdentifier;
+	icon?: IconIdentifier | null;
 	background?: string;
 	category?: Category | null;
 	categoryId?: string | null;
@@ -34,6 +34,7 @@ const category = computed(
 		useCategoryStore().getCategoryById(props.categoryId)
 );
 const finalIcon = computed(() => {
+	if (props.icon === null) return null;
 	return props.icon || category.value?.icon || category.value?.ParentCategory?.icon;
 });
 const backgroundColor = computed(() => {
@@ -70,7 +71,7 @@ function setImageError() {
 					class="icon-wrapper flex align-items-center justify-content-center"
 					:style="{ backgroundColor: colors[backgroundColor] || backgroundColor }"
 				>
-					<Icon :name="finalIcon" color="#fff" />
+					<Icon v-if="finalIcon" :name="finalIcon" color="#fff" />
 				</div>
 			</template>
 		</div>
