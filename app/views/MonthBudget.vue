@@ -742,11 +742,7 @@ const accumulationChart = computed(() => {
 								<Currency :amount="state.summaryData.incomeSummary.tally.unBudgetedNet" />
 							</AccordionHeader>
 							<AccordionContent>
-								<template
-									v-for="(event, i) of state.summaryData.incomeSummary.tally.unBudgetedAttributions
-										.slice()
-										.sort((a, b) => (a.date.isBefore(b.date) ? -1 : 1))"
-								>
+								<template v-for="(event, i) of state.summaryData.incomeSummary.tally.unBudgetedAttributions">
 									<CommonEventRow
 										:event="event"
 										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
@@ -936,9 +932,7 @@ const accumulationChart = computed(() => {
 							</AccordionHeader>
 							<AccordionContent>
 								<template
-									v-for="(event, i) of state.summaryData.transferSummary.tally.unBudgetedAttributions
-										.slice()
-										.sort((a, b) => (a.date.isBefore(b.date) ? -1 : 1))"
+									v-for="(event, i) of state.summaryData.transferSummary.tally.unBudgetedAttributions"
 								>
 									<CommonEventRow
 										:event="event"
@@ -1100,9 +1094,7 @@ const accumulationChart = computed(() => {
 							</AccordionHeader>
 							<AccordionContent>
 								<template
-									v-for="(event, i) of state.summaryData.allUnbudgeted.unBudgetedAttributions
-										.slice()
-										.sort((a, b) => (a.date.isBefore(b.date) ? -1 : 1))"
+									v-for="(event, i) of state.summaryData.allUnbudgeted.unBudgetedAttributions"
 								>
 									<CommonEventRow
 										:event="event"

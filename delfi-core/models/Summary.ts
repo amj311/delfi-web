@@ -322,11 +322,12 @@ export class RealityTally<Grouper = any> {
 
 	get unBudgetedAttributions(): AttributionEvent[] {
 		// ??? Does it need to be assigned to one of the specific budgets?
-		return this.attributionEvents.filter(e => !e.budget_id).sort((a, b) => {
-			const aParentCategory = a.Category?.ParentCategory ? a.Category!.ParentCategory.name : a.Category?.name || 'Uncategorized';
-			const bParentCategory = b.Category?.ParentCategory ? b.Category!.ParentCategory.name : b.Category?.name || 'Uncategorized';
-			return aParentCategory.localeCompare(bParentCategory);
-		});
+		return this.attributionEvents.filter(e => !e.budget_id)
+		// .sort((a, b) => {
+		// 	const aParentCategory = a.Category?.ParentCategory ? a.Category!.ParentCategory.name : a.Category?.name || 'Uncategorized';
+		// 	const bParentCategory = b.Category?.ParentCategory ? b.Category!.ParentCategory.name : b.Category?.name || 'Uncategorized';
+		// 	return aParentCategory.localeCompare(bParentCategory);
+		// });
 	}
 
 

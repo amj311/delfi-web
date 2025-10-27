@@ -125,7 +125,8 @@ export class Delfi {
 		const monthEnd = ddate(monthDate.endOf('month'));
 
 		const monthForecast = await this.forecast.pollMonthReady(monthStart);
-		const monthAttributionEvents = await this.transactionSource.getAttributedEventsBetween(monthStart, monthEnd);
+		const monthAttributionEvents = (await this.transactionSource.getAttributedEventsBetween(monthStart, monthEnd)).sort((a, b) => a.date.diff(b.date));
+		console.log(monthAttributionEvents.map(e => e.date.formatShort()));
 
 		const monthBudgetOccurrences = await this.getOccurrenceSummaries(monthForecast.occurrences);
 		const monthBudgetSnapshots = monthBudgetOccurrences.map(o => o.snapshot(monthStart, monthEnd));
@@ -142,7 +143,7 @@ export class Delfi {
 				monthEnd,
 				budget,
 				snapshots.flatMap(s => s.budgetEvents),
-				Array.from(new Set(snapshots.flatMap(s => s.attributedEvents))),
+				Array.from(new Set(snapshots.flatMap(s => s.attributedEvents))).sort((a, b) => a.date.diff(b.date)),
 			);
 		});
 
@@ -170,7 +171,7 @@ export class Delfi {
 		// 	);
 		// });
 
-		const monthBudgetEvents = consolidatedBudgetSnapshots.flatMap(snapshot => snapshot.budgetEvents).sort((a, b) => a.date.diff(b.date));
+		const monthBudgetEvents = consolidatedBudgetSnapshots.flatMap(snapshot => snapshot.budgetEvents);
 
 		const categorySummaries = this.categories.map((category: Category) => ({
 			category,
@@ -300,6 +301,11 @@ export class Delfi {
 		const totalTally = new RealityTally(monthBudgetEvents, monthAttributionEvents);
 		// tally of unbudgeted events
 		const allUnbudgeted = new RealityTally([], monthAttributionEvents.filter(t => !t.budget_id && (!t.category_id || t.Category?.type === 'EXPENSE')));
+
+		console.log(monthAttributionEvents.map(e => e.date.formatShort()));
+		console.log(allUnbudgeted.unBudgetedAttributions.map(e => e.date.formatShort()));
+		console.log(spendingSummary.budgets.map(b => b.attributedEvents.flatMap(e => e.date.formatShort())));
+
 		// tally of non-transfer events
 		const netTally = new RealityTally(
 			monthBudgetEvents.filter(t => !t.Budget.Category || t.Budget.Category.type !== 'TRANSFER'),
