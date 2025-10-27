@@ -102,7 +102,7 @@ export const colors = {
 	magenta1: "#ee37c8",
 	magenta2: "#d515ad",
 	magenta3: "#c1099b",
-}
+} as const;
 
 
 const IconSources = [

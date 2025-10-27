@@ -48,7 +48,7 @@ const groups = computed(() =>
 
 <template>
 	<div class="flex flex-column h-full">
-		<div class="flex align-items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 border-round" @click="() => $emit('select', null)">
+		<div v-if="!allowedCategories" class="flex align-items-center gap-3 cursor-pointer hover:bg-gray-100 p-2 border-round" @click="() => $emit('select', null)">
 			<AttributionAvatar :icon="'category'" style="width: 2rem; height: 2rem" />
 			<div class="flex-grow-1">Uncategorized</div>
 			<i class="pi pi-check" v-if="!currentCategoryId" />

@@ -8,7 +8,6 @@ import { TransactionService } from '@/services/transaction.service';
 import { TransactionUtils, type Transaction } from 'delfi-core/models/Transaction';
 import { instantiateDates } from 'delfi-core/utils/dateUtils';
 import CommonEventRow from '@/components/CommonEventRow.vue';
-import Divider from 'primevue/divider';
 import TransactionDetailsDrawer from '@/components/TransactionDetailsDrawer.vue';
 import { useToast } from '@/components/utils/Toast.vue';
 

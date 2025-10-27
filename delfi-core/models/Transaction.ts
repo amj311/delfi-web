@@ -39,15 +39,20 @@ export type Tag = {
 	workspace_id?: string,
 }
 
-export type BudgetGroup = {
-	// details
-	name: string,
-	color: TagColor,
 
-	// DB
+export type BudgetGroupDetails = {
+	name: string,
+	color?: TagColor,
+}
+
+export type BudgetGroupDbDetails = {
 	group_id: string,
 	workspace_id: string,
 }
+
+export type BudgetGroup = BudgetGroupDetails & BudgetGroupDbDetails;
+
+export type BudgetGroupPartial = BudgetGroupDetails & Partial<BudgetGroup>;
 
 // PROBLEM Transactions can be shown in a list as the parent with their splits, but the splits also need to be handled individually for attributing
 //         How and when to represent each?

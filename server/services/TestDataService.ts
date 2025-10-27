@@ -351,6 +351,25 @@ export class TestDataService {
 				Category: categoryByName("Bonus"),
 			},
 
+
+			{
+				budget_id: '0043f6a7-8901-abcd-ef01-234567895004',
+				budgetType: BudgetType.TRANSACTION,
+				memo: "Clozd Equity Purchase",
+				account_id: getAccountByName('Checking').account_id,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-01-01', frequency: 'MONTHLY', interval: 3, },
+					projectionSchedule: { byDayOfMonth: [27] },
+					amountTemplate: {
+						type: 'fixed',
+						amount: -223,
+					}
+				}],
+				category_id: categoryByName("Buy").category_id,
+				Category: categoryByName("Buy"),
+			},
+
 			{
 				budget_id: 'c5d6e7f8-9012-abcd-ef01-234567890123',
 				budgetType: BudgetType.TRANSACTION,
@@ -570,6 +589,26 @@ export class TestDataService {
 				}],
 			},
 
+
+			// KIDS ACTIVITIES
+			{
+				budget_id: '001e1f2-4567-abcd-ef01-234567890001',
+				budgetType: BudgetType.TRANSACTION,
+				memo: "Nana Dance",
+				account_id: getAccountByName('Checking').account_id,
+				category_id: categoryByName("Sports and Activities").category_id,
+				Category: categoryByName("Sports and Activities"),
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: ddate('2022-09-01').startOf('week').toString(), frequency: 'WEEKLY' },
+					projectionSchedule: { byDayOfWeek: ['WE'] },
+					amountTemplate: {
+						type: 'fixed',
+						amount: -15,
+					}
+				}],
+			},
+
 			/**
 			 * SAVINGS
 			 */
@@ -680,6 +719,21 @@ export class TestDataService {
 				scheduleVariants: [{
 					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
 					projectionSchedule: { interval: 2, frequency: 'WEEKLY' },
+					amountTemplate: {
+						type: 'fixed',
+						amount: -50,
+					}
+				}],
+				account_id: getAccountByName('Checking').account_id,
+			},
+			{
+				budget_id: '001765432-1fed-cba9-8765-432109876001',
+				memo: "Ministering",
+				category_id: categoryByName("Service").category_id,
+				budgetType: BudgetType.TRANSACTION,
+				recurrence_type: RecurrenceType.SCHEDULE,
+				scheduleVariants: [{
+					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -50,

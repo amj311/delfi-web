@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import request from '@/services/request';
-import type { BudgetGroup } from 'delfi-core/models/Transaction';
+import type { BudgetGroup, BudgetGroupPartial } from 'delfi-core/models/Transaction';
 
 export const useGroupStore = defineStore('group', () => {
 	let groups = ref([] as BudgetGroup[]);
@@ -30,10 +30,21 @@ export const useGroupStore = defineStore('group', () => {
 		console.error("Error loading groups:", error);
 	});
 
+	async function upsertGroup(group: BudgetGroupPartial) {
+		if (group.group_id) {
+			await request.put('/group/' + group.group_id, group);
+		}
+		else {
+			await request.post('/group/', group);
+		}
+		await loadGroups();
+	}
+
 	return {
 		groups,
 		isLoadingGroups,
 		loadGroups,
 		getGroupById,
+		upsertGroup,
 	};
 })

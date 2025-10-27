@@ -13,16 +13,17 @@ export const BudgetGroupDao = {
 			if (exists) {
 				await BudgetGroupDao.updateGroup(group.group_id, group);
 			} else {
-				await BudgetGroupDao.createGroup(group);
+				await BudgetGroupDao.createGroup(TestDataService.workspaceId, group);
 			}
 		}
 	},
 
 
-	async createGroup(data) {
+	async createGroup(workspace_id, data) {
 		return await prisma.budgetGroup.create({
 			data: {
-				...data
+				...data,
+				workspace_id
 			}
 		});
 	},

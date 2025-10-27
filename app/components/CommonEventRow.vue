@@ -30,6 +30,7 @@ const {
 	currencyMode?: 'transaction' | 'none' | 'net_change';
 	hideDate?: boolean;
 	hideBudget?: boolean;
+	hideGroup?: boolean;
 	showTransferCopy?: boolean;
 	hideAccount?: boolean;
 	clickable?: boolean;
@@ -176,7 +177,7 @@ const leftAction = computed(() => {
 										}}
 									</template>
 								</template>
-								<template v-if="event.Group">
+								<template v-if="event.Group && !hideGroup">
 									&nbsp;
 									<small><Icon name="tag" /></small>
 									{{ useGroupStore().getGroupById(event.Group.group_id)?.name }}

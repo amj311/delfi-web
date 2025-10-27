@@ -1,11 +1,12 @@
-import type { BudgetGroup } from "delfi-core/models/Transaction";
+import type { BudgetGroup, BudgetGroupDetails } from "delfi-core/models/Transaction";
 import { BudgetGroupDao } from "../data/GroupDao";
 
 export default (app, _, done) => {
 
     app.post('/', async function handler (request, reply) {
-        const groupData = request.body as BudgetGroup;
-        const data = await BudgetGroupDao.createGroup(groupData);
+        const groupData = request.body as BudgetGroupDetails;
+		const workspace_id = request.sessionUser.workspace_id;
+        const data = await BudgetGroupDao.createGroup(workspace_id, groupData);
         return {
             success: true,
             data,
