@@ -4,21 +4,12 @@ import Icon from './Icon.vue';
 import { colors, type IconIdentifier } from 'delfi-core/utils/constants';
 import type { Category } from 'delfi-core/models/Category';
 import { useCategoryStore } from '@/stores/category.store';
+import type { CommonEvent } from 'delfi-core/models/Summary';
+import { useAccountStore } from '@/stores/account.store';
+import { UncategorizedCategory } from 'delfi-core/models/systemCategories';
 
 const props = defineProps<{
-	event?: {
-		Merchant?: {
-			logo?: string | null;
-		} | null;
-		Category?: {
-			icon?: IconIdentifier;
-			color?: string;
-			ParentCategory?: {
-				icon?: IconIdentifier;
-				color?: string;
-			} | null;
-		} | null;
-	};
+	event?: Partial<CommonEvent>;
 	image?: string | null;
 	icon?: IconIdentifier;
 	background?: string;
@@ -36,15 +27,6 @@ const fontSize = computed(() => {
 	return 0.5 * width.value;
 });
 
-const finalImage = computed(() => {
-	return props.image || props.event?.Merchant?.logo || '';
-});
-const imageError = ref(false);
-function setImageError() {
-	console.warn('Error loading image:', finalImage.value);
-	imageError.value = true;
-}
-
 const category = computed(
 	() =>
 		props.category ||
@@ -52,7 +34,7 @@ const category = computed(
 		useCategoryStore().getCategoryById(props.categoryId)
 );
 const finalIcon = computed(() => {
-	return props.icon || category.value?.icon || category.value?.ParentCategory?.icon || 'category';
+	return props.icon || category.value?.icon || category.value?.ParentCategory?.icon;
 });
 const backgroundColor = computed(() => {
 	return (
@@ -62,6 +44,21 @@ const backgroundColor = computed(() => {
 		'#aaaaaf'
 	);
 });
+
+
+const finalImage = computed(() => {
+	if (props.image) return props.image;
+	if (props.event?.Merchant?.logo) return props.event?.Merchant?.logo;
+	// Trying to diminish the visual effect of uncategorized transactions.
+	// If there is no category, just show the bank logo
+	if (category.value === UncategorizedCategory) return useAccountStore().getAccountById(props.event?.attributionDetails?.sourceTransaction.account_id)?.Institution.logo;
+	return '';
+});
+const imageError = ref(false);
+function setImageError() {
+	console.warn('Error loading image:', finalImage.value);
+	imageError.value = true;
+}
 </script>
 
 <template>

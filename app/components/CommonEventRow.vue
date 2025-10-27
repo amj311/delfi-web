@@ -241,7 +241,7 @@ const leftAction = computed(() => {
 
 	.review-dot {
 		position: absolute;
-		top: 8px;
+		top: 4px;
 		left: 4px;
 		width: 10px;
 		aspect-ratio: 1;

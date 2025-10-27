@@ -1,5 +1,5 @@
 import type { Category, ChildCategory } from "./Category";
-import { TagColor } from "delfi-core/utils/constants";
+import { colors, TagColor } from "delfi-core/utils/constants";
 
 // Define the groups based on the old parent categories
 export const parentCategories = {
@@ -166,7 +166,7 @@ export const UncategorizedCategory: ChildCategory = {
 		name: "Uncategorized",
 		type: "EXPENSE",
 		icon: "category",
-		color: null as any,
+		color: TagColor.sky1,
 	}
 };
 
