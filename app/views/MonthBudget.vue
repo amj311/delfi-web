@@ -949,8 +949,7 @@ const accumulationChart = computed(() => {
 			<br />
 
 			<div v-if="state.summaryData.groupSummaries.length > 0">
-				<br />
-				<div v-for="{ groupId, tally } of state.summaryData.groupSummaries" class="group-summary">
+				<div v-for="{ groupId, tally } of state.summaryData.groupSummaries" class="group-summary mb-4">
 					<div class="title flex align-items-center gap-1 my-2">
 						<Icon name="tag" fill :color="groupStore.getGroupById(groupId)?.color" />
 						<b>{{ groupStore.getGroupById(groupId)?.name }}</b>
@@ -1044,7 +1043,6 @@ const accumulationChart = computed(() => {
 						/>
 					</div>
 				</div>
-				<br />
 				<br />
 			</div>
 
@@ -1596,7 +1594,6 @@ const accumulationChart = computed(() => {
 	width: 100%;
 	min-width: 0;
 }
-
 .group-summary {
 	background: #fff;
 	box-shadow: 0 0 3px #0002;
