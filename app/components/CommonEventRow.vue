@@ -15,6 +15,7 @@ import { useToast } from './utils/Toast.vue';
 import { jsonCopy, wait } from 'delfi-core/utils/miscUtils';
 import TransactionAttributionDrawer from './TransactionAttributionDrawer.vue';
 import type { Transaction } from 'delfi-core/models/Transaction';
+import { UncategorizedCategory } from 'delfi-core/models/systemCategories';
 
 const toast = useToast();
 
@@ -56,6 +57,9 @@ const isPending = computed(() => event.attributionDetails?.sourceTransaction.pen
 const isPastDue = computed(
 	() => props.showPastDue && (event.projectionDetails?.windowEnd || event.date).isBefore(ddate())
 );
+
+const category = computed(() => categoryStore.getCategoryById(event.category_id));
+const attributionText = computed<string>(() => (!props.hideBudget && event.Budget?.memo) || (category.value !== UncategorizedCategory && category.value?.name) || '');
 
 const displayDate = computed(() => {
 	if (!event.projectionDetails) {
@@ -164,9 +168,17 @@ const leftAction = computed(() => {
 						<!-- Line 2: Budget/Category - Account [→ Transfer Target] + Date -->
 						<div class="flex align-items-center gap-2">
 							<small class="text-ellipsis">
-								{{ (!hideBudget && event.Budget?.memo) || categoryStore.getCategoryById(event.category_id).name }}
+								<template v-if="event.Group && !hideGroup">
+									<small><Icon name="tag" /></small>
+									{{ useGroupStore().getGroupById(event.Group.group_id)?.name }}
+									- 
+								</template>
+								<template v-if="!event.Budget">
+									<i class="pi pi-exclamation-triangle" />
+									Unbudgeted -
+								</template>
+								<template v-if="attributionText">{{ attributionText }} - </template>
 								<template v-if="!hideAccount">
-									-
 									{{ accountStore.getAccountName(event.account_id) }}
 									<template v-if="event.attributionDetails?.isTransferPair">
 										→
@@ -177,11 +189,7 @@ const leftAction = computed(() => {
 										}}
 									</template>
 								</template>
-								<template v-if="event.Group && !hideGroup">
-									&nbsp;
-									<small><Icon name="tag" /></small>
-									{{ useGroupStore().getGroupById(event.Group.group_id)?.name }}
-								</template>
+								
 							</small>
 							<div class="flex-grow-1"></div>
 							<small
@@ -198,8 +206,6 @@ const leftAction = computed(() => {
 
 					<div v-if="event.attributionDetails?.needsReview" class="review-dot" />
 				</div>
-
-
 			</template>
 			<template #left>
 				<i class="pi pi-check-circle" />
@@ -208,8 +214,7 @@ const leftAction = computed(() => {
 				<Icon name="category" />
 			</template>
 		</SwipeAction>
-		
-		<TransactionAttributionDrawer ref="transactionAttributionDrawer" />
+		<!-- <TransactionAttributionDrawer ref="transactionAttributionDrawer" /> -->
 	</div>
 </template>
 

@@ -14,5 +14,5 @@ body {
 
 .pi {
 	font-size: inherit !important;
-    vertical-align: middle;
+    vertical-align: text-bottom;
 }

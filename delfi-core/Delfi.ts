@@ -126,7 +126,6 @@ export class Delfi {
 
 		const monthForecast = await this.forecast.pollMonthReady(monthStart);
 		const monthAttributionEvents = (await this.transactionSource.getAttributedEventsBetween(monthStart, monthEnd)).sort((a, b) => a.date.diff(b.date));
-		console.log(monthAttributionEvents.map(e => e.date.formatShort()));
 
 		const monthBudgetOccurrences = await this.getOccurrenceSummaries(monthForecast.occurrences);
 		const monthBudgetSnapshots = monthBudgetOccurrences.map(o => o.snapshot(monthStart, monthEnd));
@@ -301,10 +300,6 @@ export class Delfi {
 		const totalTally = new RealityTally(monthBudgetEvents, monthAttributionEvents);
 		// tally of unbudgeted events
 		const allUnbudgeted = new RealityTally([], monthAttributionEvents.filter(t => !t.budget_id && (!t.category_id || t.Category?.type === 'EXPENSE')));
-
-		console.log(monthAttributionEvents.map(e => e.date.formatShort()));
-		console.log(allUnbudgeted.unBudgetedAttributions.map(e => e.date.formatShort()));
-		console.log(spendingSummary.budgets.map(b => b.attributedEvents.flatMap(e => e.date.formatShort())));
 
 		// tally of non-transfer events
 		const netTally = new RealityTally(
