@@ -26,6 +26,8 @@ function updateSwipeDelta(val) {
 	swipeDelta.value = Math.min(props.onLeft ? swipeDistance : 0, Math.max(props.onRight ? -swipeDistance : 0, val));
 }
 
+const discardSwipe = ref(false);
+
 onMounted(() => {
 	if (sliderRef.value) {
 		sliderRef.value.addEventListener('touchstart', (e) => {
@@ -34,10 +36,11 @@ onMounted(() => {
 			touchStartX = touch.clientX;
 			touchStartY = touch.clientY;
 			sliderRef.value?.classList.add('no-transition');
+			discardSwipe.value = false;
 		}, { passive: true });
 
 		sliderRef.value.addEventListener('touchmove', (e) => {
-			if (!props.onLeft && !props.onRight) return;
+			if (discardSwipe.value || (!props.onLeft && !props.onRight)) return;
 			e.stopPropagation();
 			const touch = e.touches[0];
 			const deltaX = touch.clientX - touchStartX as number;
@@ -48,6 +51,7 @@ onMounted(() => {
 			} else {
 				document.body.classList.remove('prevent-scroll');
 				updateSwipeDelta(0);
+				discardSwipe.value = true;
 			}
 		}, { passive: true });
 
