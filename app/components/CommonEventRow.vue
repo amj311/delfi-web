@@ -110,7 +110,7 @@ const leftAction = computed(() => {
 </script>
 
 <template>
-	<div>
+	<div class="event-row" :class="{ expand }">
 		<SwipeAction
 			v-if="showTransferCopy || !event.attributionDetails?.isTransferCopy"
 			:onLeft="leftAction"
@@ -118,8 +118,8 @@ const leftAction = computed(() => {
 		>
 			<template #content>
 				<div
-					class="event-row flex align-items-center gap-3"
-					:class="{ 'opacity-70': isPending, clickable, expand }"
+					class="event-row-inner flex align-items-center gap-3"
+					:class="{ 'opacity-70': isPending, clickable }"
 				>
 					<!-- Avatar with badges -->
 					<div class="loading-center relative">
@@ -221,37 +221,42 @@ const leftAction = computed(() => {
 <style scoped lang="scss">
 .event-row {
 	--padding-x: 8px;
-	position: relative;
-	padding: 6px var(--padding-x);
 
 	&.expand {
 		margin-left: calc(var(--padding-x) * -1);
 		margin-right: calc(var(--padding-x) * -1);
 	}
+	
+	.event-row-inner {
+		position: relative;
+		padding: 6px var(--padding-x);
 
-	&:not(:last-child) {
-		border-bottom: 1px solid #eee;
-	}
 
-	&.clickable {
-		cursor: pointer;
-		&:hover {
-			background-color: var(--color-background-soft);
+		&:not(:last-child) {
+			border-bottom: 1px solid #eee;
+		}
+
+		&.clickable {
+			cursor: pointer;
+			&:hover {
+				background-color: var(--color-background-soft);
+			}
+		}
+
+		.review-bold {
+			font-weight: 600 !important;
+		}
+
+		.review-dot {
+			position: absolute;
+			top: 4px;
+			left: 4px;
+			width: 10px;
+			aspect-ratio: 1;
+			border-radius: 50%;
+			background-color: rgb(80, 198, 238);
 		}
 	}
 
-	.review-bold {
-		font-weight: 600 !important;
-	}
-
-	.review-dot {
-		position: absolute;
-		top: 4px;
-		left: 4px;
-		width: 10px;
-		aspect-ratio: 1;
-		border-radius: 50%;
-		background-color: rgb(80, 198, 238);
-	}
 }
 </style>
