@@ -600,11 +600,10 @@ export class TestDataService {
 				Category: categoryByName("Sports and Activities"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: ddate('2022-09-01').startOf('week').toString(), frequency: 'WEEKLY' },
-					projectionSchedule: { byDayOfWeek: ['WE'] },
+					schedule: { start: ddate('2022-09-01').startOf('week').toString(), frequency: 'MONTHLY' },
 					amountTemplate: {
 						type: 'fixed',
-						amount: -15,
+						amount: -80,
 					}
 				}],
 			},
