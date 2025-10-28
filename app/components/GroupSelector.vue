@@ -121,12 +121,12 @@ async function saveGroup() {
 			>
 				<Icon name="tag" fill :color="group.color" />
 				<div class="flex-grow-1">{{  group.name }}</div>
+				<i class="pi pi-check" v-if="currentGroupId === group.group_id" />
 				<div class="hover-show">
 					<div class="flex align-items-center" @click.stop>
 						<Button text severity="secondary" icon="pi pi-pencil" @click="editGroup(group)" style="margin: -.5rem" />
 					</div>
 				</div>
-				<i class="pi pi-check" v-if="currentGroupId === group.group_id" />
 			</div>
 		</div>
 	</div>

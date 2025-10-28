@@ -259,8 +259,8 @@ const categoryOptions = computed(() =>
 				>
 					<AttributionAvatar :image="merchant.logo" style="width: 2rem; height: 2rem" />
 					<div class="text-ellipsis flex-grow-1 min-w-0">{{ merchant.name }}</div>
-					<i class="pi pi-pencil hover-show" @click.stop="editMerchant(merchant)" />
 					<i class="pi pi-check" v-if="selectedMerchantId === merchant.merchant_id" />
+					<i class="pi pi-pencil hover-show" @click.stop="editMerchant(merchant)" />
 				</div>
 			</div>
 		</div>

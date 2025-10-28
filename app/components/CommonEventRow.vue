@@ -173,7 +173,7 @@ const leftAction = computed(() => {
 									{{ useGroupStore().getGroupById(event.Group.group_id)?.name }}
 									- 
 								</template>
-								<template v-if="!hideBudget && !event.Budget">
+								<template v-if="!hideBudget && category?.type === 'EXPENSE' && !event.Budget">
 									<i class="pi pi-exclamation-triangle" />
 									Unbudgeted -
 								</template>

@@ -292,7 +292,7 @@ async function applyRules(rulesToApply: Array<TransactionRule>) {
 					<div class="flex-grow-1" />
 					<div class="hover-show">
 						<div class="flex align-items-center">
-							<Button text :severity="'secondary'" @click.stop="applyRules([rule])">
+							<Button v-if="templateEvent" text :severity="'secondary'" @click.stop="applyRules([rule])">
 								<template #icon><Icon name="material-symbols::read_more" /></template>
 							</Button>
 							<Button text :severity="'secondary'" icon="pi pi-pencil" />
