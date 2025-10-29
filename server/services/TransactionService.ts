@@ -5,9 +5,10 @@ import { TransactionRuleService } from "./TransactionRuleService";
 import MerchantService from "./MerchantService";
 import { TransactionReviewDao } from "server/data/TransactionReviewDao";
 import { AccountDao } from "server/data/AccountDao";
+import { DaoUser } from "../data"
 
-export class TransactionService {
-	private static async createTransaction(workspace_id: string, transactionData: CreateTransaction) {
+export class TransactionServiceClass extends DaoUser {
+	private async createTransaction(workspace_id: string, transactionData: CreateTransaction) {
 		// New transaction MUST have attributions totalling the whole amount
 		if (!transactionData.Attributions || transactionData.Attributions.length === 0) {
 			transactionData.Attributions = [{
@@ -34,7 +35,7 @@ export class TransactionService {
 	 * @param transactionData 
 	 * @returns 
 	 */
-	public static inPatchTransaction = async (workspace_id: string, transactionData: CreateTransaction) => {
+	public async inPatchTransaction(workspace_id: string, transactionData: CreateTransaction) {
 		const existingTransaction = await TransactionDao.getMatchingTransaction(workspace_id, transactionData);
 		let upsertedTransaction: Transaction | null = null;
 		let created = false;
@@ -67,7 +68,7 @@ export class TransactionService {
 	/**
 	 * determines if two pending transactions are the same
 	 */
-	public static comparePendingTransactions(tx1: CreateTransaction, tx2: CreateTransaction): boolean {
+	public comparePendingTransactions(tx1: CreateTransaction, tx2: CreateTransaction): boolean {
 		return tx1.amount === tx2.amount &&
 			tx1.original_description === tx2.original_description;
 	}
@@ -75,7 +76,7 @@ export class TransactionService {
 	/**
 	 * Match a completed transaction to the most likely finished-pending transaction.
 	 */
-	public static transactionMatchesOldPending(
+	public transactionMatchesOldPending(
 		completedTransaction: CreateTransaction,
 		pendingTransactions: CreateTransaction
 	): boolean {
@@ -85,8 +86,8 @@ export class TransactionService {
 		// );
 	}
 
-	public static async syncNewTransactionsForAccount(workspace_id: string, account_id: string, incomingTransactions: CreateTransaction[]) {
-		const shouldRequestReviews = await TransactionService.shouldRequestReviews(workspace_id, account_id);
+	public async syncNewTransactionsForAccount(workspace_id: string, account_id: string, incomingTransactions: CreateTransaction[], doReviews = true) {
+		const shouldRequestReviews = doReviews && await this.shouldRequestReviews(workspace_id, account_id);
 
 		// First, assign date orders to incoming transactions. When doing so, make sure to preserve any existing date orders.
 		// THE TRANSACTIONS MUST BE A COMPLETE SET OF ALL TRANSACTIONS FOR THE DATES INVOLVED
@@ -97,14 +98,14 @@ export class TransactionService {
 		// FIRST UPDATE PENDING TRANSACTIONS!
 		const incomingPendingTransactions = incomingTransactions.filter(t => t.pending);
 		const noLongerPendingTransactions = oldPendingTransactions.filter(oldTransaction => !incomingPendingTransactions.some(t =>
-			TransactionService.comparePendingTransactions(t, oldTransaction)
+			this.comparePendingTransactions(t, oldTransaction)
 		));
 
 		// Don't create new pending transactions if they already exist
 		// This MAY still include transactions which we have already processed! We'll just upsert them.
 		const filteredIncoming = incomingTransactions.filter(t =>
 			!oldPendingTransactions.some(oldTransaction =>
-				TransactionService.comparePendingTransactions(t, oldTransaction)
+				this.comparePendingTransactions(t, oldTransaction)
 			)
 		);
 
@@ -121,7 +122,7 @@ export class TransactionService {
 			transaction.account_id = account_id;
 			// See if this transaction matches any old pending transactions (not any still pending)
 			const matchingOldPendingTransaction = noLongerPendingTransactions.find(t =>
-				TransactionService.transactionMatchesOldPending(transaction, t)
+				this.transactionMatchesOldPending(transaction, t)
 			);
 			if (matchingOldPendingTransaction) {
 				// TODO copy attributions from pending
@@ -154,13 +155,13 @@ export class TransactionService {
 		// Request review for new transactions, but NOT PENDING
 		const needsReview = savedNewTransactions.filter(result => !result.TransactionReview && !result.pending);
 		if (shouldRequestReviews) {
-			await Promise.all(needsReview.map(tx => TransactionService.requestTransactionReview(tx)));
+			await Promise.all(needsReview.map(tx => this.requestTransactionReview(tx)));
 		}
 
 		return upsertResults;
 	}
 
-	private static determineAuthorizedDate(transaction: CreateTransaction): DelfiDate | null {
+	private determineAuthorizedDate(transaction: CreateTransaction): DelfiDate | null {
 		if (transaction.authorized_date) {
 			return transaction.authorized_date;
 		}
@@ -216,11 +217,11 @@ export class TransactionService {
 		return null;
 	}
 
-	public static async getTransactionsForAccount(workspace_id: string, account_id: string): Promise<Transaction[]> {
+	public async getTransactionsForAccount(workspace_id: string, account_id: string): Promise<Transaction[]> {
 		return await TransactionDao.getTransactionsForAccount(workspace_id, account_id);
 	}
 
-	private static async shouldRequestReviews(workspace_id: string, account_id: string): Promise<boolean> {
+	private async shouldRequestReviews(workspace_id: string, account_id: string): Promise<boolean> {
 		// don't request reviews if this is the first account sync. That would be overwhelming.
 		const totalTransactions = await TransactionDao.countTransactionsForAccount(workspace_id, account_id);
 		if (totalTransactions === 0) {
@@ -240,12 +241,12 @@ export class TransactionService {
 	}
 
 	/** Looks up workspace rules for assigning transactions and finds the user to assign the review to */
-	private static async requestTransactionReview(transaction: Transaction): Promise<void> {
+	private async requestTransactionReview(transaction: Transaction): Promise<void> {
 		// TODO implement workspace rules and filters for transaction reviews. For now create the pending review record without an assignment
 		await TransactionReviewDao.createTransactionReview(transaction.workspace_id, transaction.transaction_id);
 	}
 
-	public static async markTransactionReviewed(workspace_id, transaction_id: string, user_id?: string) {
+	public async markTransactionReviewed(workspace_id, transaction_id: string, user_id?: string) {
 		const transaction = await TransactionDao.getTransactionById(transaction_id);
 		if (!transaction) {
 			throw new Error(`Transaction with ID ${transaction_id} not found`);
@@ -262,7 +263,7 @@ export class TransactionService {
 		return review;
 	}
 
-	public static async findAndLinkTransferPairs(workspace_id: string, transactions: Transaction[]) {
+	public async findAndLinkTransferPairs(workspace_id: string, transactions: Transaction[]) {
 		// Find potential transfer pairs
 		const pendingPairs = transactions.filter(t => t.transfer_pair_id === null && !t.pending);
 		for (const transaction of pendingPairs) {
@@ -276,3 +277,5 @@ export class TransactionService {
 		}
 	}
 };
+
+export const TransactionService = new TransactionServiceClass();

@@ -3,6 +3,7 @@ import { AccountDao } from "../data/AccountDao";
 import type { Account } from "delfi-core/models/Account";
 import { TransactionService } from "server/services/TransactionService";
 import { SyncService } from "server/services/SyncService";
+import { useTransaction } from "../../prisma/client";
 
 export default (fastify, _, done) => {
 
@@ -50,7 +51,7 @@ export default (fastify, _, done) => {
     fastify.get('/:id/transactions', async function handler (request, reply) {
         const accountId = request.params.id;
         const workspace_id = request.sessionUser.workspace_id;
-        const data = await TransactionService.getTransactionsForAccount(workspace_id, accountId);
+        const data = await useTransaction(tx => TransactionService.tx(tx).getTransactionsForAccount(workspace_id, accountId));
         return {
             success: true,
             data,

@@ -18,8 +18,7 @@ export type DelfiDate =
 	{
 		isDelfiDate: true;
 		isBetweenInclusive: (start: DelfiDate, end: DelfiDate) => boolean;
-		formatFull(): string;
-		formatShort(): string;
+		format(format?: string): string;
 		isFuture(): boolean;
 		isToday(): boolean;
 	}
@@ -39,14 +38,15 @@ export type DelfiDate =
  * @returns {DelfiDate}
  */
 export const ddate = (input: DelfiDateConfig = new Date()) => {
+	const dayjsDate = dayjs(input).startOf('day') as DelfiDate;
 	const d = dayjs(input).startOf('day') as DelfiDate;
+
 	d.isDelfiDate = true;
-	d.toString = () => d.format('YYYY-MM-DD');
-	d.toJSON = () => d.format('YYYY-MM-DD');
+	d.toString = () => dayjsDate.format('YYYY-MM-DD');
+	d.toJSON = () => dayjsDate.format('YYYY-MM-DD');
 	
 	d.isBetweenInclusive = (start: DelfiDate, end: DelfiDate) => d.isBetween(start, end, 'day', '[]');
-	d.formatFull = () => d.format('MMMM D, YYYY');
-	d.formatShort = () => d.format('MMM D');
+	d.format = (format: 'short' | 'full' = 'short') => dayjsDate.format(format === 'short' ? 'MMM D' : 'MMMM D, YYYY');
 	d.isFuture = () => d.isAfter(ddate());
 	d.isToday = () => d.isSame(ddate());
 
@@ -77,7 +77,7 @@ export function toDelfiInterval(frequency: string): dayjs.ManipulateType {
  * Recursively checks for date string (YYYY-MM-DD) and converts it to a DelfiDate.
  * @param input 
  */
-export function instantiateDates(input: Record<string, any>) {
+export function instantiateDates(input: any) {
 	for (const key in input) {
 		const value = input[key];
 		if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {

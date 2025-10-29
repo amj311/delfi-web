@@ -18,12 +18,12 @@ async function selectCategory() {
 </script>
 
 <template>
-	<Button class="input-button" severity="secondary" outlined @click="() => selectCategory()">
+	<Button class="input-button flex justify-content-start" severity="secondary" outlined @click="() => selectCategory()">
 		<template v-if="category_id">
 			<AttributionAvatar :category="useCategoryStore().getCategoryById(category_id)" :size="1.4" />
-			{{ useCategoryStore().getCategoryById(category_id)?.name }}
+			<div class="text-ellipsis">{{ useCategoryStore().getCategoryById(category_id)?.name }}</div>
 		</template>
-		<div v-else>Select category...</div>
+		<div v-else class="text-ellipsis">Select category...</div>
 	</Button>
 	<CategorySelectionDrawer ref="categorySelectionDrawer" />
 </template>

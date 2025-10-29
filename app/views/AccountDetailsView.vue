@@ -10,6 +10,7 @@ import { instantiateDates } from 'delfi-core/utils/dateUtils';
 import CommonEventRow from '@/components/CommonEventRow.vue';
 import TransactionDetailsDrawer from '@/components/TransactionDetailsDrawer.vue';
 import { useToast } from '@/components/utils/Toast.vue';
+import TransactionImport from './TransactionImport.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -162,6 +163,9 @@ const lastSync = computed(() => {
 				<button @click="syncAccount" class="btn">Sync</button>
 				<button @click="openEditModal" class="btn primary">Edit Account</button>
 			</div>
+
+			<TransactionImport :account="account" />
+
 
 			<!-- Account summary card -->
 			<div class="account-card">

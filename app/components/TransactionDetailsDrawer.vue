@@ -458,7 +458,7 @@ const sourceAccount = computed(() => {
 				<AttributionAvatar :event="avatarDetails" :size="3" />
 				<div class="flex-frow-1 min-w-0">
 					<h3 class="m-0 text-ellipsis w-full min-w-0">{{ headerTitle }}</h3>
-					<div>{{ transaction.date.formatFull() }}</div>
+					<div>{{ transaction.date.format('full') }}</div>
 				</div>
 			</div>
 			<div class="text-4xl my-4">
@@ -635,7 +635,7 @@ const sourceAccount = computed(() => {
 						<i class="pi pi-check-circle" />&nbsp;
 						<!-- Reviewed by {{ transaction.TransactionReview.ReviewedBy?.given_name }} on -->
 						Reviewed on
-						{{ ddate(transaction.TransactionReview?.reviewed_at).formatFull() }}
+						{{ ddate(transaction.TransactionReview?.reviewed_at).format('full') }}
 					</div>
 
 					<!-- APPLICABLE RULES COUNT -->
@@ -774,7 +774,7 @@ const sourceAccount = computed(() => {
 					-
 					{{ useAccountStore().getAccountName(event.account_id) }}
 					<div class="flex-grow-1"></div>
-					{{ event.date.formatFull() }}
+					{{ event.date.format('full') }}
 				</small>
 			</div>
 		</div>

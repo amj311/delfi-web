@@ -190,7 +190,7 @@ const dailyEvents = computed(() => {
 		eventsByDay[dayKey].push(event);
 	}
 	return Object.entries(eventsByDay).flatMap(([date, events]) => ({
-		date: ddate(state.viewingMonth.date(Number(date))).formatFull(),
+		date: ddate(state.viewingMonth.date(Number(date))).format('full'),
 		transactions: events.sort(
 			(a, b) =>
 				a.attributionDetails.sourceTransaction.date_order?.localeCompare(

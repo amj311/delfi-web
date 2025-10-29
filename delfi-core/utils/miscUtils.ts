@@ -137,3 +137,14 @@ export const coalesce = <T>(...values: (T | null | undefined)[]): T => {
 export const currency = (value: number = 0, currencyCode: string = 'USD', locale: string = 'en-US'): string => {
 	return new Intl.NumberFormat(locale, { style: 'currency', currency: currencyCode }).format(value);
 }
+
+export const parseNumber = (src: any) => {
+	if (typeof src === 'number') {
+		return src;
+	}
+	// Remove all non-number chars. ie $2,300.75 -> 2300.75
+	console.log(src);
+	const modified = String(src)?.split(/[^\d\.-]/g).join('');
+	console.log(modified);
+	return parseFloat(modified);
+}

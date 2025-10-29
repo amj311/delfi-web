@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, toRefs } from 'vue';
 import Icon from './Icon.vue';
+import { parseNumber } from 'delfi-core/utils/miscUtils';
 
 const _props = defineProps<{
 	amount: number | string;
@@ -11,7 +12,7 @@ const _props = defineProps<{
 const props = reactive(_props);
 const numAmount = computed(() => {
 	if (typeof props.amount === 'string') {
-		return parseFloat(props.amount);
+		return parseNumber(props.amount);
 	}
 	return props.amount;
 });

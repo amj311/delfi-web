@@ -24,6 +24,7 @@ const {
 	size = 2,
 	currencyMode = 'transaction',
 	clickable = true,
+	dateFormat = 'full',
 	...props
 } = defineProps<{
 	event: CommonEvent;
@@ -37,6 +38,7 @@ const {
 	clickable?: boolean;
 	expand?: boolean;
 	showPastDue?: boolean;
+	dateFormat?: 'short' | 'full'
 }>();
 
 const showLoading = ref(false);
@@ -63,11 +65,11 @@ const attributionText = computed<string>(() => (!props.hideBudget && event.Budge
 
 const displayDate = computed(() => {
 	if (!event.projectionDetails) {
-		return event.date.formatShort();
+		return event.date.format(dateFormat);
 	} else if (event.projectionDetails.windowStart !== event.date || event.projectionDetails.windowEnd !== event.date) {
-		return `${event.date.formatShort()}-${event.projectionDetails.windowEnd.formatShort()}`;
+		return `${event.date.format(dateFormat)}-${event.projectionDetails.windowEnd.format(dateFormat)}`;
 	}
-	return event.date.formatShort();
+	return event.date.format(dateFormat);
 });
 
 async function reviewTransaction() {
@@ -171,13 +173,13 @@ const leftAction = computed(() => {
 								<template v-if="event.Group && !hideGroup">
 									<small><Icon name="tag" /></small>
 									{{ useGroupStore().getGroupById(event.Group.group_id)?.name }}
-									- 
+									{{ hideAccount ? '' : '-' }} 
 								</template>
 								<template v-if="!hideBudget && category?.type === 'EXPENSE' && !event.Budget">
 									<i class="pi pi-exclamation-triangle" />
-									Unbudgeted -
+									Unbudgeted {{ hideAccount ? '' : '-' }}
 								</template>
-								<template v-if="attributionText">{{ attributionText }} - </template>
+								<template v-if="attributionText">{{ attributionText }} {{ hideAccount ? '' : '-' }} </template>
 								<template v-if="!hideAccount">
 									{{ accountStore.getAccountName(event.account_id) }}
 									<template v-if="event.attributionDetails?.isTransferPair">

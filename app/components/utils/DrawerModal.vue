@@ -11,9 +11,10 @@ import NavTrigger from './NavTrigger/NavTrigger.vue';
 const navTriggerRef = ref<InstanceType<typeof NavTrigger> | null>(null);
 const isMobile = ref(false);
 
-defineProps<{
+const { closeable = true } = defineProps<{
 	title?: string;
 	width?: string;
+	closeable?: boolean,
 }>();
 
 /**
@@ -56,7 +57,9 @@ defineExpose({
 					:style="{ width: width || '30rem' }"
 				>
 					<slot></slot>
-					<template #closebutton><div></div></template>
+					<template #closebutton>
+						<Button text severity="secondary" class="border-circle" icon="pi pi-times" v-if="closeable" @click="() => navTriggerRef?.close()"></Button>
+					</template>
 					<template v-for="(slotFn, name) in $slots" #[name]="slotProps">
 						<slot :name="name" v-bind="slotProps" />
 					</template>
@@ -71,7 +74,9 @@ defineExpose({
 					:style="{ height: 'auto', maxHeight: '100vh' }"
 				>
 					<slot></slot>
-					<template #closebutton><div></div></template>
+					<template #closebutton>
+						<Button text severity="secondary" class="border-circle" icon="pi pi-times" v-if="closeable" @click="() => navTriggerRef?.close()"></Button>
+					</template>
 					<template v-for="(slotFn, name) in $slots" #[name]="slotProps">
 						<slot :name="name" v-bind="slotProps" />
 					</template>
