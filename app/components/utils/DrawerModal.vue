@@ -47,7 +47,7 @@ defineExpose({
 <template>
 	<NavTrigger ref="navTriggerRef" triggerKey="prompt-modal">
 		<template #default="{ show }">
-			<template>
+			<template v-if="show">
 				<!-- Dialog for desktop view -->
 				<Dialog
 					v-if="!isMobile"

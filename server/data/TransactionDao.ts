@@ -133,6 +133,10 @@ class TransactionDaoClass extends PrismaDao {
 				workspace_id,
 				account_id,
 				done_pending: false,
+				// cap at 2 months. More can be loaded from the transactions explorer
+				date: {
+					gte: ddate().subtract(2, 'months').toString(),
+				}
 			},
 			include: commonInclude,
 			orderBy: commonOrder,

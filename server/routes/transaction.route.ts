@@ -40,9 +40,12 @@ export default (app, _, done) => {
 		const workspace_id = request.sessionUser.workspace_id;
 		const { transactions, account_id } = request.body;
 
-		await useTransaction(async (tx) => {
-			await TransactionService.tx(tx).syncNewTransactionsForAccount(workspace_id, account_id, instantiateDates(transactions), false);
-		}, { timeout: 10000 }) // TODO handle transactions in sync method, split up ingestion vs merchant finding, etc
+		const results = await TransactionService.ingestNewTransactionsForAccount(workspace_id, account_id, instantiateDates(transactions), false);
+
+		return {
+			success: true,
+			data: results,
+		}
 	})
 
     done();

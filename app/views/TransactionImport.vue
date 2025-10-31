@@ -150,7 +150,7 @@ type ImportRow = {
 	row: any,
 	transaction?: SyncedTransactionDetails,
 	success?: boolean,
-	error?: null,
+	error?: string,
 }
 
 const importProgress = reactive({
@@ -159,10 +159,10 @@ const importProgress = reactive({
 	done: false as boolean,
 })
 
-const importPercent = computed(() => Math.floor(importProgress.attemptedRows.filter(r => r.success).length / (rows.value.length) * 100));
+const importPercent = computed(() => Math.floor((importProgress.attemptedRows.filter(r => r.success).length / rows.value.length) * 100));
 
 async function startImport() {
-	console.groupCollapsed('Importing...')
+	console.groupCollapsed('Import')
 	const batchSize = 100;
 	importProgress.attemptedRows = [];
 	importProgress.error = '';
@@ -197,11 +197,18 @@ async function startImport() {
 
 			// Push to server
 			try {
-				await request.post('/transactions/import/csv', {
+				const { data } = await request.post('/transactions/import/csv', {
 					transactions: toUpload.map(t => t.transaction),
 					account_id: account.account_id,
 				})
-				toUpload.forEach(r => r.success = true);
+
+				if (data?.data?.upsertSuccess) {
+					toUpload.forEach(r => r.success = true);
+				}
+				else {
+					toUpload.forEach(r => r.error = 'Failed pushing to server');
+					console.error("Errors while upserting", data?.data?.errors);
+				}
 			}
 			catch (e: any) {
 				console.error("Error while pushing transactions");
@@ -271,11 +278,13 @@ function rowToTransaction(row: Array<any>): SyncedTransactionDetails {
 <template>
 	<div class="transaction-import-view">
 		<template v-if="view === 'file'">
-			<FileUpload mode="basic" accept="text/csv" :multiple="false" @select="(e) => beginWithFile(e.files[0])" :disabled="readingFile" />
+			<h3>Select a CSV file</h3>
+			<FileUpload class="my-3" mode="basic" accept="text/csv" :multiple="false" @select="(e) => beginWithFile(e.files[0])" :disabled="readingFile" />
 		</template>
 
 		<template v-if="view === 'map'">
-			<DataTable :value="rows" scrollable scrollHeight="80vh" :virtualScrollerOptions="{ itemSize: 44 }" :filters="{ global: { value: null, matchMode: FilterMatchMode.CONTAINS } }">
+			<h3>Configure columns</h3>
+			<DataTable :value="rows" scrollable scrollHeight="70vh" :virtualScrollerOptions="{ itemSize: 44 }" :filters="{ global: { value: null, matchMode: FilterMatchMode.CONTAINS } }">
 				<Column v-for="col, i of columns" :key="i" :field="String(i)">
 					
 					<template #header>
@@ -320,7 +329,9 @@ function rowToTransaction(row: Array<any>): SyncedTransactionDetails {
 				</Column>
 			</DataTable>
 			<br />
-			<Message v-if="missingRequiredFields.length" severity="error">Missing required fields: {{ missingRequiredFields.map(f => f.label || f.field) }}</Message>
+			<Message v-if="missingRequiredFields.length" severity="error" class="my-3">
+				Missing required fields: {{ missingRequiredFields.map(f => f.label || f.field) }}
+			</Message>
 			<div class="flex align-items-center">
 				{{ rows.length.toLocaleString() }} records
 				<div class="flex-grow-1"></div>
@@ -337,15 +348,14 @@ function rowToTransaction(row: Array<any>): SyncedTransactionDetails {
 				</div>
 				<h3 v-else-if="importProgress.attemptedRows.filter(r => r.error).length">Partial Fail</h3>
 				<h3 v-else>Success!</h3>
-				<ProgressBar :value="importPercent" />
+				<ProgressBar :value="importPercent" v-if="!importProgress.done || importProgress.attemptedRows.filter(r => r.error).length" />
 			</div>
 			<br />
-			<Message v-if="importProgress.error" severity="error">
+			<Message v-if="importProgress.error" severity="error" class="mb-3">
 				<h5>Import Failed</h5>
 				{{ importProgress.error }}
 				<div @click="startImport()">Try Again</div>
 			</Message>
-			<br />
 			<div style="display: grid; grid-template-columns: 8rem 3rem;">
 				<span>Records:</span><span class="text-right">{{ rows.length.toLocaleString() }}</span>
 				<span>Successful:</span><span class="text-right">{{ importProgress.attemptedRows.filter(r => r.success).length.toLocaleString() }}</span>

@@ -124,7 +124,7 @@ const leftAction = computed(() => {
 					:class="{ 'opacity-70': isPending, clickable }"
 				>
 					<!-- Avatar with badges -->
-					<div class="loading-center relative">
+					<div class="loading-center relative flex align-items-center">
 						<AttributionAvatar :event="event" :size="size" :style="{ opacity: showLoading ? 0.5 : 1 }">
 							<template #badge v-if="event.attributionDetails?.isSplit">
 								<Icon source_id="arrow_split" source="material-symbols" />
@@ -173,13 +173,13 @@ const leftAction = computed(() => {
 								<template v-if="event.Group && !hideGroup">
 									<small><Icon name="tag" /></small>
 									{{ useGroupStore().getGroupById(event.Group.group_id)?.name }}
-									{{ hideAccount ? '' : '-' }} 
+									{{ hideAccount ? '' : '- ' }} 
 								</template>
 								<template v-if="!hideBudget && category?.type === 'EXPENSE' && !event.Budget">
 									<i class="pi pi-exclamation-triangle" />
-									Unbudgeted {{ hideAccount ? '' : '-' }}
+									Unbudgeted {{ hideAccount ? '' : '- ' }}
 								</template>
-								<template v-if="attributionText">{{ attributionText }} {{ hideAccount ? '' : '-' }} </template>
+								<template v-if="attributionText">{{ attributionText }} {{ hideAccount ? '' : '- ' }} </template>
 								<template v-if="!hideAccount">
 									{{ accountStore.getAccountName(event.account_id) }}
 									<template v-if="event.attributionDetails?.isTransferPair">

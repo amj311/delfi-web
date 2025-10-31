@@ -1,11 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 
 export const prisma = new PrismaClient();
-export async function useTransaction(...args: Parameters<typeof prisma.$transaction>) {
-	return await prisma.$transaction(...args);
-}
 
 export type Tx = Omit<typeof prisma, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
+
+export async function useTransaction<T>(fn: (tx: Tx) => Promise<T>, options?: Parameters<typeof prisma.$transaction>[1]): Promise<T> {
+	return await prisma.$transaction(fn, options);
+}
 
 
 export class TxUser<TransactionType = Tx> {

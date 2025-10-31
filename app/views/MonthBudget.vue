@@ -747,6 +747,7 @@ const accumulationChart = computed(() => {
 										:event="event"
 										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 										expand
+										hideBudget
 									/>
 								</template>
 							</AccordionContent>
@@ -938,6 +939,7 @@ const accumulationChart = computed(() => {
 										:event="event"
 										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 										expand
+										hideBudget
 									/>
 								</template>
 							</AccordionContent>
@@ -1040,6 +1042,7 @@ const accumulationChart = computed(() => {
 							@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 							expand
 							hideGroup
+							hideBudget
 						/>
 					</div>
 				</div>
@@ -1098,6 +1101,7 @@ const accumulationChart = computed(() => {
 										:event="event"
 										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 										expand
+										hideBudget
 									/>
 								</template>
 							</AccordionContent>
@@ -1407,6 +1411,7 @@ const accumulationChart = computed(() => {
 											:event="event"
 											@click="() => viewTransaction(event.attributionDetails.sourceTransaction)"
 											expand
+											hideBudget
 										/>
 									</div>
 								</AccordionContent>

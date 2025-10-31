@@ -11,6 +11,9 @@ import CommonEventRow from '@/components/CommonEventRow.vue';
 import TransactionDetailsDrawer from '@/components/TransactionDetailsDrawer.vue';
 import { useToast } from '@/components/utils/Toast.vue';
 import TransactionImport from './TransactionImport.vue';
+import DrawerModal from '@/components/utils/DrawerModal.vue';
+import Button from 'primevue/button';
+import dayjs from 'dayjs';
 
 const route = useRoute();
 const router = useRouter();
@@ -48,6 +51,11 @@ onMounted(async () => {
 		isLoading.value = false;
 	}
 });
+
+async function reload() {
+	await accountStore.loadAccounts();
+	await loadTransactions();
+}
 
 async function loadTransactions() {
 	if (!account.value) return;
@@ -141,6 +149,11 @@ const lastSync = computed(() => {
 	}
 });
 
+const importModal = ref<InstanceType<typeof DrawerModal>>();
+function openImport() {
+	importModal.value?.open();
+}
+
 </script>
 
 <template>
@@ -160,12 +173,11 @@ const lastSync = computed(() => {
 				<router-link to="/accounts" class="back-link">
 					&larr; Back to Accounts
 				</router-link>
-				<button @click="syncAccount" class="btn">Sync</button>
-				<button @click="openEditModal" class="btn primary">Edit Account</button>
+				<div class="flex-grow-1"></div>
+				<Button @click="openImport" text icon="pi pi-file-import" severity="secondary"></Button>
+				<Button @click="reload" text icon="pi pi-replay" severity="secondary"></Button>
+				<!-- <button @click="openEditModal" class="btn primary">Edit Account</button> -->
 			</div>
-
-			<TransactionImport :account="account" />
-
 
 			<!-- Account summary card -->
 			<div class="account-card">
@@ -219,11 +231,12 @@ const lastSync = computed(() => {
 						<div class="detail-value">
 							<div v-if="lastSync?.success">
 								<i class="pi pi-check-circle" style="color: green;"></i>
-								Synced successfully on {{ lastSync.date.toLocaleString() }}
+								{{ dayjs(lastSync.date).fromNow() }}
 							</div>
 							<div v-else-if="lastSync?.error">
 								<i class="pi pi-times-circle" style="color: red;"></i>
-								Sync failed on {{ lastSync.date.toLocaleString() }}: {{ lastSync.error }}
+								Sync failed {{ dayjs(lastSync.date).fromNow() }}: {{ lastSync.error }}
+								<div v-if="account.last_successful_sync" class="text-small text-500">Last success: {{ dayjs(account.last_successful_sync).fromNow() }}</div>
 							</div>
 							<div v-else>No sync attempts yet</div>
 						</div>
@@ -364,6 +377,10 @@ const lastSync = computed(() => {
 		</dialog>
 
 		<TransactionDetailsDrawer ref="transactionDetailsDrawer" />
+
+		<DrawerModal ref="importModal" title="Import Transactions" width="80rem">
+			<TransactionImport v-if="account" :account="account" />
+		</DrawerModal>
 	</div>
 </template>
 

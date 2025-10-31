@@ -81,8 +81,8 @@ export class SyncService {
 						category_id: categoryMapping?.category_id || null,
 					};
 				}));
-				const results = await TransactionService.syncNewTransactionsForAccount(workspace_id, result.account_id, transactionsWithCategories);
-				newTransactions.push(...results.filter(r => r.created).map(r => r.transaction));
+				const results = await TransactionService.ingestNewTransactionsForAccount(workspace_id, result.account_id, transactionsWithCategories);
+				newTransactions.push(...results.upsertResults.filter(r => r.created).map(r => r.transaction));
 
 				await AccountService.updateAccount(workspace_id, result.account_id, {
 					current_balance: result.accountDetails.current_balance,

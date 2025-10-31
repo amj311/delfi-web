@@ -6,6 +6,7 @@ import MerchantService from "./MerchantService";
 import { TransactionReviewDao } from "server/data/TransactionReviewDao";
 import { AccountDao } from "server/data/AccountDao";
 import { DaoUser } from "../data"
+import { useTransaction } from "../../prisma/client";
 
 export class TransactionServiceClass extends DaoUser {
 	private async createTransaction(workspace_id: string, transactionData: CreateTransaction) {
@@ -86,9 +87,85 @@ export class TransactionServiceClass extends DaoUser {
 		// );
 	}
 
-	public async syncNewTransactionsForAccount(workspace_id: string, account_id: string, incomingTransactions: CreateTransaction[], doReviews = true) {
-		const shouldRequestReviews = doReviews && await this.shouldRequestReviews(workspace_id, account_id);
+	public async ingestNewTransactionsForAccount(workspace_id: string, account_id: string, incomingTransactions: CreateTransaction[], doReviews = true) {
+		const results = {
+			upsertResults: [] as Awaited<ReturnType<typeof this.ingest_writeTransactions>>,
+			upsertSuccess: false,
+			rulesSuccess: false,
+			merchantsSuccess: false,
+			reviewsSuccess: false,
+			errors: [] as Array<string>,
+		}
 
+		try {
+			// determine should request reviews before writing transactions
+			const shouldRequestReviews = doReviews && await this.shouldRequestReviews(workspace_id, account_id);
+
+			// Use isolated transaction here so that post-import processes do not undo the writes
+			// let errors here bubble so that we don't perform extra tasks if nothing wrote
+			results.upsertResults = await useTransaction(async tx => {
+				return await this.tx(tx).ingest_writeTransactions(workspace_id, account_id, incomingTransactions);
+			})
+			results.upsertSuccess = true;
+
+			const savedNewTransactions = results.upsertResults.filter(result => result.created).map(result => result.transaction);
+
+			try {
+				// Apply rules to all NEW transactions
+				await TransactionRuleService.applyRulesToTransactions(workspace_id, savedNewTransactions);
+				results.rulesSuccess = true;
+			}
+			catch (e: any) {
+				results.errors.push(e.message);
+			}
+
+
+			try {
+				// Look for merchants for new transactions.
+				// NOTE! This expects that savedNewTransactions have been updated with a merchant_id if applicable by the rules.
+				const transactionsWithoutMerchants = savedNewTransactions.filter(tx => !tx.merchant_id);
+				if (transactionsWithoutMerchants.length > 0) {
+					const merchantResults = await MerchantService.searchForTransactionMerchants(transactionsWithoutMerchants);
+					await Promise.all(merchantResults.map(async ({ existingMerchant, transactions }) => {
+						if (existingMerchant) {
+							// Update all transactions with the new merchant
+							await Promise.all(transactions.map(tx => {
+								tx.merchant_id = existingMerchant.merchant_id;
+								return TransactionDao.patchTransaction(workspace_id, tx.transaction_id, tx);
+							}));
+						}
+					}));
+				}
+				results.merchantsSuccess = true;
+			}
+			catch (e: any) {
+				results.errors.push(e.message);
+			}
+
+
+			try {
+				// Request review for new transactions, but NOT PENDING
+				const needsReview = savedNewTransactions.filter(result => !result.TransactionReview && !result.pending);
+				if (shouldRequestReviews) {
+					await Promise.all(needsReview.map(tx => this.requestTransactionReview(tx)));
+				}
+				results.reviewsSuccess = true;
+			}
+			catch (e: any) {
+				results.errors.push(e.message);
+			}
+		}
+		catch (e: any) {
+			results.errors.push(e.message);
+		}
+
+		return results;
+	}
+
+	/**
+	 * Isolated process for upserting transactions from import source.
+	 */
+	private async ingest_writeTransactions(workspace_id: string, account_id: string, incomingTransactions: CreateTransaction[]) {
 		// First, assign date orders to incoming transactions. When doing so, make sure to preserve any existing date orders.
 		// THE TRANSACTIONS MUST BE A COMPLETE SET OF ALL TRANSACTIONS FOR THE DATES INVOLVED
 		incomingTransactions = TransactionUtils.assignDateOrders(incomingTransactions);
@@ -118,7 +195,7 @@ export class TransactionServiceClass extends DaoUser {
 		}
 
 		// THEN UPSERT NEW TRANSACTIONS
-		const upsertResults = await Promise.all(filteredIncoming.map(async (transaction) => {
+		return await Promise.all(filteredIncoming.map(async (transaction) => {
 			transaction.account_id = account_id;
 			// See if this transaction matches any old pending transactions (not any still pending)
 			const matchingOldPendingTransaction = noLongerPendingTransactions.find(t =>
@@ -130,35 +207,6 @@ export class TransactionServiceClass extends DaoUser {
 
 			return await this.inPatchTransaction(workspace_id, transaction);
 		}));
-
-		const savedNewTransactions = upsertResults.filter(result => result.created).map(result => result.transaction);
-
-		// Apply rules to all NEW transactions
-		await TransactionRuleService.applyRulesToTransactions(workspace_id, savedNewTransactions);
-
-		// Look for merchants for new transactions.
-		// NOTE! This expects that savedNewTransactions have been updated with a merchant_id if applicable by the rules.
-		const transactionsWithoutMerchants = savedNewTransactions.filter(tx => !tx.merchant_id);
-		if (transactionsWithoutMerchants.length > 0) {
-			const merchantResults = await MerchantService.searchForTransactionMerchants(transactionsWithoutMerchants);
-			await Promise.all(merchantResults.map(async ({ existingMerchant, transactions }) => {
-				if (existingMerchant) {
-					// Update all transactions with the new merchant
-					await Promise.all(transactions.map(tx => {
-						tx.merchant_id = existingMerchant.merchant_id;
-						return TransactionDao.patchTransaction(workspace_id, tx.transaction_id, tx);
-					}));
-				}
-			}));
-		}
-
-		// Request review for new transactions, but NOT PENDING
-		const needsReview = savedNewTransactions.filter(result => !result.TransactionReview && !result.pending);
-		if (shouldRequestReviews) {
-			await Promise.all(needsReview.map(tx => this.requestTransactionReview(tx)));
-		}
-
-		return upsertResults;
 	}
 
 	private determineAuthorizedDate(transaction: CreateTransaction): DelfiDate | null {

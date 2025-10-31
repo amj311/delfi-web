@@ -110,9 +110,9 @@ export class BudgetSnapshot {
 			}
 		});
 		const compiledOccurrences = Array.from(presentOccurrences);
-		if (compiledOccurrences.length === 0) {
-			console.warn(`BudgetSnapshot for budget ${this.budget.budget_id} has no occurrences associated with its events.`);
-		}
+		// if (compiledOccurrences.length === 0) {
+		// 	console.warn(`BudgetSnapshot for budget ${this.budget.budget_id} has no occurrences associated with its events.`);
+		// }
 		return compiledOccurrences;
 	}
 

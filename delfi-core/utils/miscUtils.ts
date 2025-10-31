@@ -143,8 +143,6 @@ export const parseNumber = (src: any) => {
 		return src;
 	}
 	// Remove all non-number chars. ie $2,300.75 -> 2300.75
-	console.log(src);
 	const modified = String(src)?.split(/[^\d\.-]/g).join('');
-	console.log(modified);
 	return parseFloat(modified);
 }
