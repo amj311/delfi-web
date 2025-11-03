@@ -603,7 +603,7 @@ export class TestDataService {
 					schedule: { start: ddate('2022-09-01').startOf('week').toString(), frequency: 'MONTHLY' },
 					amountTemplate: {
 						type: 'fixed',
-						amount: -80,
+						amount: -60,
 					}
 				}],
 			},

@@ -40,6 +40,7 @@ class TransactionDaoClass extends PrismaDao {
 			date: ddate(dbTransaction.date),
 			date_order: dbTransaction.date_order,
 			authorized_date: dbTransaction.authorized_date ? ddate(dbTransaction.authorized_date) : null,
+			budget_date: dbTransaction.budget_date ? ddate(dbTransaction.budget_date) : null,
 			amount: dbTransaction.amount,
 			original_description: dbTransaction.original_description,
 			pending: dbTransaction.pending || false,
@@ -153,16 +154,32 @@ class TransactionDaoClass extends PrismaDao {
 		});
 	}
 
+	// Specifically for searching the BUDGET date or falling back on the normal date
 	async getTransactionsInRange(workspace_id: string, startDate: string, endDate: string, includePending = false): Promise<Transaction[]> {
 		const transactions = await this.db.transaction.findMany({
 			where: {
 				workspace_id,
-				date: {
-					gte: startDate,
-					lte: endDate,
-				},
 				pending: includePending ? undefined : false,
 				done_pending: false,
+				// Use normal date if budget_date is null, otherwise use budget_date
+				OR: [
+					{
+						NOT: {
+							budget_date: null,
+						},
+						budget_date: {
+							gte: startDate,
+							lte: endDate,
+						},
+					},
+					{
+						budget_date: null,
+						date: {
+							gte: startDate,
+							lte: endDate,
+						},
+					}
+				],
 			},
 			include: commonInclude,
 			orderBy: commonOrder,
@@ -196,12 +213,15 @@ class TransactionDaoClass extends PrismaDao {
     			date: ddate(transactionData.date).toString(),
 				date_order: transactionData.date_order || null, // For sorting transactions from the same date
     			authorized_date: transactionData.authorized_date?.toString(),
+    			budget_date: transactionData.budget_date?.toString(),
     			iso_currency_code: transactionData.iso_currency_code,
     			notes: transactionData.notes,
     			original_description: transactionData.original_description,
-    			pending: transactionData.pending || false,
+    			
+				pending: transactionData.pending || false,
 				done_pending: transactionData.done_pending || false,
-    			location_address: transactionData.location?.address,
+    			
+				location_address: transactionData.location?.address,
     			location_lat: transactionData.location?.lat,
     			location_lon: transactionData.location?.lon,
     			location_city: transactionData.location?.city,
@@ -260,6 +280,7 @@ class TransactionDaoClass extends PrismaDao {
 			data: {
 				date_order: transactionData.date_order, // For sorting transactions from the same date
 				authorized_date: transactionData.authorized_date?.toString(),
+				budget_date: transactionData.budget_date?.toString(),
 				notes: transactionData.notes,
 				pending: transactionData.pending,
 				done_pending: transactionData.done_pending,

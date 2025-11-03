@@ -20,10 +20,11 @@ import InputNumber from 'primevue/inputnumber';
 import { v4 as uuid } from 'uuid';
 import MerchantSelectionDrawer from './MerchantSelectionDrawer.vue';
 import { useContextStore } from '@/stores/context.store';
-import { ddate, instantiateDates } from 'delfi-core/utils/dateUtils';
+import { ddate, instantiateDates, isDate } from 'delfi-core/utils/dateUtils';
 import { ActionTypes, type ActionType, type TransactionRule } from 'delfi-core/models/TransactionRule';
 import { useToast } from './utils/Toast.vue';
 import RulesList from './RulesList.vue';
+import DatePicker from 'primevue/datepicker';
 
 const triggerRef = ref<InstanceType<typeof NavTriggerDrawer> | null>(null);
 const transaction = ref<Transaction>({} as Transaction);
@@ -36,6 +37,7 @@ defineExpose({
 	open: (_transaction: Transaction) => {
 		transaction.value = _transaction;
 		notesDraft.value = transaction.value.notes;
+		budgetDateDate.value = transaction.value.budget_date?.toDate();
 		triggerRef.value?.trigger()?.open();
 	},
 });
@@ -398,6 +400,18 @@ function openRules() {
 	}
 }
 
+
+
+
+/*****************
+ * DATES
+ */
+
+ // Need to convert dates to Date and back for DatePicker
+ const budgetDateDate = ref(transaction.value.budget_date?.toDate());
+ watch(budgetDateDate, (val) => { transaction.value.budget_date = isDate(val) ? ddate(val) : null });
+
+
 /***************
  * DISPLAY
  */
@@ -548,7 +562,14 @@ const sourceAccount = computed(() => {
 							class="flex align-items-center gap-2"
 							@click="() => promptForMemo(attribution)"
 						>
-							{{ attribution.memo || 'None' }}
+							<template v-if=attribution.memo>{{ attribution.memo }}</template>
+							<template v-else>
+								None<template v-if=attribution.memo>{{ attribution.memo }}</template>
+							<template v-else>
+								None
+								<i class="pi pi-pencil" />
+							</template>
+							</template>
 						</Button>
 					</div>
 
@@ -564,7 +585,10 @@ const sourceAccount = computed(() => {
 								{{ attribution.Budget.memo }}
 								<span v-if="attribution.BudgetChildItem">- {{ attribution.BudgetChildItem.memo }}</span>
 							</template>
-							<template v-else> Unbudgeted </template>
+							<template v-else>
+								Unbudgeted
+								<i class="pi pi-pencil" />
+							</template>
 						</Button>
 					</div>
 
@@ -593,7 +617,10 @@ const sourceAccount = computed(() => {
 								<Icon name="tag" fill :color="attribution.Group.color || '#aaa'" />
 								{{ attribution.Group.name }}
 							</template>
-							<template v-else> No Group </template>
+							<template v-else>
+								No Group
+								<i class="pi pi-pencil" />
+							</template>
 						</Button>
 					</div>
 				</div>
@@ -618,8 +645,19 @@ const sourceAccount = computed(() => {
 								class="flex align-items-center gap-2"
 								@click="selectMerchant"
 							>
-								{{ transaction.Merchant?.name || 'Unknown' }}
+								<template v-if="transaction.Merchant">{{ transaction.Merchant.name }}</template>
+								<template v-else>
+									Unknown
+									<i class="pi pi-pencil" />
+								</template>
 							</Button>
+						</div>
+					</div>
+
+					<div class="row">
+						<label>Adjusted Date</label>
+						<div class="flex align-items-center gap-2">
+							<DatePicker v-model="budgetDateDate" showIcon showClear :clearButtonProps="{}" />
 						</div>
 					</div>
 

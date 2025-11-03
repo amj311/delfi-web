@@ -46,7 +46,15 @@ export const ddate = (input: DelfiDateConfig = new Date()) => {
 	d.toJSON = () => dayjsDate.format('YYYY-MM-DD');
 	
 	d.isBetweenInclusive = (start: DelfiDate, end: DelfiDate) => d.isBetween(start, end, 'day', '[]');
-	d.format = (format: 'short' | 'full' = 'short') => dayjsDate.format(format === 'short' ? 'MMM D' : 'MMMM D, YYYY');
+	d.format = (format: 'short' | 'full' | string = 'short') => {
+		if (format === 'short') {
+			return dayjsDate.format('MMM D')
+		}
+		if (format === 'full') {
+			return dayjsDate.format('MMMM D, YYYY');
+		}
+		return dayjsDate.format(format);
+	}
 	d.isFuture = () => d.isAfter(ddate());
 	d.isToday = () => d.isSame(ddate());
 
@@ -72,6 +80,9 @@ export function toDelfiInterval(frequency: string): dayjs.ManipulateType {
 	}
 }
 
+export function isDate(date: any) {
+	return ddate(date).toString() !== "Invalid Date";
+}
 
 /**
  * Recursively checks for date string (YYYY-MM-DD) and converts it to a DelfiDate.

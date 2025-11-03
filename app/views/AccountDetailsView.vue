@@ -328,41 +328,24 @@ function openImport() {
 				</div>
 
 				<div v-else class="transactions-list">
-					<!-- <table>
-						<thead>
-							<tr>
-								<th></th>
-								<th>Date</th>
-								<th>Description</th>
-								<th>Category</th>
-								<th class="amount-column">Amount</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr v-for="(event, index) in attributedEvents" :key="index">
-								<td>
-									<AttributionAvatar :event="event" class="transaction-avatar" />
-								</td>
-								<td>{{ formatDate(event.date) }}</td>
-								<td>
-									{{ event.displayName }}
-								</td>
-								<td>
-									{{
-										event.Category?.name || 'Uncategorized'
-									}}
-								</td>
-								<td class="amount-column">
-									<Currency
-										:amount="event.amount"
-										:currency="account.iso_currency_code"
-										:mode="'transaction'"
-									/>
-								</td>
-							</tr>
-						</tbody>
-					</table> -->
-					<CommonEventRow v-for="event in attributedEvents" :event="event" showTransferCopy :size="2.3" hideAccount @click="() => viewTransaction(event.attributionDetails.sourceTransaction)" />
+					<template v-for="event, i in attributedEvents">
+						<h4
+							v-if="event.date.toString() !== attributedEvents[i - 1]?.date.toString()"
+							:style="{
+								padding: '8px 8px',
+								marginTop: '8px',
+								position: 'sticky',
+								top: '0',
+								backgroundColor: '#ffff',
+								zIndex: 3,
+								marginLeft: '-5px',
+								marginRight: '-5px',
+							}"
+						>
+							{{ event.date.format('full') }}
+						</h4>
+						<CommonEventRow  :event="event" showTransferCopy :size="2.3" hideAccount @click="() => viewTransaction(event.attributionDetails.sourceTransaction)" />
+					</template>
 				</div>
 			</div>
 		</div>

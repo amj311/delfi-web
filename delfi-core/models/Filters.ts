@@ -282,7 +282,12 @@ export default class FilterUtils {
  * CustomGetters are prefixes on the filter 'property' that extract complex values from the object.
  */
 const CustomGetters: Record<string, (obj: Filterable, property: any) => any> = {
-	Category(obj: any, property: keyof Category) {
+	/** Uses the custom budget date or falls back on normal date */
+	BudgetDate(obj: any) {
+		return obj.budget_date || obj.date;
+	},
+
+	Category(obj: Filterable, property: keyof Category) {
 		if (!(obj.Category)) {
 			return null;
 		}
@@ -361,6 +366,7 @@ export const Properties = {
 	'origin_account_partition_id': { label: 'Origin Partition', type: 'origin_account_partition_id', allowedOperators: ['eq'] },
 
 	'date': { label: 'Date', type: 'date' },
+	'BudgetDate': { label: 'Budget Date', type: 'date' },
 	'year': { label: 'Year', type: 'year' },
 	'month': { label: 'Month', type: 'month' },
 	'day': { label: 'Day', type: 'day' },

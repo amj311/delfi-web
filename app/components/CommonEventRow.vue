@@ -194,9 +194,15 @@ const leftAction = computed(() => {
 								
 							</small>
 							<div class="flex-grow-1"></div>
+							<small v-if="event.attributionDetails?.sourceTransaction.budget_date"
+								class="white-space-nowrap flex align-items-center gap-1"
+							>
+								<Icon name="material-symbols::edit_calendar" />
+								{{ event.attributionDetails.sourceTransaction.budget_date.format('full') }}
+							</small>
 							<small
 								class="white-space-nowrap"
-								v-if="!hideDate && !isPending"
+								v-else-if="!hideDate && !isPending"
 								:style="{ color: isPastDue ? colors.yellow3 : '' }"
 							>
 								<!-- <span v-if="isPastDue">Expected</span> -->

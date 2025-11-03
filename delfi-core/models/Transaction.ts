@@ -8,6 +8,16 @@ import type { Optional, Replace } from "delfi-core/utils/typeUtils"
 
 
 /**
+ * BANK TRANSACTIONS vs ATTRIBUTION EVENTS
+ * Bank transactions are simply the financial record of what happened according to the bank.
+ * Attribution events are 1+ events associated with that transaction via Delfi. They handle ALL relationships to other delfi entities.
+ * The bank transaction should be left largely untouched.
+ * For simplicity, we will try to deal with attribution events wherever possible instead of transactions.
+ */
+
+
+
+/**
  * GROUPS AND TAGS
  * These are VERY similar, but they need to be separate because they have different purposes.
  * Groups highlight and track a subset group of transactions, usually in a fixed period of time, like a particular vacation.
@@ -102,6 +112,7 @@ type TrueEventDetails = {
 	date: DelfiDate,
 	date_order?: string | null, // For sorting transactions from the same date, since time info is not always available. IE 2025-04-12-01 (e.g. 01 for the first transaction of the day)
 	authorized_date?: DelfiDate | null, // The date the transaction was authorized, if different from the date
+	budget_date?: DelfiDate | null, // adjusted date to attribute with a particular budget window
 	amount: number,
 	original_description: string,
 	
@@ -227,7 +238,7 @@ export class TransactionUtils {
 
 		return {
 			displayName: attribution.memo || breakdown?.simple_description || transaction.original_description,
-			date: transaction.date,
+			date: transaction.budget_date || transaction.date,
 			day: transaction.date.day(),
 			year: transaction.date.year(),
 			month: transaction.date.month(),

@@ -375,8 +375,8 @@ class TransactionSource {
 		}
 		// Filter the loaded transactions to the requested range
 		return FilterUtils.filter(Array.from(this.attributedEvents.values()), { AND: [
-			{ property: 'date', operator: 'gte', operand: start },
-			{ property: 'date', operator: 'lte', operand: end },
+			{ property: 'BudgetDate', operator: 'gte', operand: start },
+			{ property: 'BudgetDate', operator: 'lte', operand: end },
 			filter,
 		]});
 	});
