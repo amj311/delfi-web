@@ -20,6 +20,9 @@ export const useDelfiStore = defineStore('delfi', () => {
 	const projectionEnd = ref<DelfiDate>(ddate().startOf('month').add(5, 'year'));
 
 	const reComputed = ref(0);
+	function updateRecomputed() {
+		reComputed.value += 1;
+	}
 
 	async function initDelfi() {
 		isInitializing.value = true;
@@ -34,7 +37,7 @@ export const useDelfiStore = defineStore('delfi', () => {
 			}
 		});
 		isInitializing.value = false;
-		reComputed.value += 1;
+		updateRecomputed();
 		isGeneratingForecast.value = true;
 		await delfi.computeForecast();
 		isGeneratingForecast.value = false;
@@ -81,6 +84,8 @@ export const useDelfiStore = defineStore('delfi', () => {
 		extendingProjection.value = true;
 		try {
 			await delfi.extendForecast(newDate);
+			projectionStart.value = delfi.start;
+			projectionEnd.value = delfi.end;
 		}
 		catch (error) {
 			console.error("Error extending projection:", error);
@@ -97,6 +102,10 @@ export const useDelfiStore = defineStore('delfi', () => {
 		isGeneratingForecast,
 		projectionStart,
 		projectionEnd,
+		async updateTransaction(tx) {
+			await delfi.updateTransaction(tx);
+			updateRecomputed();
+		},
 		reCompute,
 		reComputed,
 		getMonthSummary,

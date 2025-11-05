@@ -120,6 +120,7 @@ export class Delfi {
 
 
 	private async createMonthSummary(monthDate: DelfiDate) {
+		console.log("computing month summary", monthDate.toString())
 		// make extra sure we have the start and end date
 		const monthStart = ddate(monthDate.startOf('month'));
 		const monthEnd = ddate(monthDate.endOf('month'));
@@ -347,6 +348,19 @@ export class Delfi {
 		const key = this.summaryKey(monthStart);
 		return this.summaryCache.get(key) || null;
 	}
+
+
+
+	/*************
+	 * UPDATES
+	 */
+	public updateTransaction(changedTransaction: Transaction) {
+		// TODO find a smart way to only update the necessary summaries
+		// for now redo all summaries
+		this.summaryCache.clear();
+		this.budgetOccurrenceSummaries.clear();
+		this.transactionSource.updateTransaction(changedTransaction);
+	}
 }
 
 
@@ -362,23 +376,37 @@ class TransactionSource {
 	) {}
 
 	public async getAttributedEventsBetween(start: DelfiDate, end: DelfiDate, filter: FilterBlock = null): Promise<Array<AttributionEvent>> {
-	// use a promise queue to make sure we don't double-load transactions
-	return await this.getEventsQueue.add(async () => {
-		// If we don't yet have transactions for this period, load them
-		if (!this.loadedTransactionStart || start.isBefore(this.loadedTransactionStart)) {
-			// Load up to either the forecast end or the last loaded start			
-			const loadEnd = this.loadedTransactionStart ? this.loadedTransactionStart.subtract(1, 'day') : this.initialEnd;
-			const newTransactions = await this.loadTransactions(start, loadEnd);
-			newTransactions.forEach(tx => this.loadedTransactions.set(tx.transaction_id, tx));
-			TransactionUtils.processAttributionEvents(newTransactions).forEach(event => this.attributedEvents.set(event.attributionDetails.transaction_attribution_id, event));
-			this.loadedTransactionStart = start;
+		// use a promise queue to make sure we don't double-load transactions
+		return await this.getEventsQueue.add(async () => {
+			// If we don't yet have transactions for this period, load them
+			if (!this.loadedTransactionStart || start.isBefore(this.loadedTransactionStart)) {
+				// Load up to either the forecast end or the last loaded start			
+				const loadEnd = this.loadedTransactionStart ? this.loadedTransactionStart.subtract(1, 'day') : this.initialEnd;
+				const newTransactions = await this.loadTransactions(start, loadEnd);
+				newTransactions.forEach(tx => this.loadedTransactions.set(tx.transaction_id, tx));
+				TransactionUtils.processAttributionEvents(newTransactions).forEach(event => this.attributedEvents.set(event.attributionDetails.transaction_attribution_id, event));
+				this.loadedTransactionStart = start;
+			}
+			// Filter the loaded transactions to the requested range
+			return FilterUtils.filter(Array.from(this.attributedEvents.values()), { AND: [
+				{ property: 'BudgetDate', operator: 'gte', operand: start },
+				{ property: 'BudgetDate', operator: 'lte', operand: end },
+				filter,
+			]});
+		});
+	}
+
+	public updateTransaction(changedTransaction: Transaction) {
+		if (!this.loadedTransactions.has(changedTransaction.transaction_id)) {
+			throw new Error("Transaction is not loaded!")
 		}
-		// Filter the loaded transactions to the requested range
-		return FilterUtils.filter(Array.from(this.attributedEvents.values()), { AND: [
-			{ property: 'BudgetDate', operator: 'gte', operand: start },
-			{ property: 'BudgetDate', operator: 'lte', operand: end },
-			filter,
-		]});
-	});
-}
+		this.loadedTransactions.set(changedTransaction.transaction_id, changedTransaction);
+		// There may be new or fewer transaction attributions. Need to clear all 
+		const oldAttributedEvents = Array.from(this.attributedEvents.values()).filter(e => e.attributionDetails.transaction_id === changedTransaction.transaction_id);
+		oldAttributedEvents.forEach(e => this.attributedEvents.delete(e.attributionDetails.transaction_attribution_id));
+
+		const newAttributedEvents = TransactionUtils.processAttributionEvents([changedTransaction]);
+		newAttributedEvents.forEach(e => this.attributedEvents.set(e.attributionDetails.transaction_attribution_id, e));
+	}
+
 }
