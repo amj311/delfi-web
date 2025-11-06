@@ -29,7 +29,7 @@ export type DelfiConfig = {
 	end: DelfiDate,
 }
 
-export interface Delfi extends DelfiConfig {}
+export interface Delfi extends DelfiConfig { }
 
 export class Delfi {
 	public forecast!: Forecast;
@@ -54,7 +54,7 @@ export class Delfi {
 		// Copy config so that it is not connected to external state
 		const configCopy = instantiateDates(jsonCopy(config));
 		Object.assign(this, configCopy);
-		
+
 		// Put everything in the forecast
 		this.forecast = new Forecast({
 			budgets: this.budgets,
@@ -90,7 +90,7 @@ export class Delfi {
 	private async getOccurrenceSummaries(occurrences: BudgetOccurrence[]): Promise<BudgetOccurrenceSummary[]> {
 		const summaries: BudgetOccurrenceSummary[] = [];
 		for (const occurrence of occurrences) {
-			const attributedEvents = await this.transactionSource.getAttributedEventsBetween(occurrence.start, occurrence.end, 
+			const attributedEvents = await this.transactionSource.getAttributedEventsBetween(occurrence.start, occurrence.end,
 				{ property: 'budget_id', operator: 'eq', operand: occurrence.budget.budget_id },
 			);
 			const summary = this.budgetOccurrenceSummaries.get(occurrence.occurrence_id) || new BudgetOccurrenceSummary(occurrence, attributedEvents);
@@ -243,7 +243,7 @@ export class Delfi {
 
 			const attributedEvents = monthAttributionEvents.filter(e => e.account_id === account.account_id);
 			const attributedAccumulation = attributedEvents.reduce((acc, event) => acc + event.amount, 0);
-			
+
 			return {
 				account_id: account.account_id,
 				// startingBalance: monthStartBalance,
@@ -354,12 +354,12 @@ export class Delfi {
 	/*************
 	 * UPDATES
 	 */
-	public updateTransaction(changedTransaction: Transaction) {
+	public updateTransactions(changedTransactions: Array<Transaction>) {
 		// TODO find a smart way to only update the necessary summaries
 		// for now redo all summaries
 		this.summaryCache.clear();
 		this.budgetOccurrenceSummaries.clear();
-		this.transactionSource.updateTransaction(changedTransaction);
+		this.transactionSource.updateTransactions(changedTransactions);
 	}
 }
 
@@ -373,7 +373,7 @@ class TransactionSource {
 	constructor(
 		private readonly loadTransactions: DelfiConfig['loadTransactions'],
 		private readonly initialEnd: DelfiDate,
-	) {}
+	) { }
 
 	public async getAttributedEventsBetween(start: DelfiDate, end: DelfiDate, filter: FilterBlock = null): Promise<Array<AttributionEvent>> {
 		// use a promise queue to make sure we don't double-load transactions
@@ -388,25 +388,30 @@ class TransactionSource {
 				this.loadedTransactionStart = start;
 			}
 			// Filter the loaded transactions to the requested range
-			return FilterUtils.filter(Array.from(this.attributedEvents.values()), { AND: [
-				{ property: 'BudgetDate', operator: 'gte', operand: start },
-				{ property: 'BudgetDate', operator: 'lte', operand: end },
-				filter,
-			]});
+			return FilterUtils.filter(Array.from(this.attributedEvents.values()), {
+				AND: [
+					{ property: 'BudgetDate', operator: 'gte', operand: start },
+					{ property: 'BudgetDate', operator: 'lte', operand: end },
+					filter,
+				]
+			});
 		});
 	}
 
-	public updateTransaction(changedTransaction: Transaction) {
-		if (!this.loadedTransactions.has(changedTransaction.transaction_id)) {
-			throw new Error("Transaction is not loaded!")
-		}
-		this.loadedTransactions.set(changedTransaction.transaction_id, changedTransaction);
-		// There may be new or fewer transaction attributions. Need to clear all 
-		const oldAttributedEvents = Array.from(this.attributedEvents.values()).filter(e => e.attributionDetails.transaction_id === changedTransaction.transaction_id);
-		oldAttributedEvents.forEach(e => this.attributedEvents.delete(e.attributionDetails.transaction_attribution_id));
+	public updateTransactions(changedTransactions: Array<Transaction>) {
+		for (const changedTransaction of changedTransactions) {
+			if (!this.loadedTransactions.has(changedTransaction.transaction_id)) {
+				throw new Error("Transaction is not loaded!")
+			}
+			this.loadedTransactions.set(changedTransaction.transaction_id, changedTransaction);
+			// There may be new or fewer transaction attributions. Need to clear all 
+			const oldAttributedEvents = Array.from(this.attributedEvents.values()).filter(e => e.attributionDetails.transaction_id === changedTransaction.transaction_id);
+			oldAttributedEvents.forEach(e => this.attributedEvents.delete(e.attributionDetails.transaction_attribution_id));
 
-		const newAttributedEvents = TransactionUtils.processAttributionEvents([changedTransaction]);
-		newAttributedEvents.forEach(e => this.attributedEvents.set(e.attributionDetails.transaction_attribution_id, e));
+			const newAttributedEvents = TransactionUtils.processAttributionEvents([changedTransaction]);
+			newAttributedEvents.forEach(e => this.attributedEvents.set(e.attributionDetails.transaction_attribution_id, e));
+
+		}
 	}
 
 }

@@ -6,6 +6,7 @@ import { TransactionService } from '@/services/transaction.service';
 import { useAccountStore } from './account.store';
 import { useBudgetStore } from './budget.store';
 import { useCategoryStore } from './category.store';
+import type { Transaction } from 'delfi-core/models/Transaction';
 
 export const useDelfiStore = defineStore('delfi', () => {
 	const delfi = new Delfi();
@@ -102,8 +103,8 @@ export const useDelfiStore = defineStore('delfi', () => {
 		isGeneratingForecast,
 		projectionStart,
 		projectionEnd,
-		async updateTransaction(tx) {
-			await delfi.updateTransaction(tx);
+		async updateTransactions(tx: Array<Transaction>) {
+			await delfi.updateTransactions(tx);
 			updateRecomputed();
 		},
 		reCompute,

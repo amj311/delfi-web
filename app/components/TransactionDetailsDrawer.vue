@@ -65,7 +65,7 @@ watch(
 			const diffKeys = Object.keys(diff);
 			const shouldCompute = diffKeys.some((key) => !computeExclusions.includes(key));
 			if (shouldCompute) {
-				useDelfiStore().updateTransaction(transaction.value);
+				useDelfiStore().updateTransactions([transaction.value]);
 			}
 
 			const changedRuleActions = ActionTypes.map((key) => {
