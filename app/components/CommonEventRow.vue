@@ -181,15 +181,15 @@ const leftAction = computed(() => {
 								</template>
 								<template v-if="attributionText">{{ attributionText }} {{ hideAccount ? '' : '- ' }} </template>
 								<template v-if="!hideAccount">
-									{{ accountStore.getAccountName(event.account_id) }}
 									<template v-if="event.attributionDetails?.isTransferPair">
-										→
 										{{
 											accountStore.getAccountName(
 												event.attributionDetails?.sourceTransaction.TransferPair!.account_id
 											)
 										}}
+										→
 									</template>
+									{{ accountStore.getAccountName(event.account_id) }}
 								</template>
 								
 							</small>
