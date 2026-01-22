@@ -432,14 +432,32 @@ export class TestDataService {
 				category_id: categoryByName("Mortgage & Rent").category_id,
 				Category: categoryByName("Mortgage & Rent"),
 				recurrence_type: RecurrenceType.SCHEDULE,
-				scheduleVariants: [{
-					schedule: { start: '2022-06-01', frequency: 'MONTHLY', },
-					projectionSchedule: { byDayOfMonth: [2] },
-					amountTemplate: {
-						type: 'fixed',
-						amount: -2725,
+				scheduleVariants: [
+					{
+						schedule: { start: '2022-06-01', end: '2025-03-31', frequency: 'MONTHLY', },
+						projectionSchedule: { byDayOfMonth: [20] },
+						amountTemplate: {
+							type: 'fixed',
+							amount: -2219,
+						}
+					},
+					{
+						schedule: { start: '2025-04-01', end: '2025-05-31', frequency: 'MONTHLY', },
+						projectionSchedule: { byDayOfMonth: [20] },
+						amountTemplate: {
+							type: 'fixed',
+							amount: -2725,
+						}
+					},
+					{
+						schedule: { start: '2025-06-01', frequency: 'MONTHLY', },
+						projectionSchedule: { byDayOfMonth: [2] },
+						amountTemplate: {
+							type: 'fixed',
+							amount: -2725,
+						}
 					}
-				}],
+				],
 			},
 			{
 				budget_id: 'd8e9f0a1-2345-abcd-ef01-234567890123',
@@ -600,7 +618,7 @@ export class TestDataService {
 				Category: categoryByName("Sports and Activities"),
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
-					schedule: { start: ddate('2022-09-01').startOf('week').toString(), frequency: 'MONTHLY' },
+					schedule: { start: '2025-10-01', end: '2026-05-30', frequency: 'MONTHLY' },
 					amountTemplate: {
 						type: 'fixed',
 						amount: -60,

@@ -153,7 +153,7 @@ export type ProjectionEventDetails = BudgetedTransactionDetails & {
 	budget_event_id: string,
 	sourceOccurrence: BudgetOccurrence, // The occurrence this event is associated with
 	triggerEvent?: ProjectionEvent
-	isTransferCopy?: boolean, // If true, this event is a copy of a transfer event, i.e. the target of a transfer
+	// isTransferCopy?: boolean, // If true, this event is a copy of a transfer event, i.e. the target of a transfer
 	// isPartial?: true, // indicates that this event is a partial event, i.e. it is not the full amount of the budget
 	// budgetCap?: number, // the total cap for the budget
 	// budgetUsedSoFar?: number, // the accumulation of this and previous events for the same window

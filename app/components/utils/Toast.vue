@@ -49,7 +49,7 @@ const usePrivatePrompt = defineStore('privateToast', () => {
 		});
 		setTimeout(() => {
 			removeMessage(key);
-		}, message.duration || 10000); // leave toast around for a while since it usually prompts for user action
+		}, message.duration || 5000);
 		return key;
 	}
 
@@ -97,7 +97,7 @@ export default {
 
 <template>
 	<div class="toast-container">
-		<div class="list-wrapper">
+		<div class="list-wrapper p-2">
 			<TransitionGroup
 				name="toast"
 				tag="div"
@@ -110,7 +110,7 @@ export default {
 					@left="store.removeMessage(msg.key!)"
 				>
 					<template #content>
-						<div class="p-2">
+						<div class="">
 							<div
 								class="flex flex-column gap-2 bg-white border-1 shadow-2 p-2 pl-3 mb-2 border-round"
 								:style="{

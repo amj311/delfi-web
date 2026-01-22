@@ -179,7 +179,7 @@ export type AttributionEventDetails = TransactionAttribution & {
 	isSplit: boolean, // If this event is a split of a transaction
 	softDescription: string,
 	isTransferPair: boolean,
-	isTransferCopy: boolean,
+	isTransferTarget: boolean,
 	needsReview: boolean,
 }
 
@@ -255,7 +255,7 @@ export class TransactionUtils {
 				get isSplit() { return transaction.Attributions.length > 1 },
 				get softDescription() { return breakdown?.simple_description || transaction.original_description },
 				get isTransferPair() { return Boolean(transaction.transfer_pair_id) },
-				get isTransferCopy() { return Boolean(transaction.transfer_pair_id) && transaction.amount < 0 },
+				get isTransferTarget() { return Boolean(transaction.transfer_pair_id) && transaction.amount < 0 },
 				BudgetChildItem,
 				get needsReview() { return Boolean(transaction.TransactionReview && !transaction.TransactionReview.reviewed_at && !transaction.TransactionReview.dismissed_at) },
 			},

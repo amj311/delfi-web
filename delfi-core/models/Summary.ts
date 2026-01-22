@@ -118,7 +118,7 @@ export class BudgetSnapshot {
 
 
 	get withoutTransferCopies() {
-		return this._attributedEvents.filter(e => !e.attributionDetails?.isTransferCopy);
+		return this._attributedEvents.filter(e => !e.attributionDetails?.isTransferTarget);
 	}
 
 	/**
@@ -331,15 +331,15 @@ export class RealityTally<Grouper = any> {
 	}
 
 
-	get budgetEventsWithoutTransferCopies(): ProjectionEvent[] {
-		return this.budgetEvents.filter(e => !e.projectionDetails?.isTransferCopy);
-	}
+	// get budgetEventsWithoutTransferCopies(): ProjectionEvent[] {
+	// 	return this.budgetEvents.filter(e => !e.projectionDetails?.isTransferCopy);
+	// }
 
 	/**
 	 * NOTE This ALWAYS excludes transfer copies. I don't yet know of a situation where we would want to include them in the budgeted net.
 	 */
 	get budgetedNet(): number {
-		return netChange(this.budgetEventsWithoutTransferCopies);
+		return netChange(this.budgetEvents);
 	}
 
 	get attributedNet(): number {
@@ -347,13 +347,13 @@ export class RealityTally<Grouper = any> {
 	}
 
 	get budgetedIncome(): number {
-		return this.budgetEventsWithoutTransferCopies
+		return this.budgetEvents
 			.filter((e) => e.Budget.Category?.type === 'INCOME')
 			.reduce((sum, e) => sum + e.amount, 0);
 	}
 	
 	get budgetedExpense(): number {
-		return this.budgetEventsWithoutTransferCopies
+		return this.budgetEvents
 			.filter((e) => !e.Budget.Category || e.Budget.Category.type === 'EXPENSE')
 			.reduce((sum, e) => sum + e.amount, 0);
 	}

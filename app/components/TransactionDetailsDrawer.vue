@@ -215,7 +215,6 @@ async function saveSplitChanges() {
 		return useToast().add({
 			severity: 'error',
 			title: 'Splits must sum to the total transaction amount.',
-			duration: 3000,
 		});
 	}
 
@@ -335,7 +334,6 @@ async function reviewTransaction() {
 		useToast().add({
 			severity: 'success',
 			title: 'Transaction Reviewed',
-			duration: 3000,
 		});
 	} catch (error) {
 		console.error('Error reviewing transaction:', error);
@@ -564,11 +562,8 @@ const sourceAccount = computed(() => {
 						>
 							<template v-if=attribution.memo>{{ attribution.memo }}</template>
 							<template v-else>
-								None<template v-if=attribution.memo>{{ attribution.memo }}</template>
-							<template v-else>
 								None
 								<i class="pi pi-pencil" />
-							</template>
 							</template>
 						</Button>
 					</div>
