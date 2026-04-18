@@ -348,6 +348,33 @@ class TransactionDaoClass extends PrismaDao {
 		});
 	}
 
+	async bulkPatchAttributionValues(
+		workspace_id: string,
+		attributionIds: string[],
+		updates: Partial<{ budget_id: string | null, budget_child_item_id: string | null, category_id: string | null, group_id: string | null }>
+	): Promise<Transaction[]> {
+		// Verify all attributions belong to this workspace, then update
+		const attributions = await this.db.transactionAttribution.findMany({
+			where: {
+				transaction_attribution_id: { in: attributionIds },
+				Transaction: { workspace_id },
+			},
+			select: { transaction_attribution_id: true, transaction_id: true },
+		});
+
+		if (attributions.length !== attributionIds.length) {
+			throw new Error('One or more attributions not found or not accessible');
+		}
+
+		await this.db.transactionAttribution.updateMany({
+			where: { transaction_attribution_id: { in: attributionIds } },
+			data: updates,
+		});
+
+		const uniqueTransactionIds = [...new Set(attributions.map(a => a.transaction_id))];
+		return Promise.all(uniqueTransactionIds.map(id => this.getTransactionById(id).then(t => t!)));
+	}
+
 	async updateTransactionAttribution(
 		transaction_attribution_id: string,
 		attributionUpdates: any

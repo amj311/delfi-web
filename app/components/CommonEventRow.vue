@@ -12,10 +12,9 @@ import { colors } from 'delfi-core/utils/constants';
 import SwipeAction from './utils/SwipeAction.vue';
 import { TransactionService } from '@/services/transaction.service';
 import { useToast } from './utils/Toast.vue';
-import { jsonCopy, wait } from 'delfi-core/utils/miscUtils';
-import TransactionAttributionDrawer from './TransactionAttributionDrawer.vue';
-import type { Transaction } from 'delfi-core/models/Transaction';
 import { UncategorizedCategory } from 'delfi-core/models/systemCategories';
+import { useTransactionSelectionStore } from '@/stores/transaction-selection.store';
+import TransactionAttributionDrawer from './TransactionAttributionDrawer.vue';
 
 const toast = useToast();
 
@@ -38,7 +37,7 @@ const {
 	clickable?: boolean;
 	expand?: boolean;
 	showPastDue?: boolean;
-	dateFormat?: 'short' | 'full'
+	dateFormat?: 'short' | 'full',
 }>();
 
 const showLoading = ref(false);
@@ -99,6 +98,12 @@ async function reviewTransaction() {
 	}
 }
 
+async function doAttributions() {
+	if (!isAttribution.value) return;
+	const newAttributions = await transactionAttributionDrawer.value?.waitForSelection(event);
+	console.log(newAttributions)
+}
+
 const leftAction = computed(() => {
 	if (isAttribution.value) {
 		const reviewRecord = event.attributionDetails?.sourceTransaction.TransactionReview;
@@ -109,14 +114,31 @@ const leftAction = computed(() => {
 	return undefined;
 });
 
+const rightAction = computed(() => {
+	if (isAttribution.value) {
+		return doAttributions;
+	}
+	return undefined;
+});
+
+const transactionAttributionDrawer = ref<InstanceType<typeof TransactionAttributionDrawer>>();
+
+/******************
+ * SELECTING
+ */
+const transactionSelectionStore = useTransactionSelectionStore();
+const isSelected = computed(() => transactionSelectionStore.selection.isSelected(event));
+
 </script>
 
 <template>
 	<div class="event-row" :class="{ expand }">
 		<SwipeAction
-			v-if="showTransferCopy || !event.attributionDetails?.isTransferCopy"
+			v-if="showTransferCopy || !event.attributionDetails?.isTransferTarget"
 			:onLeft="leftAction"
+			:onRight="rightAction"
 			leftBackground="var(--p-sky-300)"
+			rightBackground="var(--p-amber-400)"
 		>
 			<template #content>
 				<div
@@ -124,8 +146,15 @@ const leftAction = computed(() => {
 					:class="{ 'opacity-70': isPending, clickable }"
 				>
 					<!-- Avatar with badges -->
-					<div class="loading-center relative flex align-items-center">
-						<AttributionAvatar :event="event" :size="size" :style="{ opacity: showLoading ? 0.5 : 1 }">
+					<div
+						class="loading-center relative flex align-items-center"
+						@click="e => {
+							e.stopPropagation();
+							transactionSelectionStore.selection.toggle(event);
+						}"
+					>
+						<AttributionAvatar v-if="isSelected" :size="size" :style="{ opacity: showLoading ? 0.5 : 1 }" icon="material-symbols::check" :background="colors.blue1" />
+						<AttributionAvatar v-else :event="event" :size="size" :style="{ opacity: showLoading ? 0.5 : 1 }">
 							<template #badge v-if="event.attributionDetails?.isSplit">
 								<Icon source_id="arrow_split" source="material-symbols" />
 							</template>
@@ -222,7 +251,8 @@ const leftAction = computed(() => {
 				<Icon name="category" />
 			</template>
 		</SwipeAction>
-		<!-- <TransactionAttributionDrawer ref="transactionAttributionDrawer" /> -->
+
+		<TransactionAttributionDrawer ref="transactionAttributionDrawer" />
 	</div>
 </template>
 

@@ -15,6 +15,16 @@ export default (app, _, done) => {
         };
     });
 
+	app.post('/bulk-patch-attributions', async function handler (request) {
+		const workspace_id = request.sessionUser.workspace_id;
+		const { attributionIds, updates } = request.body;
+		const data = await TransactionService.bulkPatchTransactionAttributions(workspace_id, attributionIds, updates);
+		return {
+			success: true,
+			data,
+		};
+	});
+
 	app.post('/:transaction_id', async function handler (request) {
 		const workspace_id = request.sessionUser.workspace_id;
 		const updateData = request.body;

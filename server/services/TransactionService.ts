@@ -36,6 +36,14 @@ export class TransactionServiceClass extends DaoUser {
 	 * @param transactionData 
 	 * @returns 
 	 */
+	public async bulkPatchTransactionAttributions(
+		workspace_id: string,
+		attributionIds: string[],
+		updates: Partial<{ budget_id: string | null, budget_child_item_id: string | null, category_id: string | null, group_id: string | null }>
+	): Promise<Transaction[]> {
+		return TransactionDao.bulkPatchAttributionValues(workspace_id, attributionIds, updates);
+	}
+
 	public async inPatchTransaction(workspace_id: string, transactionData: CreateTransaction) {
 		const existingTransaction = await TransactionDao.getMatchingTransaction(workspace_id, transactionData);
 		let upsertedTransaction: Transaction | null = null;

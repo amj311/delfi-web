@@ -1,7 +1,6 @@
 <!-- Easy user flow for selection which budget, category, etc a transaction belongs to -->
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import Drawer from 'primevue/drawer';
 import Button from 'primevue/button';
 import { useBudgetStore } from '@/stores/budget.store';
 import BudgetSelector from './BudgetSelector.vue';
@@ -27,27 +26,36 @@ type Selection = {
 	group_id?: string | null;
 	Group?: BudgetGroup | null;
 };
+type SetMap<T, K extends keyof T> = { [P in K]: Set<T[P]>; };
 
-const originalSelection = ref<Selection>({
-	budget_id: null,
-	Budget: null,
-	budget_child_item_id: null,
-	BudgetChildItem: null,
-	category_id: null,
-	Category: null,
-	group_id: null,
-	Group: null,
-});
+const allOriginal = ref<Array<Selection>>([]);
 
+const SelectionIdAttributes = ['budget_id', 'budget_child_item_id', 'category_id', 'group_id'] as const;
+const valueSets = computed(() => {
+	return SelectionIdAttributes.reduce((all, a) => {
+		all[a] = new Set(allOriginal.value.map(s => s[a]));
+		return all;
+	}, {} as SetMap<Selection, typeof SelectionIdAttributes[number]>)
+})
+
+
+function getCommonValue<T extends typeof SelectionIdAttributes[number]>(attribute: T) {
+	const set = valueSets.value[attribute];
+	return set?.size === 1 ? set.values().next().value : undefined;
+}
+
+/**
+ * UNDEFINED indicates that original values should be maintained, not overwritten with null/undefined!!!
+ */
 const currentSelection = ref<Selection>({
-	budget_id: null,
-	Budget: null,
-	budget_child_item_id: null,
-	BudgetChildItem: null,
-	category_id: null,
-	Category: null,
-	group_id: null,
-	Group: null,
+	budget_id: undefined,
+	Budget: undefined,
+	budget_child_item_id: undefined,
+	BudgetChildItem: undefined,
+	category_id: undefined,
+	Category: undefined,
+	group_id: undefined,
+	Group: undefined,
 });
 
 const promiseResolver = ref<((value: Selection | null) => void) | null>(null);
@@ -75,24 +83,49 @@ export type Step = (typeof Steps)[number];
 const currentStep = ref<Step>('Budget');
 
 defineExpose({
-	waitForSelection(current: Selection, activeStep?: Step) {
-		originalSelection.value = { ...current };
+	/**
+	 * Waits for the user to make selections.
+	 * Returns an array of selections
+	 * @param current 
+	 * @param activeStep 
+	 */
+	waitForSelection<T extends Selection>(current: T | Array<T>, activeStep?: Step) {
+		// copy items to avoid mutation
+		const items = Array.isArray(current) ? current : [current];
+		allOriginal.value = items.map(i => ({
+			budget_id: i.budget_id,
+			Budget: i.Budget,
+			budget_child_item_id: i.budget_child_item_id,
+			BudgetChildItem: i.BudgetChildItem,
+			category_id: i.category_id,
+			Category: i.Category,
+			group_id: i.group_id,
+			Group: i.Group,
+		}));
 
-		currentSelection.value.budget_id = current.budget_id ?? null;
-		currentSelection.value.Budget = current.Budget ?? null;
-		currentSelection.value.budget_child_item_id = current.budget_child_item_id ?? null;
-		currentSelection.value.BudgetChildItem = current.BudgetChildItem ?? null;
-		currentSelection.value.category_id = current.category_id ?? null;
-		currentSelection.value.Category = current.Category ?? null;
-		currentSelection.value.group_id = current.group_id ?? null;
-		currentSelection.value.Group = current.Group ?? null;
+		// reset the current selection
+		const commonBudgetId = getCommonValue('budget_id');
+		currentSelection.value.budget_id = commonBudgetId;
+		currentSelection.value.Budget = commonBudgetId ? allOriginal[0].Budget : undefined; // expect this to be common value
+
+		const common_budget_child_item_id = getCommonValue('budget_child_item_id');
+		currentSelection.value.budget_child_item_id = common_budget_child_item_id;
+		currentSelection.value.BudgetChildItem = common_budget_child_item_id ? allOriginal.value[0].BudgetChildItem : undefined;
+
+		const common_category_id = getCommonValue('category_id');
+		currentSelection.value.category_id = common_category_id;
+		currentSelection.value.Category = common_category_id ? allOriginal.value[0].Category : undefined;
+
+		const common_group_id = getCommonValue('group_id');
+		currentSelection.value.group_id = common_group_id;
+		currentSelection.value.Group = common_group_id ? allOriginal.value[0].Group : undefined;
 
 		currentStep.value = activeStep || 'Budget';
 
 		drawerTrigger.value?.trigger()?.open();
 
 		return new Promise<Selection | null>((resolve, reject) => {
-			promiseResolver.value = resolve;
+			promiseResolver.value = resolve as any;
 			promiseRejector.value = reject;
 		});
 	},
@@ -170,7 +203,7 @@ const allowedGroups = computed(() => {
 <template>
 	<NavTriggerDrawer ref="drawerTrigger" :triggerKey="'transaction-attribution'" :width="25">
 		<div class="flex flex-column gap-1 h-full overflow-hidden">
-			<div class="step-label" @click="currentStep = 'Budget'">
+			<div class="step-label" :class="{ current: currentStep === 'Budget' }" @click="currentStep = 'Budget'">
 				<i class="pi pi-wallet" />
 				<span>Budget: </span>
 
@@ -194,7 +227,7 @@ const allowedGroups = computed(() => {
 				/>
 			</div>
 
-			<div class="step-label" @click="currentStep = 'Category'">
+			<div class="step-label" :class="{ current: currentStep === 'Category' }" @click="currentStep = 'Category'">
 				<Icon name="category" />
 				<span>Category: </span>
 
@@ -220,7 +253,7 @@ const allowedGroups = computed(() => {
 				/>
 			</div>
 
-			<div class="step-label" @click="currentStep = 'Group'">
+			<div class="step-label" :class="{ current: currentStep === 'Group' }" @click="currentStep = 'Group'">
 				<Icon name="tag" />
 				<span>Group: </span>
 				<div class="flex-grow-1 text-ellipsis">
@@ -263,6 +296,10 @@ const allowedGroups = computed(() => {
 	padding: 0.5rem 1rem;
 	background-color: #f5f5f5;
 	border-radius: 3rem;
+
+	&.current {
+		font-weight: bold;
+	}
 }
 
 .selector-frame {

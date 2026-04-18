@@ -102,4 +102,11 @@ const groups = computed(() =>
 		color: var(--p-text-color);
 	}
 }
+.group {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	background: #fff;
+	padding: .25rem 0;
+}
 </style>

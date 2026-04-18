@@ -26,6 +26,7 @@ export const firebaseAuthMiddleware = async (request, reply) => {
 		if (!authToken) {
 			// Send 401 for no auth
 			reply.status(401).send();
+			return;
 		}
         // Verify the Firebase ID token
         const decodedToken = await admin.auth().verifyIdToken(authToken);

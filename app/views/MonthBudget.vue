@@ -22,12 +22,13 @@ import AccordionHeader from 'primevue/accordionheader';
 import Knob from 'primevue/knob';
 import AttributionAvatar from '@/components/AttributionAvatar.vue';
 import Select from 'primevue/select';
-import { BudgetEventSummary, RealityTally, type BudgetSnapshot } from 'delfi-core/models/Summary';
+import { BudgetEventSummary, RealityTally, type BudgetSnapshot, type CommonEvent } from 'delfi-core/models/Summary';
 import { useContextStore } from '@/stores/context.store';
 import CommonEventRow from '@/components/CommonEventRow.vue';
 import Button from 'primevue/button';
 import { currency } from 'delfi-core/utils/miscUtils';
 import CollapseList from '@/components/utils/CollapseList.vue';
+
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -43,6 +44,7 @@ const state = reactive({
 	upsertingBudget: <Budget | {} | null>null,
 	summaryData: <Awaited<ReturnType<Delfi['getMonthSummary']>> | null>null,
 });
+
 const isFuture = computed(() => {
 	if (!state.viewingMonth) {
 		return false;
@@ -471,10 +473,7 @@ const accumulationChart = computed(() => {
 
 <template>
 	<main>
-		<!-- <div style="display: flex; justify-content: space-between; align-items: center">
-			<h2>Monthly Budget</h2>
-		</div> -->
-		<div style="display: flex; justify-content: space-between">
+		<div class="bg py-2 flex align-items-center justify-content-between" style="position: sticky; top: 0; z-index: 4; margin: 0 -5px">
 			<Button text @click="goBack()">Back</Button>
 			<span>{{ state.viewingMonth?.format('MMMM YYYY') }}</span>
 			<Button text @click="goForward()">Forward</Button>
@@ -498,7 +497,7 @@ const accumulationChart = computed(() => {
 			</div>
 			<br />
 
-			<apexchart class="w-full" type="bar" v-bind="accumulationChart"></apexchart>
+			<apexchart class="w-full" style="max-height: 50vh;" type="bar" v-bind="accumulationChart"></apexchart>
 
 			<div>
 				<div class="flex align-items-center py-2">
@@ -1432,7 +1431,7 @@ const accumulationChart = computed(() => {
 						padding: '8px 8px',
 						marginTop: '8px',
 						position: 'sticky',
-						top: '0',
+						top: '3rem',
 						backgroundColor: '#ffff',
 						zIndex: 3,
 						marginLeft: '-5px',

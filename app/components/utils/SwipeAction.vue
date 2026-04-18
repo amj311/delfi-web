@@ -45,7 +45,7 @@ onMounted(() => {
 			const touch = e.touches[0];
 			const deltaX = touch.clientX - touchStartX as number;
 			const deltaY = touch.clientY - touchStartY as number;
-			if (deltaX > deltaY && deltaX > 5) {
+			if (deltaX !== 0 && Math.abs(deltaX) > deltaY && Math.abs(deltaX) > 5) {
 				document.body.classList.add('prevent-scroll');
 				updateSwipeDelta(deltaX);
 			} else {

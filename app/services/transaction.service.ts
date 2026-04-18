@@ -2,6 +2,13 @@ import { instantiateDates, type DelfiDate } from 'delfi-core/utils/dateUtils';
 import request from './request';
 import type { CreateTransaction, Transaction } from 'delfi-core/models/Transaction';
 
+type AttributionUpdates = Partial<{
+	budget_id: string | null;
+	budget_child_item_id: string | null;
+	category_id: string | null;
+	group_id: string | null;
+}>;
+
 export const TransactionService = {
 	/**
 	 * Get transactions for a specific account
@@ -56,5 +63,13 @@ export const TransactionService = {
 			console.error('Error fetching applicable rules:', error);
 			throw error;
 		}
-	}
+	},
+
+	async bulkUpdateAttributions(attributionIds: string[], updates: AttributionUpdates) {
+		const { data } = await request.post(`/transactions/bulk-patch-attributions`, {
+			attributionIds,
+			updates,
+		});
+		return instantiateDates(data.data) as Transaction[];
+	},
 };

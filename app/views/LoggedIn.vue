@@ -7,6 +7,7 @@ import { useBudgetStore } from '@/stores/budget.store';
 import { onBeforeMount } from 'vue';
 import { RouterView } from 'vue-router'
 import Icon from '@/components/Icon.vue';
+import TransactionSelectionSnackbar from '@/components/TransactionSelectionSnackbar.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -63,6 +64,7 @@ onBeforeMount(() => {
 		<main class="app-content">
 			<RouterView v-if="!delfiStore.isInitializing" />
 		</main>
+		<TransactionSelectionSnackbar />
 	</div>
 </template>
 

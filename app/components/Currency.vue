@@ -61,7 +61,7 @@ const color = computed(() => {
 </script>
 
 <template>
-	<span class="currency inline-flex align-items-center" :style="{ color }">
+	<span class="currency inline-flex align-items-center nowrap" :style="{ color }">
 		<Icon
 			v-if="mode === 'net_change' && numAmount !== 0"
 			:name="`material-symbols::arrow_${numAmount > 0 ? 'upward' : 'downward'}`"

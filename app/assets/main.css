@@ -57,6 +57,9 @@ body .hover-show-trigger:hover .hover-show {
 	aspect-ratio: 1;
 }
 
+.nowrap {
+	white-space: nowrap;
+}
 
 
 /* FORM ROWS */

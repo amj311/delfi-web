@@ -11,6 +11,7 @@ import Button from 'primevue/button';
 import { useAppStore } from './stores/app.store';
 import Snackbar from './components/utils/Toast.vue';
 import Message from 'primevue/message';
+import Dialog from 'primevue/dialog';
 
 const userStore = useUserStore();
 const sessionInterval = setInterval(userStore.loadSessionData, 60000);
@@ -27,8 +28,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-	<!-- Message styles used for Toast are not bundled unless the component is used somewhere -->
+	<!-- Styles for these components not bundled unless the component is used somewhere -->
 	<Message severity="info" style="display: none;" />
+	<Dialog />
 
 	<div class="app" :class="{ touch: useAppStore().isTouch }">
 		<LoggedIn v-if="!waitingForAuth && userStore.hasAuth && userStore.currentUser" />

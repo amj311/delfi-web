@@ -65,7 +65,7 @@ const budgets = useBudgetStore().orderedBudgets;
 				v-for="budget, i in budgets"
 				:key="budget.budget_id"
 			>
-				<h4 v-if="budget.Category?.ParentCategory?.name !== budgets[i - 1]?.Category?.ParentCategory?.name" class="my-3">{{ budget.Category?.ParentCategory?.name || 'Uncategorized' }}</h4>
+				<h4 v-if="budget.Category?.ParentCategory?.name !== budgets[i - 1]?.Category?.ParentCategory?.name" class="my-3 category-header">{{ budget.Category?.ParentCategory?.name || 'Uncategorized' }}</h4>
 				<div
 					class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round"
 					@click="selectBudget(budget.budget_id)"
@@ -98,4 +98,12 @@ const budgets = useBudgetStore().orderedBudgets;
 	</div>
 </template>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.category-header {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	background: #fff;
+	padding: .25rem 0;
+}
+</style>
