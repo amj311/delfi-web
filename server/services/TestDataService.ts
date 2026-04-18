@@ -21,7 +21,7 @@ export class TestDataService {
 
 	public static users: Array<User> = [{
 		user_id: "a911cba0-3f61-4bc7-86a6-0d1c407baf18",
-		auth_id: "BFBbDd1tb1cEEZjAmPEYaQMCIDi1",
+		auth_id: "xK5UD7EtKXPp05JzFuTfjM4PzXA3",
 		email: "simplyolives2018@gmail.com",
 		given_name: "Arthur",
 		family_name: "Judd"
