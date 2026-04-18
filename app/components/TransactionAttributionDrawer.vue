@@ -106,7 +106,7 @@ defineExpose({
 		// reset the current selection
 		const commonBudgetId = getCommonValue('budget_id');
 		currentSelection.value.budget_id = commonBudgetId;
-		currentSelection.value.Budget = commonBudgetId ? allOriginal[0].Budget : undefined; // expect this to be common value
+		currentSelection.value.Budget = commonBudgetId ? allOriginal.value[0].Budget : undefined; // expect this to be common value
 
 		const common_budget_child_item_id = getCommonValue('budget_child_item_id');
 		currentSelection.value.budget_child_item_id = common_budget_child_item_id;
