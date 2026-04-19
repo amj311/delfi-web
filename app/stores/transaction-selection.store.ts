@@ -41,7 +41,6 @@ export const useTransactionSelectionStore = defineStore('transactionSelection', 
 
 		const updatedTransactions = await TransactionService.bulkUpdateAttributions(attributionIds, updates);
 		await useDelfiStore().updateTransactions(updatedTransactions);
-		clear();
 	}
 
 	return {
