@@ -45,7 +45,7 @@ export class TestDataService {
 		{
 			institution_id: 'test-betterment-id',
 			name: "Betterment",
-			logo: "https://media.licdn.com/dms/image/C4D0BAQHD-kRGjmwQtQ/company-logo_200_200/0/1637070868010/betterment_logo?e=2147483647&v=beta&t=R_wIOyd244kG2zZBj0dlgDubceiCtMmUrjHwBmPqm3w",
+			logo: "https://cdn.brandfetch.io/domain/betterment.com/fallback/lettermark/theme/dark/h/400/w/400/icon?c=1bfwsmEH20zzEfSNTed",
 			plaid_institution_id: null,
 			loginUrl: 'https://wwws.betterment.com/app/login',
 			scraper: 'extension',
