@@ -4,6 +4,7 @@ import type { Account } from "delfi-core/models/Account";
 import { TransactionService } from "server/services/TransactionService";
 import { SyncService } from "server/services/SyncService";
 import { useTransaction } from "../../prisma/client";
+import { ScraperService } from "server/services/scraper/ScraperService";
 
 export default (fastify, _, done) => {
 
@@ -16,6 +17,16 @@ export default (fastify, _, done) => {
 			data,
 		};
 	});
+
+    fastify.post('/sync/submit-otp', async function handler (request, reply) {
+        const workspace_id = request.sessionUser.workspace_id;
+        const { institution_id, otp } = request.body as { institution_id: string; otp: string };
+        await ScraperService.submitOtp(otp, institution_id, workspace_id);
+        return {
+            success: true,
+         };
+     });
+
 
     fastify.post('/', async function handler (request, reply) {
         const accountData = request.body as CreateAccountData;

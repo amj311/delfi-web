@@ -162,9 +162,3 @@ const CustomActions: Record<string, (attribution: TransactionAttribution, transa
 		return true;
 	},
 }
-
-// const att = {} as TransactionAttribution;
-// const tx = { workspace_id: TestDataService.workspaceId } as Transaction;
-// CustomActions.merchant_id(att, tx, 'd1a7ff54-1234-450b-b7c8-cb02828a7efe').catch(console.error).then(() => {
-// 	console.log('Custom action applied:', att, tx);
-// });

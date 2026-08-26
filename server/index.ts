@@ -52,6 +52,7 @@ app.register((api, _, done) => {
 	api.register(require('./routes/merchant.route'), { prefix: '/merchant' });
 	api.register(require('./routes/transactionRule.route'), { prefix: '/transaction-rule' });
 	api.register(require('./routes/ext-manage.route'), { prefix: '/ext' });
+	api.register(require('./routes/connection.route'), { prefix: '/connection' });
 
 	api.setNotFoundHandler((req, reply) => {
 		reply.status(404).send({ message: 'Not Found' });

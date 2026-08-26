@@ -27,9 +27,54 @@ function clearVideosDirectory(): void {
 }
 
 async function createBrowserContext(): Promise<BrowserContext> {
-	if (!browserInstance) {
-		browserInstance = await chromium.launch({
-			headless: false,           // Set to true to run in headless mode
+	// if (!browserInstance) {
+	// 	browserInstance = await chromium.launch({
+	// 		headless: false,           // Set to true to run in headless mode
+	// 		slowMo: 50,                // Reduce the slowdown for more natural behavior
+	// 		timeout: 30000,            // Increased timeout for better reliability
+	// 		args: [
+	// 			'--disable-blink-features=AutomationControlled',  // Hide automation flags
+	// 			'--disable-features=IsolateOrigins,site-per-process', // Disables site isolation
+	// 			'--no-sandbox',          // Less restrictive sandbox
+	// 			'--disable-web-security', // Bypass some CORS restrictions
+	// 			'--disable-features=site-per-process',
+	// 			'--start-maximized'      // Start with maximized window
+	// 		],
+	// 	});
+    //     // Cleanup on process exit
+    //     process.on('exit', cleanupBrowser);
+    //     process.on('SIGINT', cleanupBrowser);
+    //     process.on('SIGTERM', cleanupBrowser);
+	// }
+
+	// return await browserInstance({
+	// 	userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+	// 	viewport: { width: 1280, height: 800 },
+	// 	deviceScaleFactor: 1.75,  // Higher for retina-like display
+	// 	hasTouch: false,
+	// 	locale: 'en-US',
+	// 	timezoneId: 'America/Los_Angeles',
+	// 	geolocation: { longitude: -118.24, latitude: 34.05 },
+	// 	permissions: ['geolocation'],
+	// 	acceptDownloads: true,
+	// 	ignoreHTTPSErrors: true,  // Ignore HTTPS errors
+	// 	recordVideo: {
+	// 		dir: './videos',
+	// 		size: { width: 1280, height: 800 }
+	// 	},
+	// 	extraHTTPHeaders: {       // Add common headers
+	// 		'Accept-Language': 'en-US,en;q=0.9',
+	// 		'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+	// 		'Accept-Encoding': 'gzip, deflate, br',
+	// 		'Connection': 'keep-alive',
+	// 		'Upgrade-Insecure-Requests': '1'
+	// 	}
+	// });
+
+	return chromium.launchPersistentContext(
+		'./profile-data',
+		{
+			headless: false,
 			slowMo: 50,                // Reduce the slowdown for more natural behavior
 			timeout: 30000,            // Increased timeout for better reliability
 			args: [
@@ -40,36 +85,30 @@ async function createBrowserContext(): Promise<BrowserContext> {
 				'--disable-features=site-per-process',
 				'--start-maximized'      // Start with maximized window
 			],
-		});
-        // Cleanup on process exit
-        process.on('exit', cleanupBrowser);
-        process.on('SIGINT', cleanupBrowser);
-        process.on('SIGTERM', cleanupBrowser);
-	}
 
-	return await browserInstance.newContext({
-		userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-		viewport: { width: 1280, height: 800 },
-		deviceScaleFactor: 1.75,  // Higher for retina-like display
-		hasTouch: false,
-		locale: 'en-US',
-		timezoneId: 'America/Los_Angeles',
-		geolocation: { longitude: -118.24, latitude: 34.05 },
-		permissions: ['geolocation'],
-		acceptDownloads: true,
-		ignoreHTTPSErrors: true,  // Ignore HTTPS errors
-		recordVideo: {
-			dir: './videos',
-			size: { width: 1280, height: 800 }
+			userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+			viewport: { width: 1280, height: 800 },
+			deviceScaleFactor: 1.75,  // Higher for retina-like display
+			hasTouch: false,
+			locale: 'en-US',
+			timezoneId: 'America/Los_Angeles',
+			geolocation: { longitude: -118.24, latitude: 34.05 },
+			permissions: ['geolocation'],
+			acceptDownloads: true,
+			ignoreHTTPSErrors: true,  // Ignore HTTPS errors
+			recordVideo: {
+				dir: './videos',
+				size: { width: 1280, height: 800 }
+			},
+			extraHTTPHeaders: {       // Add common headers
+				'Accept-Language': 'en-US,en;q=0.9',
+				'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+				'Accept-Encoding': 'gzip, deflate, br',
+				'Connection': 'keep-alive',
+				'Upgrade-Insecure-Requests': '1'
+			}
 		},
-		extraHTTPHeaders: {       // Add common headers
-			'Accept-Language': 'en-US,en;q=0.9',
-			'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-			'Accept-Encoding': 'gzip, deflate, br',
-			'Connection': 'keep-alive',
-			'Upgrade-Insecure-Requests': '1'
-		}
-	});
+	)
 };
 
 async function cleanupBrowser(): Promise<void> {

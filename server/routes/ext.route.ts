@@ -3,7 +3,6 @@ import { ExternalsService } from "server/services/ExternalsService";
 import { InstitutionService } from "server/services/InstitutionService";
 import { InstitutionScrapers } from "server/services/scraper/InstitutionScrapers";
 import { SyncService } from "server/services/SyncService";
-import { TestDataService } from "server/services/TestDataService";
 
 export default (route, _, done) => {
 	route.addHook('preValidation', async (request, reply) => {
@@ -39,7 +38,7 @@ export default (route, _, done) => {
 			loginConfig: {
 				...InstitutionScrapers[institution.institution_id!],
 			},
-			creds: InstitutionService.getInstitutionCreds(institution.institution_id, TestDataService.workspaceId),
+			creds: InstitutionService.getInstitutionCreds(institution.institution_id, workspace_id),
 			accounts: accounts.filter(a => a.institution_id === institution.institution_id),
 		})));
 		return {

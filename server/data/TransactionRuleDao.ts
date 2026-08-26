@@ -1,21 +1,10 @@
 import type { TransactionRule } from "delfi-core/models/TransactionRule";
 import { prisma } from "../../prisma/client";
-import { TestDataService } from "server/services/TestDataService";
 import type { Optional } from "delfi-core/utils/typeUtils";
-import { v4 as uuid } from "uuid";
 
 export const TransactionRuleDao = {
 	hasInit: false,
-	async setupTestData() {
-		if (this.hasInit) return;
-		this.hasInit = true;
-		for (const rule of TestDataService.transactionRules) {
-			await this.upsertTransactionRule(TestDataService.workspaceId, rule);
-		}
-	},
-
 	async upsertTransactionRule(workspace_id, data: Optional<TransactionRule, 'transaction_rule_id'>) {
-		await this.setupTestData();
 		for (const action of data.actions) {
 			if (!action.action) {
 				throw new Error("Action type is required");
@@ -82,8 +71,6 @@ export const TransactionRuleDao = {
 	},
 
 	async getWorkspaceRules(workspace_id?: string) {
-		await this.setupTestData();
-
 		return await prisma.transactionRule.findMany({
 			where: {
 				workspace_id: workspace_id,
@@ -104,8 +91,6 @@ export const TransactionRuleDao = {
 	},
 
 	async getRulesByIds(workspace_id: string, ruleIds: string[]) {
-		await this.setupTestData();
-
 		return await prisma.transactionRule.findMany({
 			where: {
 				transaction_rule_id: {

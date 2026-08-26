@@ -5,11 +5,21 @@ import type { Account, Account as DelfiAccount } from '../../delfi-core/models/A
 import { useDelfiStore } from './delfi.store';
 import { ddate } from '../../delfi-core/utils/dateUtils';
 
+export type ConnectionStatus = {
+	institution_id: string;
+	status: 'CONNECTED' | 'DISCONNECTED' | 'ERROR';
+	otp_waiting: boolean;
+	otp_expires_at: Date | null;
+	updated_at: Date;
+};
+
 export const useAccountStore = defineStore('account', () => {
 	const delfiStore = useDelfiStore();
 
 	let accounts = ref([] as Account[]);
+	let connections = ref<ConnectionStatus[]>([]);
 	let isLoadingAccounts = ref(false);
+	let isLoadingConnections = ref(false);
 	let isUpsertingAccount = ref(false);
 	let isDeletingAccount = ref(false);
 
@@ -28,7 +38,7 @@ export const useAccountStore = defineStore('account', () => {
 
 	}
 
-	function getAccountById (id?: string | null) {
+	function getAccountById(id?: string | null) {
 		return accounts.value.find(a => a.account_id === id);
 	}
 
@@ -56,6 +66,16 @@ export const useAccountStore = defineStore('account', () => {
 		}
 	}
 
+	async function submitOtp(institutionId: string, otp: string) {
+		try {
+			await request.post('/account/sync/submit-otp', { institution_id: institutionId, otp });
+		}
+		catch (e) {
+			console.error("Could not submit OTP!")
+			throw e;
+		}
+	}
+
 	const upsertAccount = async (accountData: Partial<Account>): Promise<Account> => {
 		let accountRes: Account;
 		try {
@@ -74,7 +94,7 @@ export const useAccountStore = defineStore('account', () => {
 		}
 		finally {
 			isUpsertingAccount.value = false;
-		} 
+		}
 		return accountRes;
 	}
 
@@ -90,12 +110,43 @@ export const useAccountStore = defineStore('account', () => {
 		}
 		finally {
 			isDeletingAccount.value = false;
-		} 
+		}
+	}
+
+	const getInstitutionConnection = computed(() => {
+		return (institutionId: string) => {
+			return connections.value.find(c => c.status) // placeholder — we'll use a function instead
+				|| null;
+		};
+	});
+
+	async function loadConnections() {
+		try {
+			isLoadingConnections.value = true;
+			const { data } = await request.get('/connection');
+			connections.value = data.data || [];
+		}
+		catch (e) {
+			console.error("Could not load connections!", e);
+		}
+		finally {
+			isLoadingConnections.value = false;
+		}
+	}
+
+	async function getConnectionStatus(institutionId: string) {
+		try {
+			const { data } = await request.get(`/connection/${institutionId}`);
+			return data.data;
+		} catch (e) {
+			console.error("Could not get connection status!", e);
+			return null;
+		}
 	}
 
 	const accountsByInstitution = computed(() => {
 		const institutions = new Map();
-		
+
 		accounts.value.forEach(account => {
 			const institutionName = account.Institution?.name || 'Unknown Institution';
 			if (!institutions.has(institutionName)) {
@@ -107,18 +158,23 @@ export const useAccountStore = defineStore('account', () => {
 			}
 			institutions.get(institutionName).accounts.push(account);
 		});
-		
+
 		return Array.from(institutions.values()).sort((a, b) => a.name.localeCompare(b.name));
 	});
 
 	return {
 		accounts,
+		connections,
 		isLoadingAccounts,
+		isLoadingConnections,
 		loadAccounts,
+		loadConnections,
 		syncAccounts,
 		syncAccount,
+		submitOtp,
 		getAccountById,
 		getAccountName,
+		getConnectionStatus,
 		upsertAccount,
 		deleteAccount,
 		accountsByInstitution

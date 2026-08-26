@@ -37,7 +37,8 @@ onMounted(async () => {
 		if (!accountStore.accounts.length) {
 			await accountStore.loadAccounts();
 		}
-
+		// Load connections for this workspace
+		await accountStore.loadConnections();
 		// If after loading, we still don't have the account, go back to accounts list
 		if (!account.value) {
 			router.push('/accounts');
@@ -149,11 +150,40 @@ const lastSync = computed(() => {
 	}
 });
 
+const connectionStatus = computed(() => {
+	if (!account.value?.institution_id) return null;
+	return accountStore.connections.find(c => c.institution_id === account.value!.institution_id) || null;
+});
+
 const importModal = ref<InstanceType<typeof DrawerModal>>();
 function openImport() {
 	importModal.value?.open();
 }
+const otpModal = ref<InstanceType<typeof DrawerModal> | null>(null);
+const otpCode = ref('');
 
+function openOtpModal() {
+	otpCode.value = '';
+	otpModal.value?.open();
+}
+
+async function submitOtp() {
+	if (!otpCode.value.trim() || !account.value?.institution_id) return;
+	try {
+		await accountStore.submitOtp(account.value.institution_id, otpCode.value.trim());
+		otpModal.value?.close();
+		// Reload connection status
+		await accountStore.loadConnections();
+		// Retry sync
+		// await syncAccount();
+	} catch (error) {
+		console.error('Error submitting OTP:', error);
+		useToast().add({
+			title: 'Failed to submit OTP',
+			severity: 'error',
+		});
+	}
+}
 </script>
 
 <template>
@@ -241,23 +271,47 @@ function openImport() {
 							<div v-else>No sync attempts yet</div>
 						</div>
 					</div>
-				</div>
-			</div>
 
-			<!-- Account partitions section (if any) -->
-			<div
+						<div class="detail-row" v-if="connectionStatus">
+							<div class="detail-label">Connection</div>
+							<div class="detail-value">
+								<div v-if="connectionStatus.status === 'CONNECTED'">
+									<i class="pi pi-check-circle" style="color: green;"></i>
+									Connected
+								</div>
+								<div v-else-if="connectionStatus.status === 'DISCONNECTED'">
+									<i class="pi pi-times-circle" style="color: #999;"></i>
+									Disconnected
+								</div>
+								<div v-else-if="connectionStatus.status === 'ERROR'">
+									<i class="pi pi-exclamation-circle" style="color: orange;"></i>
+									
+								</div>
+							</div>
+							<span v-if="connectionStatus.otp_waiting">
+										OTP required
+										<span v-if="connectionStatus.otp_expires_at" class="text-500 text-sm">
+											(until {{ dayjs(connectionStatus.otp_expires_at).format('HH:mm') }})
+										</span>											<Button @click="openOtpModal" text icon="pi pi-key" severity="secondary" size="small" class="ml-2" />									</span>
+									<span v-else>Sync error</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- Account partitions section (if any) -->
+				<div
 				v-if="account.partitions && account.partitions.length > 0"
 				class="partitions-section"
-			>
-				<h2>Account Partitions</h2>
-				<div class="partition-cards">
-					<div
-						v-for="partition in account.partitions"
-						:key="partition.account_partition_id"
-						class="partition-card"
-					>
-						<div class="partition-name">{{ partition.name }}</div>
-						<div class="partition-balance">
+				>
+						<h2>Account Partitions</h2>
+						<div class="partition-cards">
+							<div
+							v-for="partition in account.partitions"
+								key="partition.account_partition_id"
+							class="partition-card"
+							>
+								<div class="partition-name">{{ partition.name }}</div>
+								<div class="partition-balance">
 							<Currency
 								:amount="partition.current_balance"
 								:currency="account.iso_currency_code"
@@ -363,6 +417,26 @@ function openImport() {
 
 		<DrawerModal ref="importModal" title="Import Transactions" width="80rem">
 			<TransactionImport v-if="account" :account="account" />
+		</DrawerModal>
+
+		<DrawerModal ref="otpModal" title="Enter OTP" width="40rem">
+			<div class="otp-modal-content">
+				<p>Please enter the one-time password sent to your device:</p>
+				<input
+					v-model="otpCode"
+					type="text"
+					inputmode="numeric"
+					pattern="[0-9]*"
+					maxlength="10"
+					placeholder="Enter OTP"
+					class="otp-input"
+					@keyup.enter="submitOtp"
+				/>
+				<div class="otp-actions">
+					<Button label="Cancel" severity="secondary" @click="otpModal?.close()" />
+					<Button label="Submit OTP" @click="submitOtp" />
+				</div>
+			</div>
 		</DrawerModal>
 	</div>
 </template>
@@ -611,5 +685,31 @@ tr:hover {
 .transaction-avatar {
     width: 2.5rem;
 	font-size: 1.2rem;
+}
+
+.otp-modal-content {
+	padding: 16px 0;
+}
+
+.otp-input {
+	width: 100%;
+	padding: 12px 16px;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	font-size: 1rem;
+	margin-bottom: 16px;
+	box-sizing: border-box;
+}
+
+.otp-input:focus {
+	outline: none;
+	border-color: #4caf50;
+	box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.otp-actions {
+	display: flex;
+	gap: 12px;
+	justify-content: flex-end;
 }
 </style>

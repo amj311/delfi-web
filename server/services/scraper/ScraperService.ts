@@ -4,9 +4,9 @@ import type { Page } from "playwright";
 import { InstitutionService } from "../InstitutionService";
 import { InstitutionScrapers } from "./InstitutionScrapers";
 import type { Account, AccountDetails, Institution } from "delfi-core/models/Account";
-import { TestDataService } from "../TestDataService";
 import { InstitutionDao } from "server/data/InstitutionDao";
 import type { AccountSyncResult, SyncedTransactionDetails } from "../SyncService";
+import { ConnectionService } from "../ConnectionService";
 
 export type ScrapedTransaction = SyncedTransactionDetails;
 export type ScrapedAccount = Omit<AccountDetails, 'institution_id' | 'source'>;
@@ -20,6 +20,9 @@ export type InstitutionScraper = {
 	hasLoggedInElement: string;
 	isAtLoginElement: string;
 	isLoggedOutElement: string;
+	checkForOtpNeeded?: (page: Page) => Promise<boolean>,
+	initiateOtp?: (page: Page) => Promise<void>,
+	submitOtp?: (page: Page, otp: string) => Promise<void>,
 	getLoginSequence: (creds: InstitutionCredentials) => PageAction[];
 	listAccounts: (page: Page) => Promise<Array<ScrapedAccount>>;
 	getAccountDetails: (page: Page, external_account_id: string) => Promise<ScrapedAccount>;
@@ -181,8 +184,29 @@ export class ScraperService {
 					// Perform the login sequence
 					await doPageActions(page, scraper.getLoginSequence(creds));
 
+					console.log("finished login sequence!")
+					console.log("needs check otp:", scraper.needsOtpSelector)
+
+					const needsOtp = scraper.checkForOtpNeeded ? (await scraper.checkForOtpNeeded) : false;
+					// check for OTP if needed
+					if (needsOtp) {
+						console.log("otp needed detected!")
+						// do OTP initiation, like select method, click send, etc. This is institution-specific and may require additional logic.
+						if (scraper.initiateOtp) {
+							console.log("initiating otp with scraper!")
+							await scraper.initiateOtp(page);
+						}
+						// Alert user to enter OTP manually
+						console.log("waiting for otp...")
+						const otp = await ScraperService.waitForUserOtpInput(institutionId, workspaceId);
+						if (!scraper.submitOtp) {
+							throw new Error("Misconfigured scraper")
+						}
+						await scraper.submitOtp(page, otp);
+					}
+
 					// check for logged in element again
-					const loggedInElement = await page.waitForSelector(scraper.hasLoggedInElement, { timeout: 30000 }).catch(() => null);
+					const loggedInElement = await page.waitForSelector(scraper.hasLoggedInElement, { timeout: 300000 }).catch(() => null);
 					if (!loggedInElement) {
 						console.error('Login failed, did not find logged in element');
 						// take a screenshot for debugging
@@ -202,4 +226,66 @@ export class ScraperService {
 
 		return success;
 	}
+
+
+
+
+	/**
+	 * OTP REQUESTS
+	 */
+
+
+	private static otpRequests: Map<string, OtpRequest> = new Map();
+
+	private static otpKey(institutionId: string, workspaceId: string): string {
+		return `${institutionId}___${workspaceId}}`;
+	}
+
+	/**
+	 * Register a request which will be resolved when the user provides the OTP.
+	 * @param institutionId 
+	 * @param workspaceId 
+	 * @param userId 
+	 * @returns 
+	 */
+	private static async waitForUserOtpInput(institutionId: string, workspaceId: string): Promise<string> {
+		const key = ScraperService.otpKey(institutionId, workspaceId);
+
+		await ConnectionService.initOtpWaiting(workspaceId, institutionId);
+
+		return new Promise((resolve, reject) => {
+			ScraperService.otpRequests.set(key, {
+				key,
+				institutionId,
+				workspaceId,
+				resolve,
+				reject,
+			});
+		});
+	}
+
+	/**
+	 * Submit OTP to resolve a pending OTP request.
+	 * @param otp The OTP code entered by the user
+	 * @param institutionId The institution ID
+	 * @param workspaceId The workspace ID
+	 * @returns Promise that resolves when OTP is submitted
+	 */
+	public static async submitOtp(otp: string, institutionId: string, workspaceId: string): Promise<void> {
+		const key = ScraperService.otpKey(institutionId, workspaceId);
+		const request = ScraperService.otpRequests.get(key);
+		if (!request) {
+			throw new Error(`No pending OTP request found for institution ${institutionId}`);
+		}
+		ScraperService.otpRequests.delete(key);
+		request.resolve(otp);
+	}
+}
+
+type OtpRequest = {
+	key: string;
+	institutionId: string;
+	workspaceId: string;
+	resolve: (otp: string) => void;
+	reject: (error: Error) => void;
 }

@@ -16,7 +16,6 @@ export const ExternalsService = {
 		}]
 	},
 
-
 	async getWorkspaceTokens(workspace_id: string) {
 		return this.getAllTokens().then(tokens => tokens.filter(t => t.workspace_id === workspace_id));
     },

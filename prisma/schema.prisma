@@ -32,6 +32,7 @@ model Workspace {
     name  String
     Users User[]
 
+    Connections Connection[]
     accounts                  Account[]
     Budgets                   Budget[]
     categories                Category[]
@@ -55,6 +56,31 @@ model Institution {
     loginUrl             String? // e.g. institution login url
     scraper              String? // e.g. "finicity", "mx", etc.
     Account              Account[]
+    Connections          Connection[]
+}
+
+enum ConnectionStatus {
+    CONNECTED
+    DISCONNECTED
+    ERROR
+}
+
+model Connection {
+    created_at     DateTime    @default(now())
+    updated_at     DateTime    @default(now()) @updatedAt
+
+    status         ConnectionStatus @default(CONNECTED)
+    otp_waiting    Boolean     @default(false)
+    otp_expires_at DateTime?
+    // external_connection_id String? @map("externalConnectionId") // e.g. plaid connection id
+
+    Workspace Workspace @relation(fields: [workspace_id], references: [workspace_id])
+    workspace_id String
+
+    Institution Institution @relation(fields: [institution_id], references: [institution_id])
+    institution_id String
+
+	@@unique([institution_id, workspace_id], name: "institution_workspace_unique")
 }
 
 model PlaidItem {

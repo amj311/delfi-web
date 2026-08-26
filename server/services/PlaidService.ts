@@ -7,7 +7,6 @@ import { InstitutionDao } from 'server/data/InstitutionDao';
 import { asAny } from 'delfi-core/utils/miscUtils';
 import { TransactionDao } from 'server/data/TransactionDao';
 import { MerchantDao } from 'server/data/MerchantDao';
-import { TestDataService } from './TestDataService';
 import { CategoryDao } from 'server/data/CategoryDao';
 import { TransactionUtils } from 'delfi-core/models/Transaction';
 import { ddate } from 'delfi-core/utils/dateUtils';

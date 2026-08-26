@@ -1,48 +1,9 @@
 import type { Institution } from "delfi-core/models/Account";
 import { prisma } from "../../prisma/client";
-import { TestDataService } from "server/services/TestDataService";
 import type { Replace } from "delfi-core/utils/typeUtils";
 
 export const InstitutionDao = {
-	async prepTestData() {
-		const my_institutions = TestDataService.my_institutions;
-
-		for (const institution of my_institutions) {
-			// Check if institution already exists
-			const existingInstitution = await prisma.institution.findUnique({
-				where: { institution_id: institution.institution_id },
-			});
-
-			// If it exists, skip to the next one
-			if (existingInstitution) {
-				await prisma.institution.update({
-					where: { institution_id: institution.institution_id },
-					data: {
-						name: institution.name,
-						logo: institution.logo,
-						plaid_institution_id: institution.plaid_institution_id,
-						loginUrl: institution.loginUrl,
-						scraper: institution.scraper,
-					},
-				});
-			}
-			else {
-				await prisma.institution.create({
-					data: {
-						institution_id: institution.institution_id,
-						name: institution.name,
-						logo: institution.logo,
-						plaid_institution_id: institution.plaid_institution_id,
-						loginUrl: institution.loginUrl,
-						scraper: institution.scraper,
-					},
-				});
-			}
-		}
-	},
-
 	async getInstitution(institutionId: string): Promise<Institution | null> {
-		await this.prepTestData();
 		const institution = await prisma.institution.findUnique({
 			where: { institution_id: institutionId },
 		});
@@ -50,7 +11,6 @@ export const InstitutionDao = {
 	},
 
 	async getAllInstitutions(): Promise<Institution[]> {
-		await this.prepTestData();
 		return await prisma.institution.findMany();
 	},
 

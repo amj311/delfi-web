@@ -1,46 +1,10 @@
 import { RecurrenceType, type Budget, type BudgetChildItem, type FixedAmount, type ScheduledBudget, type SeasonalAmount, type TriggeredAmount, type TriggeredBudget } from "delfi-core/models/Budget";
 import { prisma } from "../../prisma/client";
-import { TestDataService } from "../services/TestDataService";
 import { asAny } from "delfi-core/utils/miscUtils";
 import { ddate } from "delfi-core/utils/dateUtils";
-import { BudgetGroupDao } from "./GroupDao";
 
 export class BudgetDao {
 	private static hasInit = false;
-
-	private static async setupTestData() {
-		if (this.hasInit) return;
-		this.hasInit = true;
-		
-		await BudgetGroupDao.setupTestData(); // Ensure budget groups are set up before budgets
-		// setup default budgets for the test workspace
-		const workspace_id = TestDataService.workspaceId;
-
-		for (const budget of await TestDataService.getBudgets()) {
-			const exists = Boolean(await BudgetDao.getBudgetById(workspace_id, budget.budget_id));
-			if (exists) {
-				await BudgetDao.updateBudget(workspace_id, budget.budget_id, budget);
-			} else {
-				await BudgetDao.createBudget(workspace_id, budget);
-			}
-
-			// Create child items if they exist
-			if (budget.childItems && budget.childItems.length > 0) {
-				for (const child of budget.childItems) {
-					const childExists = Boolean(await prisma.budgetChildItem.findUnique({
-						where: {
-							budget_child_item_id: child.budget_child_item_id,
-						}
-					}));
-					if (childExists) {
-						await BudgetDao.updateBudgetChildItem(budget.budget_id, child.budget_child_item_id, child);
-					} else {
-						await BudgetDao.createBudgetChildItem(budget.budget_id, child);
-					}
-				}
-			}
-		}
-	}
 
 	private static dbToBudget(budget: NonNullable<{[key: string]: any}>): Budget {
 		const budgetData: any = {
@@ -104,7 +68,6 @@ export class BudgetDao {
 	}
 
 	public static async getAllBudgets(workspace_id: string) {
-		await BudgetDao.setupTestData(); // Ensure test data is set up before fetching
 		return (await prisma.budget.findMany({
 			where: {
 				workspace_id,

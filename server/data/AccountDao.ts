@@ -1,8 +1,6 @@
 import type { Account } from "delfi-core/models/Account";
 import { prisma } from "../../prisma/client";
 import type { CreateAccountData } from "server/services/AccountService";
-import { TestDataService } from "server/services/TestDataService";
-import { InstitutionDao } from "./InstitutionDao";
 
 export const AccountDao = {
 	dbToAccount(dbAccount: NonNullable<{ [key: string]: any }>): Account {
@@ -54,7 +52,6 @@ export const AccountDao = {
 
 	// gets all parent accounts for workspace, with children nested
     async getAllAccounts(workspace_id: string): Promise<Account[]>  {
-		await InstitutionDao.prepTestData();
         const accounts: any[] = await prisma.account.findMany({
             where: {
                 workspace_id,
@@ -72,7 +69,7 @@ export const AccountDao = {
 				}
 			}
         });
-        return (await TestDataService.getAccounts(accounts)).map(a => this.dbToAccount(a));
+        return accounts.map(a => this.dbToAccount(a));
     },
 
     async getAccountById(workspace_id: string, accountId: string) {

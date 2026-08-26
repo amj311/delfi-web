@@ -1,15 +1,22 @@
 import { MONTHS, TagColor } from "../../delfi-core/utils/constants";
-import { categoryByName } from "../../delfi-core/models/systemCategories";
+import { categoryByName, categoriesArray, flatCategoriesMap, defaultKeyToSystemCategoryMap, type CategoryKey } from "../../delfi-core/models/systemCategories";
+import type { TransactionRule } from "delfi-core/models/TransactionRule";
 import { BudgetType, RecurrenceType, type Budget, type TriggeredBudget } from "../../delfi-core/models/Budget";
 import { ddate } from "../../delfi-core/utils/dateUtils";
-import { type Account, type Institution } from "../../delfi-core/models/Account";
+import { AccountSubtype, AccountType, type Account, type Institution } from "../../delfi-core/models/Account";
 import { AccountService } from "./AccountService";
 import { type Workspace } from "./WorkspaceService";
 import { WorkspaceDao } from "server/data/WorkspaceDao";
 import type { User } from "./UserService";
+import { UserService } from "./UserService";
 import type { BudgetGroup, Tag } from "delfi-core/models/Transaction";
 import { CategoryDao } from "server/data/CategoryDao";
-import type { TransactionRule } from "delfi-core/models/TransactionRule";
+import { BudgetGroupDao } from "server/data/GroupDao";
+import { TransactionRuleDao } from "server/data/TransactionRuleDao";
+import { BudgetDao } from "server/data/BudgetDao";
+import { InstitutionDao } from "server/data/InstitutionDao";
+import { prisma } from "../../prisma/client";
+import { v4 as uuid } from "uuid";
 
 export class TestDataService {
 	public static get userId(): string {
@@ -17,6 +24,182 @@ export class TestDataService {
 	}
 	public static get workspaceId(): string {
 		return this.workspaces[0].workspace_id;
+	}
+
+	/**
+	 * Seeded all test data in the correct dependency order:
+	 * users → workspaces → institutions → categories → budget groups → transaction rules → budgets
+	 */
+	public static async seed(): Promise<void> {
+		// 1. Seed users
+		for (const user of this.users) {
+			await prisma.user.upsert({
+				where: { user_id: user.user_id },
+				update: {
+					auth_id: user.auth_id,
+					user_id: user.user_id,
+					given_name: user.given_name,
+					family_name: user.family_name,
+					email: user.email,
+				},
+				create: {
+					auth_id: user.auth_id,
+					user_id: user.user_id,
+					given_name: user.given_name,
+					family_name: user.family_name,
+					email: user.email,
+				},
+			});
+		}
+
+		// 2. Seed workspaces
+		for (const workspace of this.workspaces) {
+			const existingWorkspace = await prisma.workspace.findUnique({
+				where: { workspace_id: workspace.workspace_id },
+			});
+			if (existingWorkspace) {
+				console.log(`Workspace with ID ${workspace.workspace_id} already exists, skipping.`);
+				continue;
+			}
+			await prisma.workspace.create({
+				data: {
+					workspace_id: workspace.workspace_id,
+					name: workspace.name,
+					Users: {
+						connect: (await prisma.user.findMany()).map(user => ({ user_id: user.user_id })),
+					},
+				},
+			});
+		}
+
+		// 3. Seed institutions and connections
+		for (const institution of this.my_institutions) {
+			const existingInstitution = await prisma.institution.findUnique({
+				where: { institution_id: institution.institution_id },
+			});
+
+			if (existingInstitution) {
+				await prisma.institution.update({
+					where: { institution_id: institution.institution_id },
+					data: {
+						name: institution.name,
+						logo: institution.logo,
+						plaid_institution_id: institution.plaid_institution_id,
+						loginUrl: institution.loginUrl,
+						scraper: institution.scraper,
+					},
+				});
+			} else {
+				await prisma.institution.create({
+					data: {
+						institution_id: institution.institution_id,
+						name: institution.name,
+						logo: institution.logo,
+						plaid_institution_id: institution.plaid_institution_id,
+						loginUrl: institution.loginUrl,
+						scraper: institution.scraper,
+					},
+				});
+			}
+
+			// Create connection to workspace
+			const existingConnection = await prisma.connection.findFirst({
+				where: {
+					institution_id: institution.institution_id,
+					workspace_id: this.workspaceId,
+				},
+			});
+
+			if (!existingConnection) {
+				await prisma.connection.create({
+					data: {
+						institution_id: institution.institution_id,
+						workspace_id: this.workspaceId,
+					},
+				});
+			}
+		}
+
+		// 4. Seed categories and detection mappings
+		const workspace_id = this.workspaceId;
+		for (const category of categoriesArray) {
+			await prisma.category.upsert({
+				where: { category_id: category.category_id, workspace_id: workspace_id },
+				update: {
+					category_id: category.category_id,
+					name: category.name,
+					icon: category.icon,
+					color: category.color,
+					workspace_id: workspace_id,
+					parent_category_id: category.parent_category_id,
+					type: category.type,
+				},
+				create: {
+					category_id: category.category_id,
+					name: category.name,
+					icon: category.icon,
+					color: category.color,
+					workspace_id: workspace_id,
+					parent_category_id: category.parent_category_id,
+					type: category.type,
+				},
+			});
+		}
+
+		for (const [detection_key, system_category_name] of Object.entries(defaultKeyToSystemCategoryMap)) {
+			await prisma.categoryDetectionMapping.upsert({
+				where: { workspace_id_detection_key: { workspace_id, detection_key } },
+				update: {
+					detection_key: detection_key,
+					category_id: flatCategoriesMap[system_category_name].category_id,
+					workspace_id,
+				},
+				create: {
+					detection_key: detection_key,
+					category_id: flatCategoriesMap[system_category_name].category_id,
+					workspace_id,
+				},
+			});
+		}
+
+		// 5. Seed budget groups
+		for (const group of await this.budgetGroups) {
+			const exists = Boolean(await BudgetGroupDao.getGroupById(group.group_id));
+			if (exists) {
+				await BudgetGroupDao.updateGroup(group.group_id, group);
+			} else {
+				await BudgetGroupDao.createGroup(this.workspaceId, group);
+			}
+		}
+
+		// 6. Seed transaction rules
+		for (const rule of this.transactionRules) {
+			await TransactionRuleDao.upsertTransactionRule(this.workspaceId, rule);
+		}
+
+		// 7. Seed budgets
+		for (const budget of await this.getBudgets()) {
+			const exists = Boolean(await BudgetDao.getBudgetById(this.workspaceId, budget.budget_id));
+			if (exists) {
+				await BudgetDao.updateBudget(this.workspaceId, budget.budget_id, budget);
+			} else {
+				await BudgetDao.createBudget(this.workspaceId, budget);
+			}
+
+			// Create child items if they exist
+			if (budget.childItems && budget.childItems.length > 0) {
+				for (const child of budget.childItems) {
+					const childExists = Boolean(await prisma.budgetChildItem.findUnique({
+						where: { budget_child_item_id: child.budget_child_item_id },
+					}));
+					if (childExists) {
+						await BudgetDao.updateBudgetChildItem(budget.budget_id, child.budget_child_item_id, child);
+					} else {
+						await BudgetDao.createBudgetChildItem(budget.budget_id, child);
+					}
+				}
+			}
+		}
 	}
 
 	public static users: Array<User> = [{
@@ -40,7 +223,7 @@ export class TestDataService {
 			logo: "https://www.abc4.com/wp-content/uploads/sites/4/2022/07/AFCU_Logo.jpg?resize=258",
 			plaid_institution_id: null,
 			loginUrl: 'https://secure.americafirst.com/#/login',
-			scraper: 'scraper'
+			scraper: 'extension',
 		},
 		{
 			institution_id: 'test-betterment-id',
@@ -84,48 +267,48 @@ export class TestDataService {
 		// }
 	];
 
+		private static accountStuff = {
+				mask: "0942",
+				iso_currency_code: "USD",
+				plaid_item_id: "afcu_checking",
+				workspace_id: "myself",
+				external_account_id: uuid(),
+				external_name: "asdfgtrf",
+				type: AccountType.depository,
+				subtype: AccountSubtype.checking,
+				institution_id: this.my_institutions[0].institution_id,
+				source: 'manual',
+				created_at: new Date('2021-04-01T00:00:00Z'),
+			}
+
+			public static my_accounts: { [key: string]: any } = {
+				afcu_checking: {
+					account_id: uuid(),
+					display_name: "AFCU Checking",
+					current_balance: 200,
+					available_balance: 200,
+					partitions: [],
+					...this.accountStuff,
+				},
+				afcu_savings: {
+					account_id: uuid(),
+					display_name: "AFCU Savings",
+					current_balance: 5100,
+					available_balance: 5100,
+					partitions: [],
+					...this.accountStuff,
+				},
+				us_savings: {
+					account_id: uuid(),
+					display_name: "US Bank",
+					current_balance: 3000,
+					available_balance: 3000,
+					partitions: [],
+					...this.accountStuff,
+				},
+			};
+
 	public static async getAccounts(existingAccounts: Account[] = []): Promise<Account[]> {
-		// 	const accountStuff = {
-		// 		mask: "0942",
-		// 		iso_currency_code: "USD",
-		// 		plaid_item_id: "afcu_checking",
-		// 		workspace_id: "myself",
-		// 		external_account_id: uuid(),
-		// 		external_name: "asdfgtrf",
-		// 		type: AccountType.depository,
-		// 		subtype: AccountSubtype.checking,
-		// 		institution_id: my_institutions[0].institution_id,
-		// 		source: 'manual',
-		// 		created_at: new Date('2021-04-01T00:00:00Z'),
-		// 	}
-
-		// 	public static asyncmy_accounts: { [key: string]: Account } = {
-		// 		afcu_checking: {
-		// 			account_id: uuid(),
-		// 			display_name: "AFCU Checking",
-		// 			current_balance: 200,
-		// 			available_balance: 200,
-		// 			partitions: [],
-		// 			...accountStuff,
-		// 		},
-		// 		afcu_savings: {
-		// 			account_id: uuid(),
-		// 			display_name: "AFCU Savings",
-		// 			current_balance: 5100,
-		// 			available_balance: 5100,
-		// 			partitions: [],
-		// 			...accountStuff,
-		// 		},
-		// 		us_savings: {
-		// 			account_id: uuid(),
-		// 			display_name: "US Bank",
-		// 			current_balance: 3000,
-		// 			available_balance: 3000,
-		// 			partitions: [],
-		// 			...accountStuff,
-		// 		},
-		// 	};
-
 		const savingsAccount = existingAccounts.find(account => account.external_name === 'Expense Savings');
 		if (savingsAccount) {
 			savingsAccount.partitions = [
@@ -189,8 +372,6 @@ export class TestDataService {
 
 
 	public static async getBudgets(): Promise<Budget[]> {
-		await CategoryDao.setupTestData();
-		
 		const workspace = (await WorkspaceDao.getAllWorkspaces())[0];
 		if (!workspace) {
 			return [];
@@ -294,44 +475,44 @@ export class TestDataService {
 				category_id: categoryByName("Employee Benefits").category_id,
 				Category: categoryByName("Employee Benefits"),
 			},
-			{
-				budget_id: '0033f6a7-8901-abcd-ef01-234567895003',
-				budgetType: BudgetType.TRANSACTION,
-				memo: "401(k) Contribution",
-				account_id: getAccountByName('401(k)').account_id,
-				recurrence_type: RecurrenceType.SCHEDULE,
-				scheduleVariants: [{
-					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
-					projectionSchedule: { frequency: 'MONTHLY', byDayOfMonth: [14, 27] },
-					amountTemplate: {
-						type: 'fixed',
-						amount: 168 * 2,
-					}
-				}],
-				category_id: categoryByName("Employee Benefits").category_id,
-				Category: categoryByName("Employee Benefits"),
-			},
+			// {
+			// 	budget_id: '0033f6a7-8901-abcd-ef01-234567895003',
+			// 	budgetType: BudgetType.TRANSACTION,
+			// 	memo: "401(k) Contribution",
+			// 	account_id: getAccountByName('401(k)').account_id,
+			// 	recurrence_type: RecurrenceType.SCHEDULE,
+			// 	scheduleVariants: [{
+			// 		schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
+			// 		projectionSchedule: { frequency: 'MONTHLY', byDayOfMonth: [14, 27] },
+			// 		amountTemplate: {
+			// 			type: 'fixed',
+			// 			amount: 168 * 2,
+			// 		}
+			// 	}],
+			// 	category_id: categoryByName("Employee Benefits").category_id,
+			// 	Category: categoryByName("Employee Benefits"),
+			// },
 
 
 			// QUARTERLY INCOME AND BENEFITS
 
-			{
-				budget_id: '0013f6a7-8901-abcd-ef01-234567895001',
-				budgetType: BudgetType.TRANSACTION,
-				memo: "Clozd HSA Contribution",
-				account_id: getAccountByName('Health Savings Account').account_id,
-				recurrence_type: RecurrenceType.SCHEDULE,
-				scheduleVariants: [{
-					schedule: { start: '2021-01-01', frequency: 'MONTHLY', interval: 3, },
-					projectionSchedule: { byDayOfMonth: [27] },
-					amountTemplate: {
-						type: 'fixed',
-						amount: 600,
-					}
-				}],
-				category_id: categoryByName("Employee Benefits").category_id,
-				Category: categoryByName("Employee Benefits"),
-			},
+			// {
+			// 	budget_id: '0013f6a7-8901-abcd-ef01-234567895001',
+			// 	budgetType: BudgetType.TRANSACTION,
+			// 	memo: "Clozd HSA Contribution",
+			// 	account_id: getAccountByName('Health Savings Account').account_id,
+			// 	recurrence_type: RecurrenceType.SCHEDULE,
+			// 	scheduleVariants: [{
+			// 		schedule: { start: '2021-01-01', frequency: 'MONTHLY', interval: 3, },
+			// 		projectionSchedule: { byDayOfMonth: [27] },
+			// 		amountTemplate: {
+			// 			type: 'fixed',
+			// 			amount: 600,
+			// 		}
+			// 	}],
+			// 	category_id: categoryByName("Employee Benefits").category_id,
+			// 	Category: categoryByName("Employee Benefits"),
+			// },
 
 			{
 				budget_id: '7c13f6a7-8901-abcd-ef01-234567895f3b',
