@@ -110,6 +110,7 @@ model Account {
     available_balance   Float?
     limit               Float? // e.g. credit card limit
     apy                 Float? // e.g. savings account APY
+    apr                 Float? // e.g. credit card APR
     iso_currency_code   String?
 
     partitions            AccountPartition[]
