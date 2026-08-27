@@ -134,6 +134,7 @@ export type AccountDetails = {
 	subtype: (typeof AccountTypes[keyof typeof AccountTypes]['subtypes'])[number],
 	mask: string,
 	apy?: number | null,
+	apr?: number | null,
 	iso_currency_code: string,
 	current_balance: number,
 	available_balance?: number,

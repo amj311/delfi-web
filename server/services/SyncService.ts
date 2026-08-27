@@ -90,6 +90,7 @@ export class SyncService {
 					limit: result.accountDetails.limit,
 					external_name: result.accountDetails.external_name,
 					apy: result.accountDetails.apy,
+					apr: result.accountDetails.apr,
 					last_successful_sync: new Date(),
 				});
 
