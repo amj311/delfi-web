@@ -1446,7 +1446,6 @@ const accumulationChart = computed(() => {
 							v-for="event in day.transactions"
 							:event="event"
 							:hideDate="true"
-							:size="2.3"
 							@click="() => viewTransaction(event.attributionDetails.sourceTransaction)"
 						/>
 					</div>

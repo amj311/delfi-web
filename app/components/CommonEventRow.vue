@@ -20,7 +20,7 @@ const toast = useToast();
 
 const {
 	event,
-	size = 2,
+	size = 3,
 	currencyMode = 'transaction',
 	clickable = true,
 	dateFormat = 'full',
@@ -192,7 +192,7 @@ const isSelected = computed(() => transactionSelectionStore.selection.isSelected
 									source_id="sync_alt"
 									source="material-symbols"
 								/>
-								<Currency :amount="event.amount" :mode="currencyModeComputed" />
+								<Currency class="text-lg" :amount="event.amount" :mode="currencyModeComputed" />
 							</div>
 						</div>
 
@@ -267,7 +267,7 @@ const isSelected = computed(() => transactionSelectionStore.selection.isSelected
 	
 	.event-row-inner {
 		position: relative;
-		padding: 6px var(--padding-x);
+		padding: 10px var(--padding-x);
 
 
 		&:not(:last-child) {
