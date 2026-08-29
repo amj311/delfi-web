@@ -184,6 +184,24 @@ async function submitOtp() {
 		});
 	}
 }
+async function archiveAccount() {
+	if (!account.value) return;
+	if (!confirm('Are you sure you want to archive this account? Transactions will still be visible.')) return;
+	try {
+		await accountStore.archiveAccount(accountId.value);
+		useToast().add({
+			title: 'Account archived',
+			severity: 'success',
+		});
+		router.push('/accounts');
+	} catch (error) {
+		console.error('Error archiving account:', error);
+		useToast().add({
+			title: 'Failed to archive account',
+			severity: 'error',
+		});
+	}
+}
 </script>
 
 <template>
@@ -206,6 +224,7 @@ async function submitOtp() {
 				<div class="flex-grow-1"></div>
 				<Button @click="openImport" text icon="pi pi-file-import" severity="secondary"></Button>
 				<Button @click="reload" text icon="pi pi-replay" severity="secondary"></Button>
+				<Button v-if="!account?.archived" @click="archiveAccount" text icon="pi pi-archive" severity="secondary" :title="'Archive account'"></Button>
 				<!-- <button @click="openEditModal" class="btn primary">Edit Account</button> -->
 			</div>
 

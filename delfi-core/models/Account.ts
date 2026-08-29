@@ -156,6 +156,7 @@ export type Account = AccountDetails & {
 	last_successful_sync?: Date | null,
 	last_failed_sync?: Date | null,
 	sync_error?: string | null,
+	archived?: boolean,
 	created_at: Date,
 	Institution: Institution,
 	never_request_reviews?: boolean,

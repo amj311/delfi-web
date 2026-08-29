@@ -125,7 +125,7 @@ model Account {
     last_successful_sync DateTime? // e.g. last time the account was synced with plaid or other source
     last_failed_sync     DateTime? // e.g. last time the account sync failed
     sync_error           String? // e.g. error message from last failed sync
-
+    archived Boolean? @default(false) // whether the account is archived (soft delete)
     // relations
     Workspace           Workspace?          @relation(fields: [workspace_id], references: [workspace_id])
     workspace_id        String

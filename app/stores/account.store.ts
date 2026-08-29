@@ -113,6 +113,19 @@ export const useAccountStore = defineStore('account', () => {
 		}
 	}
 
+	const archiveAccount = async (accountId: string) => {
+		try {
+			await request.post(`/account/${accountId}/archive`);
+			accounts.value = accounts.value.map(a =>
+				a.account_id === accountId ? { ...a, archived: true } : a
+			);
+		}
+		catch (e) {
+			console.error(e);
+			throw e;
+		}
+	}
+
 	const getInstitutionConnection = computed(() => {
 		return (institutionId: string) => {
 			return connections.value.find(c => c.status) // placeholder — we'll use a function instead
@@ -177,6 +190,7 @@ export const useAccountStore = defineStore('account', () => {
 		getConnectionStatus,
 		upsertAccount,
 		deleteAccount,
+		archiveAccount,
 		accountsByInstitution
 	};
 })

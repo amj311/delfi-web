@@ -98,5 +98,15 @@ export default (fastify, _, done) => {
         };
     });
 
-    done();
+    fastify.post('/:id/archive', async function handler (request, reply) {
+        const accountId = request.params.id;
+        const workspace_id = request.sessionUser.workspace_id;
+        const data = await AccountDao.updateAccount(workspace_id, accountId, { archived: true });
+        return {
+            success: true,
+            data,
+         };
+     });
+
+	 done();
 };

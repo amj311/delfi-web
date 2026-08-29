@@ -31,6 +31,8 @@ export const AccountDao = {
 			last_successful_sync: account.last_successful_sync,
 			last_failed_sync: account.last_failed_sync,
 			sync_error: account.sync_error,
+
+			archived: account.archived,
 		}
 	},
 	
@@ -55,7 +57,8 @@ export const AccountDao = {
         const accounts: any[] = await prisma.account.findMany({
             where: {
                 workspace_id,
-            },
+				archived: false,
+			},
 			include: {
 				partitions: true,
 				savings_goal: true,
