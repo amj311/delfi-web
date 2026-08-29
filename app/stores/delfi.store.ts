@@ -40,7 +40,7 @@ export const useDelfiStore = defineStore('delfi', () => {
 		isInitializing.value = false;
 		updateRecomputed();
 		isGeneratingForecast.value = true;
-		// await delfi.computeForecast();
+		await delfi.computeForecast();
 		isGeneratingForecast.value = false;
 
 		scheduleCompute(); // schedule another compute to keep data fresh
