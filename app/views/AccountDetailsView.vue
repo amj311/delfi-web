@@ -319,8 +319,8 @@ async function archiveAccount() {
 
 				<!-- Account partitions section (if any) -->
 				<div
-				v-if="account.partitions && account.partitions.length > 0"
-				class="partitions-section"
+					v-if="account.partitions && account.partitions.length > 0"
+					class="partitions-section"
 				>
 						<h2>Account Partitions</h2>
 						<div class="partition-cards">
@@ -567,10 +567,6 @@ async function archiveAccount() {
 
 .partitions-section,
 .transactions-section {
-	background-color: white;
-	border-radius: 8px;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-	padding: 24px;
 	margin-bottom: 30px;
 }
 

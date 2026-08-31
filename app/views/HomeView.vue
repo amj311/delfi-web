@@ -83,7 +83,7 @@ const listAccounts = computed(() => useAccountStore().accounts
 	<div v-if="useAccountStore().isLoadingAccounts" class="flex align-items-center gap-2"><i class="pi pi-spin pi-spinner"></i>Loading accounts...</div>
 	<div v-for="account in listAccounts" :key="account.account_id">
 		<div class="flex align-items-center gap-2 border-bottom-1 border-gray-200 py-2" @click="() => $router.push(`/accounts/${account.account_id}`)" style="cursor: pointer;">
-			<AttributionAvatar :image="account.Institution.logo":size="2.5" square />
+			<AttributionAvatar :image="account.Institution.logo" :size="3" square />
 			<div class="flex flex-column">
 				<div>
 					<span class="font-semibold">{{ account.display_name || account.external_name }}</span>
@@ -92,7 +92,7 @@ const listAccounts = computed(() => useAccountStore().accounts
 				<small>{{ dayjs(account.last_successful_sync).fromNow() }}</small>
 			</div>
 			<div class="flex-grow-1"></div>
-			<Currency :amount="account.current_balance" mode="balance" class="font-medium" />
+			<Currency :amount="account.current_balance" mode="balance" class="font-medium text-lg" />
 		</div>
 	</div>
 
@@ -102,7 +102,7 @@ const listAccounts = computed(() => useAccountStore().accounts
 		<br />
 		<h3 class="my-2">Upcoming Budgets</h3>
 		<div v-if="isLoadingNextBudgets" class="flex align-items-center gap-2 my-2"><i class="pi pi-spin pi-spinner"></i>Loading upcoming budgets...</div>
-		<CollapseList :items="upcomingBudgets">
+		<CollapseList :items="upcomingBudgets" :itemHeight="65">
 			<template #default="{ item }">
 				<CommonEventRow :event="item" showPastDue />
 			</template>
@@ -112,7 +112,7 @@ const listAccounts = computed(() => useAccountStore().accounts
 	<template v-if="recentTransactions.length">
 		<br />
 		<h3 class="my-2">Recent Transactions</h3>
-		<CollapseList :items="recentTransactions">
+		<CollapseList :items="recentTransactions" :itemHeight="65">
 			<template #default="{ item }">
 				<CommonEventRow :event="item" @click="viewTransaction(item.attributionDetails.sourceTransaction)" />
 			</template>

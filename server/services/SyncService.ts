@@ -4,15 +4,22 @@ import { JobService } from "./JobService";
 import { ScraperService } from "./scraper/ScraperService";
 import { TransactionService } from "./TransactionService";
 import { WorkspaceDao } from "server/data/WorkspaceDao";
-import type { CreateTransaction, Transaction, TransactionDetails } from "delfi-core/models/Transaction";
+import type { CreateTransaction, Transaction } from "delfi-core/models/Transaction";
 import type { AccountDetails } from "delfi-core/models/Account";
 import type { CategoryKey } from "delfi-core/models/systemCategories";
 import { CategoryDao } from "server/data/CategoryDao";
+import { ddate } from "delfi-core/utils/dateUtils";
 
 export type SyncedTransactionDetails = CreateTransaction & {
 	/** Incoming transaction may have default categories supplied by scrapers */
 	category_key?: CategoryKey;
 	account_id?: string; // will be filled in during sync
+}
+
+type YYYYMMDD = `${number}-${number}-${number}`;
+
+type RawSyncedTransaction = Omit<SyncedTransactionDetails, 'date'> & {
+	date: YYYYMMDD;
 }
 
 type AccountSyncFailed = {
@@ -22,7 +29,7 @@ type AccountSyncFailed = {
 type AccountSyncSuccess = {
 	account_id: string;
 	accountDetails: AccountDetails;
-	transactions: Array<SyncedTransactionDetails>;
+	transactions: Array<RawSyncedTransaction>;
 }
 export type AccountSyncResult = AccountSyncFailed | AccountSyncSuccess;
 
@@ -63,7 +70,14 @@ export class SyncService {
 		console.log('Finished syncing all workspaces\' accounts');
 	}
 
-
+	/**
+	 * NOTE: This does some actions based on the ENTIRE set of new transactions,
+	 * assuming that they represent all transactions from the source account for that time period.
+	 * DO NOT call this function with a subset of transactions
+	 * @param workspace_id 
+	 * @param accountSyncs 
+	 * @returns 
+	 */
 	public static async ingestAccountSyncs(workspace_id: string, accountSyncs: Array<AccountSyncResult>) {
 		const newTransactions: Array<Transaction> = [];
 		// Update account details and sync new transactions
@@ -74,7 +88,16 @@ export class SyncService {
 					sync_error: result.error || 'Unknown error',
 				});
 			} else {
-				const transactionsWithCategories = await Promise.all(result.transactions.map(async (tx): Promise<CreateTransaction> => {
+				// Hydrate data from sync
+				const parsedTransactions: Array<SyncedTransactionDetails> = result.transactions.map(tx => ({ ...tx, date: ddate(tx.date) }));
+
+				// handle cleaning up stale transactions.
+				// Some bank portals will shift the data of a transaction within a few days of it posting
+				// This process makes sure that we don't duplicate transactions when this happens.
+				// Essentially, any transaction must remain unchanged for a few days to stick in our DB
+				// await TransactionService.removeGhostTransactionsFromSync(workspace_id, result.account_id, parsedTransactions);
+
+				const transactionsWithCategories = await Promise.all(parsedTransactions.map(async (tx): Promise<CreateTransaction> => {
 					const categoryMapping = await CategoryDao.getWorkspaceCategoryMappingByDetectionKey(workspace_id, tx.category_key);
 					return {
 						...tx,

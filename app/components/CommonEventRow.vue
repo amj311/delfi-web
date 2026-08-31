@@ -143,7 +143,7 @@ const isSelected = computed(() => transactionSelectionStore.selection.isSelected
 			<template #content>
 				<div
 					class="event-row-inner flex align-items-center gap-3"
-					:class="{ 'opacity-70': isPending, clickable }"
+					:class="{ 'opacity-70': isPending, clickable, isSelected }"
 				>
 					<!-- Avatar with badges -->
 					<div
@@ -153,8 +153,7 @@ const isSelected = computed(() => transactionSelectionStore.selection.isSelected
 							transactionSelectionStore.selection.toggle(event);
 						}"
 					>
-						<AttributionAvatar v-if="isSelected" :size="size" :style="{ opacity: showLoading ? 0.5 : 1 }" icon="material-symbols::check" :background="colors.blue1" />
-						<AttributionAvatar v-else :event="event" :size="size" :style="{ opacity: showLoading ? 0.5 : 1 }">
+						<AttributionAvatar :event="event" :size="size" :style="{ opacity: showLoading ? 0.5 : 1 }">
 							<template #badge v-if="event.attributionDetails?.isSplit">
 								<Icon source_id="arrow_split" source="material-symbols" />
 							</template>
@@ -165,7 +164,11 @@ const isSelected = computed(() => transactionSelectionStore.selection.isSelected
 								<i class="pi pi-wallet" style="font-size: 0.95em" />
 							</template>
 						</AttributionAvatar>
+						<div class="selected-indicator absolute-center">
+							<AttributionAvatar :size="size" :style="{ opacity: showLoading ? 0.5 : 1 }" icon="material-symbols::check" :background="colors.blue1" />
+						</div>
 						<i v-if="showLoading" class="pi pi-spin pi-spinner absolute-center" />
+						<div v-if="event.attributionDetails?.needsReview" class="review-dot" />
 					</div>
 
 					<!-- Main content area -->
@@ -240,8 +243,6 @@ const isSelected = computed(() => transactionSelectionStore.selection.isSelected
 							<small v-if="isPending">PENDING</small>
 						</div>
 					</div>
-
-					<div v-if="event.attributionDetails?.needsReview" class="review-dot" />
 				</div>
 			</template>
 			<template #left>
@@ -287,14 +288,21 @@ const isSelected = computed(() => transactionSelectionStore.selection.isSelected
 
 		.review-dot {
 			position: absolute;
-			top: 4px;
-			left: 4px;
+			top: -1px;
+			left: -1px;
 			width: 10px;
 			aspect-ratio: 1;
 			border-radius: 50%;
 			background-color: rgb(80, 198, 238);
 		}
-	}
 
+		.selected-indicator {
+			transform: scale(0);
+			transition: 200ms;
+		}
+		&.isSelected .selected-indicator {
+			transform: scale(1);
+		}
+	}
 }
 </style>

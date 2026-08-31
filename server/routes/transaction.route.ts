@@ -35,6 +35,15 @@ export default (app, _, done) => {
 		};
 	});
 
+	app.delete('/:transaction_id', async function handler (request) {
+		const workspace_id = request.sessionUser.workspace_id;
+		const { transaction_id } = request.params;
+		await TransactionDao.deleteTransaction(workspace_id, transaction_id);
+		return {
+			success: true,
+		};
+	});
+
 	app.post('/:transaction_id/review', async function handler (request) {
 		const workspace_id = request.sessionUser.workspace_id;
 		const user_id = request.sessionUser.user_id;

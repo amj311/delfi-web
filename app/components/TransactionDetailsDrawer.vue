@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, useTransitionState, watch } from 'vue';
 import { TransactionUtils, type Transaction } from 'delfi-core/models/Transaction';
 import Currency from './Currency.vue';
 import { useAccountStore } from '@/stores/account.store';
@@ -9,7 +9,7 @@ import { TransactionService } from '@/services/transaction.service';
 import { useDelfiStore } from '@/stores/delfi.store';
 import TransactionAttributionDrawer, { type Step } from './TransactionAttributionDrawer.vue';
 import { usePrompt } from './utils/PromptModal.vue';
-import { asAny, diff as getDiff, jsonCopy } from 'delfi-core/utils/miscUtils';
+import { asAny, diff as getDiff, jsonCopy, wait } from 'delfi-core/utils/miscUtils';
 import AttributionAvatar from './AttributionAvatar.vue';
 import Textarea from 'primevue/textarea';
 import debounce from '@/utils/debounce';
@@ -25,6 +25,9 @@ import { ActionTypes, type ActionType, type TransactionRule } from 'delfi-core/m
 import { useToast } from './utils/Toast.vue';
 import RulesList from './RulesList.vue';
 import DatePicker from 'primevue/datepicker';
+import CollapseList from './utils/CollapseList.vue';
+import type { IconIdentifier } from 'delfi-core/utils/constants.js';
+import request from '@/services/request.js';
 
 const triggerRef = ref<InstanceType<typeof NavTriggerDrawer> | null>(null);
 const transaction = ref<Transaction>({} as Transaction);
@@ -153,6 +156,30 @@ watch(
 	},
 	{ immediate: true }
 );
+
+async function deleteTransaction() {
+	const result = await usePrompt().prompt({
+		preset: 'delete',
+		message: "Are you sure you want to delete this transaction?",
+	})
+	if (result?.confirmed) {
+		try {
+			await request.delete('/transactions/' + transaction.value.transaction_id);
+			useDelfiStore().reCompute();
+			triggerRef.value?.trigger()?.close();
+			useToast().add({
+				severity: 'success',
+				title: 'Deleted transaction',
+			})
+		}
+		catch (e) {
+			useToast().add({
+				severity: 'error',
+				title: 'Could not delete transaction',
+			})
+		}
+	}
+}
 
 /**************
  * SPLITS
@@ -358,6 +385,8 @@ watch(
 	() => transaction.value.transaction_id,
 	async (newTransactionId) => {
 		if (newTransactionId) {
+			// delay loading so UI can update
+			await wait(300);
 			try {
 				applicableRules.value = await TransactionService.getApplicableRules(newTransactionId);
 			} catch (error) {
@@ -698,6 +727,21 @@ const sourceAccount = computed(() => {
 					<Icon source_id="arrows_outward" source="material-symbols" />
 					Break transfer pair
 				</Button>
+
+				<!-- MORE -->
+				 <CollapseList
+				 	openLabel="More"
+					closeLabel="Less"
+				 	:max="0"
+				 	:items="[{ label: 'Delete Transaction', icon: 'pi::trash' as IconIdentifier, severity: 'danger', action: deleteTransaction }]"
+				>
+					<template #default="{ item }">
+						<Button class="w-full" text :severity="item.severity" @click="item.action">
+							<Icon :name="item.icon" />
+							{{ item.label }}
+						</Button>
+					</template>
+				</CollapseList>
 			</div>
 		</div>
 	</NavTriggerDrawer>

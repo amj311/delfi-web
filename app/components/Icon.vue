@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Icons, type IconName, colors, type Icon, type IconIdentifier } from 'delfi-core/utils/constants';
+import { Icons, type IconName, colors, type Icon, type IconIdentifier, type IconSource } from 'delfi-core/utils/constants';
 import { computed } from 'vue';
 
 const props = defineProps<{
 	name?: IconIdentifier;
-	source?: string;
+	source?: IconSource;
 	source_id?: string;
 	fill?: boolean;
 	color?: string;
@@ -33,6 +33,9 @@ const color = computed(() => colors[props.color || ''] || props.color || 'inheri
 	<span class="icon-wrapper" :style="{ color: color }">
 		<template v-if="icon.source === 'material-symbols'">
 			<span class="icon material-symbols-rounded" :class="{ fill }" :style="icon.style">{{ icon.source_id }}</span>
+		</template>
+		<template v-if="icon.source === 'pi'">
+			<i :class="`icon pi pi-${icon.source_id}`" :style="icon.style" />
 		</template>
 	</span>
 </template>

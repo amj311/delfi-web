@@ -13,7 +13,6 @@ const router = createRouter({
 		name: 'Budget',
 		path: '/month/:month?',
 		component: () => import('../views/MonthBudget.vue'),
-		props: true
 	},
     {
       path: '/accounts',

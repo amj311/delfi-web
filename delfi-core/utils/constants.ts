@@ -107,6 +107,7 @@ export const colors = {
 
 const IconSources = [
 	'material-symbols',
+	'pi'
 ] as const;
 export type IconSource = typeof IconSources[number];
 

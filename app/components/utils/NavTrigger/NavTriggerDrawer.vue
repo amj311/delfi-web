@@ -31,7 +31,7 @@ defineExpose({
 		<template #default="{ show }">
 			<Drawer :visible="show" position="right" :header="title" :class="`w-full sm:w-${smallWidth}rem`">
 				<template #closebutton>
-					<Button icon="pi pi-times" size="small" text @click="drawerTrigger?.close" severity="secondary" />
+					<Button icon="pi pi-times" text @click="drawerTrigger?.close" severity="secondary" />
 				</template>
 
 				<template v-for="(slotFn, name) in $slots" #[name]="slotProps">

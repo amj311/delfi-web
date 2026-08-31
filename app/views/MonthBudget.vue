@@ -28,13 +28,16 @@ import CommonEventRow from '@/components/CommonEventRow.vue';
 import Button from 'primevue/button';
 import { currency } from 'delfi-core/utils/miscUtils';
 import CollapseList from '@/components/utils/CollapseList.vue';
-
+import Dialog from 'primevue/dialog';
+import { useAppStore } from '@/stores/app.store';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
 const groupStore = useGroupStore();
 const route = useRoute();
 const router = useRouter();
+
+const showTestDrawer = ref(false);
 
 const state = reactive({
 	loading: true,
@@ -345,6 +348,14 @@ const accumulationChart = computed(() => {
 
 	return {
 		options: {
+			grid: {
+				padding: {
+					left: -10,
+					right: 0,
+					top: 0,
+					bottom: 0,
+				},
+			},
 			dataLabels: {
 				enabled: false,
 			},
@@ -373,6 +384,7 @@ const accumulationChart = computed(() => {
 			yaxis: {
 				labels: {
 					// show: false,
+					offsetX: -15,
 				},
 			},
 			stroke: {
@@ -430,21 +442,11 @@ const accumulationChart = computed(() => {
 		},
 		// include zeros as starting point
 		series: [
-			...(isCurrentMonth.value
-				? [
-						{
-							type: 'area',
-							name: 'Forecast',
-							data: [0, ...dailyForecasted],
-							color: chartColors.forecast,
-						},
-				  ]
-				: []),
 			...(!isFuture.value
 				? [
 						{
 							type: 'area',
-							name: 'Attributed',
+							name: 'Actual',
 							data: [0, ...dailyAttributed],
 							color: chartColors.attributed,
 						},
@@ -456,6 +458,17 @@ const accumulationChart = computed(() => {
 				data: [0, ...dailyBudgeted],
 				color: chartColors.budgeted,
 			},
+			...(isCurrentMonth.value
+				? [
+						{
+							type: 'area',
+							name: 'Forecast',
+							data: [0, ...dailyForecasted],
+							color: chartColors.forecast,
+						},
+				  ]
+				: []),
+			
 			// {
 			// 	type: 'bar',
 			// 	name: 'Income',
@@ -481,764 +494,34 @@ const accumulationChart = computed(() => {
 		<br />
 		<div v-if="state.loading">Loading...</div>
 
-		<div v-else-if="state.summaryData">
-			<div class="flex align-items-center gap-2">
-				Net Growth
-				<div class="flex-grow-1 h-1rem" style="border-bottom: 1px dashed"></div>
-				<Currency
-					:amount="isFuture ? state.summaryData.budgetedNet : state.summaryData.attributedNet"
-					mode="net_change"
-					class="font-semibold"
-				/>
-				<small v-if="!isFuture" class="flex align-items-center">
-					/&nbsp;
-					<Currency :amount="state.summaryData.budgetedNet" mode="net_change" />
-				</small>
-			</div>
-			<br />
-
-			<apexchart class="w-full" style="max-height: 50vh;" type="bar" v-bind="accumulationChart"></apexchart>
-
+		<div v-else-if="state.summaryData" class="column-layout" :class="{ mobile: useAppStore().isMobile }">
+			<!-- column left/bottom -->
 			<div>
-				<div class="flex align-items-center py-2">
-					<h3>Accounts</h3>
-				</div>
-				<div class="list">
-					<CollapseList :items="accounts">
-						<template #default="{ item: summary }">
-							<div class="list-row px-2">
-								<div class="flex">
-									<div class="flex align-items-center gap-2">
-										<div
-											class="border-round-sm square w-2rem"
-											:style="{
-												backgroundImage: `url(${
-													accountStore.getAccountById(summary.account_id)?.Institution.logo
-												})`,
-												backgroundSize: 'cover',
-											}"
-										></div>
-										<div class="text-semibold">
-											{{ accountStore.getAccountName(summary.account_id) }}
-										</div>
-									</div>
-									<div class="flex-grow-1"></div>
-									<div class="flex align-items-center">
-										<Currency
-											:amount="isFuture ? summary.budgetedChange : summary.attributedChange"
-											mode="net_change"
-											hideCurrency
-											class="font-medium"
-										/>
-										<small v-if="!isFuture" class="flex align-items-center">
-											&nbsp;&nbsp;/&nbsp;
-											<Currency :amount="summary.budgetedChange" mode="net_change" hideCurrency />
-										</small>
-									</div>
-								</div>
-								<!-- <small v-for="partition of summary.partitions" class="flex align-items-center">
-									&emsp13;- {{ partition.name }}
-									<div class="flex-grow-1"></div>
-									<div class="flex align-items-center">
-										<small v-if="partition.netChange !== 0">
-											<Currency :amount="partition.netChange" mode="net_change" hideCurrency />
-											&emsp13;
-										</small>
-										<span><Currency :amount="partition.endingBalance" mode="balance" /></span>
-									</div>
-								</small> -->
-							</div>
-						</template>
-					</CollapseList>
-				</div>
-			</div>
-			<br />
-
-			<div>
-				<div class="flex align-items-center py-2">
-					<h3>Income</h3>
-					<div class="flex-grow-1"></div>
-					&emsp;
-					<Currency
-						:amount="
-							isFuture
-								? state.summaryData.incomeSummary.tally.budgetedNet
-								: state.summaryData.incomeSummary.tally.attributedNet
-						"
-						mode="transaction"
-						class="font-semibold"
-					/>
-					<small v-if="!isFuture" class="flex align-items-center"
-						>&nbsp;&nbsp;/&nbsp;<Currency :amount="state.summaryData.incomeSummary.tally.budgetedNet"
-					/></small>
-				</div>
-				<div class="list">
-					<Accordion
-						multiple
-						@update:value="(value) => (openAccordions = new Set(value))"
-						:value="Array.from(openAccordions)"
-					>
-						<template v-for="budgetSnapshot of state.summaryData.incomeSummary.budgets">
-							<AccordionPanel
-								v-if="budgetSnapshot.tally.hasInfo"
-								:value="budgetSnapshot.budget.budget_id"
-							>
-								<AccordionHeader
-									class="budget-header flex align-items-center gap-2"
-									:class="{ shift: !isFuture && isAccordionOpen(budgetSnapshot.budget.budget_id) }"
-								>
-									<AttributionAvatar :category="budgetSnapshot.budget.Category" :size="2" />
-									<b>{{ budgetSnapshot.budget.memo }}</b>
-									<div class="flex-grow-1"></div>
-									<div class="flex align-items-center gap-2">
-										<div class="budget-total">
-											<Currency
-												:amount="
-													isFuture
-														? budgetSnapshot.tally.budgetedNet
-														: budgetSnapshot.tally.attributedNet
-												"
-											/>
-										</div>
-
-										<Knob
-											v-if="!isFuture"
-											class="budget-progress-knob"
-											v-model="budgetSnapshot.progress(ddate()).visualization.normalizedPercent"
-											:min="0"
-											:max="100"
-											:size="25"
-											:strokeWidth="15"
-											:valueColor="savingsColor[budgetSnapshot.progress(ddate()).status]"
-											:readonly="true"
-											:showValue="false"
-											style="padding-top: 5px"
-										/>
-									</div>
-								</AccordionHeader>
-								<AccordionContent>
-									<!-- PROGRESS BAR -->
-									<div v-if="!isFuture" class="flex align-items-center gap-3 my-2 w-full">
-										<div class="flex-grow-1">
-											<div
-												class="budget-progress-bar bg-black-alpha-10"
-												style="
-													position: relative;
-													padding: 4px 6px;
-													width: 100%;
-													border-radius: 4px;
-												"
-											>
-												<div
-													class="attributed-bar"
-													:style="{
-														position: 'absolute',
-														top: '0',
-														left: '0',
-														width:
-															Math.min(
-																100,
-																budgetSnapshot.progress(ddate()).visualization
-																	.normalizedPercent
-															) + '%',
-														height: '100%',
-														borderRadius: '4px',
-														backgroundColor:
-															savingsColor.muted[budgetSnapshot.progress(ddate()).status],
-													}"
-												></div>
-												<div
-													class="budget-line"
-													v-if="
-														budgetSnapshot.progress(ddate()).visualization
-															.normalizedBudgetedNet < 99
-													"
-													:style="{
-														position: 'absolute',
-														top: '-2px',
-														bottom: '-2px',
-														left:
-															budgetSnapshot.progress(ddate()).visualization
-																.normalizedBudgetedNet + '%',
-														borderLeft: '1px solid ' + colors.gray8,
-														translate: '-51%',
-													}"
-												></div>
-												<div
-													class="pace-marker"
-													v-if="
-														budgetSnapshot.progress(ddate()).visualization.normalizedPace <
-														99
-													"
-													:style="{
-														position: 'absolute',
-														lineHeight: '0.3em',
-														fontSize: '2em',
-														translate: '-50% -100%',
-														verticalAlign: 'top',
-														top: '0',
-														left:
-															budgetSnapshot.progress(ddate()).visualization
-																.normalizedPace + '%',
-													}"
-												>
-													▾
-												</div>
-												<div class="flex align-items-center relative">
-													<div
-														v-if="
-															Math.abs(100 - budgetSnapshot.progress(ddate()).percent) > 1
-														"
-													>
-														<Currency
-															round
-															:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining)"
-														/>
-														{{
-															budgetSnapshot.progress(ddate()).percent > 100
-																? 'over'
-																: 'remaining'
-														}}
-													</div>
-													<div v-else>✓</div>
-													&nbsp;
-													<!-- <div v-else-if="budgetSnapshot.progress(date()).percent < 100">
-													<Currency
-														:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining).toFixed(2)"
-													/>
-													remaining
-												</div> -->
-												</div>
-											</div>
-										</div>
-										<div>
-											<Currency :amount="budgetSnapshot.tally.budgetedNet" />
-										</div>
-									</div>
-									<template
-										v-for="event of isFuture
-											? budgetSnapshot.budgetEvents
-											: budgetSnapshot.notChildAttributions"
-									>
-										<CommonEventRow
-											:event="event"
-											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
-											expand
-										/>
-									</template>
-								</AccordionContent>
-							</AccordionPanel>
-						</template>
-						<!-- OTHER INCOME -->
-						<AccordionPanel
-							value="other-income"
-							v-if="state.summaryData.incomeSummary.tally.unBudgetedAttributions.length"
-						>
-							<AccordionHeader class="flex align-items-center gap-2">
-								<AttributionAvatar icon="money-bag" :size="2" :background="'lime2'" />
-								Other
-								<div class="flex-grow-1"></div>
-								<Currency :amount="state.summaryData.incomeSummary.tally.unBudgetedNet" />
-							</AccordionHeader>
-							<AccordionContent>
-								<template v-for="(event, i) of state.summaryData.incomeSummary.tally.unBudgetedAttributions">
-									<CommonEventRow
-										:event="event"
-										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
-										expand
-										hideBudget
-									/>
-								</template>
-							</AccordionContent>
-						</AccordionPanel>
-					</Accordion>
-				</div>
-			</div>
-			<br />
-
-			<div>
-				<div class="flex align-items-center py-2">
-					<h3>Savings</h3>
-					<div class="flex-grow-1"></div>
-					<!-- ... -->
-				</div>
-				<div class="list">
-					<Accordion
-						multiple
-						@update:value="(value) => (openAccordions = new Set(value))"
-						:value="Array.from(openAccordions)"
-					>
-						<template v-for="budgetSnapshot of state.summaryData.transferSummary.budgets">
-							<AccordionPanel :value="budgetSnapshot.budget.budget_id">
-								<AccordionHeader
-									class="budget-header flex align-items-center gap-2"
-									:class="{ shift: !isFuture && isAccordionOpen(budgetSnapshot.budget.budget_id) }"
-								>
-									<AttributionAvatar :category="budgetSnapshot.budget.Category" :size="2" />
-									<b>{{ budgetSnapshot.budget.memo }}</b>
-									<div class="flex-grow-1"></div>
-									<div class="flex align-items-center gap-2">
-										<div class="budget-total">
-											<Currency
-												:amount="
-													isFuture
-														? budgetSnapshot.tally.budgetedNet
-														: budgetSnapshot.tally.attributedNet
-												"
-											/>
-										</div>
-
-										<Knob
-											v-if="!isFuture"
-											class="budget-progress-knob"
-											v-model="budgetSnapshot.progress(ddate()).visualization.normalizedPercent"
-											:min="0"
-											:max="100"
-											:size="25"
-											:strokeWidth="15"
-											:valueColor="savingsColor[budgetSnapshot.progress(ddate()).status]"
-											:readonly="true"
-											:showValue="false"
-											style="padding-top: 5px"
-										/>
-									</div>
-								</AccordionHeader>
-								<AccordionContent>
-									<!-- PROGRESS BAR -->
-									<div v-if="!isFuture" class="flex align-items-center gap-3 my-2 w-full">
-										<div class="flex-grow-1">
-											<div
-												class="budget-progress-bar bg-black-alpha-10"
-												style="
-													position: relative;
-													padding: 4px 6px;
-													width: 100%;
-													border-radius: 4px;
-												"
-											>
-												<div
-													class="attributed-bar"
-													:style="{
-														position: 'absolute',
-														top: '0',
-														left: '0',
-														width:
-															Math.min(
-																100,
-																budgetSnapshot.progress(ddate()).visualization
-																	.normalizedPercent
-															) + '%',
-														height: '100%',
-														borderRadius: '4px',
-														backgroundColor:
-															savingsColor.muted[budgetSnapshot.progress(ddate()).status],
-													}"
-												></div>
-												<div
-													class="budget-line"
-													v-if="
-														budgetSnapshot.progress(ddate()).visualization
-															.normalizedBudgetedNet < 99
-													"
-													:style="{
-														position: 'absolute',
-														top: '-2px',
-														bottom: '-2px',
-														left:
-															budgetSnapshot.progress(ddate()).visualization
-																.normalizedBudgetedNet + '%',
-														borderLeft: '1px solid ' + colors.gray8,
-														translate: '-51%',
-													}"
-												></div>
-												<div
-													class="pace-marker"
-													v-if="
-														budgetSnapshot.progress(ddate()).visualization.normalizedPace <
-														99
-													"
-													:style="{
-														position: 'absolute',
-														lineHeight: '0.3em',
-														fontSize: '2em',
-														translate: '-50% -100%',
-														verticalAlign: 'top',
-														top: '0',
-														left:
-															budgetSnapshot.progress(ddate()).visualization
-																.normalizedPace + '%',
-													}"
-												>
-													▾
-												</div>
-												<div class="flex align-items-center relative">
-													<div
-														v-if="
-															Math.abs(100 - budgetSnapshot.progress(ddate()).percent) > 1
-														"
-													>
-														<Currency
-															round
-															:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining)"
-														/>
-														{{
-															budgetSnapshot.progress(ddate()).percent > 100
-																? 'over'
-																: 'remaining'
-														}}
-													</div>
-													<div v-else>✓</div>
-													&nbsp;
-													<!-- <div v-else-if="budgetSnapshot.progress(date()).percent < 100">
-													<Currency
-														:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining).toFixed(2)"
-													/>
-													remaining
-												</div> -->
-												</div>
-											</div>
-										</div>
-										<div>
-											<Currency :amount="budgetSnapshot.tally.budgetedNet" />
-										</div>
-									</div>
-									<template
-										v-for="event of isFuture
-											? budgetSnapshot.budgetEvents
-											: budgetSnapshot.notChildAttributions"
-									>
-										<CommonEventRow
-											:event="event"
-											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
-											expand
-										/>
-									</template>
-								</AccordionContent>
-							</AccordionPanel>
-						</template>
-						<!-- OTHER TRANSFERS -->
-						<AccordionPanel
-							value="other-transfers"
-							v-if="state.summaryData.transferSummary.tally.unBudgetedAttributions.length"
-						>
-							<AccordionHeader class="flex align-items-center gap-2">
-								<AttributionAvatar icon="transfer" :size="2" :background="'sky1'" />
-								Other Transfers
-								<div class="flex-grow-1"></div>
-								<Currency
-									:amount="state.summaryData.transferSummary.tally.unBudgetedNet"
-									mode="net_change"
-								/>
-							</AccordionHeader>
-							<AccordionContent>
-								<template
-									v-for="(event, i) of state.summaryData.transferSummary.tally.unBudgetedAttributions"
-								>
-									<CommonEventRow
-										:event="event"
-										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
-										expand
-										hideBudget
-									/>
-								</template>
-							</AccordionContent>
-						</AccordionPanel>
-					</Accordion>
-				</div>
-			</div>
-			<br />
-			<br />
-
-			<div v-if="state.summaryData.groupSummaries.length > 0">
-				<div v-for="{ groupId, tally } of state.summaryData.groupSummaries" class="group-summary mb-4">
-					<div class="title flex align-items-center gap-1 my-2">
-						<Icon name="tag" fill :color="groupStore.getGroupById(groupId)?.color" />
-						<b>{{ groupStore.getGroupById(groupId)?.name }}</b>
-						<div class="flex-grow-1"></div>
-						<div class="flex align-items-center gap-1">
-							<Currency :amount="tally.attributedNet || 0" mode="transaction" class="text-semibold" />
-						</div>
-					</div>
-					<div class="px-3">
-						<template v-for="budgetSnapshot of tally.budgetSnapshots">
-							<template v-if="budgetSnapshot.tally.hasInfo">
-								<div class="flex hover-show-trigger list-row gap-2">
-									<div class="flex align-items-center gap-2">
-										<i class="pi pi-wallet" />
-										{{ budgetSnapshot.budget.memo }}
-									</div>
-									<div class="flex-grow-1"></div>
-									<!-- <Currency :amount="budgetSnapshot.tally.attributedNet" mode="transaction" /> -->
-								</div>
-								<div
-									v-for="childItem of budgetSnapshot.childItemBudgets"
-									class="list-row flex align-items-center gap-3"
-								>
-									<AttributionAvatar :categoryId="childItem.category_id" :size="1.9">
-										<template #badge>
-											<Icon name="checklist" />
-										</template>
-									</AttributionAvatar>
-									<div class="flex flex-column w-full min-w-0">
-										<div class="transaction-main-line">
-											<div class="text-ellipsis w-full min-w-0">
-												{{ childItem.displayName }}
-											</div>
-											<div style="flex-grow: 1"></div>
-											<div style="display: flex; align-items: center; gap: 4px">
-												<Currency
-													:amount="childItem.rangeTally.attributedNet"
-													mode="transaction"
-												/>
-											</div>
-											<Knob
-												v-if="!isFuture"
-												v-model="
-													{
-														percent:
-															(childItem.rangeTally.attributedNet /
-																childItem.rangeTally.budgetedNet) *
-															100,
-													}.percent
-												"
-												:min="0"
-												:max="100"
-												:size="20"
-												:strokeWidth="20"
-												:valueColor="colors.lime2"
-												:readonly="true"
-												:showValue="false"
-											/>
-										</div>
-									</div>
-								</div>
-								<template
-									v-for="event of isFuture
-										? budgetSnapshot.budgetEvents
-										: budgetSnapshot.notChildAttributions"
-								>
-									<CommonEventRow
-										:event="event"
-										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
-										expand
-										hideGroup
-									/>
-								</template>
-							</template>
-						</template>
-						<div
-							v-if="tally.unBudgetedAttributions.length > 0"
-							class="flex align-items-center list-row gap-2"
-						>
-							<i class="pi pi-exclamation-triangle" />
-							Unbudgeted
+				<div v-if="state.summaryData.groupSummaries.length > 0">
+					<div v-for="{ groupId, tally } of state.summaryData.groupSummaries" class="group-summary mb-4">
+						<div class="title flex align-items-center gap-1 my-2">
+							<Icon name="tag" fill :color="groupStore.getGroupById(groupId)?.color" />
+							<b>{{ groupStore.getGroupById(groupId)?.name }}</b>
 							<div class="flex-grow-1"></div>
-							<!-- <Currency :amount="tally.unBudgetedNet" mode="transaction" /> -->
+							<div class="flex align-items-center gap-1">
+								<Currency :amount="tally.attributedNet || 0" mode="transaction" class="text-semibold" />
+							</div>
 						</div>
-						<CommonEventRow
-							v-for="event of tally.unBudgetedAttributions"
-							:event="event"
-							@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
-							expand
-							hideGroup
-							hideBudget
-						/>
-					</div>
-				</div>
-				<br />
-			</div>
-
-			<div>
-				<div class="flex align-items-center gap-2 py-2">
-					<h3>Spending</h3>
-					<Select
-						v-model="selectedSpendingView"
-						:options="spendingViews"
-						optionLabel="label"
-						optionValue="value"
-						size="small"
-						aria-labelledby="spending-view-select"
-					/>
-					<div class="flex-grow-1"></div>
-					<div class="flex align-items-center">
-						<Currency
-							:amount="
-								isFuture
-									? state.summaryData.spendingSummary.tally.budgetedNet
-									: state.summaryData.spendingSummary.tally.attributedNet
-							"
-							class="font-semibold"
-						/>
-						<small v-if="!isFuture" class="flex align-items-center"
-							>&nbsp;&nbsp;/&nbsp;<Currency
-								:amount="state.summaryData.spendingSummary.tally.budgetedNet"
-						/></small>
-					</div>
-				</div>
-				<div v-if="selectedSpendingView === 'budget'">
-					<Accordion
-						multiple
-						@update:value="(value) => (openAccordions = new Set(value))"
-						:value="Array.from(openAccordions)"
-					>
-						<AccordionPanel value="0" v-if="!isFuture">
-							<AccordionHeader class="flex align-items-center gap-2 font-bold">
-								<AttributionAvatar icon="question-circle" :size="2" :background="'cherry1'" />
-								<b>Unbudgeted</b>
-								<div class="flex-grow-1"></div>
-								<Currency
-									:amount="state.summaryData.allUnbudgeted.unBudgetedNet"
-									mode="transaction"
-									:style="{ color: colors.cherry3 }"
-								/>
-							</AccordionHeader>
-							<AccordionContent>
-								<template
-									v-for="(event, i) of state.summaryData.allUnbudgeted.unBudgetedAttributions"
-								>
-									<CommonEventRow
-										:event="event"
-										@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
-										expand
-										hideBudget
-									/>
-								</template>
-							</AccordionContent>
-						</AccordionPanel>
-						<template v-for="budgetSnapshot of orderedBudgets">
-							<AccordionPanel
-								v-if="budgetSnapshot.tally.hasInfo"
-								:value="budgetSnapshot.budget.budget_id"
-							>
-								<AccordionHeader
-									class="budget-header flex align-items-center gap-2"
-									:class="{ shift: !isFuture && isAccordionOpen(budgetSnapshot.budget.budget_id) }"
-								>
-									<AttributionAvatar :category="budgetSnapshot.budget.Category" :size="2" />
-									<b class="text-ellipsis">{{ budgetSnapshot.budget.memo }}</b>
-									<div class="flex-grow-1"></div>
-									<div class="flex align-items-center gap-2">
-										<div class="budget-total">
-											<Currency
-												:amount="
-													isFuture
-														? budgetSnapshot.tally.budgetedNet
-														: budgetSnapshot.tally.attributedNet
-												"
-											/>
+						<div class="px-3">
+							<template v-for="budgetSnapshot of tally.budgetSnapshots">
+								<template v-if="budgetSnapshot.tally.hasInfo">
+									<div class="flex hover-show-trigger list-row gap-2">
+										<div class="flex align-items-center gap-2">
+											<i class="pi pi-wallet" />
+											{{ budgetSnapshot.budget.memo }}
 										</div>
-
-										<Knob
-											v-if="!isFuture"
-											class="budget-progress-knob"
-											v-model="budgetSnapshot.progress(ddate()).visualization.normalizedPercent"
-											:min="0"
-											:max="100"
-											:size="25"
-											:strokeWidth="15"
-											:valueColor="expenseColor[budgetSnapshot.progress(ddate()).status]"
-											:readonly="true"
-											:showValue="false"
-											style="padding-top: 5px"
-										/>
+										<div class="flex-grow-1"></div>
+										<!-- <Currency :amount="budgetSnapshot.tally.attributedNet" mode="transaction" /> -->
 									</div>
-								</AccordionHeader>
-								<AccordionContent
-									class="budget-content"
-									:class="{ shift: !isFuture && isAccordionOpen(budgetSnapshot.budget.budget_id) }"
-								>
-									<!-- PROGRESS BAR -->
-									<div v-if="!isFuture" class="flex align-items-center gap-3 my-2 w-full">
-										<div class="flex-grow-1">
-											<div
-												class="budget-progress-bar bg-black-alpha-10"
-												style="
-													position: relative;
-													padding: 4px 6px;
-													width: 100%;
-													border-radius: 4px;
-												"
-											>
-												<div
-													class="attributed-bar"
-													:style="{
-														position: 'absolute',
-														top: '0',
-														left: '0',
-														width:
-															Math.min(
-																100,
-																budgetSnapshot.progress(ddate()).visualization
-																	.normalizedPercent
-															) + '%',
-														height: '100%',
-														borderRadius: '4px',
-														backgroundColor:
-															expenseColor.muted[budgetSnapshot.progress(ddate()).status],
-													}"
-												></div>
-												<div
-													class="budget-line"
-													v-if="
-														budgetSnapshot.progress(ddate()).visualization
-															.normalizedBudgetedNet < 99
-													"
-													:style="{
-														position: 'absolute',
-														top: '-2px',
-														bottom: '-2px',
-														left:
-															budgetSnapshot.progress(ddate()).visualization
-																.normalizedBudgetedNet + '%',
-														borderLeft: '1px solid ' + colors.gray8,
-														translate: '-51%',
-													}"
-												></div>
-												<div
-													class="pace-marker"
-													v-if="
-														budgetSnapshot.progress(ddate()).visualization.normalizedPace <
-														99
-													"
-													:style="{
-														position: 'absolute',
-														lineHeight: '0.3em',
-														fontSize: '2em',
-														translate: '-50% -100%',
-														verticalAlign: 'top',
-														top: '0',
-														left:
-															budgetSnapshot.progress(ddate()).visualization
-																.normalizedPace + '%',
-													}"
-												>
-													▾
-												</div>
-												<div class="flex align-items-center relative">
-													<div
-														v-if="
-															Math.abs(100 - budgetSnapshot.progress(ddate()).percent) > 1
-														"
-													>
-														<Currency
-															round
-															:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining)"
-														/>
-														{{
-															budgetSnapshot.progress(ddate()).percent > 100
-																? 'over'
-																: 'remaining'
-														}}
-													</div>
-													<div v-else>✓</div>
-												</div>
-											</div>
-										</div>
-										<div>
-											<Currency :amount="budgetSnapshot.tally.budgetedNet" />
-										</div>
-									</div>
-									<div v-for="childItem of budgetSnapshot.childItemBudgets" class="list-row">
+									<div
+										v-for="childItem of budgetSnapshot.childItemBudgets"
+										class="list-row flex align-items-center gap-3"
+									>
 										<AttributionAvatar :categoryId="childItem.category_id" :size="1.9">
 											<template #badge>
 												<Icon name="checklist" />
@@ -1275,14 +558,6 @@ const accumulationChart = computed(() => {
 													:showValue="false"
 												/>
 											</div>
-											<!-- <small>
-											{{
-												childItem.sourceBudget?.memo ||
-												useCategoryStore().getCategoryById(childItem.category_id).name
-											}}
-											-
-											{{ accountStore.getAccountName(childItem.account_id) }}
-										</small> -->
 										</div>
 									</div>
 									<template
@@ -1294,164 +569,909 @@ const accumulationChart = computed(() => {
 											:event="event"
 											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 											expand
-											hideBudget
+											hideGroup
 										/>
 									</template>
-								</AccordionContent>
-							</AccordionPanel>
-						</template>
-					</Accordion>
-				</div>
-				<div v-else-if="selectedSpendingView === 'category'">
-					<Accordion
-						multiple
-						@update:value="(value) => (openAccordions = new Set(value))"
-						:value="Array.from(openAccordions)"
-					>
-						<template v-for="(category, i) of state.summaryData.spendingSummary.categories">
-							<AccordionPanel
-								:value="i"
-								v-if="
-									isFuture
-										? category.tally.budgetEvents.length > 0
-										: category.tally.attributionEvents.length > 0
-								"
+								</template>
+							</template>
+							<div
+								v-if="tally.unBudgetedAttributions.length > 0"
+								class="flex align-items-center list-row gap-2"
 							>
-								<AccordionHeader class="flex align-items-center gap-2">
-									<AttributionAvatar :category="category.category" :size="2" />
-									<b>{{ category.category.name }}</b>
+								<i class="pi pi-exclamation-triangle" />
+								Unbudgeted
+								<div class="flex-grow-1"></div>
+								<!-- <Currency :amount="tally.unBudgetedNet" mode="transaction" /> -->
+							</div>
+							<CommonEventRow
+								v-for="event of tally.unBudgetedAttributions"
+								:event="event"
+								@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+								expand
+								hideGroup
+								hideBudget
+							/>
+						</div>
+					</div>
+					<br />
+				</div>
+
+				<div>
+					<div class="flex align-items-center gap-2 py-2">
+						<h3>Spending</h3>
+						<Select
+							v-model="selectedSpendingView"
+							:options="spendingViews"
+							optionLabel="label"
+							optionValue="value"
+							size="small"
+							aria-labelledby="spending-view-select"
+						/>
+						<div class="flex-grow-1"></div>
+						<div class="flex align-items-center">
+							<Currency
+								:amount="
+									isFuture
+										? state.summaryData.spendingSummary.tally.budgetedNet
+										: state.summaryData.spendingSummary.tally.attributedNet
+								"
+								class="font-semibold"
+							/>
+							<small v-if="!isFuture" class="flex align-items-center"
+								>&nbsp;&nbsp;/&nbsp;<Currency
+									:amount="state.summaryData.spendingSummary.tally.budgetedNet"
+							/></small>
+						</div>
+					</div>
+					<div v-if="selectedSpendingView === 'budget'" class="list">
+						<Accordion
+							multiple
+							@update:value="(value) => (openAccordions = new Set(value))"
+							:value="Array.from(openAccordions)"
+						>
+							<AccordionPanel value="0" v-if="!isFuture">
+								<AccordionHeader class="flex align-items-center gap-2 font-bold">
+									<AttributionAvatar icon="question-circle" :size="2.5" :background="'cherry1'" />
+									<b>Unbudgeted</b>
 									<div class="flex-grow-1"></div>
 									<Currency
-										:amount="isFuture ? category.tally.budgetedNet : category.tally.attributedNet"
+										:amount="state.summaryData.allUnbudgeted.unBudgetedNet"
 										mode="transaction"
-										class="text-semibold"
+										:style="{ color: colors.cherry3 }"
 									/>
 								</AccordionHeader>
 								<AccordionContent>
-									<template v-for="budgetSnapshot of category.tally.budgetSnapshots">
-										<!-- only show budget totals for future -->
-										<template v-if="isFuture">
-											<!-- only display one from transfer pair -->
-											<div class="list-row flex align-items-center gap-3">
-												<div>
-													<AttributionAvatar
-														:category="budgetSnapshot.budget.Category"
-														:size="1.9"
-													>
-														<template #badge>
-															<i class="pi pi-wallet" style="font-size: 0.95em" />
-														</template>
-													</AttributionAvatar>
-												</div>
-												<div class="flex flex-column w-full min-w-0">
-													<div class="flex align-items-center gap-2">
-														<div class="flex align-items-center w-full min-w-0">
-															<div class="text-ellipsis">
-																<span class="font-medium">{{
-																	budgetSnapshot.budget.memo
-																}}</span>
-															</div>
-														</div>
-														<div style="flex-grow: 1"></div>
-														<div class="font-medium flex align-items-center gap-1">
-															<Currency
-																:amount="budgetSnapshot.budgetedAtEnd"
-																mode="transaction"
-															/>
-														</div>
-													</div>
-													<div class="flex align-items-center gap-2">
-														<small class="text-ellipsis">
-															{{
-																accountStore.getAccountName(
-																	budgetSnapshot.budget.account_id
-																)
-															}}
-														</small>
-													</div>
-												</div>
-											</div>
-										</template>
-
-										<!-- otherwise show actual transactions -->
-										<template v-else-if="budgetSnapshot.attributedEvents.length > 0">
-											<div class="flex hover-show-trigger list-row gap-2">
-												<div class="flex align-items-center gap-2">
-													<i class="pi pi-wallet" />
-													{{ budgetSnapshot.budget.memo }}
-												</div>
-												<div class="flex-grow-1"></div>
-												<!-- <Currency :amount="budgetSummary.tally.attributedNet" mode="transaction" /> -->
-											</div>
-
-											<div v-for="event of budgetSnapshot.tally.attributionEvents">
-												<CommonEventRow
-													:event="event"
-													@click="
-														() =>
-															viewTransaction(event.attributionDetails.sourceTransaction)
-													"
-													expand
-												/>
-											</div>
-										</template>
-									</template>
-									<div
-										v-if="category.tally.unBudgetedAttributions.length > 0"
-										class="flex align-items-center list-row gap-2"
+									<template
+										v-for="(event, i) of state.summaryData.allUnbudgeted.unBudgetedAttributions"
 									>
-										<i class="pi pi-exclamation-triangle" />
-										Unbudgeted
-										<div class="flex-grow-1"></div>
-										<Currency :amount="category.tally.unBudgetedNet" mode="transaction" />
-									</div>
-									<div v-for="event of category.tally.unBudgetedAttributions">
 										<CommonEventRow
 											:event="event"
-											@click="() => viewTransaction(event.attributionDetails.sourceTransaction)"
+											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 											expand
 											hideBudget
 										/>
-									</div>
+									</template>
 								</AccordionContent>
 							</AccordionPanel>
-						</template>
-					</Accordion>
-				</div>
-			</div>
-		</div>
+							<template v-for="budgetSnapshot of orderedBudgets">
+								<AccordionPanel
+									v-if="budgetSnapshot.tally.hasInfo"
+									:value="budgetSnapshot.budget.budget_id"
+								>
+									<AccordionHeader
+										class="budget-header flex align-items-center gap-2"
+										:class="{ shift: !isFuture && isAccordionOpen(budgetSnapshot.budget.budget_id) }"
+									>
+										<AttributionAvatar :category="budgetSnapshot.budget.Category" :size="2.5" />
+										<b class="text-ellipsis">{{ budgetSnapshot.budget.memo }}</b>
+										<div class="flex-grow-1"></div>
+										<div class="flex align-items-center gap-2">
+											<div class="budget-total">
+												<Currency
+													:amount="
+														isFuture
+															? budgetSnapshot.tally.budgetedNet
+															: budgetSnapshot.tally.attributedNet
+													"
+												/>
+											</div>
 
-		<br />
-		<br />
-		<h3 v-if="!isFuture">Transactions</h3>
-		<template v-for="(day, i) of dailyEvents">
-			<div v-if="day.transactions.length > 0">
-				<h4
-					:style="{
-						padding: '8px 8px',
-						marginTop: '8px',
-						position: 'sticky',
-						top: '3rem',
-						backgroundColor: '#ffff',
-						zIndex: 3,
-						marginLeft: '-5px',
-						marginRight: '-5px',
-					}"
-				>
-					{{ day.date }}
-				</h4>
-				<div class="list">
-					<div>
-						<CommonEventRow
-							v-for="event in day.transactions"
-							:event="event"
-							:hideDate="true"
-							@click="() => viewTransaction(event.attributionDetails.sourceTransaction)"
+											<Knob
+												v-if="!isFuture"
+												class="budget-progress-knob"
+												v-model="budgetSnapshot.progress(ddate()).visualization.normalizedPercent"
+												:min="0"
+												:max="100"
+												:size="25"
+												:strokeWidth="15"
+												:valueColor="expenseColor[budgetSnapshot.progress(ddate()).status]"
+												:readonly="true"
+												:showValue="false"
+												style="padding-top: 5px"
+											/>
+										</div>
+									</AccordionHeader>
+									<AccordionContent
+										class="budget-content"
+										:class="{ shift: !isFuture && isAccordionOpen(budgetSnapshot.budget.budget_id) }"
+									>
+										<!-- PROGRESS BAR -->
+										<div v-if="!isFuture" class="flex align-items-center gap-3 my-2 w-full">
+											<div class="flex-grow-1">
+												<div
+													class="budget-progress-bar bg-black-alpha-10"
+													style="
+														position: relative;
+														padding: 4px 6px;
+														width: 100%;
+														border-radius: 4px;
+													"
+												>
+													<div
+														class="attributed-bar"
+														:style="{
+															position: 'absolute',
+															top: '0',
+															left: '0',
+															width:
+																Math.min(
+																	100,
+																	budgetSnapshot.progress(ddate()).visualization
+																		.normalizedPercent
+																) + '%',
+															height: '100%',
+															borderRadius: '4px',
+															backgroundColor:
+																expenseColor.muted[budgetSnapshot.progress(ddate()).status],
+														}"
+													></div>
+													<div
+														class="budget-line"
+														v-if="
+															budgetSnapshot.progress(ddate()).visualization
+																.normalizedBudgetedNet < 99
+														"
+														:style="{
+															position: 'absolute',
+															top: '-2px',
+															bottom: '-2px',
+															left:
+																budgetSnapshot.progress(ddate()).visualization
+																	.normalizedBudgetedNet + '%',
+															borderLeft: '1px solid ' + colors.gray8,
+															translate: '-51%',
+														}"
+													></div>
+													<div
+														class="pace-marker"
+														v-if="
+															budgetSnapshot.progress(ddate()).visualization.normalizedPace <
+															99
+														"
+														:style="{
+															position: 'absolute',
+															lineHeight: '0.3em',
+															fontSize: '2em',
+															translate: '-50% -100%',
+															verticalAlign: 'top',
+															top: '0',
+															left:
+																budgetSnapshot.progress(ddate()).visualization
+																	.normalizedPace + '%',
+														}"
+													>
+														▾
+													</div>
+													<div class="flex align-items-center relative">
+														<div
+															v-if="
+																Math.abs(100 - budgetSnapshot.progress(ddate()).percent) > 1
+															"
+														>
+															<Currency
+																round
+																:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining)"
+															/>
+															{{
+																budgetSnapshot.progress(ddate()).percent > 100
+																	? 'over'
+																	: 'remaining'
+															}}
+														</div>
+														<div v-else>✓</div>
+													</div>
+												</div>
+											</div>
+											<div>
+												<Currency :amount="budgetSnapshot.tally.budgetedNet" />
+											</div>
+										</div>
+										<div v-for="childItem of budgetSnapshot.childItemBudgets" class="list-row">
+											<AttributionAvatar :categoryId="childItem.category_id" :size="1.9">
+												<template #badge>
+													<Icon name="checklist" />
+												</template>
+											</AttributionAvatar>
+											<div class="flex flex-column w-full min-w-0">
+												<div class="transaction-main-line">
+													<div class="text-ellipsis w-full min-w-0">
+														{{ childItem.displayName }}
+													</div>
+													<div style="flex-grow: 1"></div>
+													<div style="display: flex; align-items: center; gap: 4px">
+														<Currency
+															:amount="childItem.rangeTally.attributedNet"
+															mode="transaction"
+														/>
+													</div>
+													<Knob
+														v-if="!isFuture"
+														v-model="
+															{
+																percent:
+																	(childItem.rangeTally.attributedNet /
+																		childItem.rangeTally.budgetedNet) *
+																	100,
+															}.percent
+														"
+														:min="0"
+														:max="100"
+														:size="20"
+														:strokeWidth="20"
+														:valueColor="colors.lime2"
+														:readonly="true"
+														:showValue="false"
+													/>
+												</div>
+												<!-- <small>
+												{{
+													childItem.sourceBudget?.memo ||
+													useCategoryStore().getCategoryById(childItem.category_id).name
+												}}
+												-
+												{{ accountStore.getAccountName(childItem.account_id) }}
+											</small> -->
+											</div>
+										</div>
+										<template
+											v-for="event of isFuture
+												? budgetSnapshot.budgetEvents
+												: budgetSnapshot.notChildAttributions"
+										>
+											<CommonEventRow
+												:event="event"
+												@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+												expand
+												hideBudget
+											/>
+										</template>
+									</AccordionContent>
+								</AccordionPanel>
+							</template>
+						</Accordion>
+					</div>
+					<div v-else-if="selectedSpendingView === 'category'">
+						<Accordion
+							multiple
+							@update:value="(value) => (openAccordions = new Set(value))"
+							:value="Array.from(openAccordions)"
+						>
+							<template v-for="(category, i) of state.summaryData.spendingSummary.categories">
+								<AccordionPanel
+									:value="i"
+									v-if="
+										isFuture
+											? category.tally.budgetEvents.length > 0
+											: category.tally.attributionEvents.length > 0
+									"
+								>
+									<AccordionHeader class="flex align-items-center gap-2">
+										<AttributionAvatar :category="category.category" :size="2.5" />
+										<b>{{ category.category.name }}</b>
+										<div class="flex-grow-1"></div>
+										<Currency
+											:amount="isFuture ? category.tally.budgetedNet : category.tally.attributedNet"
+											mode="transaction"
+											class="text-semibold"
+										/>
+									</AccordionHeader>
+									<AccordionContent>
+										<template v-for="budgetSnapshot of category.tally.budgetSnapshots">
+											<!-- only show budget totals for future -->
+											<template v-if="isFuture">
+												<!-- only display one from transfer pair -->
+												<div class="list-row flex align-items-center gap-3">
+													<div>
+														<AttributionAvatar
+															:category="budgetSnapshot.budget.Category"
+															:size="1.9"
+														>
+															<template #badge>
+																<i class="pi pi-wallet" style="font-size: 0.95em" />
+															</template>
+														</AttributionAvatar>
+													</div>
+													<div class="flex flex-column w-full min-w-0">
+														<div class="flex align-items-center gap-2">
+															<div class="flex align-items-center w-full min-w-0">
+																<div class="text-ellipsis">
+																	<span class="font-medium">{{
+																		budgetSnapshot.budget.memo
+																	}}</span>
+																</div>
+															</div>
+															<div style="flex-grow: 1"></div>
+															<div class="font-medium flex align-items-center gap-1">
+																<Currency
+																	:amount="budgetSnapshot.budgetedAtEnd"
+																	mode="transaction"
+																/>
+															</div>
+														</div>
+														<div class="flex align-items-center gap-2">
+															<small class="text-ellipsis">
+																{{
+																	accountStore.getAccountName(
+																		budgetSnapshot.budget.account_id
+																	)
+																}}
+															</small>
+														</div>
+													</div>
+												</div>
+											</template>
+
+											<!-- otherwise show actual transactions -->
+											<template v-else-if="budgetSnapshot.attributedEvents.length > 0">
+												<div class="flex hover-show-trigger list-row gap-2">
+													<div class="flex align-items-center gap-2">
+														<i class="pi pi-wallet" />
+														{{ budgetSnapshot.budget.memo }}
+													</div>
+													<div class="flex-grow-1"></div>
+													<!-- <Currency :amount="budgetSummary.tally.attributedNet" mode="transaction" /> -->
+												</div>
+
+												<div v-for="event of budgetSnapshot.tally.attributionEvents">
+													<CommonEventRow
+														:event="event"
+														@click="
+															() =>
+																viewTransaction(event.attributionDetails.sourceTransaction)
+														"
+														expand
+													/>
+												</div>
+											</template>
+										</template>
+										<div
+											v-if="category.tally.unBudgetedAttributions.length > 0"
+											class="flex align-items-center list-row gap-2"
+										>
+											<i class="pi pi-exclamation-triangle" />
+											Unbudgeted
+											<div class="flex-grow-1"></div>
+											<Currency :amount="category.tally.unBudgetedNet" mode="transaction" />
+										</div>
+										<div v-for="event of category.tally.unBudgetedAttributions">
+											<CommonEventRow
+												:event="event"
+												@click="() => viewTransaction(event.attributionDetails.sourceTransaction)"
+												expand
+												hideBudget
+											/>
+										</div>
+									</AccordionContent>
+								</AccordionPanel>
+							</template>
+						</Accordion>
+					</div>
+				</div>
+
+				<br />
+				<br />
+				<h3 v-if="!isFuture">Transactions</h3>
+				<template v-for="(day, i) of dailyEvents">
+					<div v-if="day.transactions.length > 0">
+						<h4
+							:style="{
+								padding: '8px 8px',
+								marginTop: '8px',
+								position: 'sticky',
+								top: '3rem',
+								backgroundColor: '#ffff',
+								zIndex: 3,
+								marginLeft: '-5px',
+								marginRight: '-5px',
+							}"
+						>
+							{{ day.date }}
+						</h4>
+						<div>
+							<div>
+								<CommonEventRow
+									v-for="event in day.transactions"
+									:event="event"
+									:hideDate="true"
+									@click="() => viewTransaction(event.attributionDetails.sourceTransaction)"
+								/>
+							</div>
+						</div>
+					</div>
+				</template>
+			</div>
+			
+			<!-- column top/right -->
+			<div>
+				
+				<div>
+					<div class="flex align-items-center gap-2">
+						<h3>Net Growth</h3>
+						<div class="flex-grow-1"></div>
+						<Currency
+							:amount="isFuture ? state.summaryData.budgetedNet : state.summaryData.attributedNet"
+							mode="net_change"
+							class="font-semibold"
 						/>
+						<small v-if="!isFuture" class="flex align-items-center">
+							/&nbsp;
+							<Currency :amount="state.summaryData.budgetedNet" mode="net_change" />
+						</small>
+					</div>
+					<apexchart class="w-full" type="bar" v-bind="accumulationChart"></apexchart>
+				</div>
+				
+				<div>
+					<div class="flex align-items-center py-2">
+						<h3>Accounts</h3>
+					</div>
+					<div class="list">
+						<CollapseList :items="accounts" :itemHeight="55">
+							<template #default="{ item: summary }">
+								<div class="list-row px-2">
+									<div class="flex">
+										<div class="flex align-items-center gap-2">
+											<div
+												class="border-round-sm square w-3rem"
+												:style="{
+													backgroundImage: `url(${
+														accountStore.getAccountById(summary.account_id)?.Institution.logo
+													})`,
+													backgroundSize: 'cover',
+												}"
+											></div>
+											<div class="text-semibold">
+												{{ accountStore.getAccountName(summary.account_id) }}
+											</div>
+										</div>
+										<div class="flex-grow-1"></div>
+										<div class="flex align-items-center">
+											<Currency
+												:amount="isFuture ? summary.budgetedChange : summary.attributedChange"
+												mode="net_change"
+												hideCurrency
+												class="font-medium"
+											/>
+											<small v-if="!isFuture" class="flex align-items-center">
+												&nbsp;&nbsp;/&nbsp;
+												<Currency :amount="summary.budgetedChange" mode="net_change" hideCurrency />
+											</small>
+										</div>
+									</div>
+									<!-- <small v-for="partition of summary.partitions" class="flex align-items-center">
+										&emsp13;- {{ partition.name }}
+										<div class="flex-grow-1"></div>
+										<div class="flex align-items-center">
+											<small v-if="partition.netChange !== 0">
+												<Currency :amount="partition.netChange" mode="net_change" hideCurrency />
+												&emsp13;
+											</small>
+											<span><Currency :amount="partition.endingBalance" mode="balance" /></span>
+										</div>
+									</small> -->
+								</div>
+							</template>
+						</CollapseList>
+					</div>
+				</div>
+
+				<br />
+				<div>
+					<div class="flex align-items-center py-2">
+						<h3>Income</h3>
+						<div class="flex-grow-1"></div>
+						&emsp;
+						<Currency
+							:amount="
+								isFuture
+									? state.summaryData.incomeSummary.tally.budgetedNet
+									: state.summaryData.incomeSummary.tally.attributedNet
+							"
+							mode="transaction"
+							class="font-semibold"
+						/>
+						<small v-if="!isFuture" class="flex align-items-center"
+							>&nbsp;&nbsp;/&nbsp;<Currency :amount="state.summaryData.incomeSummary.tally.budgetedNet"
+						/></small>
+					</div>
+					<div class="list">
+						<Accordion
+							multiple
+							@update:value="(value) => (openAccordions = new Set(value))"
+							:value="Array.from(openAccordions)"
+						>
+							<template v-for="budgetSnapshot of state.summaryData.incomeSummary.budgets">
+								<AccordionPanel
+									v-if="budgetSnapshot.tally.hasInfo"
+									:value="budgetSnapshot.budget.budget_id"
+								>
+									<AccordionHeader
+										class="budget-header flex align-items-center gap-2"
+										:class="{ shift: !isFuture && isAccordionOpen(budgetSnapshot.budget.budget_id) }"
+									>
+										<AttributionAvatar :category="budgetSnapshot.budget.Category" :size="2.5" />
+										<b>{{ budgetSnapshot.budget.memo }}</b>
+										<div class="flex-grow-1"></div>
+										<div class="flex align-items-center gap-2">
+											<div class="budget-total">
+												<Currency
+													:amount="
+														isFuture
+															? budgetSnapshot.tally.budgetedNet
+															: budgetSnapshot.tally.attributedNet
+													"
+												/>
+											</div>
+
+											<Knob
+												v-if="!isFuture"
+												class="budget-progress-knob"
+												v-model="budgetSnapshot.progress(ddate()).visualization.normalizedPercent"
+												:min="0"
+												:max="100"
+												:size="25"
+												:strokeWidth="15"
+												:valueColor="savingsColor[budgetSnapshot.progress(ddate()).status]"
+												:readonly="true"
+												:showValue="false"
+												style="padding-top: 5px"
+											/>
+										</div>
+									</AccordionHeader>
+									<AccordionContent>
+										<!-- PROGRESS BAR -->
+										<div v-if="!isFuture" class="flex align-items-center gap-3 my-2 w-full">
+											<div class="flex-grow-1">
+												<div
+													class="budget-progress-bar bg-black-alpha-10"
+													style="
+														position: relative;
+														padding: 4px 6px;
+														width: 100%;
+														border-radius: 4px;
+													"
+												>
+													<div
+														class="attributed-bar"
+														:style="{
+															position: 'absolute',
+															top: '0',
+															left: '0',
+															width:
+																Math.min(
+																	100,
+																	budgetSnapshot.progress(ddate()).visualization
+																		.normalizedPercent
+																) + '%',
+															height: '100%',
+															borderRadius: '4px',
+															backgroundColor:
+																savingsColor.muted[budgetSnapshot.progress(ddate()).status],
+														}"
+													></div>
+													<div
+														class="budget-line"
+														v-if="
+															budgetSnapshot.progress(ddate()).visualization
+																.normalizedBudgetedNet < 99
+														"
+														:style="{
+															position: 'absolute',
+															top: '-2px',
+															bottom: '-2px',
+															left:
+																budgetSnapshot.progress(ddate()).visualization
+																	.normalizedBudgetedNet + '%',
+															borderLeft: '1px solid ' + colors.gray8,
+															translate: '-51%',
+														}"
+													></div>
+													<div
+														class="pace-marker"
+														v-if="
+															budgetSnapshot.progress(ddate()).visualization.normalizedPace <
+															99
+														"
+														:style="{
+															position: 'absolute',
+															lineHeight: '0.3em',
+															fontSize: '2em',
+															translate: '-50% -100%',
+															verticalAlign: 'top',
+															top: '0',
+															left:
+																budgetSnapshot.progress(ddate()).visualization
+																	.normalizedPace + '%',
+														}"
+													>
+														▾
+													</div>
+													<div class="flex align-items-center relative">
+														<div
+															v-if="
+																Math.abs(100 - budgetSnapshot.progress(ddate()).percent) > 1
+															"
+														>
+															<Currency
+																round
+																:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining)"
+															/>
+															{{
+																budgetSnapshot.progress(ddate()).percent > 100
+																	? 'over'
+																	: 'remaining'
+															}}
+														</div>
+														<div v-else>✓</div>
+														&nbsp;
+														<!-- <div v-else-if="budgetSnapshot.progress(date()).percent < 100">
+														<Currency
+															:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining).toFixed(2)"
+														/>
+														remaining
+													</div> -->
+													</div>
+												</div>
+											</div>
+											<div>
+												<Currency :amount="budgetSnapshot.tally.budgetedNet" />
+											</div>
+										</div>
+										<template
+											v-for="event of isFuture
+												? budgetSnapshot.budgetEvents
+												: budgetSnapshot.notChildAttributions"
+										>
+											<CommonEventRow
+												:event="event"
+												@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+												expand
+											/>
+										</template>
+									</AccordionContent>
+								</AccordionPanel>
+							</template>
+							<!-- OTHER INCOME -->
+							<AccordionPanel
+								value="other-income"
+								v-if="state.summaryData.incomeSummary.tally.unBudgetedAttributions.length"
+							>
+								<AccordionHeader class="flex align-items-center gap-2">
+									<AttributionAvatar icon="money-bag" :size="2.5" :background="'lime2'" />
+									Other
+									<div class="flex-grow-1"></div>
+									<Currency :amount="state.summaryData.incomeSummary.tally.unBudgetedNet" />
+								</AccordionHeader>
+								<AccordionContent>
+									<template v-for="(event, i) of state.summaryData.incomeSummary.tally.unBudgetedAttributions">
+										<CommonEventRow
+											:event="event"
+											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+											expand
+											hideBudget
+										/>
+									</template>
+								</AccordionContent>
+							</AccordionPanel>
+						</Accordion>
+					</div>
+				</div>
+				<br />
+
+				<div>
+					<div class="flex align-items-center py-2">
+						<h3>Savings</h3>
+						<div class="flex-grow-1"></div>
+						<!-- ... -->
+					</div>
+					<div class="list">
+						<Accordion
+							multiple
+							@update:value="(value) => (openAccordions = new Set(value))"
+							:value="Array.from(openAccordions)"
+						>
+							<template v-for="budgetSnapshot of state.summaryData.transferSummary.budgets">
+								<AccordionPanel :value="budgetSnapshot.budget.budget_id">
+									<AccordionHeader
+										class="budget-header flex align-items-center gap-2"
+										:class="{ shift: !isFuture && isAccordionOpen(budgetSnapshot.budget.budget_id) }"
+									>
+										<AttributionAvatar :category="budgetSnapshot.budget.Category" :size="2.5" />
+										<b>{{ budgetSnapshot.budget.memo }}</b>
+										<div class="flex-grow-1"></div>
+										<div class="flex align-items-center gap-2">
+											<div class="budget-total">
+												<Currency
+													:amount="
+														isFuture
+															? budgetSnapshot.tally.budgetedNet
+															: budgetSnapshot.tally.attributedNet
+													"
+												/>
+											</div>
+
+											<Knob
+												v-if="!isFuture"
+												class="budget-progress-knob"
+												v-model="budgetSnapshot.progress(ddate()).visualization.normalizedPercent"
+												:min="0"
+												:max="100"
+												:size="25"
+												:strokeWidth="15"
+												:valueColor="savingsColor[budgetSnapshot.progress(ddate()).status]"
+												:readonly="true"
+												:showValue="false"
+												style="padding-top: 5px"
+											/>
+										</div>
+									</AccordionHeader>
+									<AccordionContent>
+										<!-- PROGRESS BAR -->
+										<div v-if="!isFuture" class="flex align-items-center gap-3 my-2 w-full">
+											<div class="flex-grow-1">
+												<div
+													class="budget-progress-bar bg-black-alpha-10"
+													style="
+														position: relative;
+														padding: 4px 6px;
+														width: 100%;
+														border-radius: 4px;
+													"
+												>
+													<div
+														class="attributed-bar"
+														:style="{
+															position: 'absolute',
+															top: '0',
+															left: '0',
+															width:
+																Math.min(
+																	100,
+																	budgetSnapshot.progress(ddate()).visualization
+																		.normalizedPercent
+																) + '%',
+															height: '100%',
+															borderRadius: '4px',
+															backgroundColor:
+																savingsColor.muted[budgetSnapshot.progress(ddate()).status],
+														}"
+													></div>
+													<div
+														class="budget-line"
+														v-if="
+															budgetSnapshot.progress(ddate()).visualization
+																.normalizedBudgetedNet < 99
+														"
+														:style="{
+															position: 'absolute',
+															top: '-2px',
+															bottom: '-2px',
+															left:
+																budgetSnapshot.progress(ddate()).visualization
+																	.normalizedBudgetedNet + '%',
+															borderLeft: '1px solid ' + colors.gray8,
+															translate: '-51%',
+														}"
+													></div>
+													<div
+														class="pace-marker"
+														v-if="
+															budgetSnapshot.progress(ddate()).visualization.normalizedPace <
+															99
+														"
+														:style="{
+															position: 'absolute',
+															lineHeight: '0.3em',
+															fontSize: '2em',
+															translate: '-50% -100%',
+															verticalAlign: 'top',
+															top: '0',
+															left:
+																budgetSnapshot.progress(ddate()).visualization
+																	.normalizedPace + '%',
+														}"
+													>
+														▾
+													</div>
+													<div class="flex align-items-center relative">
+														<div
+															v-if="
+																Math.abs(100 - budgetSnapshot.progress(ddate()).percent) > 1
+															"
+														>
+															<Currency
+																round
+																:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining)"
+															/>
+															{{
+																budgetSnapshot.progress(ddate()).percent > 100
+																	? 'over'
+																	: 'remaining'
+															}}
+														</div>
+														<div v-else>✓</div>
+														&nbsp;
+														<!-- <div v-else-if="budgetSnapshot.progress(date()).percent < 100">
+														<Currency
+															:amount="Math.abs(budgetSnapshot.rangeBudgetRemaining).toFixed(2)"
+														/>
+														remaining
+													</div> -->
+													</div>
+												</div>
+											</div>
+											<div>
+												<Currency :amount="budgetSnapshot.tally.budgetedNet" />
+											</div>
+										</div>
+										<template
+											v-for="event of isFuture
+												? budgetSnapshot.budgetEvents
+												: budgetSnapshot.notChildAttributions"
+										>
+											<CommonEventRow
+												:event="event"
+												@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+												expand
+											/>
+										</template>
+									</AccordionContent>
+								</AccordionPanel>
+							</template>
+							<!-- OTHER TRANSFERS -->
+							<AccordionPanel
+								value="other-transfers"
+								v-if="state.summaryData.transferSummary.tally.unBudgetedAttributions.length"
+							>
+								<AccordionHeader class="flex align-items-center gap-2">
+									<AttributionAvatar icon="transfer" :size="2.5" :background="'sky1'" />
+									Other Transfers
+									<div class="flex-grow-1"></div>
+									<Currency
+										:amount="state.summaryData.transferSummary.tally.unBudgetedNet"
+										mode="net_change"
+									/>
+								</AccordionHeader>
+								<AccordionContent>
+									<template
+										v-for="(event, i) of state.summaryData.transferSummary.tally.unBudgetedAttributions"
+									>
+										<CommonEventRow
+											:event="event"
+											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+											expand
+											hideBudget
+										/>
+									</template>
+								</AccordionContent>
+							</AccordionPanel>
+						</Accordion>
 					</div>
 				</div>
 			</div>
-		</template>
+			<!-- <Button label="Test Drawer" @click="() => showTestDrawer = true" /> -->
+		</div>
+
 
 		<TransactionDetailsDrawer ref="transactionDetailsDrawer" :key="viewingTransaction?.transaction_id" />
 
@@ -1572,10 +1592,31 @@ const accumulationChart = computed(() => {
 			</div>
 		</div>
 	</main>
-	<!-- ...existing code... -->
+
+	<Dialog
+		:visible="showTestDrawer"
+		@hide="showTestDrawer = false"
+	>
+		TEST DRAWER
+		<Button label="Close" @click="showTestDrawer = false" />
+	</Dialog>
 </template>
 
 <style scoped lang="scss">
+.column-layout {
+	display: flex;
+	gap: 2rem;
+
+	&.mobile {
+		flex-direction: column-reverse;
+	}
+
+	&:not(.mobile) > div {
+		flex: 1;
+		width: 50%;
+	}
+}
+
 .list {
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }

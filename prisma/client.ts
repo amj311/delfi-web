@@ -1,6 +1,38 @@
 import { PrismaClient } from "@prisma/client";
 
-export const prisma = new PrismaClient();
+
+function spreadDeletedQuery({ args, query }) {
+	args.where = { deleted_at: null, ...(args.where ?? {}) };
+	return query(args);
+}
+
+const basePrisma = new PrismaClient();
+
+export const prisma = new PrismaClient().$extends({
+	// query: {
+	// 	transaction: {
+	// 		findFirst: spreadDeletedQuery,
+	// 		findFirstOrThrow: spreadDeletedQuery,
+	// 		findMany: spreadDeletedQuery,
+	// 		findUnique: spreadDeletedQuery,
+	// 		findUniqueOrThrow: spreadDeletedQuery,
+	// 		count: spreadDeletedQuery,
+			
+	// 		delete({ args }) {
+	// 			return basePrisma.transaction.update({
+	// 				where: args.where,
+	// 				data: { deleted_at: new Date() },
+	// 			})
+	// 		},
+	// 		deleteMany({ args }) {
+	// 			return basePrisma.transaction.updateMany({
+	// 				where: args.where,
+	// 				data: { deleted_at: new Date() },
+	// 			})
+	// 		}
+	// 	}
+	// },
+});
 
 export type Tx = Omit<typeof prisma, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
 

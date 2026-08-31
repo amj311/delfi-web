@@ -128,12 +128,15 @@ class TransactionDaoClass extends PrismaDao {
 		return found ? this.dbToTransaction(found) : null;
 	}
 
-	async getTransactionsForAccount(workspace_id: string, account_id: string): Promise<Transaction[]> {
+	async getTransactionsForAccount(workspace_id: string, account_id: string, range?: { start: string, end: string }): Promise<Transaction[]> {
 		const transactions = await this.db.transaction.findMany({
 			where: {
 				workspace_id,
 				account_id,
 				done_pending: false,
+				...(range ? {
+					date: { gte: range.start, lte: range.end },
+				} : {}),
 			},
 			include: commonInclude,
 			orderBy: commonOrder,
@@ -523,11 +526,14 @@ class TransactionDaoClass extends PrismaDao {
 	}
 
 	async deleteTransaction(workspace_id: string, transaction_id: string): Promise<void> {
-		await this.db.transaction.delete({
+		await this.db.transaction.update({
 			where: {
 				transaction_id,
 				workspace_id,
 			},
+			data: {
+				deleted_at: new Date(),
+			}
 		});
 	}
 };

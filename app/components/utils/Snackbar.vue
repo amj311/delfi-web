@@ -15,7 +15,7 @@ defineProps<{
 	<Transition
 		name="snackbar"
 		tag="div"
-		enter-active-class="fadeinup"
+		enter-active-class="fadeindown"
 		leave-active-class="fadeoutdown"
 	>
 		<div v-if="visible" class="snackbar p-dialog">

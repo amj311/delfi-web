@@ -332,6 +332,49 @@ export class TransactionServiceClass extends DaoUser {
 			}
 		}
 	}
+
+	/**
+	 * Deletes transactions which no longer exist in the bank source.
+	 * This usually happens because the bank has shifted some of the details.
+	 * The sync is expected to contain the FULL record from the bank for the time period, so any
+	 * transactions we have that don't exist in it can be removed.
+	 * 
+	 * @param workspace_id 
+	 * @param account_id 
+	 * @param transactions 
+	 */
+	public async removeGhostTransactionsFromSync(workspace_id: string, account_id: string, transactions: Array<CreateTransaction>) {
+		// assume date range from transactions, but hedge forward in case the end doesn't have a full day
+		let earliestDate!: DelfiDate;
+		let latestDate!: DelfiDate;
+		for (const tx of transactions) {
+			if (!latestDate || tx.date > latestDate) {
+				latestDate = tx.date;
+			}
+			if (!earliestDate || tx.date < earliestDate) {
+				earliestDate = tx.date;
+			}
+		}
+		earliestDate.add(1, 'day');
+
+		// load transactions from range
+		const existingTransactions = await TransactionDao.getTransactionsForAccount(workspace_id, account_id, { start: earliestDate.toString(), end: latestDate.toString() });
+		for (const tx of existingTransactions) {
+			let isGhost = true;
+			for (const newTx of transactions) {
+				if (
+					newTx.date.toString() === tx.date.toString()
+					&& tx.original_description === newTx.original_description
+					&& tx.amount === newTx.amount
+				) {
+					isGhost = false;
+				}
+			}
+			if (isGhost) {
+				await TransactionDao.deleteTransaction(workspace_id, tx.transaction_id);
+			}
+		} 
+	}
 };
 
 export const TransactionService = new TransactionServiceClass();

@@ -17,6 +17,18 @@ export const useAppStore = defineStore('app', () => {
 	}
 	window.addEventListener('touchstart', detectTouch);
 
+	const isMobile = ref(false);
+
+	/**
+	 * Checks if the device is mobile based on screen width
+	 */
+	function checkMobileScreen() {
+		isMobile.value = window.innerWidth < 576;
+	}
+
+	checkMobileScreen();
+	window.addEventListener('resize', checkMobileScreen);
+
 	watch(isTouch, (newVal) => {
 		if (newVal) {
 			document.body.classList.add('touch');
@@ -27,5 +39,6 @@ export const useAppStore = defineStore('app', () => {
 
 	return {
 		isTouch,
+		isMobile,
 	};
 })
