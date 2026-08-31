@@ -26,37 +26,67 @@ function updateSwipeDelta(val) {
 	swipeDelta.value = Math.min(props.onLeft ? swipeDistance : 0, Math.max(props.onRight ? -swipeDistance : 0, val));
 }
 
-const discardSwipe = ref(false);
+const hasDeterminedSlideState = ref(false);
+const isSliding = ref(false);
 
 onMounted(() => {
 	if (sliderRef.value) {
+
+		/**
+		 * TOUCH SEQUENCE
+		 * 
+		 * Start: initial x,y recorded
+		 * Move, stage 1: determine initial direction only, set sliding state
+		 * Move, stage 2: If sliding was detected prior, update x,y
+		 * End: remove sliding state, handle next actions
+		 */
 		sliderRef.value.addEventListener('touchstart', (e) => {
 			e.stopPropagation();
 			const touch = e.touches[0];
 			touchStartX = touch.clientX;
 			touchStartY = touch.clientY;
 			sliderRef.value?.classList.add('no-transition');
-			discardSwipe.value = false;
+			hasDeterminedSlideState.value = false;
+			isSliding.value = false;
 		}, { passive: true });
 
 		sliderRef.value.addEventListener('touchmove', (e) => {
-			if (discardSwipe.value || (!props.onLeft && !props.onRight)) return;
-			e.stopPropagation();
+			if (!props.onLeft && !props.onRight) return;
+			
+			// abort if we've already determined we are not sliding
+			if (hasDeterminedSlideState.value && !isSliding.value) {
+				return;
+			}
+
+			// Updates
 			const touch = e.touches[0];
 			const deltaX = touch.clientX - touchStartX as number;
 			const deltaY = touch.clientY - touchStartY as number;
-			if (deltaX !== 0 && Math.abs(deltaX) > deltaY && Math.abs(deltaX) > 5) {
-				document.body.classList.add('prevent-scroll');
-				updateSwipeDelta(deltaX);
-			} else {
-				document.body.classList.remove('prevent-scroll');
-				updateSwipeDelta(0);
-				discardSwipe.value = true;
+
+			// Stage 1: determine initial slide direction
+			if (!hasDeterminedSlideState.value) {
+				if (Math.abs(deltaY) > 2) {
+					hasDeterminedSlideState.value = true;
+					isSliding.value = false;
+					return;
+				}
+				if (Math.abs(deltaX) > 5) {
+					hasDeterminedSlideState.value = true;
+					isSliding.value = true;
+				}
+				return;
 			}
+
+			// Stage 2: just update sliding value
+			e.stopPropagation();
+			document.body.classList.add('prevent-scroll');
+			updateSwipeDelta(deltaX);
 		}, { passive: true });
 
 		document.addEventListener('touchend', (e) => {
 			e.stopPropagation();
+			hasDeterminedSlideState.value = false;
+			isSliding.value = false;
 			sliderRef.value?.classList.remove('no-transition');
 			document.body.classList.remove('prevent-scroll');
 			attemptTriggers();
