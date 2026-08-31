@@ -37,7 +37,7 @@ onMounted(() => {
 		 * 
 		 * Start: initial x,y recorded
 		 * Move, stage 1: determine initial direction only, set sliding state
-		 * Move, stage 2: If sliding was detected prior, update x,y
+		 * Move, stage 2: If sliding was detected prior, update slide delta
 		 * End: remove sliding state, handle next actions
 		 */
 		sliderRef.value.addEventListener('touchstart', (e) => {
