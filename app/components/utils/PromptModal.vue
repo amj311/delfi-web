@@ -13,7 +13,7 @@ import type { Replace } from 'delfi-core/utils/typeUtils';
 export type PromptOptions = {
 	title?: string;
 	message?: string;
-	preset?: 'prompt' | 'confirm' | 'delete';
+	preset?: 'prompt' | 'confirm' | 'delete' | 'archive';
 	fields?: Array<FieldConfig>;
 	okButtonProps?: ButtonProps;
 	cancelButtonProps?: ButtonProps;
@@ -49,6 +49,18 @@ const Presets: Record<string, PromptConfig> = {
 		message: 'Are you sure you want to delete this item?',
 		okButtonProps: {
 			label: 'Delete',
+			severity: 'danger',
+		},
+		cancelButtonProps: {
+			severity: 'secondary',
+		},
+		fields: [],
+	},
+	archive: {
+		title: 'Archive',
+		message: 'Are you sure you want to archive this item?',
+		okButtonProps: {
+			label: 'Archive',
 			severity: 'danger',
 		},
 		cancelButtonProps: {

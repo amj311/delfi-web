@@ -14,6 +14,7 @@ import TransactionImport from './TransactionImport.vue';
 import DrawerModal from '@/components/utils/DrawerModal.vue';
 import Button from 'primevue/button';
 import dayjs from 'dayjs';
+import { usePrompt } from '@/components/utils/PromptModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -186,7 +187,12 @@ async function submitOtp() {
 }
 async function archiveAccount() {
 	if (!account.value) return;
-	if (!confirm('Are you sure you want to archive this account? Transactions will still be visible.')) return;
+	const result = await usePrompt().prompt({
+		preset: 'archive',
+		message: "Are you sure you want to archive this account? Transactions will still be visible.",
+	})
+	if (!result?.confirmed) return;
+
 	try {
 		await accountStore.archiveAccount(accountId.value);
 		useToast().add({
@@ -224,7 +230,7 @@ async function archiveAccount() {
 				<div class="flex-grow-1"></div>
 				<Button @click="openImport" text icon="pi pi-file-import" severity="secondary"></Button>
 				<Button @click="reload" text icon="pi pi-replay" severity="secondary"></Button>
-				<Button v-if="!account?.archived" @click="archiveAccount" text icon="pi pi-archive" severity="secondary" :title="'Archive account'"></Button>
+				<Button v-if="!account?.archived" @click="archiveAccount" text icon="pi pi-eye-slash" severity="secondary" :title="'Archive account'"></Button>
 				<!-- <button @click="openEditModal" class="btn primary">Edit Account</button> -->
 			</div>
 
