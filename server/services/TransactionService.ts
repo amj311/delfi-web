@@ -95,6 +95,14 @@ export class TransactionServiceClass extends DaoUser {
 		// );
 	}
 
+	/**
+	 * INCOMING TRANSACTIONS MUST ALREADY HAVE DATE ORDERS BY NOW
+	 * @param workspace_id 
+	 * @param account_id 
+	 * @param incomingTransactions 
+	 * @param doReviews 
+	 * @returns 
+	 */
 	public async ingestNewTransactionsForAccount(workspace_id: string, account_id: string, incomingTransactions: CreateTransaction[], doReviews = true) {
 		const results = {
 			upsertResults: [] as Awaited<ReturnType<typeof this.ingest_writeTransactions>>,
@@ -172,12 +180,9 @@ export class TransactionServiceClass extends DaoUser {
 
 	/**
 	 * Isolated process for upserting transactions from import source.
+	 * INCOMING TRANSACTIONS MUST ALREADY HAVE DATE ORDerS BY HERE!
 	 */
 	private async ingest_writeTransactions(workspace_id: string, account_id: string, incomingTransactions: CreateTransaction[]) {
-		// First, assign date orders to incoming transactions. When doing so, make sure to preserve any existing date orders.
-		// THE TRANSACTIONS MUST BE A COMPLETE SET OF ALL TRANSACTIONS FOR THE DATES INVOLVED
-		incomingTransactions = TransactionUtils.assignDateOrders(incomingTransactions);
-
 		const oldPendingTransactions = await TransactionDao.getPendingForAccount(workspace_id, account_id);
 
 		// FIRST UPDATE PENDING TRANSACTIONS!
@@ -363,7 +368,7 @@ export class TransactionServiceClass extends DaoUser {
 			let isGhost = true;
 			for (const newTx of transactions) {
 				if (
-					newTx.date.toString() === tx.date.toString()
+					newTx.date_order === tx.date_order
 					&& tx.original_description === newTx.original_description
 					&& tx.amount === newTx.amount
 				) {
@@ -371,6 +376,7 @@ export class TransactionServiceClass extends DaoUser {
 				}
 			}
 			if (isGhost) {
+				console.log("Soft deleting ghost transaction", tx.transaction_id);
 				await TransactionDao.deleteTransaction(workspace_id, tx.transaction_id);
 			}
 		} 

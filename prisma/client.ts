@@ -9,29 +9,29 @@ function spreadDeletedQuery({ args, query }) {
 const basePrisma = new PrismaClient();
 
 export const prisma = new PrismaClient().$extends({
-	// query: {
-	// 	transaction: {
-	// 		findFirst: spreadDeletedQuery,
-	// 		findFirstOrThrow: spreadDeletedQuery,
-	// 		findMany: spreadDeletedQuery,
-	// 		findUnique: spreadDeletedQuery,
-	// 		findUniqueOrThrow: spreadDeletedQuery,
-	// 		count: spreadDeletedQuery,
+	query: {
+		transaction: {
+			findFirst: spreadDeletedQuery,
+			findFirstOrThrow: spreadDeletedQuery,
+			findMany: spreadDeletedQuery,
+			findUnique: spreadDeletedQuery,
+			findUniqueOrThrow: spreadDeletedQuery,
+			count: spreadDeletedQuery,
 			
-	// 		delete({ args }) {
-	// 			return basePrisma.transaction.update({
-	// 				where: args.where,
-	// 				data: { deleted_at: new Date() },
-	// 			})
-	// 		},
-	// 		deleteMany({ args }) {
-	// 			return basePrisma.transaction.updateMany({
-	// 				where: args.where,
-	// 				data: { deleted_at: new Date() },
-	// 			})
-	// 		}
-	// 	}
-	// },
+			delete({ args }) {
+				return basePrisma.transaction.update({
+					where: args.where,
+					data: { deleted_at: new Date() },
+				})
+			},
+			deleteMany({ args }) {
+				return basePrisma.transaction.updateMany({
+					where: args.where,
+					data: { deleted_at: new Date() },
+				})
+			}
+		}
+	},
 });
 
 export type Tx = Omit<typeof prisma, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;

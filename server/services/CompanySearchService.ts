@@ -2,6 +2,7 @@
  * Company search service - Utility for finding company websites
  */
 import axios from 'axios';
+import { PromiseQueue } from 'delfi-core/utils/PromiseQueue';
 import { norm, similarityScore } from 'delfi-core/utils/textSimilarity';
 
 interface CompanySearchResult {
@@ -12,6 +13,9 @@ interface CompanySearchResult {
 	title: string;
 	snippet: string;
 }
+
+const RATE_LIMIT_SECOND = 1000;
+const LangSearchQueue = new PromiseQueue({ minInterval: RATE_LIMIT_SECOND + 100 });
 
 export default class CompanySearchService {
 	/**
@@ -52,18 +56,18 @@ export default class CompanySearchService {
 			// });
 
 			const allResults = await Promise.all(searchStrings.map(async (searchStr, i) => {
-				// Mind the rate limit
-				console.log("searching for ", searchStr);
-				await new Promise(resolve => setTimeout(resolve, i * 2000)); // stagger requests
-				return await axios.post('https://api.langsearch.com/v1/web-search', {
-					query: searchStr,
-					num_results: numResults
-				}, {
-					headers: {
-						'Content-Type': 'application/json',
-						'Authorization': `Bearer ${apiKey}`
-					}
-				});
+				return await LangSearchQueue.add(async () => {
+					console.log("doing lang search")
+					return axios.post('https://api.langsearch.com/v1/web-search', {
+						query: searchStr,
+						num_results: numResults
+					}, {
+						headers: {
+							'Content-Type': 'application/json',
+							'Authorization': `Bearer ${apiKey}`
+						}
+					});
+				})
 			}));
 
 			// Extract and score the search results

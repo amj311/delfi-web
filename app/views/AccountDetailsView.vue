@@ -423,7 +423,7 @@ async function archiveAccount() {
 						>
 							{{ event.date.format('full') }}
 						</h4>
-						<CommonEventRow  :event="event" showTransferCopy :size="2.3" hideAccount @click="() => viewTransaction(event.attributionDetails.sourceTransaction)" />
+						<CommonEventRow  :event="event" showTransferCopy hideAccount @click="() => viewTransaction(event.attributionDetails.sourceTransaction)" />
 					</template>
 				</div>
 			</div>

@@ -161,6 +161,7 @@ export default {
 	position: fixed;
 	z-index: 99999;
 	top: 0;
+	left: 0;
 	width: 100%;
 	height: 0;
 

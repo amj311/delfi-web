@@ -4,7 +4,7 @@ import { JobService } from "./JobService";
 import { ScraperService } from "./scraper/ScraperService";
 import { TransactionService } from "./TransactionService";
 import { WorkspaceDao } from "server/data/WorkspaceDao";
-import type { CreateTransaction, Transaction } from "delfi-core/models/Transaction";
+import { TransactionUtils, type CreateTransaction, type Transaction } from "delfi-core/models/Transaction";
 import type { AccountDetails } from "delfi-core/models/Account";
 import type { CategoryKey } from "delfi-core/models/systemCategories";
 import { CategoryDao } from "server/data/CategoryDao";
@@ -89,13 +89,16 @@ export class SyncService {
 				});
 			} else {
 				// Hydrate data from sync
-				const parsedTransactions: Array<SyncedTransactionDetails> = result.transactions.map(tx => ({ ...tx, date: ddate(tx.date) }));
+				let parsedTransactions: Array<SyncedTransactionDetails> = result.transactions.map(tx => ({ ...tx, date: ddate(tx.date) }));
+				// First, assign date orders to incoming transactions. When doing so, make sure to preserve any existing date orders.
+				// THE TRANSACTIONS MUST BE A COMPLETE SET OF ALL TRANSACTIONS FOR THE DATES INVOLVED
+				parsedTransactions = TransactionUtils.assignDateOrders(parsedTransactions);
 
 				// handle cleaning up stale transactions.
 				// Some bank portals will shift the data of a transaction within a few days of it posting
 				// This process makes sure that we don't duplicate transactions when this happens.
 				// Essentially, any transaction must remain unchanged for a few days to stick in our DB
-				// await TransactionService.removeGhostTransactionsFromSync(workspace_id, result.account_id, parsedTransactions);
+				await TransactionService.removeGhostTransactionsFromSync(workspace_id, result.account_id, parsedTransactions);
 
 				const transactionsWithCategories = await Promise.all(parsedTransactions.map(async (tx): Promise<CreateTransaction> => {
 					const categoryMapping = await CategoryDao.getWorkspaceCategoryMappingByDetectionKey(workspace_id, tx.category_key);
