@@ -77,16 +77,14 @@ function interceptInput(e) {
 </script>
 
 <template>
-	<div class="p-inputnumber p-component p-inputwrapper p-inputwrapper-filled">
-		<input
-			:id="inputId"
-			class="p-inputtext p-component p-filled p-inputnumber-input text-right"
-			ref="input"
-			inputmode="numeric"
-			pattern="\d*"
-			@input="interceptInput"
-		/>
-	</div>
+	<input
+		:id="inputId"
+		class="p-inputtext p-component p-filled p-inputnumber-input w-full text-right"
+		ref="input"
+		inputmode="numeric"
+		pattern="\d*"
+		@input="interceptInput"
+	/>
 </template>
 
 <style scoped></style>

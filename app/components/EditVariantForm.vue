@@ -74,7 +74,7 @@ const MONTHS = [
 					...budget for
 					<Select :options="triggerOperatorOptions" optionLabel="label" optionValue="value" v-model="variant.amountTemplate.trigger.computation.operator" />
 					<InputNumber v-if="['percent', 'div', 'mult'].includes(variant.amountTemplate.trigger.computation.operator)" style="width: 7em" v-model="variant.amountTemplate.trigger.computation.operand"/>
-					<InputCurrency v-else style="width: 7em" v-model="variant.amountTemplate.trigger.computation.operand"/>
+					<InputCurrency v-else :style="{ flex: '0 0 7rem' }" v-model="variant.amountTemplate.trigger.computation.operand"/>
 				</div>
 				<!-- {{ variant.amountTemplate.trigger.computation }} -->
 				  
