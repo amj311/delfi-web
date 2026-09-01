@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useBudgetStore } from '@/stores/budget.store';
-import { BudgetType, RecurrenceType, type Budget } from '../../delfi-core/models/Budget';
+import { BudgetDisplayShape, RecurrenceType, type Budget } from '../../delfi-core/models/Budget';
 import { computed, reactive, toRefs } from 'vue';
 import { useAccountStore } from '@/stores/account.store';
 import { useDelfiStore } from '@/stores/delfi.store';
@@ -66,16 +66,16 @@ const deleteBudget = async () => {
 	<div><label for="memo">Memo</label><input id="memo" v-model="state.data.memo" /></div>
 	<div><label for="type">Type</label>
 		<select id="type" v-model="state.data.type">
-			<option v-for="ptype in BudgetType" :key="ptype">{{ptype}}</option>
+			<option v-for="ptype in BudgetDisplayShape" :key="ptype">{{ptype}}</option>
 		</select>
 	</div>
-	<div><label for="target_account">{{ state.data.type === BudgetType.TRANSFER ? 'From ' : '' }}Account</label>
+	<div><label for="target_account">{{ state.data.type === BudgetDisplayShape.TRANSFER ? 'From ' : '' }}Account</label>
 		<select id="type" v-model="state.data.account_id">
 			<option v-for="account in accountStore.accounts" :key="account.account_id" :value="account.account_id">{{account.display_name}}</option>
 		</select>
 	</div>
 
-	<div v-if="state.data.type === BudgetType.TRANSFER">
+	<div v-if="state.data.type === BudgetDisplayShape.TRANSFER">
 		<label for="origin_account">To Account</label>
 		<select id="origin_account" v-model="state.data.origin_account_id">
 			<option v-for="account in accountStore.accounts" :key="account.account_id" :value="account.account_id">{{account.display_name}}</option>

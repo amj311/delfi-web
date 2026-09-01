@@ -1,4 +1,5 @@
-@import './base.css';
+@use './base.css';
+@use 'primeflex/primeflex.css';
 @import 'prime.css';
 
 #app {
@@ -86,6 +87,55 @@ body .hover-show-trigger:hover .hover-show {
 }
 
 
+
+
+
+.flex-column {
+	display: flex;
+}
+
+.flex-row-center {
+	@extend .flex;
+	@extend .align-items-center;
+}
+
+.flex-row-stretch {
+	@extend .flex;
+	@extend .align-items-stretch;
+}
+
+.flex-col-center {
+	@extend .flex;
+	@extend .flex-column;
+	@extend .align-items-center;
+}
+
+.flex-center-all {
+	@extend .flex;
+	@extend .align-items-center;
+	@extend .justify-content-center;
+}
+
+
+.absolute-full {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.bg-contain {
+	background-position: center;
+	background-size: contain;
+	background-repeat: no-repeat;
+}
+
+.bg-cover {
+	background-position: center;
+	background-size: contain;
+	background-repeat: no-repeat;
+}
 
 .absolute-center {
 	position: absolute;

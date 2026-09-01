@@ -30,6 +30,7 @@ import { currency } from 'delfi-core/utils/miscUtils';
 import CollapseList from '@/components/utils/CollapseList.vue';
 import Dialog from 'primevue/dialog';
 import { useAppStore } from '@/stores/app.store';
+import UpsertBudgetDrawer from '@/components/UpsertBudgetDrawer.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -482,6 +483,11 @@ const accumulationChart = computed(() => {
 		],
 	};
 });
+
+const upsertBudgetDrawer = ref<InstanceType<typeof UpsertBudgetDrawer>>();
+function openBudgetEditor(budget: Budget) {
+	upsertBudgetDrawer.value?.open(budget);
+}
 </script>
 
 <template>
@@ -785,6 +791,16 @@ const accumulationChart = computed(() => {
 											<div>
 												<Currency :amount="budgetSnapshot.tally.budgetedNet" />
 											</div>
+										</div>
+										<div class="text-right">
+											<Button
+												icon="pi pi-pencil"
+												text
+												severity="secondary"
+												size="small"
+												@click="openBudgetEditor(budgetSnapshot.budget)"
+												label="Edit"
+											/>
 										</div>
 										<div v-for="childItem of budgetSnapshot.childItemBudgets" class="list-row">
 											<AttributionAvatar :categoryId="childItem.category_id" :size="1.9">
@@ -1474,6 +1490,11 @@ const accumulationChart = computed(() => {
 
 
 		<TransactionDetailsDrawer ref="transactionDetailsDrawer" :key="viewingTransaction?.transaction_id" />
+
+		<!-- Budget Editor Drawer -->
+		<UpsertBudgetDrawer
+			ref="upsertBudgetDrawer"
+		/>
 
 		<div class="hidden">
 			<!-- <div style="padding: 20px; background: #ebe6fa" />

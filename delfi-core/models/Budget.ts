@@ -13,14 +13,38 @@ export enum RecurrenceType {
 	TRIGGER = "TRIGGER",
 }
 
-export enum BudgetType {
-	TRANSACTION = "TRANSACTION",
-	TRANSFER = "TRANSFER",
-}
+
+export const BudgetDisplayShapes = {
+	INCOME: {
+		value: 'INCOME',
+		label: 'INCOME',
+	},
+	EXPENSE: {
+		value: 'EXPENSE',
+		label: 'EXPENSE',
+	},
+	SAVINGS: {
+			value: 'SAVINGS',
+			label: 'SAVINGS',
+	},
+	TRANSFER: {
+			value: 'TRANSFER',
+			label: 'TRANSFER',
+	},
+} as const;
+
+export type BudgetDisplayShape = keyof typeof BudgetDisplayShapes;
+
 
 export type BudgetedTransactionDetails = BudgetableTransactionDetails & {
 	memo: string,
-	budgetType: BudgetType,
+	/**
+	 * Effects how this budget is displayed for user convenience.
+	 * Enables some quality-of-life features and presets.
+	 * DOES NOT change any of the budgets behavior or computation.
+	 * That is all covered by other type-agnostic settings.
+	 */
+	displayShape: BudgetDisplayShape,
 	notes?: string | null,
 	origin_account_id?: string, // The account from which the transaction is made (for transfers)
 	origin_account_partition_id?: string, // The partition from which the transaction is made (for transfers)
@@ -78,7 +102,7 @@ type BudgetOccurrenceSchedule = Pick<SingleSchedule, 'start' | 'end' | 'frequenc
 /** Used to compute the projected dates within a budget occurrence */
 type BudgetProjectionSchedule = Pick<SingleSchedule, 'byMonthOfYear' | 'byDayOfMonth' | 'byDayOfWeek' | 'interval' | 'frequency'>;
 
-type ScheduleVariant = {
+export type ScheduleVariant = {
 	schedule_variant_id?: string, // Unique ID for the variant
 	schedule: BudgetOccurrenceSchedule, // Schedule start and end dates define the variant's boundaries. Variants may not overlap.
 	/** If missing, budget will be projected on start date */
@@ -413,7 +437,7 @@ export default class BudgetUtils {
 	static copyTransactionDetails(source: BudgetedTransactionDetails): BudgetedTransactionDetails {
 		return {
 			memo: source.memo,
-			budgetType: source.budgetType,
+			displayShape: source.displayShape,
 			account_id: source.account_id,
 			target_account_partition_id: source.target_account_partition_id,
 			origin_account_id: source.origin_account_id,

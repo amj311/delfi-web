@@ -153,7 +153,7 @@ const isSelected = computed(() => transactionSelectionStore.selection.isSelected
 							transactionSelectionStore.selection.toggle(event);
 						}"
 					>
-						<AttributionAvatar :event="event" :size="size" :style="{ opacity: showLoading ? 0.5 : 1 }">
+						<AttributionAvatar :event="event" :size="size" :style="{ opacity: showLoading ? 0.5 : 1 }" :square="isAttribution">
 							<template #badge v-if="event.attributionDetails?.isSplit">
 								<Icon source_id="arrow_split" source="material-symbols" />
 							</template>
@@ -165,7 +165,7 @@ const isSelected = computed(() => transactionSelectionStore.selection.isSelected
 							</template>
 						</AttributionAvatar>
 						<div class="selected-indicator absolute-center">
-							<AttributionAvatar :size="size" :style="{ opacity: showLoading ? 0.5 : 1 }" icon="material-symbols::check" :background="colors.blue1" />
+							<AttributionAvatar :size="size" :style="{ opacity: showLoading ? 0.5 : 1 }" icon="material-symbols::check" :background="colors.blue1" :square="isAttribution" />
 						</div>
 						<i v-if="showLoading" class="pi pi-spin pi-spinner absolute-center" />
 						<div v-if="event.attributionDetails?.needsReview" class="review-dot" />
@@ -283,13 +283,13 @@ const isSelected = computed(() => transactionSelectionStore.selection.isSelected
 		}
 
 		.review-bold {
-			font-weight: 600 !important;
+			font-weight: 750 !important;
 		}
 
 		.review-dot {
 			position: absolute;
-			top: -1px;
-			left: -1px;
+			top: -3px;
+			left: -3px;
 			width: 10px;
 			aspect-ratio: 1;
 			border-radius: 50%;

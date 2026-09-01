@@ -57,6 +57,7 @@ export const ddate = (input: DelfiDateConfig = new Date()) => {
 	}
 	d.isFuture = () => d.isAfter(ddate());
 	d.isToday = () => d.isSame(ddate());
+	d.toDate = () => new Date(d.toString());
 
 	const proxyMethods = [ 'add', 'subtract', 'startOf', 'endOf'] as const;
 	for (const method of proxyMethods) {

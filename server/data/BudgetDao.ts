@@ -130,7 +130,7 @@ export class BudgetDao {
 		return {
 			memo: budgetData.memo,
 			budget_id: budgetData.budget_id || undefined,
-			transaction_type: budgetData.budgetType,
+			transaction_type: budgetData.displayShape,
 			recurrence_type: budgetData.recurrence_type,
 
 			// ACCOUNTS

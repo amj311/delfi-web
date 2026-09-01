@@ -1,7 +1,7 @@
 import { MONTHS, TagColor } from "../../delfi-core/utils/constants";
 import { categoryByName, categoriesArray, flatCategoriesMap, defaultKeyToSystemCategoryMap, type CategoryKey } from "../../delfi-core/models/systemCategories";
 import type { TransactionRule } from "delfi-core/models/TransactionRule";
-import { BudgetType, RecurrenceType, type Budget, type TriggeredBudget } from "../../delfi-core/models/Budget";
+import { BudgetDisplayShapes, RecurrenceType, type Budget } from "../../delfi-core/models/Budget";
 import { ddate } from "../../delfi-core/utils/dateUtils";
 import { AccountSubtype, AccountType, type Account, type Institution } from "../../delfi-core/models/Account";
 import { AccountService } from "./AccountService";
@@ -389,7 +389,7 @@ export class TestDataService {
 			 */
 			{
 				budget_id: 'fe89138d-43e6-4733-aa6e-77b4f76e8582',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Arthur Life Insurance",
 				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -406,7 +406,7 @@ export class TestDataService {
 			},
 			{
 				budget_id: 'a3c1d3e4-5f6a-7890-abcd-ef0123456789',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Rachel Life Insurance",
 				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -423,7 +423,7 @@ export class TestDataService {
 			},
 			{ // Car Insurance
 				budget_id: 'd3e4f5a6-7890-abcd-ef01-234567890123',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Car Insurance",
 				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -443,7 +443,7 @@ export class TestDataService {
 
 			{
 				budget_id: 'd4e5f6a7-8901-abcd-ef01-234567890123',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Clozd Salary",
 				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -460,7 +460,7 @@ export class TestDataService {
 			},
 			{
 				budget_id: '0023f6a7-8901-abcd-ef01-234567895002',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "HSA Contribution",
 				account_id: getAccountByName('Health Savings Account').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -516,7 +516,7 @@ export class TestDataService {
 
 			{
 				budget_id: '7c13f6a7-8901-abcd-ef01-234567895f3b',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Clozd Bonus",
 				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -535,7 +535,7 @@ export class TestDataService {
 
 			{
 				budget_id: '0043f6a7-8901-abcd-ef01-234567895004',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Clozd Equity Purchase",
 				account_id: getAccountByName('Checking').account_id,
 				recurrence_type: RecurrenceType.SCHEDULE,
@@ -553,7 +553,7 @@ export class TestDataService {
 
 			{
 				budget_id: 'c5d6e7f8-9012-abcd-ef01-234567890123',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Tithing",
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Church Donations").category_id,
@@ -589,7 +589,7 @@ export class TestDataService {
 			},
 			{
 				budget_id: 'd6e7f8a9-0123-abcd-ef01-234567890123',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Fast Offering",
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Charitable Donations").category_id,
@@ -607,7 +607,7 @@ export class TestDataService {
 
 			{
 				budget_id: 'd7e8f9a0-1234-abcd-ef01-234567890123',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Mortgage",
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Mortgage & Rent").category_id,
@@ -642,7 +642,7 @@ export class TestDataService {
 			},
 			{
 				budget_id: 'd8e9f0a1-2345-abcd-ef01-234567890123',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "HOA",
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Home Services").category_id,
@@ -659,7 +659,7 @@ export class TestDataService {
 			},
 			{
 				budget_id: 'd9e0f1a2-3456-abcd-ef01-234567890123',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Gas Bill",
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Gas Bill").category_id,
@@ -689,7 +689,7 @@ export class TestDataService {
 			},
 			{
 				budget_id: 'a20e1f2-4567-abcd-ef01-234567890123',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Power Bill",
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Electric Bill").category_id,
@@ -719,7 +719,7 @@ export class TestDataService {
 			},
 			{
 				budget_id: 'b30e1f2-4567-abcd-ef01-234567890123',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Internet",
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Internet").category_id,
@@ -737,7 +737,7 @@ export class TestDataService {
 
 			{
 				budget_id: 'adeff2-4567-abcd-ef01-234567897935',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Phone Bill",
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Phone Plan").category_id,
@@ -755,7 +755,7 @@ export class TestDataService {
 
 			{
 				budget_id: 'c40e1f2-4567-abcd-ef01-234567890123',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Preschool",
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Tuition").category_id,
@@ -772,7 +772,7 @@ export class TestDataService {
 			},
 			{
 				budget_id: 'd50e1f2-4567-abcd-ef01-234567890123',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Rachel Focus Babysitter",
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Babysitter & Daycare").category_id,
@@ -792,7 +792,7 @@ export class TestDataService {
 			// KIDS ACTIVITIES
 			{
 				budget_id: '001e1f2-4567-abcd-ef01-234567890001',
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				memo: "Nana Dance",
 				account_id: getAccountByName('Checking').account_id,
 				category_id: categoryByName("Sports and Activities").category_id,
@@ -812,7 +812,7 @@ export class TestDataService {
 			 */
 			{
 				budget_id: 'e12f34a5-67b8-90cd-ef12-345678901234',
-				budgetType: BudgetType.TRANSFER,
+				displayShape: BudgetDisplayShapes.TRANSFER.value,
 				memo: "Car Savings",
 				account_id: getAccountByName('Expense Savings').account_id,
 				origin_account_id: getAccountByName('Checking').account_id,
@@ -830,7 +830,7 @@ export class TestDataService {
 			},
 			{
 				budget_id: 'f13a34a5-67b8-90cd-ef12-345678901335',
-				budgetType: BudgetType.TRANSFER,
+				displayShape: BudgetDisplayShapes.TRANSFER.value,
 				memo: "Hannah-Claire Savings",
 				account_id: getAccountByName('Checking').account_id,
 				// account_id: getAccountByName('Expense Savings').account_id,
@@ -849,7 +849,7 @@ export class TestDataService {
 			},
 			{
 				budget_id: 'a14f34a5-67b8-90cd-ef12-34567890a144',
-				budgetType: BudgetType.TRANSFER,
+				displayShape: BudgetDisplayShapes.TRANSFER.value,
 				memo: "August Savings",
 				account_id: getAccountByName('Checking').account_id,
 				// account_id: getAccountByName('Expense Savings').account_id,
@@ -868,7 +868,7 @@ export class TestDataService {
 			},
 			{
 				budget_id: '42f56a78-90b1-2c3d-e4f5-678901234567',
-				budgetType: BudgetType.TRANSFER,
+				displayShape: BudgetDisplayShapes.TRANSFER.value,
 				memo: "Emergency Savings",
 				account_id: getAccountByName('Checking').account_id,
 				// account_id: getAccountByName('Expense Savings').account_id,
@@ -896,7 +896,7 @@ export class TestDataService {
 				memo: 'Groceries',
 				schedule: { start: '2022-09-01', frequency: 'MONTHLY', },
 				category_id: categoryByName("Groceries").category_id,
-				budgetType: BudgetType.TRANSACTION,
+				budgetType: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2022-09-01', frequency: 'MONTHLY', },
@@ -912,7 +912,7 @@ export class TestDataService {
 				budget_id: '98765432-1fed-cba9-8765-432109876543',
 				memo: "Fuel",
 				category_id: categoryByName("Fuel").category_id,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
@@ -928,7 +928,7 @@ export class TestDataService {
 				budget_id: '001765432-1fed-cba9-8765-432109876001',
 				memo: "Ministering",
 				category_id: categoryByName("Service").category_id,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
@@ -944,7 +944,7 @@ export class TestDataService {
 				budget_id: '1a2b3c4d-5e6f-7890-abcd-ef0123456789',
 				memo: "Arthur $",
 				category_id: null,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
@@ -959,7 +959,7 @@ export class TestDataService {
 				budget_id: '2b3c4d5e-6f78-90ab-cdef-0123456789ab',
 				memo: "Rachel $",
 				category_id: null,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
@@ -974,7 +974,7 @@ export class TestDataService {
 				budget_id: '3c4a4d5e-6f78-90ab-cdef-01234567a73f',
 				memo: "Date Night",
 				category_id: null,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
@@ -989,7 +989,7 @@ export class TestDataService {
 				budget_id: '3c4d5e6f-7890-abcd-ef01-23456789abcd',
 				memo: "Family Fun",
 				category_id: null,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-04-01', frequency: 'MONTHLY', },
@@ -1021,7 +1021,7 @@ export class TestDataService {
 				budget_id: 'd21e1f2-4567-abcd-ef01-23456789d213',
 				memo: "Thanksgiving Point Membership",
 				category_id: categoryByName("Parks & Attractions").category_id,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-05-01', frequency: 'YEARLY' },
@@ -1036,7 +1036,7 @@ export class TestDataService {
 				budget_id: 'c30e1f2-4567-abcd-ef01-234567890123',
 				memo: "Costco Membership",
 				category_id: categoryByName("Shopping").category_id,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-01-01', frequency: 'YEARLY' },
@@ -1051,7 +1051,7 @@ export class TestDataService {
 				budget_id: 'df151f2-4567-abcd-ef01-234567892856',
 				memo: "Back2School",
 				category_id: categoryByName("Books & Supplies").category_id,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-08-01', frequency: 'YEARLY' },
@@ -1066,7 +1066,7 @@ export class TestDataService {
 				budget_id: '01251f2-4567-abcd-ef01-234567890901',
 				memo: "Hyundai Registration",
 				category_id: categoryByName("Vehicle Registration").category_id,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-08-01', frequency: 'YEARLY' },
@@ -1084,7 +1084,7 @@ export class TestDataService {
 				budget_id: 'fe251f2-4567-abcd-ef01-234567890962',
 				memo: "Hannah-Claire Party",
 				category_id: categoryByName("Parties").category_id,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-02-01', frequency: 'YEARLY' },
@@ -1099,7 +1099,7 @@ export class TestDataService {
 				budget_id: 'fe241f2-4567-abcd-ef01-234567882962',
 				memo: "Hannah-Claire Gift",
 				category_id: categoryByName("Gifts").category_id,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-02-01', frequency: 'YEARLY' },
@@ -1116,7 +1116,7 @@ export class TestDataService {
 				budget_id: 'df251f2-4567-abcd-ef01-234567890973',
 				memo: "August Party",
 				category_id: categoryByName("Parties").category_id,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-08-01', frequency: 'YEARLY' },
@@ -1131,7 +1131,7 @@ export class TestDataService {
 				budget_id: 'df361f2-4567-abcd-ef01-234567451973',
 				memo: "August Gift",
 				category_id: categoryByName("Gifts").category_id,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				scheduleVariants: [{
 					schedule: { start: '2021-08-01', frequency: 'YEARLY' },
@@ -1150,7 +1150,7 @@ export class TestDataService {
 				budget_id: '4d5e6f78-90ab-cdef-0123-456789abcdef',
 				memo: 'Travel',
 				category_id: null,
-				budgetType: BudgetType.TRANSACTION,
+				displayShape: BudgetDisplayShapes.EXPENSE.value,
 				recurrence_type: RecurrenceType.SCHEDULE,
 				account_id: getAccountByName('Checking').account_id,
 				scheduleVariants: [{
@@ -1174,7 +1174,7 @@ export class TestDataService {
 						category_id: categoryByName("Flights").category_id,
 						Category: categoryByName("Flights"),
 						date: ddate('2025-06-15'), // June 15, 2025
-						budgetType: BudgetType.TRANSACTION,
+						displayShape: BudgetDisplayShapes.EXPENSE.value,
 						account_id: getAccountByName('Expense Savings').account_id,
 						target_account_partition_id: null,
 						budget_id: '5e6f7890-abcd-ef01-2345-6789abcdef01',
@@ -1188,7 +1188,7 @@ export class TestDataService {
 						memo: 'Airbnb',
 						amount: -1000,
 						date: ddate('2025-06-16'), // June 16, 2025
-						budgetType: BudgetType.TRANSACTION,
+						displayShape: BudgetDisplayShapes.EXPENSE.value,
 						account_id: getAccountByName('Expense Savings').account_id,
 						target_account_partition_id: null,
 					},
@@ -1201,7 +1201,7 @@ export class TestDataService {
 						memo: 'Activities and Purchases',
 						amount: -500,
 						date: ddate('2025-06-18'), // June 18, 2025
-						budgetType: BudgetType.TRANSACTION,
+						displayShape: BudgetDisplayShapes.EXPENSE.value,
 						account_id: getAccountByName('Expense Savings').account_id,
 						target_account_partition_id: null,
 					},

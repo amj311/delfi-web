@@ -2,7 +2,7 @@ import PrimeVue from 'primevue/config';
 import Aura from '@primeuix/themes/aura';
 import 'primeicons/primeicons.css'
 import 'primeflex/primeflex.css'
-import './assets/main.css'
+import './assets/main.scss'
 
 import VueApexCharts from "vue3-apexcharts";
 
