@@ -1253,6 +1253,16 @@ function openBudgetEditor(budget: Budget) {
 												<Currency :amount="budgetSnapshot.tally.budgetedNet" />
 											</div>
 										</div>
+										<div class="text-right">
+											<Button
+												icon="pi pi-pencil"
+												text
+												severity="secondary"
+												size="small"
+												@click="openBudgetEditor(budgetSnapshot.budget)"
+												label="Edit"
+											/>
+										</div>
 										<template
 											v-for="event of isFuture
 												? budgetSnapshot.budgetEvents
@@ -1439,6 +1449,16 @@ function openBudgetEditor(budget: Budget) {
 											<div>
 												<Currency :amount="budgetSnapshot.tally.budgetedNet" />
 											</div>
+										</div>
+										<div class="text-right">
+											<Button
+												icon="pi pi-pencil"
+												text
+												severity="secondary"
+												size="small"
+												@click="openBudgetEditor(budgetSnapshot.budget)"
+												label="Edit"
+											/>
 										</div>
 										<template
 											v-for="event of isFuture
