@@ -8,11 +8,12 @@ import { TransactionService } from '@/services/transaction.service';
 import { useAccountStore } from '@/stores/account.store';
 import { useDelfiStore } from '@/stores/delfi.store';
 import dayjs from 'dayjs';
-import type { ProjectionEvent } from 'delfi-core/models/Budget';
+import type { ProjectionEvent, Budget } from 'delfi-core/models/Budget';
 import { TransactionUtils, type AttributionEvent, type Transaction } from 'delfi-core/models/Transaction';
 import { ddate } from 'delfi-core/utils/dateUtils';
 import { computed, nextTick, onBeforeMount, ref, watch } from 'vue';
 import SwipeAction from '@/components/utils/SwipeAction.vue';
+import { useBudgetStore } from '@/stores/budget.store';
 
 
 const upcomingBudgets = ref<ProjectionEvent[]>([]);
@@ -75,6 +76,12 @@ const listAccounts = computed(() => useAccountStore().accounts
 	.slice(0, 5)
 );
 
+const budgetStore = useBudgetStore();
+
+function viewBudget(budget: Budget) {
+	budgetStore.openUpsertBudget(budget);
+}
+
 </script>
 
 <template>
@@ -104,7 +111,7 @@ const listAccounts = computed(() => useAccountStore().accounts
 		<div v-if="isLoadingNextBudgets" class="flex align-items-center gap-2 my-2"><i class="pi pi-spin pi-spinner"></i>Loading upcoming budgets...</div>
 		<CollapseList :items="upcomingBudgets" :itemHeight="65">
 			<template #default="{ item }">
-				<CommonEventRow :event="item" showPastDue />
+					<CommonEventRow :event="item" showPastDue style="cursor: pointer;" @click="() => viewBudget(item.Budget)" />
 			</template>
 		</CollapseList>
 	</template>

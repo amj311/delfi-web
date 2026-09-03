@@ -4,6 +4,11 @@ import { ref } from 'vue';
 import AttributionAvatar from './AttributionAvatar.vue';
 import { useCategoryStore } from '@/stores/category.store';
 import CategorySelectionDrawer from './CategorySelectionDrawer.vue';
+import type { CategoryType } from 'delfi-core/models/Category';
+
+const props = defineProps<{
+	typeFilter?: CategoryType | null;
+}>();
 
 const category_id = defineModel<string | null | undefined>();
 
@@ -25,7 +30,7 @@ async function selectCategory() {
 		</template>
 		<div v-else class="text-ellipsis">Select category...</div>
 	</Button>
-	<CategorySelectionDrawer ref="categorySelectionDrawer" />
+	<CategorySelectionDrawer ref="categorySelectionDrawer" :typeFilter="typeFilter" />
 </template>
 
 <style scoped lang="scss">

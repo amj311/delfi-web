@@ -212,6 +212,9 @@ model SavingsGoal {
 
 enum BudgetTransactionType {
     TRANSACTION
+    INCOME
+    EXPENSE
+    SAVINGS
     TRANSFER
 }
 

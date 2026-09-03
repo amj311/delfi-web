@@ -15,12 +15,13 @@ import { useToast } from './utils/Toast.vue';
 import { UncategorizedCategory } from 'delfi-core/models/systemCategories';
 import { useTransactionSelectionStore } from '@/stores/transaction-selection.store';
 import TransactionAttributionDrawer from './TransactionAttributionDrawer.vue';
+import type { AttributionEvent } from 'delfi-core/models/Transaction.js';
 
 const toast = useToast();
 
 const {
 	event,
-	size = 3,
+	size = 2.5,
 	currencyMode = 'transaction',
 	clickable = true,
 	dateFormat = 'full',
@@ -100,8 +101,9 @@ async function reviewTransaction() {
 
 async function doAttributions() {
 	if (!isAttribution.value) return;
-	const newAttributions = await transactionAttributionDrawer.value?.waitForSelection(event);
+	const newAttributions = await transactionAttributionDrawer.value?.waitForSelection(event, undefined, event as AttributionEvent);
 	console.log(newAttributions)
+	// TODO save new attributions!!!
 }
 
 const leftAction = computed(() => {

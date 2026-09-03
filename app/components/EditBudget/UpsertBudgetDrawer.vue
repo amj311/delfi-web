@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useBudgetStore } from '@/stores/budget.store';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
@@ -17,7 +17,6 @@ import BudgetVariantsDrawer from './BudgetVariantsDrawer.vue';
 
 const { budget, ...props} = defineProps<{
 	budget: Budget | null,
-	isNew?: boolean;
 	onClose?: () => void;
 }>();
 
@@ -43,6 +42,8 @@ function resetDraft() {
 	draft.value = jsonCopy(budget);
 }
 
+const isNew = computed(() => !draft.value?.budget_id);
+
 onMounted(() => {
 	if (!budget) {
 		return;
@@ -54,7 +55,6 @@ onMounted(() => {
 // Select the current, next, or last variant for main display
 const mainVariant = computed(() => {
 	if (!draft.value) return null;
-	console.log("recomputed main variant")
 	return BudgetUtils.getMostCurrentVariant(draft.value.scheduleVariants);
 });
 
@@ -112,6 +112,9 @@ function openVariantsDrawer() {
 	variantsDrawer.value?.open();
 }
 
+const displayConfig = computed(() => BudgetDisplayShapes[draft.value?.displayShape || '']);
+const accountsAsTransfer = computed(() => displayConfig.value?.asTransfer);
+
 </script>
 
 <template>
@@ -121,37 +124,35 @@ function openVariantsDrawer() {
 			@close="onClose"
 	>
 			<template #header>
-				<h2>Edit budget</h2>
+				<h2>{{ isNew ? 'New' : 'Edit' }} {{ draft?.displayShape?.toLowerCase() }} budget</h2>
 			</template>
-
 			<div class="flex flex-column gap-4" v-if="draft && mainVariant">
 				<!-- Memo -->
 				<div>
-					<label for="budget-memo" class="block font-bold mb-1">Name</label>
+					<label for="budget-memo">Name</label>
 					<InputText
-					id="budget-memo"
-					v-model="draft.memo"
-					class="w-full"
-					placeholder="e.g. Monthly Groceries"
+						id="budget-memo"
+						v-model="draft.memo"
+						class="w-full"
+						placeholder="e.g. Monthly Groceries"
 					/>
 				</div>
 
-				<div class="flex-row-center gap-2">
-					<CategoryButton v-model="draft.category_id" />
-					<AccountButton v-model="draft.account_id" />
-				</div>
-
-				<div class="flex align-items-end gap-3">
+				<div v-if="accountsAsTransfer" class="flex align-items-end gap-3">
 					<div>
-						<div class="text-small">FROM</div>
+						<label class="text-small">FROM</label>
 						<AccountButton v-model="draft.origin_account_id" />
 					</div>
 					<i class="pi pi-arrow-right text-lg h-2rem"></i>
 					<div>
-						<div class="text-small">TO</div>
+						<label class="text-small">TO</label>
 						<AccountButton v-model="draft.account_id" />
 					</div>
+				</div>
 
+				<div class="flex-column align-items-start gap-2">
+					<AccountButton v-if="!accountsAsTransfer" v-model="draft.account_id" />
+					<CategoryButton v-model="draft.category_id" :typeFilter="displayConfig?.categoryType" />
 				</div>
 
 				<div v-if="mainVariant">
@@ -204,13 +205,13 @@ function openVariantsDrawer() {
 
 				<!-- Notes -->
 				<div v-if="showNoteField">
-					<label for="budget-notes" class="block text-sm mb-1">NOTE</label>
+					<label for="budget-notes" >NOTE</label>
 					<Textarea
-					id="budget-notes"
-					v-model="draft.notes"
-					class="w-full"
-					rows="3"
-					placeholder="Optional notes about this budget…"
+						id="budget-notes"
+						v-model="draft.notes"
+						class="w-full"
+						rows="3"
+						placeholder="Optional notes about this budget…"
 					/>
 				</div>
 				<div class="flex-row-center">
@@ -234,5 +235,10 @@ function openVariantsDrawer() {
 </template>
 
 <style scoped lang="scss">
-/* PrimeVue Drawer overrides if needed */
+label {
+	display: block;
+	margin-bottom: .25rem;
+	font-size: .8;
+	text-transform: uppercase;
+}
 </style>

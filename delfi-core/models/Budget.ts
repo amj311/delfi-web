@@ -19,19 +19,31 @@ export const BudgetDisplayShapes = {
 	INCOME: {
 		value: 'INCOME',
 		label: 'INCOME',
-	},
+		amountSign: 1,
+		asTransfer: false,
+		categoryType: 'INCOME' as const,
+	} as const,
 	EXPENSE: {
 		value: 'EXPENSE',
 		label: 'EXPENSE',
-	},
+		amountSign: -1,
+		asTransfer: false,
+		categoryType: 'EXPENSE' as const,
+	} as const,
 	SAVINGS: {
-			value: 'SAVINGS',
-			label: 'SAVINGS',
-	},
+		value: 'SAVINGS',
+		label: 'SAVINGS',
+		amountSign: 1,
+		asTransfer: true,
+		categoryType: 'TRANSFER' as const,
+	} as const,
 	TRANSFER: {
-			value: 'TRANSFER',
-			label: 'TRANSFER',
-	},
+		value: 'TRANSFER',
+		label: 'TRANSFER',
+		amountSign: 1,
+		asTransfer: true,
+		categoryType: 'TRANSFER' as const,
+	} as const,
 } as const;
 
 export type BudgetDisplayShape = keyof typeof BudgetDisplayShapes;

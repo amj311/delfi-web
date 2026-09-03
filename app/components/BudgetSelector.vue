@@ -5,20 +5,23 @@ import NavTrigger from './utils/NavTrigger/NavTrigger.vue';
 import Button from 'primevue/button';
 import { useBudgetStore } from '@/stores/budget.store';
 import AttributionAvatar from './AttributionAvatar.vue';
+import type { BudgetedTransactionDetails, BudgetDisplayShape } from 'delfi-core/models/Budget';
+import type { AttributionEvent } from 'delfi-core/models/Transaction';
 
 const props = defineProps<{
 	currentBudgetId?: string | null;
 	currentChildItemId?: string | null;
+	attribution?: AttributionEvent | null;
+}>();
+
+const emit = defineEmits<{
+	select: [Selection];
 }>();
 
 type Selection = {
 	budgetId: string | null;
 	childItemId: string | null;
 };
-
-const emit = defineEmits<{
-	select: [Selection];
-}>();
 
 const currentSelection = ref<Selection>({
 	budgetId: props.currentBudgetId || null,
@@ -50,6 +53,12 @@ function selectChildItem(childItemId: string | null) {
 	showChildItemsSelection.value = false;
 }
 
+async function createNewBudget() {
+	if (!props.attribution) return;
+	const newBudget = await useBudgetStore().createNewBudget({ fromEvent: props.attribution });
+	selectBudget(newBudget?.budget_id || null);
+}
+
 const budgets = useBudgetStore().orderedBudgets;
 </script>
 
@@ -58,6 +67,15 @@ const budgets = useBudgetStore().orderedBudgets;
 		<div class="flex align-items-center gap-2 cursor-pointer hover:bg-gray-100 p-2 border-round" @click="selectBudget(null)">
 			<AttributionAvatar :icon="'question-circle'" color="gray1" :size="2" />
 			<div class="flex-grow-1">No Budget</div>
+		</div>
+		<div>
+			<Button
+				severity="secondary"
+				icon="pi pi-plus"
+				label="New Budget"
+				@click="createNewBudget"
+				class="my-2"
+			/>
 		</div>
 
 		<div class="flex-grow-1 overflow-y-auto">

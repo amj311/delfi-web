@@ -58,6 +58,19 @@ function updateInput() {
 	}
 }
 
+function moveCursorToEnd(e) {
+	if (!input.value) return;
+  const end = input.value?.value.length;
+
+  e.preventDefault();
+  input.value.focus();
+
+  // Prevent errors if the input is not focused
+  if (document.activeElement === input.value) {
+    input.value.setSelectionRange(end, end);
+  }
+}
+
 async function interceptInput(e) {
 	if (!input.value || !e.target?.value) return;
 
@@ -93,7 +106,13 @@ async function interceptInput(e) {
 		inputmode="numeric"
 		pattern="\d*"
 		@input="interceptInput"
+		@focus="moveCursorToEnd"
+		@touchstart="moveCursorToEnd"
+		@click="moveCursorToEnd"
+		@select="moveCursorToEnd"
 	/>
 </template>
 
-<style scoped></style>
+<style scoped>
+
+</style>

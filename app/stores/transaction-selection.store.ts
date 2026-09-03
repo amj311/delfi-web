@@ -4,6 +4,7 @@ import { Selection } from '@/utils/Selection'
 import type { CommonEvent } from 'delfi-core/models/Summary'
 import { TransactionService } from '@/services/transaction.service'
 import { useDelfiStore } from '@/stores/delfi.store'
+import type { AttributionEvent } from 'delfi-core/models/Transaction'
 
 export const useTransactionSelectionStore = defineStore('transactionSelection', () => {
 	// Selection<CommonEvent> but the ref was too big
@@ -12,7 +13,7 @@ export const useTransactionSelectionStore = defineStore('transactionSelection', 
 	const numSelected = computed(() => selection.value.size)
 	const selectedValues = computed(() => selection.value.values)
 
-	const transactionAttributionDrawer = shallowRef<{ waitForSelection: (current: any) => Promise<any> } | null>(null)
+	const transactionAttributionDrawer = shallowRef<{ waitForSelection: (..._: any[]) => Promise<any> } | null>(null)
 
 	function clear() {
 		selection.value.clear()
@@ -23,7 +24,7 @@ export const useTransactionSelectionStore = defineStore('transactionSelection', 
 			return;
 		}
 		const selected: CommonEvent[] = selection.value.values;
-		const result = await transactionAttributionDrawer.value?.waitForSelection(selected);
+		const result = await transactionAttributionDrawer.value?.waitForSelection(selected, undefined, selected[0] as AttributionEvent);
 		if (!result) {
 			return;
 		}

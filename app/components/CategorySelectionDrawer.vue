@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import NavTriggerDrawer from './utils/NavTrigger/NavTriggerDrawer.vue';
-import { useCategoryStore } from '@/stores/category.store';
-import type { Category } from 'delfi-core/models/Category';
 import CategorySelector from './CategorySelector.vue';
+import type { CategoryType } from 'delfi-core/models/Category';
+
+const props = defineProps<{
+	typeFilter?: CategoryType | null;
+}>();
 
 const triggerRef = ref<InstanceType<typeof NavTriggerDrawer> | null>(null);
 let resolvePromise: ((category: string | null) => void) | null = null;
@@ -41,6 +44,7 @@ function cancelSelection() {
 	<NavTriggerDrawer ref="triggerRef" triggerKey="select-category" title="Select Category" @close="cancelSelection" :width="25">
 		<CategorySelector
 			:currentCategoryId="selectedCategoryId || null"
+			:typeFilter="typeFilter"
 			@select="selectCategoryId"
 		/>
 	</NavTriggerDrawer>

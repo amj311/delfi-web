@@ -4,15 +4,25 @@ import { ref } from 'vue';
 import AttributionAvatar from './AttributionAvatar.vue';
 import { useBudgetStore } from '@/stores/budget.store';
 import BudgetSelectionDrawer from './BudgetSelectionDrawer.vue';
+import type { AttributionEvent } from 'delfi-core/models/Transaction';
+
+const props = defineProps<{
+	attribution?: AttributionEvent | null;
+}>();
 
 const budget_id = defineModel<string | null | undefined>();
 
-const budgetSelectionDrawer = ref<InstanceType<typeof BudgetSelectionDrawer> | null>(null);
+const budgetSelectionDrawer = ref<InstanceType<typeof BudgetSelectionDrawer>>();
+
 async function selectBudget() {
 	if (budgetSelectionDrawer.value) {
-		const selection = await budgetSelectionDrawer.value.selectBudget(budget_id.value || null);
+		const selection = await budgetSelectionDrawer.value.selectBudget(budget_id.value || null, props.attribution);
 		budget_id.value = selection || undefined;
 	}
+}
+
+function handleNewBudget(displayShape: string, attribution: AttributionEvent) {
+	
 }
 
 </script>
@@ -25,7 +35,7 @@ async function selectBudget() {
 		</template>
 		<div v-else>Select budget...</div>
 	</Button>
-	<BudgetSelectionDrawer ref="budgetSelectionDrawer" />
+		<BudgetSelectionDrawer ref="budgetSelectionDrawer" @newBudget="handleNewBudget" />
 </template>
 
 <style scoped lang="scss">

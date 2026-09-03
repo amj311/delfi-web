@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTransitionState, watch } from 'vue';
-import { TransactionUtils, type Transaction } from 'delfi-core/models/Transaction';
+import { TransactionUtils, type AttributionEvent, type Transaction } from 'delfi-core/models/Transaction';
 import Currency from './Currency.vue';
 import { useAccountStore } from '@/stores/account.store';
 import Button from 'primevue/button';
@@ -30,17 +30,18 @@ import type { IconIdentifier } from 'delfi-core/utils/constants.js';
 import request from '@/services/request.js';
 
 const triggerRef = ref<InstanceType<typeof NavTriggerDrawer> | null>(null);
-const transaction = ref<Transaction>({} as Transaction);
+const event = ref<AttributionEvent>();
+const transaction = computed(() => event.value?.attributionDetails?.sourceTransaction || {} as Transaction);
 
 const props = defineProps<{
 	onClose?: () => void;
 }>();
 
 defineExpose({
-	open: (_transaction: Transaction) => {
-		transaction.value = _transaction;
-		notesDraft.value = transaction.value.notes;
-		budgetDateDate.value = transaction.value.budget_date?.toDate();
+	open: (_event: AttributionEvent) => {
+		event.value = _event;
+		notesDraft.value = transaction.value?.notes;
+		budgetDateDate.value = transaction.value?.budget_date?.toDate();
 		triggerRef.value?.trigger()?.open();
 	},
 });
@@ -97,7 +98,7 @@ watch(
 
 async function doAttributionDrawer(step: Step, attribution: Transaction['Attributions'][number]) {
 	if (transactionAttributionDrawer.value) {
-		const selection = await transactionAttributionDrawer.value.waitForSelection(jsonCopy(attribution), step);
+		const selection = await transactionAttributionDrawer.value.waitForSelection(jsonCopy(attribution), step, event.value);
 		if (!selection) {
 			// rejected or closed
 			return;
@@ -496,7 +497,7 @@ const sourceAccount = computed(() => {
 
 		<div class="flex flex-column h-full overflow-y-auto">
 			<div class="flex align-items-center gap-3">
-				<AttributionAvatar :event="avatarDetails" :size="3" />
+				<AttributionAvatar :event="avatarDetails" :size="3" square />
 				<div class="flex-frow-1 min-w-0">
 					<h3 class="m-0 text-ellipsis w-full min-w-0">{{ headerTitle }}</h3>
 					<div>{{ transaction.date.format('full') }}</div>

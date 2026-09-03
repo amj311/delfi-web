@@ -1,16 +1,22 @@
-import { computed, ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 import { defineStore } from 'pinia'
 import request from '@/services/request';
 import type { Budget } from 'delfi-core/models/Budget';
-import { instantiateDates } from 'delfi-core/utils/dateUtils';
+import { instantiateDates, type DelfiDate } from 'delfi-core/utils/dateUtils';
 import { useCategoryStore } from './category.store';
 import { useDelfiStore } from './delfi.store';
+import { ddate } from 'delfi-core/utils/dateUtils';
+import { BudgetDisplayShapes, RecurrenceType, type BudgetDisplayShape } from 'delfi-core/models/Budget';
+import type { AttributionEvent } from 'delfi-core/models/Transaction';
 
 export const useBudgetStore = defineStore('budget', () => {
 	let budgets = ref<Budget[]>([]);
 	let isLoadingBudgets = ref(false);
 	let isUpsertingBudget = ref(false);
 	let isDeletingBudget = ref(false);
+
+	// Drawer state for BudgetActions component
+	const upsertingBudget = ref<Budget | null>(null);
 
 	const orderedBudgets = computed(() => {
 		const orderedCategories = useCategoryStore().orderedCategories;
@@ -37,8 +43,10 @@ export const useBudgetStore = defineStore('budget', () => {
 		}
 	}
 
+	const postUpsertBudgetRes = ref((budget?: Budget) => {});
+
 	const upsertBudget = async (budgetData: Partial<Budget>): Promise<Budget> => {
-		let budgetRes: Budget;
+		let budgetRes: Budget | undefined = undefined;
 		try {
 			isUpsertingBudget.value = true;
 			let { data } = budgetData.budget_id
@@ -47,9 +55,10 @@ export const useBudgetStore = defineStore('budget', () => {
 			budgetRes = data.data;
 			console.log(data)
 			budgetData.budget_id ?
-				budgets.value = budgets.value.map(a => a.budget_id === budgetData.budget_id ? budgetRes : a)
-				: budgets.value.push(budgetRes);
+				budgets.value = budgets.value.map(a => a.budget_id === budgetData.budget_id ? budgetRes! : a)
+				: budgets.value.push(budgetRes!);
 			useDelfiStore().reCompute();
+			return budgetRes!;
 		}
 		catch (e) {
 			console.error(e)
@@ -57,8 +66,8 @@ export const useBudgetStore = defineStore('budget', () => {
 		}
 		finally {
 			isUpsertingBudget.value = false;
+			postUpsertBudgetRes.value(budgetRes);
 		} 
-		return budgetRes;
 	}
 
 	const deleteBudget = async (budgetId: string) => {
@@ -76,6 +85,60 @@ export const useBudgetStore = defineStore('budget', () => {
 		} 
 	}
 
+	const openUpsertBudget = (budget: Budget) => {
+		upsertingBudget.value = budget;
+	}
+
+	const closeUpsertBudget = () => {
+		upsertingBudget.value = null;
+	}
+
+	const createNewBudget = async (config: {
+		displayShape?: BudgetDisplayShape,
+		fromEvent?: AttributionEvent,
+		start?: DelfiDate,
+	} = {}) => {
+		const monthStart = (config.start || config.fromEvent?.date || ddate()).startOf('month');
+		const displayShape = config.displayShape || (
+			config.fromEvent?.attributionDetails?.sourceTransaction?.TransferPair
+				? 'SAVINGS'
+				: (config.fromEvent?.Category?.type
+					|| ((config.fromEvent && config.fromEvent?.amount > 0)
+						? 'INCOME' : 'EXPENSE'))
+		);
+		const defaultAmount = BudgetDisplayShapes[displayShape].amountSign * 50;
+		const newBudget: Budget = {
+			budget_id: '', // Will be assigned by the server
+			memo: config.fromEvent?.attributionDetails?.memo
+				|| config.fromEvent?.attributionDetails?.softDescription || 'New ' + displayShape.toLowerCase(),
+			category_id: config.fromEvent?.category_id || null,
+			account_id: config.fromEvent?.account_id || '',
+			origin_account_id: config.fromEvent?.attributionDetails.sourceTransaction.TransferPair?.account_id || undefined,
+			displayShape,
+			recurrence_type: RecurrenceType.SCHEDULE,
+			scheduleVariants: [
+				{
+					schedule_variant_id: '', // Will be assigned by the server
+					schedule: {
+						start: monthStart,
+						end: undefined,
+						frequency: 'MONTHLY',
+						interval: 1,
+					},
+					amountTemplate: {
+						type: 'fixed',
+						amount: config.fromEvent?.amount || defaultAmount,
+					},
+				},
+			],
+		};
+
+		return new Promise<Budget | undefined>((res) => {
+			postUpsertBudgetRes.value = res;
+			openUpsertBudget(newBudget);
+		})
+	}
+
 	return {
 		budgets,
 		orderedBudgets,
@@ -83,6 +146,11 @@ export const useBudgetStore = defineStore('budget', () => {
 		loadBudgets: loadBudgets,
 		upsertBudget: upsertBudget,
 		deleteBudget: deleteBudget,
+		upsertingBudget,
+		openUpsertBudget,
+		closeUpsertBudget,
+		createNewBudget,
+		postUpsertBudgetRes,
 
 		getBudgetById: (budgetId?: string | null): Budget | undefined => budgets.value.find(b => b.budget_id === budgetId) || undefined,
 	};

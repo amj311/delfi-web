@@ -12,6 +12,7 @@ import { useAppStore } from './stores/app.store';
 import Snackbar from './components/utils/Toast.vue';
 import Message from 'primevue/message';
 import Dialog from 'primevue/dialog';
+import BudgetActions from './components/EditBudget/BudgetActions.vue';
 
 const userStore = useUserStore();
 const sessionInterval = setInterval(userStore.loadSessionData, 60000);
@@ -61,6 +62,7 @@ onBeforeUnmount(() => {
 
 	<PromptModal />
 	<Snackbar />
+	<BudgetActions />
 </template>
 
 <style scoped></style>

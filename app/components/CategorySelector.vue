@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useCategoryStore } from '@/stores/category.store';
 import { computed, onMounted } from 'vue';
-import type { Category } from 'delfi-core/models/Category';
+import type { Category, CategoryType } from 'delfi-core/models/Category';
 import { ref } from 'vue';
 import InputText from 'primevue/inputtext';
 import AttributionAvatar from './AttributionAvatar.vue';
@@ -9,7 +9,9 @@ import AttributionAvatar from './AttributionAvatar.vue';
 const props = defineProps<{
 	currentCategoryId: string | null;
 	allowedCategories?: Category[];
+	typeFilter?: CategoryType | null,
 }>();
+
 const selectedCategory = computed(() => useCategoryStore().getCategoryById(props.currentCategoryId));
 
 defineEmits<{
@@ -34,6 +36,7 @@ const groups = computed(() =>
 		.categoriesByGroup.map((group) => ({
 			...group,
 			categories: group.categories
+				.filter((cat) => !props.typeFilter || cat.type === props.typeFilter)
 				.filter((cat) => !props.allowedCategories || props.allowedCategories.some((c) => c.category_id === cat.category_id))
 				.filter(
 					(c) =>

@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { useDelfiStore } from '@/stores/delfi.store';
 import { useAccountStore } from '@/stores/account.store';
+import { useBudgetStore } from '@/stores/budget.store';
 import { computed, reactive, ref, onMounted, watch, nextTick } from 'vue';
 import Forecast from '../../delfi-core/models/Forecast';
 import { type DelfiDate, ddate } from '../../delfi-core/utils/dateUtils';
 import Currency from '@/components/Currency.vue';
 import { useCategoryStore } from '@/stores/category.store';
 import type { Delfi } from 'delfi-core/Delfi';
-import { type Budget } from '../../delfi-core/models/Budget';
+import BudgetUtils, { BudgetDisplayShapes, RecurrenceType, type Budget, type BudgetDisplayShape } from '../../delfi-core/models/Budget';
 import type { Account } from 'delfi-core/models/Account';
 import { useRoute, useRouter } from 'vue-router';
 import { useGroupStore } from '@/stores/group.store';
@@ -26,14 +27,14 @@ import { BudgetEventSummary, RealityTally, type BudgetSnapshot, type CommonEvent
 import { useContextStore } from '@/stores/context.store';
 import CommonEventRow from '@/components/CommonEventRow.vue';
 import Button from 'primevue/button';
-import { currency, wait } from 'delfi-core/utils/miscUtils';
+import { currency } from 'delfi-core/utils/miscUtils';
 import CollapseList from '@/components/utils/CollapseList.vue';
 import Dialog from 'primevue/dialog';
 import { useAppStore } from '@/stores/app.store';
-import UpsertBudgetDrawer from '@/components/EditBudget/UpsertBudgetDrawer.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
+const budgetStore = useBudgetStore();
 const groupStore = useGroupStore();
 const route = useRoute();
 const router = useRouter();
@@ -45,9 +46,16 @@ const state = reactive({
 	viewingMonth: ddate().startOf('month'),
 	forecast: <Forecast>(<unknown>null),
 	upsertingAccount: <Partial<Account> | {} | null>null,
-	upsertingBudget: <Budget | {} | null>null,
 	summaryData: <Awaited<ReturnType<Delfi['getMonthSummary']>> | null>null,
 });
+
+function openBudgetEditor(budget: Budget) {
+	budgetStore.openUpsertBudget(budget);
+}
+
+function createNewBudget(displayShape: BudgetDisplayShape) {
+	budgetStore.createNewBudget({displayShape});
+}
 
 const isFuture = computed(() => {
 	if (!state.viewingMonth) {
@@ -238,11 +246,11 @@ const isAccordionOpen = (key: string) => {
 };
 
 const transactionDetailsDrawer = ref<InstanceType<typeof TransactionDetailsDrawer> | null>(null);
-const viewingTransaction = ref<Transaction | null>(null);
-function viewTransaction(transaction: Transaction) {
-	viewingTransaction.value = transaction;
+const viewingEvent = ref<CommonEvent | null>(null);
+function viewTransactionEvent(event: CommonEvent) {
+	viewingEvent.value = event;
 	nextTick(() => {
-		transactionDetailsDrawer.value?.open(transaction);
+		transactionDetailsDrawer.value?.open(event as AttributionEvent);
 	});
 }
 
@@ -484,10 +492,7 @@ const accumulationChart = computed(() => {
 	};
 });
 
-const upsertingBudget = ref<Budget | null>(null);
-function openBudgetEditor(budget: Budget) {
-	upsertingBudget.value = budget;
-}
+
 </script>
 
 <template>
@@ -516,7 +521,7 @@ function openBudgetEditor(budget: Budget) {
 						<div class="px-3">
 							<template v-for="budgetSnapshot of tally.budgetSnapshots">
 								<template v-if="budgetSnapshot.tally.hasInfo">
-									<div class="flex hover-show-trigger list-row gap-2">
+									<div class="flex list-row gap-2">
 										<div class="flex align-items-center gap-2">
 											<i class="pi pi-wallet" />
 											{{ budgetSnapshot.budget.memo }}
@@ -524,7 +529,8 @@ function openBudgetEditor(budget: Budget) {
 										<div class="flex-grow-1"></div>
 										<!-- <Currency :amount="budgetSnapshot.tally.attributedNet" mode="transaction" /> -->
 									</div>
-									<div
+									<!-- TODO revisit budgets in groups -->
+									<!-- <div
 										v-for="childItem of budgetSnapshot.childItemBudgets"
 										class="list-row flex align-items-center gap-3"
 									>
@@ -565,8 +571,23 @@ function openBudgetEditor(budget: Budget) {
 												/>
 											</div>
 										</div>
-									</div>
-									<template
+									</div> -->
+									<CollapseList
+										:items="isFuture
+											? budgetSnapshot.budgetEvents
+											: budgetSnapshot.notChildAttributions"
+										:itemHeight="62"
+									>
+										<template #default="{ item: event }">
+											<CommonEventRow
+												:event="event"
+												@click="() => event.projectionDetails ? null : viewTransactionEvent(event)"
+												expand
+												hideGroup
+											/>
+										</template>
+									</CollapseList>
+									<!-- <template
 										v-for="event of isFuture
 											? budgetSnapshot.budgetEvents
 											: budgetSnapshot.notChildAttributions"
@@ -577,7 +598,7 @@ function openBudgetEditor(budget: Budget) {
 											expand
 											hideGroup
 										/>
-									</template>
+									</template> -->
 								</template>
 							</template>
 							<div
@@ -589,14 +610,25 @@ function openBudgetEditor(budget: Budget) {
 								<div class="flex-grow-1"></div>
 								<!-- <Currency :amount="tally.unBudgetedNet" mode="transaction" /> -->
 							</div>
-							<CommonEventRow
+							<CollapseList :items="tally.unBudgetedAttributions" :itemHeight="62">
+								<template #default="{ item: event }">
+									<CommonEventRow
+										:event="event"
+										@click="() => event.projectionDetails ? null : viewTransactionEvent(event)"
+										expand
+										hideGroup
+										hideBudget
+									/>
+								</template>
+							</CollapseList>
+							<!-- <CommonEventRow
 								v-for="event of tally.unBudgetedAttributions"
 								:event="event"
 								@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
 								expand
 								hideGroup
 								hideBudget
-							/>
+							/> -->
 						</div>
 					</div>
 					<br />
@@ -604,8 +636,7 @@ function openBudgetEditor(budget: Budget) {
 
 				<div>
 					<div class="flex align-items-center gap-2 py-2">
-						<h3>Spending</h3>
-						<Select
+						<h3>Spending</h3>						<Select
 							v-model="selectedSpendingView"
 							:options="spendingViews"
 							optionLabel="label"
@@ -652,7 +683,7 @@ function openBudgetEditor(budget: Budget) {
 									>
 										<CommonEventRow
 											:event="event"
-											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+											@click="() => event.projectionDetails ? null : viewTransactionEvent(event)"
 											expand
 											hideBudget
 										/>
@@ -856,7 +887,7 @@ function openBudgetEditor(budget: Budget) {
 										>
 											<CommonEventRow
 												:event="event"
-												@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+												@click="() => event.projectionDetails ? null : viewTransactionEvent(event)"
 												expand
 												hideBudget
 											/>
@@ -953,7 +984,7 @@ function openBudgetEditor(budget: Budget) {
 														:event="event"
 														@click="
 															() =>
-																viewTransaction(event.attributionDetails.sourceTransaction)
+																viewTransactionEvent(event)
 														"
 														expand
 													/>
@@ -972,7 +1003,7 @@ function openBudgetEditor(budget: Budget) {
 										<div v-for="event of category.tally.unBudgetedAttributions">
 											<CommonEventRow
 												:event="event"
-												@click="() => viewTransaction(event.attributionDetails.sourceTransaction)"
+												@click="() => viewTransactionEvent(event)"
 												expand
 												hideBudget
 											/>
@@ -981,6 +1012,15 @@ function openBudgetEditor(budget: Budget) {
 								</AccordionPanel>
 							</template>
 						</Accordion>
+					</div>
+					<div class="mt-2 text-right">
+						<Button
+							text
+							label="New Expense"
+							icon="pi pi-plus"
+							severity="secondary"
+							@click="() => createNewBudget('EXPENSE')"
+						/>
 					</div>
 				</div>
 
@@ -1009,7 +1049,7 @@ function openBudgetEditor(budget: Budget) {
 									v-for="event in day.transactions"
 									:event="event"
 									:hideDate="true"
-									@click="() => viewTransaction(event.attributionDetails.sourceTransaction)"
+									@click="() => viewTransactionEvent(event)"
 								/>
 							</div>
 						</div>
@@ -1091,6 +1131,7 @@ function openBudgetEditor(budget: Budget) {
 					</div>
 				</div>
 
+				<br />
 				<br />
 				<div>
 					<div class="flex align-items-center py-2">
@@ -1270,7 +1311,7 @@ function openBudgetEditor(budget: Budget) {
 										>
 											<CommonEventRow
 												:event="event"
-												@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+												@click="() => event.projectionDetails ? null : viewTransactionEvent(event)"
 												expand
 											/>
 										</template>
@@ -1292,7 +1333,7 @@ function openBudgetEditor(budget: Budget) {
 									<template v-for="(event, i) of state.summaryData.incomeSummary.tally.unBudgetedAttributions">
 										<CommonEventRow
 											:event="event"
-											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+											@click="() => event.projectionDetails ? null : viewTransactionEvent(event)"
 											expand
 											hideBudget
 										/>
@@ -1300,6 +1341,16 @@ function openBudgetEditor(budget: Budget) {
 								</AccordionContent>
 							</AccordionPanel>
 						</Accordion>
+					</div>
+
+					<div class="mt-2 text-right">
+						<Button
+							text
+							label="New Income"
+							icon="pi pi-plus"
+							severity="secondary"
+							@click="() => createNewBudget('INCOME')"
+						/>
 					</div>
 				</div>
 				<br />
@@ -1467,7 +1518,7 @@ function openBudgetEditor(budget: Budget) {
 										>
 											<CommonEventRow
 												:event="event"
-												@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+												@click="() => event.projectionDetails ? null : viewTransactionEvent(event)"
 												expand
 											/>
 										</template>
@@ -1494,7 +1545,7 @@ function openBudgetEditor(budget: Budget) {
 									>
 										<CommonEventRow
 											:event="event"
-											@click="() => event.projectionDetails ? null : viewTransaction(event.attributionDetails!.sourceTransaction)"
+											@click="() => event.projectionDetails ? null : viewTransactionEvent(event)"
 											expand
 											hideBudget
 										/>
@@ -1503,20 +1554,23 @@ function openBudgetEditor(budget: Budget) {
 							</AccordionPanel>
 						</Accordion>
 					</div>
+					<div class="mt-2 text-right">
+						<Button
+							text
+							label="New Savings"
+							icon="pi pi-plus"
+							severity="secondary"
+							@click="() => createNewBudget('SAVINGS')"
+						/>
+					</div>
 				</div>
 			</div>
 			<!-- <Button label="Test Drawer" @click="() => showTestDrawer = true" /> -->
 		</div>
 
 
-		<TransactionDetailsDrawer ref="transactionDetailsDrawer" :key="viewingTransaction?.transaction_id" />
+		<TransactionDetailsDrawer ref="transactionDetailsDrawer" :key="viewingEvent?.attributionDetails?.sourceTransaction?.transaction_id" />
 
-		<!-- Budget Editor Drawer -->
-		<UpsertBudgetDrawer
-			:key="upsertingBudget?.budget_id"
-			:budget="upsertingBudget!"
-			@close="async () => { await wait(500); upsertingBudget = null }"
-		/>
 
 		<div class="hidden">
 			<!-- <div style="padding: 20px; background: #ebe6fa" />

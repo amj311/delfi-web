@@ -65,7 +65,7 @@ onMounted(() => {
 
 			// Stage 1: determine initial slide direction
 			if (!hasDeterminedSlideState.value) {
-				if (Math.abs(deltaY) > 2) {
+				if (Math.abs(deltaY) > 5) {
 					hasDeterminedSlideState.value = true;
 					isSliding.value = false;
 					return;

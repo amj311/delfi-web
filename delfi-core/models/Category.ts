@@ -2,7 +2,7 @@ import type { PlaidCategory } from "server/services/PlaidService";
 import type { IconIdentifier, TagColor } from "delfi-core/utils/constants";
 import type { Replace } from "delfi-core/utils/typeUtils";
 
-type CategoryType = 'INCOME' | 'TRANSFER' | 'EXPENSE';
+export type CategoryType = 'INCOME' | 'TRANSFER' | 'EXPENSE';
 
 export type Category = {
 	category_id: string,

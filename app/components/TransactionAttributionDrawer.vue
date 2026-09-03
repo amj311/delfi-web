@@ -6,7 +6,7 @@ import { useBudgetStore } from '@/stores/budget.store';
 import BudgetSelector from './BudgetSelector.vue';
 import type { Budget, BudgetChildItem } from 'delfi-core/models/Budget';
 import type { Category } from 'delfi-core/models/Category';
-import type { BudgetGroup } from 'delfi-core/models/Transaction';
+import type { AttributionEvent, BudgetGroup, Transaction } from 'delfi-core/models/Transaction';
 import CategorySelector from './CategorySelector.vue';
 import { useCategoryStore } from '@/stores/category.store';
 import GroupSelector from './GroupSelector.vue';
@@ -38,6 +38,7 @@ const valueSets = computed(() => {
 	}, {} as SetMap<Selection, typeof SelectionIdAttributes[number]>)
 })
 
+const eventForBudget = ref<AttributionEvent | null>(null);
 
 function getCommonValue<T extends typeof SelectionIdAttributes[number]>(attribute: T) {
 	const set = valueSets.value[attribute];
@@ -89,7 +90,9 @@ defineExpose({
 	 * @param current 
 	 * @param activeStep 
 	 */
-	waitForSelection<T extends Selection>(current: T | Array<T>, activeStep?: Step) {
+	waitForSelection<T extends Selection>(current: T | Array<T>, activeStep?: Step, fromEvent?: AttributionEvent) {
+		eventForBudget.value = fromEvent || null;
+
 		// copy items to avoid mutation
 		const items = Array.isArray(current) ? current : [current];
 		allOriginal.value = items.map(i => ({
@@ -223,6 +226,7 @@ const allowedGroups = computed(() => {
 					v-if="currentStep === 'Budget'"
 					:currentBudgetId="currentSelection.budget_id"
 					:currentChildItemId="currentSelection.budget_child_item_id"
+					:attribution="eventForBudget"
 					@select="(selection) => onBudgetSelected(selection.budgetId, selection.childItemId)"
 				/>
 			</div>

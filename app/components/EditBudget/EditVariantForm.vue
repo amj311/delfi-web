@@ -91,7 +91,7 @@ const showNoteField = computed(() => variant.value?.notes || clickedAddNote.valu
 		<!-- AMOUNT -->
 		<div class="flex-column gap-2">
 			<div class="flex-row-center">
-				<label for="amount-type" class="block font-bold flex-1">Amount</label>
+				<label for="amount-type" class="label flex-1">Amount</label>
 				<Select
 					id="amount-type"
 					v-model="variant.amountTemplate.type"
@@ -135,14 +135,14 @@ const showNoteField = computed(() => variant.value?.notes || clickedAddNote.valu
 		</div>
 
 		<div class="flex-column gap-2">
-			<label for="amount-type" class="block font-bold flex-1">Timeline</label>
+			<label for="amount-type" class="label flex-1">Timeline</label>
 			<BudgetScheduleForm v-model="variant.schedule" />
 			<BudgetProjectionForm v-model="variant.projectionSchedule" />
 		</div>
 
 		<div v-if="withNotes">
 			<div v-if="showNoteField">
-				<label for="budget-notes" class="block text-sm mb-1">NOTE</label>
+				<label for="budget-notes" class="label">NOTE</label>
 				<Textarea
 					id="budget-notes"
 					v-model="variant.notes"
@@ -165,5 +165,12 @@ const showNoteField = computed(() => variant.value?.notes || clickedAddNote.valu
 	> div {
 		justify-content: center;
 	}
+}
+
+.label {
+	display: block;
+	margin-bottom: .25rem;
+	font-size: .8;
+	text-transform: uppercase;
 }
 </style>
