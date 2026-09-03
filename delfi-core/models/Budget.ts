@@ -7,6 +7,7 @@ import type { CommonEvent } from "./Summary";
 import { v4 as uuid } from "uuid";
 import type { MONTHS } from "delfi-core/utils/constants";
 import type { Replace } from "delfi-core/utils/typeUtils";
+import { isFullArray } from "delfi-core/utils/miscUtils";
 
 export enum RecurrenceType {
 	SCHEDULE = "SCHEDULE",
@@ -97,10 +98,13 @@ export type SeasonalAmount = {
 
 export type BudgetAmountTemplate = FixedAmount | TriggeredAmount | SeasonalAmount;
 
-type BudgetOccurrenceSchedule = Pick<SingleSchedule, 'start' | 'end' | 'frequency' | 'interval'>;
+export type BudgetOccurrenceSchedule = Pick<SingleSchedule, 'start' | 'end' | 'frequency' | 'interval'>;
 
 /** Used to compute the projected dates within a budget occurrence */
-type BudgetProjectionSchedule = Pick<SingleSchedule, 'byMonthOfYear' | 'byDayOfMonth' | 'byDayOfWeek' | 'interval' | 'frequency'>;
+export type BudgetProjectionSchedule = Pick<SingleSchedule, 'byMonthOfYear' | 'byDayOfMonth' | 'byDayOfWeek' | 'interval'>
+	& {
+		frequency?: SingleSchedule['frequency'] | null | undefined,
+	};
 
 export type ScheduleVariant = {
 	schedule_variant_id?: string, // Unique ID for the variant
@@ -114,6 +118,7 @@ export type ScheduleVariant = {
 	// 	quantity: number,
 	// 	interval: 'day' | 'week' | 'month' | 'year',
 	// },
+	notes?: string | null,
 }
 type TriggeredSchedule = Replace<ScheduleVariant, {
 	amountTemplate: TriggeredAmount, // The amount is determined by the trigger
@@ -131,8 +136,8 @@ export type Budget = BudgetedTransactionDetails & {
 	// A repeating schedule determines the beginning of each new window.
 	scheduleVariants: Array<ScheduleVariant>,
 	childItems?: Array<BudgetChildItem>,
-	/** If true, this budget is considered complete after its first attribution. Alternatively, check projection rules for a single date...? */
-	onceAndDone?: boolean, // not yet used anywhere
+	/** Currently computed by projection rules at projection time */
+	// onceAndDone?: boolean,
 }
 
 export type ScheduledBudget = Budget & {
@@ -406,21 +411,22 @@ export default class BudgetUtils {
 	}
 
 	private static getProjectionEventWindowDates(date: DelfiDate, occurrence: BudgetOccurrence): { windowStart: DelfiDate, windowEnd: DelfiDate } {
-		if (!occurrence.sourceSchedule.projectionSchedule) {
+		const projectionSchedule = occurrence.sourceSchedule.projectionSchedule;
+		if (!projectionSchedule) {
 			// If no projection schedule, the event could land anywhere within the occurrence
 			return { windowStart: occurrence.start, windowEnd: occurrence.end };
 		}
 		// If the projection schedule defines specific days of the month or week, the event is on a solid date
 		if (
-			(occurrence.sourceSchedule.projectionSchedule.byDayOfMonth && occurrence.sourceSchedule.projectionSchedule.byDayOfMonth.length > 0) ||
-			(occurrence.sourceSchedule.projectionSchedule.byDayOfWeek && occurrence.sourceSchedule.projectionSchedule.byDayOfWeek.length > 0)
+			(isFullArray(projectionSchedule.byDayOfMonth)) ||
+			(isFullArray(projectionSchedule.byDayOfWeek))
 		) {
 			return { windowStart: date, windowEnd: date };
 		}
 		// If there IS a projection schedule, but it doesn't define specific days, the event could land anywhere within the projection frequency (i.e. month or week)
 		// Use that frequency to determine the window from the event date
-		if (occurrence.sourceSchedule.projectionSchedule.frequency) {
-			const interval = toDelfiInterval(occurrence.sourceSchedule.projectionSchedule.frequency);
+		if (projectionSchedule.frequency) {
+			const interval = toDelfiInterval(projectionSchedule.frequency);
 			const windowStart = date.startOf(interval);
 			const windowEnd = date.endOf(interval);
 			// Clamp to occurrence start and end
@@ -451,5 +457,35 @@ export default class BudgetUtils {
 
 	static createOccurrenceId(budget, start, end): string {
 		return `${budget.budget_id}-${start.toString()}-${end.toString()}`;
+	}
+
+	public static getMostCurrentVariant(variants: ScheduleVariant[], referenceDate: DelfiDate = ddate()): ScheduleVariant | null {
+		// TODO make sure new budgets all have a first variant before getting here
+		// TODO make sure variants are in chronological order
+		// show closest variant to today
+		let closest = variants[0]!;
+		
+		for (const variant of variants) {
+			// If it has no start or end, it's the current variant
+			if (!variant.schedule.start && !variant.schedule.end) {
+				return variant;
+			}
+
+			// If it has no start and end is future, it's the closest variant
+			if (!variant.schedule.start && variant.schedule.end && variant.schedule.end > referenceDate) {
+				return variant;
+			}
+
+			// if start is future, end here. The closest should already be selected.
+			if (variant.schedule.start && variant.schedule.start > referenceDate) {
+				return closest;
+			}
+
+			// set each new variant as closest until one of the above cases is satisfied
+			// this will cover any number of variants who have both start and end and have already passed
+			closest = variant;
+		};
+
+		return closest;
 	}
 }

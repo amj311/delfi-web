@@ -279,6 +279,8 @@ model BudgetScheduleVariant {
     // window_quantity     Int?
     // projection_interval String?
     // projection_quantity Int?
+
+	notes String?
 }
 
 // model BudgetTriggerVariant {

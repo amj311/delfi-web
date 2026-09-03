@@ -2,6 +2,10 @@ export const peek = <T>(array: T[]): T | undefined => {
 	return !array?.length ? undefined : array[array.length - 1];
 }
 
+export function isFullArray<T>(array: Array<T> | null | undefined) {
+	return Array.isArray(array) && array.length > 0;
+}
+
 /**
  * Function to retrieve a property from an object based on a dot-separated path.
  * @param obj - The object to retrieve the property from.

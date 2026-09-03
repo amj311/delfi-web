@@ -24,6 +24,7 @@ export class BudgetDao {
 			Tags: budget.Tags as any,
 
 			scheduleVariants: budget.scheduleVariants?.map((variant: any) => ({
+				schedule_variant_id: variant.schedule_variant_id,
 				amountTemplate: {
 					type: variant.amount_type as 'fixed' | 'triggered' | 'seasonal',
 					amount: variant.amount,
@@ -38,6 +39,7 @@ export class BudgetDao {
 				},
 				schedule: variant.schedule as any,
 				projectionSchedule: variant.projectionSchedule as any,
+				notes: variant.notes,
 				// window: variant.window_interval ? {
 				// 	interval: variant.window_interval as any,
 				// 	quantity: variant.window_quantity as any,
@@ -153,30 +155,31 @@ export class BudgetDao {
 	public static async createBudget(workspace_id: string, budgetData: Budget) {
 		const insertInstructions = await BudgetDao.createBudgetInsertData(workspace_id, budgetData);
 
-		await prisma.budget.create({
+		const created = await prisma.budget.create({
 			data: {
-				...insertInstructions,
-			}
-		});
+					...insertInstructions,
+				}
+			});
 
-		// set schedule variants
+			// set schedule variants
 		if (asAny(budgetData).scheduleVariants) {
-			await BudgetDao.setAllScheduleVariantsForBudget(budgetData.budget_id, asAny(budgetData).scheduleVariants);
+			await BudgetDao.setAllScheduleVariantsForBudget(created.budget_id, asAny(budgetData).scheduleVariants);
 		}
+
+			// Return the created budget with all relations
+		return this.dbToBudget(await BudgetDao.getBudgetById(workspace_id, created.budget_id));
 	}
 
-
-
 	/**
-	 * PUT - Updates an ENTIRE budget and variants
-	 * @param workspace_id 
-	 * @param budget_id 
-	 * @param budgetData 
-	 * @returns 
-	 */
+	  * PUT - Updates an ENTIRE budget and variants
+	  * @param workspace_id 
+	  * @param budget_id 
+	  * @param budgetData 
+	  * @returns 
+	  */
 	public static async updateBudget(workspace_id: string, budget_id: string, budgetData: Budget) {
 		const insertInstructions = await BudgetDao.createBudgetInsertData(workspace_id, budgetData);
-		// Don't update these fields
+			// Don't update these fields
 		const fieldsToOmit = ['recurrence_type', 'transaction_type'];
 		for (const field of fieldsToOmit) {
 			delete insertInstructions[field];
@@ -188,18 +191,19 @@ export class BudgetDao {
 				workspace_id,
 			},
 			data: {
-				...insertInstructions,
-			}
-		});
+					...insertInstructions,
+				}
+			});
 
-		// Update schedule variants
+			// Update schedule variants
 		if (asAny(budgetData).scheduleVariants) {
 			await BudgetDao.setAllScheduleVariantsForBudget(budget_id, asAny(budgetData).scheduleVariants);
 		}
-	}
 
+			// Return the updated budget with all relations
+		return this.dbToBudget(await BudgetDao.getBudgetById(workspace_id, budget_id));
+	}
 	public static async setAllScheduleVariantsForBudget(budget_id: string, scheduleVariants: ScheduledBudget["scheduleVariants"]) {
-		// delete all prior attributions
 		await prisma.budgetScheduleVariant.deleteMany({
 			where: {
 				budget_id,

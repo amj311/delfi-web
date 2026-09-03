@@ -1,25 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, toRefs } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref, toRefs, watch } from 'vue';
 import Icon from './Icon.vue';
 import { parseNumber } from 'delfi-core/utils/miscUtils';
 import InputNumber from 'primevue/inputnumber';
 
-// currently represented as dollars. consider migrating to cents and currency code in the future
+// currently represented as dollars. TODO: consider migrating to cents and currency code in the future
 const value = defineModel<number>();
 
-/**
- * string representation of cents for input behavior.
- * $1,000.00 => 100000
- */ 
-const draftCents = ref(String((value.value || 0) * 100));
-const draftDollars = computed(() => Number(draftCents.value) / 100);
-const input = ref<HTMLInputElement>();
-
-const props = defineProps<{
+	const props = defineProps<{
 	inputId?: string,
 }>();
 
-const formatted = computed(() => {
+const input = ref<HTMLInputElement>();
+
+function formatted(number: number)  {
 	let signDisplay: any = 'never';
 	// if (props.mode === 'balance') {
 	// 	signDisplay = numAmount.value < 0 ? 'always' : 'never';
@@ -41,26 +35,41 @@ const formatted = computed(() => {
 		// maximumFractionDigits: props.round ? 0 : 2,
 	});
 
-	let val = formatter.format(Number(draftDollars.value));
+	let val = formatter.format(value.value || 0);
 
 	// if (props.hideCurrency) {
 	// 	val = val.replaceAll(/[^+-\d.,]/g, '');
 	// }
 
 	return val;
-});
+};
+
+const originalSign = ref(1);
 
 onMounted(() => {
-	if (input.value) {
-		input.value.value = formatted.value;
-	}
-})
+	originalSign.value = (value.value || 0) < 0 ? -1 : 1;
+	updateInput();
+});
+watch(() => value.value, updateInput)
 
-function interceptInput(e) {
-	if (!input.value || !e.target) return;
-	draftCents.value = (e.target.value || '0').replaceAll(/[^\d]/g, '');
-	input.value.value = formatted.value;
-	value.value = Number(draftCents.value) / 100;
+function updateInput() {
+	if (input.value) {
+		input.value.value = formatted(value.value || 0);
+	}
+}
+
+async function interceptInput(e) {
+	if (!input.value || !e.target?.value) return;
+
+	// a value of 0 turns into $0.00, which gets appended to on input, like $0.004 instead of $0.04
+	const zeroSafeValue = e.target.value.replace('$0.00', '');
+
+	// cents always come out as absolute value. preserve the original sign
+	const newCents = originalSign.value * Number((zeroSafeValue).replaceAll(/[^\d]/g, ''));
+	const newDollars = newCents / 100;
+	value.value = newDollars;
+	await nextTick();
+	input.value.value = formatted(newDollars);
 }
 
 // const color = computed(() => {

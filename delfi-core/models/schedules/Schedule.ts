@@ -3,6 +3,16 @@ import { ddate, type DelfiDate } from "../../utils/dateUtils";
 import { Schedule as rSchedule, type IOccurrencesArgs } from "./rSchedule";
 import dayjs from "dayjs";
 
+export const WEEKDAYS = {
+	SU: { label: 'Sunday', abbreviation: 'Sun', value: 'SU' },
+	MO: { label: 'Monday', abbreviation: 'Mon', value: 'MO' },
+	TU: { label: 'Tuesday', abbreviation: 'Tue', value: 'TU' },
+	WE: { label: 'Wednesday', abbreviation: 'Wed', value: 'WE' },
+	TH: { label: 'Thursday', abbreviation: 'Thu', value: 'TH' },
+	FR: { label: 'Friday', abbreviation: 'Fri', value: 'FR' },
+	SA: { label: 'Saturday', abbreviation: 'Sat', value: 'SA' },
+} as const;
+
 export interface IRuleOptions {
 	start: Dayjs;
 	end?: Dayjs;

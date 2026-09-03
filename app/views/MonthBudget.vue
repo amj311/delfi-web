@@ -26,11 +26,11 @@ import { BudgetEventSummary, RealityTally, type BudgetSnapshot, type CommonEvent
 import { useContextStore } from '@/stores/context.store';
 import CommonEventRow from '@/components/CommonEventRow.vue';
 import Button from 'primevue/button';
-import { currency } from 'delfi-core/utils/miscUtils';
+import { currency, wait } from 'delfi-core/utils/miscUtils';
 import CollapseList from '@/components/utils/CollapseList.vue';
 import Dialog from 'primevue/dialog';
 import { useAppStore } from '@/stores/app.store';
-import UpsertBudgetDrawer from '@/components/UpsertBudgetDrawer.vue';
+import UpsertBudgetDrawer from '@/components/EditBudget/UpsertBudgetDrawer.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -484,9 +484,9 @@ const accumulationChart = computed(() => {
 	};
 });
 
-const upsertBudgetDrawer = ref<InstanceType<typeof UpsertBudgetDrawer>>();
+const upsertingBudget = ref<Budget | null>(null);
 function openBudgetEditor(budget: Budget) {
-	upsertBudgetDrawer.value?.open(budget);
+	upsertingBudget.value = budget;
 }
 </script>
 
@@ -1493,7 +1493,9 @@ function openBudgetEditor(budget: Budget) {
 
 		<!-- Budget Editor Drawer -->
 		<UpsertBudgetDrawer
-			ref="upsertBudgetDrawer"
+			:key="upsertingBudget?.budget_id"
+			:budget="upsertingBudget!"
+			@close="async () => { await wait(500); upsertingBudget = null }"
 		/>
 
 		<div class="hidden">

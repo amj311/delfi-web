@@ -1,12 +1,20 @@
 <script setup lang="ts">
 import Select from 'primevue/select';
 import type { ScheduleVariant } from 'delfi-core/models/Budget';
-import InputCurrency from './InputCurrency.vue';
-import EditScheduleForm from './EditScheduleForm.vue';
-import FilterBuilder from './FilterBuilder.vue';
+import InputCurrency from '../InputCurrency.vue';
+import BudgetScheduleForm from './BudgetScheduleForm.vue';
+import FilterBuilder from '../FilterBuilder.vue';
 import InputNumber from 'primevue/inputnumber';
+import { computed, onMounted, ref, watch } from 'vue';
+import Button from 'primevue/button';
+import Textarea from 'primevue/textarea';
+import BudgetProjectionForm from './BudgetProjectionForm.vue';
 
 const variant = defineModel<ScheduleVariant>();
+const props = defineProps<{
+	withNotes?: boolean,
+}>();
+
 
 const amountTypeOptions = [
 	{ label: 'Fixed', value: 'fixed' },
@@ -23,10 +31,56 @@ const triggerOperatorOptions = [
 	{ label: 'percent of amount:', value: 'percent' },
 ];
 
-const MONTHS = [
+const MonthNames = [
 	'January', 'February', 'March', 'April', 'May', 'June',
 	'July', 'August', 'September', 'October', 'November', 'December',
 ] as const;
+
+if (variant.value && !variant.value.schedule.interval) {
+	variant.value.schedule.interval = 1;
+}
+
+/**
+ * Prepare default values for amountTemplate types
+ */
+watch(() => variant.value?.amountTemplate.type, () => {
+	const newType = variant.value?.amountTemplate.type;
+
+	if (!variant.value || !newType) {
+		return;
+	}
+
+	if (newType === 'triggered' && !variant.value.amountTemplate.trigger) {
+		variant.value.amountTemplate.trigger = {
+			computation: {
+				operand: 0,
+				operator: 'add'
+			},
+			filter: null,
+			type: 'immediateMatch',
+		}
+	}
+
+	if (newType === 'seasonal' && !variant.value.amountTemplate.monthAmounts) {
+		variant.value.amountTemplate.monthAmounts = {
+			0: 0,
+			1: 0,
+			2: 0,
+			3: 0,
+			4: 0,
+			5: 0,
+			6: 0,
+			7: 0,
+			8: 0,
+			9: 0,
+			10: 0,
+			11: 0,
+		}
+	}
+})
+
+const clickedAddNote = ref(false);
+const showNoteField = computed(() => variant.value?.notes || clickedAddNote.value);
 
 </script>
 
@@ -55,7 +109,7 @@ const MONTHS = [
 
 			<!-- Seasonal amounts -->
 			<div v-if="variant.amountTemplate.type === 'seasonal'" class="month-amount-grid">
-				<div v-for="month,i in MONTHS" :key="month" class="flex-row-center">
+				<div v-for="month,i in MonthNames" :key="month" class="flex-row-center">
 					<label :for="`month-${month}`" :style="{ flex: '0 0 2rem' }">{{ month.slice(0,3) }}</label>
 					<InputCurrency
 						:inputId="`month-${month}`"
@@ -66,7 +120,7 @@ const MONTHS = [
 			</div>
 
 			<!-- Triggered amount -->
-			<div v-if="variant.amountTemplate.type === 'triggered'" class="flex flex-column gap-3">
+			<div v-if="variant.amountTemplate.type === 'triggered' && variant.amountTemplate.trigger" class="flex flex-column gap-3">
 				<div>For every transaction where...</div>
 				<FilterBuilder v-model="variant.amountTemplate.trigger.filter" />
 
@@ -77,31 +131,28 @@ const MONTHS = [
 					<InputCurrency v-else :style="{ flex: '0 0 7rem' }" v-model="variant.amountTemplate.trigger.computation.operand"/>
 				</div>
 				<!-- {{ variant.amountTemplate.trigger.computation }} -->
-				  
-				<!-- <div>
-					<label for="trigger-operand" class="block font-bold mb-1">Operand</label>
-					<InputNumber
-						id="trigger-operand"
-						v-model="variant.amountTemplate.trigger.computation.operand"
-						class="w-full"
-						:step="1"
-					/>
-				</div> -->
-				<!-- <div>
-					<label for="trigger-filter" class="block font-bold mb-1">Filter (JSON stub)</label>
-					<Textarea
-						id="trigger-filter"
-						v-model="variant.amountTemplate.trigger.filter"
-						class="w-full font-mono text-sm"
-						rows="3"
-					/>
-				</div> -->
 			</div>
-
 		</div>
-		
-		<label for="amount-type" class="block font-bold flex-1">Timeline</label>
-		<EditScheduleForm v-model="variant.schedule" />
+
+		<div class="flex-column gap-2">
+			<label for="amount-type" class="block font-bold flex-1">Timeline</label>
+			<BudgetScheduleForm v-model="variant.schedule" />
+			<BudgetProjectionForm v-model="variant.projectionSchedule" />
+		</div>
+
+		<div v-if="withNotes">
+			<div v-if="showNoteField">
+				<label for="budget-notes" class="block text-sm mb-1">NOTE</label>
+				<Textarea
+					id="budget-notes"
+					v-model="variant.notes"
+					class="w-full"
+					rows="3"
+					placeholder="Optional notes about this variant..."
+				/>
+			</div>
+			<Button v-if="!showNoteField" text icon="pi pi-pencil" label="Add note" @click="clickedAddNote = true" />
+		</div>
 	</div>
 </template>
 

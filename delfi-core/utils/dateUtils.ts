@@ -18,7 +18,7 @@ export type DelfiDate =
 	{
 		isDelfiDate: true;
 		isBetweenInclusive: (start: DelfiDate, end: DelfiDate) => boolean;
-		format(format?: string): string;
+		format(format?: 'short' | 'full' | string): string;
 		isFuture(): boolean;
 		isToday(): boolean;
 	}

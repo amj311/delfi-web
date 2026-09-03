@@ -69,7 +69,7 @@ export type BudgetGroupPartial = BudgetGroupDetails & Partial<BudgetGroup>;
 //         At the least I need a function to generate the individual split events that behave like full events
 //
 
-// The Budgetable details that come from a true transaction
+// The "Budgetable" transaction details that come from a true transaction
 type TrueBudgetableDetails = {
 	account_id: string,
 	merchant_id?: string | null,

@@ -4,6 +4,7 @@ import request from '@/services/request';
 import type { Budget } from 'delfi-core/models/Budget';
 import { instantiateDates } from 'delfi-core/utils/dateUtils';
 import { useCategoryStore } from './category.store';
+import { useDelfiStore } from './delfi.store';
 
 export const useBudgetStore = defineStore('budget', () => {
 	let budgets = ref<Budget[]>([]);
@@ -48,6 +49,7 @@ export const useBudgetStore = defineStore('budget', () => {
 			budgetData.budget_id ?
 				budgets.value = budgets.value.map(a => a.budget_id === budgetData.budget_id ? budgetRes : a)
 				: budgets.value.push(budgetRes);
+			useDelfiStore().reCompute();
 		}
 		catch (e) {
 			console.error(e)
