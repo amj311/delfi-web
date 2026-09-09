@@ -99,7 +99,7 @@ function viewBudget(budget: Budget) {
 				<small>{{ dayjs(account.last_successful_sync).fromNow() }}</small>
 			</div>
 			<div class="flex-grow-1"></div>
-			<Currency :amount="account.current_balance" mode="balance" class="font-medium text-lg" />
+			<Currency :amount="account.current_balance" mode="balance" class="font-medium" />
 		</div>
 	</div>
 
@@ -111,7 +111,7 @@ function viewBudget(budget: Budget) {
 		<div v-if="isLoadingNextBudgets" class="flex align-items-center gap-2 my-2"><i class="pi pi-spin pi-spinner"></i>Loading upcoming budgets...</div>
 		<CollapseList :items="upcomingBudgets" :itemHeight="65">
 			<template #default="{ item }">
-					<CommonEventRow :event="item" showPastDue style="cursor: pointer;" @click="() => viewBudget(item.Budget)" />
+				<CommonEventRow :event="item" showPastDue style="cursor: pointer;" @click="() => viewBudget(item.Budget)" />
 			</template>
 		</CollapseList>
 	</template>
