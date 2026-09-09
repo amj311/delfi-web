@@ -5,7 +5,7 @@ import { ref, onMounted, computed } from 'vue';
 import UpsertAccountForm from '@/components/UpsertAccountForm.vue';
 import Currency from '@/components/Currency.vue';
 import { TransactionService } from '@/services/transaction.service';
-import { TransactionUtils, type Transaction } from 'delfi-core/models/Transaction';
+import { TransactionUtils, type AttributionEvent, type Transaction } from 'delfi-core/models/Transaction';
 import { instantiateDates } from 'delfi-core/utils/dateUtils';
 import CommonEventRow from '@/components/CommonEventRow.vue';
 import TransactionDetailsDrawer from '@/components/TransactionDetailsDrawer.vue';
@@ -126,8 +126,8 @@ const attributedEvents = computed(() => {
 
 
 const transactionDetailsDrawer = ref<InstanceType<typeof TransactionDetailsDrawer> | null>(null);
-function viewTransaction(transaction: Transaction) {
-	transactionDetailsDrawer.value?.open(transaction);
+function viewEvent(event: AttributionEvent) {
+	transactionDetailsDrawer.value?.open(event);
 }
 
 const lastSync = computed(() => {
@@ -423,7 +423,7 @@ async function archiveAccount() {
 						>
 							{{ event.date.format('full') }}
 						</h4>
-						<CommonEventRow  :event="event" showTransferCopy hideAccount @click="() => viewTransaction(event.attributionDetails.sourceTransaction)" />
+						<CommonEventRow  :event="event" showTransferCopy hideAccount @click="() => viewEvent(event)" />
 					</template>
 				</div>
 			</div>
