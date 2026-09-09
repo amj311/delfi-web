@@ -31,6 +31,7 @@ import { currency } from 'delfi-core/utils/miscUtils';
 import CollapseList from '@/components/utils/CollapseList.vue';
 import Dialog from 'primevue/dialog';
 import { useAppStore } from '@/stores/app.store';
+import VirtualScroll, { type VirtualScrollRow } from '@/components/utils/VirtualScroll.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -490,6 +491,44 @@ const accumulationChart = computed(() => {
 			// },
 		],
 	};
+});
+
+const transactionRowHeight = 60;
+const virtualTransactionRows = computed<Array<VirtualScrollRow>>(() => {
+	const rows: Array<VirtualScrollRow> = [];
+			
+	dailyEvents.value.forEach((day) => {
+		if (day.transactions.length === 0) return;
+
+		rows.push({
+			height: 50,
+			key: day.date.split(' ').join('-') + 'header',
+			persist: true,
+			data: {
+				isHeader: true,
+				date: day.date,
+			},
+		});
+
+		day.transactions.forEach((event, i) => {
+			// skip displaying transfer targets
+			if (event.attributionDetails?.isTransferTarget) {
+				return;
+			}
+
+			rows.push({
+				height: transactionRowHeight,
+				key: day.date + 'row' + i,
+				data: {
+					isHeader: false,
+					date: day.date,
+					transaction: event,
+				},
+			});
+		});
+	});
+
+	return rows;
 });
 
 
@@ -1027,7 +1066,36 @@ const accumulationChart = computed(() => {
 				<br />
 				<br />
 				<h3 v-if="!isFuture">Transactions</h3>
-				<template v-for="(day, i) of dailyEvents">
+
+				<VirtualScroll v-if="virtualTransactionRows && virtualTransactionRows.length > 0" ref="virtualScroller" :rows="virtualTransactionRows">
+					<template #row="{ data }">
+						<template v-if="data.isHeader">
+							<h4
+								:style="{
+									padding: '8px 8px',
+									marginTop: '8px',
+									position: 'sticky',
+									top: '3rem',
+									backgroundColor: '#ffff',
+									zIndex: 3,
+									marginLeft: '-5px',
+									marginRight: '-5px',
+								}"
+							>
+								{{ data.date }}
+							</h4>
+						</template>
+						<div v-else class="">
+							<CommonEventRow
+								:event="data.transaction"
+								:hideDate="true"
+								@click="() => viewTransactionEvent(data.transaction)"
+							/>
+						</div>
+					</template>
+				</VirtualScroll>
+
+				<!-- <template v-for="(day, i) of dailyEvents">
 					<div v-if="day.transactions.length > 0">
 						<h4
 							:style="{
@@ -1054,7 +1122,7 @@ const accumulationChart = computed(() => {
 							</div>
 						</div>
 					</div>
-				</template>
+				</template> -->
 			</div>
 			
 			<!-- column top/right -->
