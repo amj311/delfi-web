@@ -8,7 +8,8 @@ import { TransactionUtils, type CreateTransaction, type Transaction } from "delf
 import type { AccountDetails } from "delfi-core/models/Account";
 import type { CategoryKey } from "delfi-core/models/systemCategories";
 import { CategoryDao } from "server/data/CategoryDao";
-import { ddate } from "delfi-core/utils/dateUtils";
+import { ddate, type DelfiDate } from "delfi-core/utils/dateUtils";
+import { peek } from "delfi-core/utils/miscUtils";
 
 export type SyncedTransactionDetails = CreateTransaction & {
 	/** Incoming transaction may have default categories supplied by scrapers */
@@ -19,7 +20,7 @@ export type SyncedTransactionDetails = CreateTransaction & {
 type YYYYMMDD = `${number}-${number}-${number}`;
 
 type RawSyncedTransaction = Omit<SyncedTransactionDetails, 'date'> & {
-	date: YYYYMMDD;
+	date: YYYYMMDD | DelfiDate;
 }
 
 type AccountSyncFailed = {
@@ -79,6 +80,7 @@ export class SyncService {
 	 * @returns 
 	 */
 	public static async ingestAccountSyncs(workspace_id: string, accountSyncs: Array<AccountSyncResult>) {
+		console.log("Processing incoming account syncs");
 		const newTransactions: Array<Transaction> = [];
 		// Update account details and sync new transactions
 		await Promise.all(accountSyncs.map(async result => {
@@ -128,6 +130,7 @@ export class SyncService {
 		await TransactionService.findAndLinkTransferPairs(workspace_id, newTransactions);
 
 		// await PlaidService.searchForPlaidTransactionData(workspace_id);
+		console.log("Finished processing account syncs! New transactions:", newTransactions.length);
 		return newTransactions;
 	}
 };

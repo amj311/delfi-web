@@ -1,5 +1,5 @@
 # Start from the official Playwright image which already includes browsers and dependencies
-FROM mcr.microsoft.com/playwright:v1.53.0-jammy
+FROM mcr.microsoft.com/playwright:v1.62.1-jammy
 
 RUN apt-get update -y && apt-get install -y openssl
 

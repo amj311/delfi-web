@@ -349,6 +349,8 @@ export class TransactionServiceClass extends DaoUser {
 	 * @param transactions 
 	 */
 	public async removeGhostTransactionsFromSync(workspace_id: string, account_id: string, transactions: Array<CreateTransaction>) {
+		if (transactions.length === 0) return;
+	
 		// assume date range from transactions, but hedge forward in case the end doesn't have a full day
 		let earliestDate!: DelfiDate;
 		let latestDate!: DelfiDate;
@@ -360,7 +362,8 @@ export class TransactionServiceClass extends DaoUser {
 				earliestDate = tx.date;
 			}
 		}
-		earliestDate.add(1, 'day');
+
+		earliestDate = earliestDate.add(1, 'day');
 
 		// load transactions from range
 		const existingTransactions = await TransactionDao.getTransactionsForAccount(workspace_id, account_id, { start: earliestDate.toString(), end: latestDate.toString() });

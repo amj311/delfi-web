@@ -20,14 +20,31 @@ export type InstitutionScraper = {
 	hasLoggedInElement: string;
 	isAtLoginElement: string;
 	isLoggedOutElement: string;
-	checkForOtpNeeded?: (page: Page) => Promise<boolean>,
-	initiateOtp?: (page: Page) => Promise<void>,
+	mfaMethod: null | 'auth-app-auto' | 'otp-user',
+	checkForMfaNeeded?: (page: Page) => Promise<boolean>,
+	initiateMfa?: (page: Page) => Promise<void>,
 	submitOtp?: (page: Page, otp: string) => Promise<void>,
 	getLoginSequence: (creds: InstitutionCredentials) => PageAction[];
 	listAccounts: (page: Page) => Promise<Array<ScrapedAccount>>;
 	getAccountDetails: (page: Page, external_account_id: string) => Promise<ScrapedAccount>;
 	getAccountTransactions: (page: Page, account: Account) => Promise<Array<ScrapedTransaction>>;
 	[key: string]: any; // Allow additional properties for flexibility
+}
+
+type MfaConfig = {
+	providers: Record<string, {
+		name: string,
+		loginUrl: string,
+		hasLoggedInElement: string;
+		isAtLoginElement: string;
+		isLoggedOutElement: string;
+		loginSequence: Array<PageAction>,
+		institutionAccess: Record<string, {
+			url: string,
+			getCodeSequence: Array<PageAction>,
+		}>
+	}>,
+	institutionProviders: Record<string, string>, // <institution_id, provider key>
 }
 
 export class ScraperService {
@@ -84,7 +101,7 @@ export class ScraperService {
 			throw new Error('All accounts must belong to the same user');
 		}
 
-		return await useBrowser(async (usePage) => {
+		const results = await useBrowser(async (usePage) => {
 			// First log in to each institution just once
 			const institutionIds = Array.from(new Set(accounts.map((account) => account.institution_id)));
 			const failedLogins = new Map<string, string>();
@@ -101,7 +118,7 @@ export class ScraperService {
 			}));
 
 			// Then scrape each account
-			return await Promise.all(accounts.map(async (account) => {
+			const results = await Promise.all(accounts.map(async (account) => {
 				try {
 					if (failedLogins.has(account.institution_id)) {
 						throw new Error(`Failed to log in to institution: ${failedLogins.get(account.institution_id)}`);
@@ -128,7 +145,12 @@ export class ScraperService {
 					};
 				}
 			}));
+
+			console.log("Finished scraping accounts. Closing browser...");
+			return results;
 		});
+		console.log("Done scraping with browser.")
+		return results;
 	}
 
 
@@ -184,25 +206,30 @@ export class ScraperService {
 					// Perform the login sequence
 					await doPageActions(page, scraper.getLoginSequence(creds));
 
-					console.log("finished login sequence!")
-					console.log("needs check otp:", scraper.needsOtpSelector)
-
-					const needsOtp = scraper.checkForOtpNeeded ? (await scraper.checkForOtpNeeded) : false;
+					const needsMfa = scraper.checkForMfaNeeded ? (await scraper.checkForMfaNeeded) : false;
 					// check for OTP if needed
-					if (needsOtp) {
-						console.log("otp needed detected!")
+					if (needsMfa) {
 						// do OTP initiation, like select method, click send, etc. This is institution-specific and may require additional logic.
-						if (scraper.initiateOtp) {
-							console.log("initiating otp with scraper!")
-							await scraper.initiateOtp(page);
+						if (scraper.initiateMfa) {
+							await scraper.initiateMfa(page);
 						}
-						// Alert user to enter OTP manually
-						console.log("waiting for otp...")
-						const otp = await ScraperService.waitForUserOtpInput(institutionId, workspaceId);
-						if (!scraper.submitOtp) {
-							throw new Error("Misconfigured scraper")
+
+						if (scraper.mfaMethod === 'auth-app-auto') {
+							const otp = await ScraperService.getAuthAppCode(institutionId, workspaceId);
+							if (!scraper.submitOtp) {
+								throw new Error("Misconfigured scraper")
+							}
+							await scraper.submitOtp(page, otp);
 						}
-						await scraper.submitOtp(page, otp);
+						
+						if (scraper.mfaMethod === 'otp-user') {
+							// Alert user to enter OTP manually
+							const otp = await ScraperService.waitForUserOtpInput(institutionId, workspaceId);
+							if (!scraper.submitOtp) {
+								throw new Error("Misconfigured scraper")
+							}
+							await scraper.submitOtp(page, otp);
+						}
 					}
 
 					// check for logged in element again
@@ -228,6 +255,57 @@ export class ScraperService {
 	}
 
 
+	/**
+	 * AUTH APP ACCESS
+	 */
+	public static async getAuthAppCode(institution_id: string, workspace_id: string): Promise<string> {
+		// load mfa secret config
+		// TODO someday this may need to be saved for various workspaces. For now just use my secret.
+		const configPath = require('path').resolve(process.cwd(), process.env.MFA_CONFIG_PATH);
+		if (!configPath) {
+			throw new Error("Auto MFA not configured!");
+		}
+		const mfaConfig: MfaConfig = require(configPath);
+		if (!mfaConfig) {
+			if (!configPath) {
+				throw new Error("Auto MFA not configured!");
+			}	
+		}
+
+		const providerId = mfaConfig.institutionProviders[institution_id];
+		const provider = mfaConfig.providers[providerId];
+
+		let passCode: string | null = '';
+
+		await useBrowser(async (usePage) => {
+			await usePage(async (page) => {
+				await page.goto(provider.loginUrl);
+
+				// First check to see if we are already logged in
+				const loggedInElement = await page.waitForSelector(provider.hasLoggedInElement, { timeout: 5000 }).catch(() => null);
+				if (!loggedInElement) {
+					// check for login element
+					await page.waitForSelector(provider.isAtLoginElement, { timeout: 5000 });
+					// Perform the login sequence
+					await doPageActions(page, provider.loginSequence);
+
+
+					// check for logged in element again
+					const loggedInElement = await page.waitForSelector(provider.hasLoggedInElement, { timeout: 300000 }).catch(() => null);
+					if (!loggedInElement) {
+						throw new Error('Login failed, did not find logged in element');
+					}
+				}
+
+				// now go get the code
+				const access = provider.institutionAccess[institution_id];
+				await page.goto(access.url);
+				passCode = await doPageActions(page, access.getCodeSequence);
+			});
+		})
+
+		return passCode.replaceAll(' ', ''); // codes are often displayed with spaces, but we don't want those here
+	}
 
 
 	/**

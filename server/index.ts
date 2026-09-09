@@ -6,6 +6,7 @@ import { createReadStream, readFileSync } from "fs";
 import firebaseAuthMiddleware, { firebaseConfig } from "./services/FirebaseService";
 import signupRoute from "./routes/signup.route";
 import './services/SyncService'; // Import to trigger job creation
+import { ScraperService } from './services/scraper/ScraperService';
 
 // HTTPS was only needed for testing with plaid
 // // HTTPS support for development

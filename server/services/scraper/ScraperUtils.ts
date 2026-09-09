@@ -1,5 +1,5 @@
 // Simple Playwright scraper to navigate to American First Credit Union login page
-import { chromium, type Page, type ElementHandle, type BrowserContext, type Browser } from 'playwright';
+import { chromium, type Page, type ElementHandle, type BrowserContext, type Browser, type Locator } from 'playwright';
 import { ddate, type DelfiDate } from 'delfi-core/utils/dateUtils';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -142,6 +142,10 @@ type PageActions = {
 		action: 'click';
 		selector: string;
 	};
+	GetInputValue: {
+		action: 'getInputValue';
+		selector: string;
+	};
 	CloudflareCaptcha: {
 		action: 'cloudflareCaptcha';
 		selector: string;
@@ -150,7 +154,11 @@ type PageActions = {
 
 export type PageAction = PageActions[keyof PageActions];
 
-export async function doPageActions(page: Page, actions: PageAction[]): Promise<void> {
+export async function doPageActions(page: Page, actions: PageAction[]): Promise<string | null> {
+	// some sequences end in a "get" action that writes to here
+	let finalResult: string | null = null;
+
+
 	for (const action of actions) {
 		switch (action.action) {
 			case 'type': {
@@ -177,10 +185,18 @@ export async function doPageActions(page: Page, actions: PageAction[]): Promise<
 			case 'wait':
 				await page.waitForTimeout(action.time);
 				break;
+
+			case 'getInputValue': {
+				const element = (await page.waitForSelector(action.selector));
+				finalResult = await element.inputValue();
+				break;
+			}
 			default:
 				console.warn(`Unknown action`, action);
 		}
 	}
+
+	return finalResult;
 }
 
 
@@ -456,12 +472,14 @@ async function simulateTextInput(page: Page, element: ElementHandle<SVGElement |
 // 	}
 // }
 
-export async function find(locator, selector, options = {}) {
+export async function find(locator: Locator, selector, options: any = {}) {
 	const count = await locator.locator(selector, options).count();
-	if (count > 0) {
-		return await locator.locator(selector, options).first();
+	if (count >= (options.n ? options.n + 1 : 1)) {
+		return await locator.locator(selector, options).nth(options.n || 0);
 	}
 	return null;
 }
 
-	
+export async function findInnerText(locator: Locator, selector, options = {}) {
+	return (await (await find(locator, selector, options))?.innerText())?.trim();
+}
