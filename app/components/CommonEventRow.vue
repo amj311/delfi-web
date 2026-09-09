@@ -16,6 +16,7 @@ import { UncategorizedCategory } from 'delfi-core/models/systemCategories';
 import { useTransactionSelectionStore } from '@/stores/transaction-selection.store';
 import TransactionAttributionDrawer from './TransactionAttributionDrawer.vue';
 import type { AttributionEvent } from 'delfi-core/models/Transaction.js';
+import { useDelfiStore } from '@/stores/delfi.store.js';
 
 const toast = useToast();
 
@@ -101,9 +102,22 @@ async function reviewTransaction() {
 
 async function doAttributions() {
 	if (!isAttribution.value) return;
-	const newAttributions = await transactionAttributionDrawer.value?.waitForSelection(event, undefined, event as AttributionEvent);
-	console.log(newAttributions)
-	// TODO save new attributions!!!
+	const result = await transactionAttributionDrawer.value?.waitForSelection(event, undefined, event as AttributionEvent);
+
+	if (!result) return;
+
+	// Build only the non-undefined fields to send
+	const updates: Record<string, string | null> = {};
+	if (result.budget_id !== undefined) updates.budget_id = result.budget_id;
+	if (result.budget_child_item_id !== undefined) updates.budget_child_item_id = result.budget_child_item_id;
+	if (result.category_id !== undefined) updates.category_id = result.category_id;
+	if (result.group_id !== undefined) updates.group_id = result.group_id;
+
+	const attributionIds = [event.attributionDetails!.transaction_attribution_id];
+
+	const updatedTransactions = await TransactionService.bulkUpdateAttributions(attributionIds, updates);
+	await useDelfiStore().updateTransactions(updatedTransactions);
+	useDelfiStore().reCompute();
 }
 
 const leftAction = computed(() => {
@@ -197,7 +211,7 @@ const isSelected = computed(() => transactionSelectionStore.selection.isSelected
 									source_id="sync_alt"
 									source="material-symbols"
 								/>
-								<Currency class="text-lg" :amount="event.amount" :mode="currencyModeComputed" />
+								<Currency :amount="event.amount" :mode="currencyModeComputed" />
 							</div>
 						</div>
 
