@@ -20,7 +20,7 @@ const sessionInterval = setInterval(userStore.loadSessionData, 60000);
 const waitingForAuth = ref(true);
 setTimeout(() => {
 	waitingForAuth.value = false;
-}, 1000); // wait for 1 second before showing the app
+}, 2000); // wait for 1 second before showing the app
 
 onBeforeUnmount(() => {
 	clearInterval(sessionInterval);
@@ -35,9 +35,9 @@ onBeforeUnmount(() => {
 
 	<div class="app" :class="{ touch: useAppStore().isTouch }">
 		<LoggedIn v-if="!waitingForAuth && userStore.hasAuth && userStore.currentUser" />
-		<div v-else class="flex flex-column align-items-center" style="padding-top: calc(33vh - 5rem)">
+		<div v-else class="splash h-full flex-col-center" style="padding-top: calc(33vh - 5rem)">
 			<div class="flex align-items-center gap-3" style="font-size: 1.5em">
-				<img src="./assets/gemini_logo_2_cropped.png" alt="Delfi Logo" class="mb-4" style="width: 3em" />
+				<img src="./assets/gemini_logo_2_trans.png" alt="Delfi Logo" class="mb-4" style="width: 3em" />
 				<div
 					class="mb-4 font-semibold"
 					style="
@@ -65,4 +65,11 @@ onBeforeUnmount(() => {
 	<BudgetActions />
 </template>
 
-<style scoped></style>
+<style scoped>
+.splash {
+	min-height: 100vh;
+	background-image: url('./assets/bg-1.jpeg');
+	background-size: cover;
+	background-position: 75% 50%;
+}
+</style>

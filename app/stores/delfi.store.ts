@@ -26,24 +26,29 @@ export const useDelfiStore = defineStore('delfi', () => {
 	}
 
 	async function initDelfi() {
-		isInitializing.value = true;
-		delfi.init({
-			accounts: useAccountStore().accounts,
-			budgets: useBudgetStore().budgets,
-			categories: useCategoryStore().allCategories,
-			start: projectionStart.value,
-			end: projectionEnd.value,
-			loadTransactions: async (start, end) => {
-				return await TransactionService.getTransactionsInRange(start, end);
-			}
-		});
-		isInitializing.value = false;
-		updateRecomputed();
-		isGeneratingForecast.value = true;
-		await delfi.computeForecast();
-		isGeneratingForecast.value = false;
-
-		scheduleCompute(); // schedule another compute to keep data fresh
+		try {
+			isInitializing.value = true;
+			delfi.init({
+				accounts: useAccountStore().accounts,
+				budgets: useBudgetStore().budgets,
+				categories: useCategoryStore().allCategories,
+				start: projectionStart.value,
+				end: projectionEnd.value,
+				loadTransactions: async (start, end) => {
+					return await TransactionService.getTransactionsInRange(start, end);
+				}
+			});
+			isInitializing.value = false;
+			updateRecomputed();
+			isGeneratingForecast.value = true;
+			await delfi.computeForecast();
+			isGeneratingForecast.value = false
+			scheduleCompute(); // schedule another compute to keep data fresh
+		}
+		finally {
+			isInitializing.value = false;
+			isGeneratingForecast.value = false;
+		}
 	}
 
 	async function reCompute() {

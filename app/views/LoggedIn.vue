@@ -64,13 +64,20 @@ onBeforeMount(() => {
 					<div class="nav-label">Rules</div>
 				</router-link>
 			</nav>
+
+			<div :class="{ show: delfiStore.isGeneratingForecast }" class="computing-banner">
+				<div class="flex-row-center justify-content-center gap-2 py-2 text-xs">
+					<i class="pi pi-spin pi-spinner" />
+					Computing budgets...
+				</div>
+			</div>
 		</header>
 
 		<TransactionSelectionSnackbar />
 	</div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .app-container {
 	display: flex;
 	flex-direction: column;
@@ -81,9 +88,12 @@ onBeforeMount(() => {
 	position: sticky;
 	bottom: 0;
 	z-index: 3;
-	padding: 0.5rem;
+	border-top: 1px solid #e0e0e0;
+}
+
+.main-nav {
 	background-color: #f5f5f5;
-	border-bottom: 1px solid #e0e0e0;
+	padding: 0.5rem;
 }
 
 .nav-link {
@@ -111,5 +121,16 @@ onBeforeMount(() => {
 .app-content {
 	flex: 1;
 	padding: 1rem;
+}
+
+.computing-banner {
+	background: rgb(49, 231, 201);
+	max-height: 0;
+	overflow: hidden;
+	transition: 200ms;
+
+	&.show {
+		max-height: 5rem;
+	}
 }
 </style>

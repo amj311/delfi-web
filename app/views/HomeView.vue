@@ -55,11 +55,11 @@ async function loadRecentTransactions() {
 onBeforeMount(loadRecentTransactions);
 
 const transactionDetailsDrawer = ref<InstanceType<typeof TransactionDetailsDrawer> | null>(null);
-const viewingTransaction = ref<Transaction | null>(null);
-function viewTransaction(transaction: Transaction) {
-	viewingTransaction.value = transaction;
+const viewingTransaction = ref<AttributionEvent | null>(null);
+function viewTransaction(event: AttributionEvent) {
+	viewingTransaction.value = event;
 	nextTick(() => {
-		transactionDetailsDrawer.value?.open(transaction);
+		transactionDetailsDrawer.value?.open(event);
 	});
 }
 
@@ -121,10 +121,10 @@ function viewBudget(budget: Budget) {
 		<h3 class="my-2">Recent Transactions</h3>
 		<CollapseList :items="recentTransactions" :itemHeight="65">
 			<template #default="{ item }">
-				<CommonEventRow :event="item" @click="viewTransaction(item.attributionDetails.sourceTransaction)" />
+				<CommonEventRow :event="item" @click="viewTransaction(item)" />
 			</template>
 		</CollapseList>
 	</template>
 
-	<TransactionDetailsDrawer ref="transactionDetailsDrawer" :key="viewingTransaction?.transaction_id" @close="loadRecentTransactions" />
+	<TransactionDetailsDrawer ref="transactionDetailsDrawer" :key="viewingTransaction?.attributionDetails?.transaction_attribution_id" @close="loadRecentTransactions" />
 </template>

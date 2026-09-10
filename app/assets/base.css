@@ -34,6 +34,19 @@
   --color-text: var(--vt-c-text-light-1);
 
   --section-gap: 160px;
+
+  /* theme colors */
+    --p-primary-50: var(--p-cyan-50) !important;
+    --p-primary-100: var(--p-cyan-100) !important;
+    --p-primary-200: var(--p-cyan-200) !important;
+    --p-primary-300: var(--p-cyan-300) !important;
+    --p-primary-400: var(--p-cyan-400) !important;
+    --p-primary-500: var(--p-cyan-500) !important;
+    --p-primary-600: var(--p-cyan-600) !important;
+    --p-primary-700: var(--p-cyan-700) !important;
+    --p-primary-800: var(--p-cyan-800) !important;
+    --p-primary-900: var(--p-cyan-900) !important;
+    --p-primary-950: var(--p-cyan-950) !important;
 }
 
 /* @media (prefers-color-scheme: dark) {
