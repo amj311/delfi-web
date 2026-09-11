@@ -34,7 +34,7 @@ onBeforeUnmount(() => {
 	<Dialog />
 
 	<div class="app" :class="{ touch: useAppStore().isTouch }">
-		<LoggedIn v-if="!waitingForAuth && userStore.hasAuth && userStore.currentUser" />
+		<LoggedIn v-if="false && !waitingForAuth && userStore.hasAuth && userStore.currentUser" />
 		<div v-else class="splash h-full flex-col-center" style="padding-top: calc(33vh - 5rem)">
 			<div class="flex align-items-center gap-3" style="font-size: 1.5em">
 				<img src="./assets/gemini_logo_2_trans.png" alt="Delfi Logo" class="mb-4" style="width: 3em" />
@@ -68,8 +68,8 @@ onBeforeUnmount(() => {
 <style scoped>
 .splash {
 	min-height: 100vh;
-	background-image: url('./assets/bg-1.jpeg');
+	background-image: url('./assets/bg-3-1200.jpeg');
 	background-size: cover;
-	background-position: 75% 50%;
+	background-position: 100% 50%;
 }
 </style>
