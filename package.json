@@ -12,6 +12,7 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
     "db:push": "cd prisma && npx prisma db push",
+    "db:push:prod": "bash db_push_prod.sh",
     "db:generate": "cd prisma && npx prisma generate",
     "local-prod": "docker compose -f docker-compose-prod-local.yml up -d --build --force-recreate > /dev/null"
   },

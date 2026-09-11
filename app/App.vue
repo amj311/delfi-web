@@ -34,7 +34,7 @@ onBeforeUnmount(() => {
 	<Dialog />
 
 	<div class="app" :class="{ touch: useAppStore().isTouch }">
-		<LoggedIn v-if="false && !waitingForAuth && userStore.hasAuth && userStore.currentUser" />
+		<LoggedIn v-if="!waitingForAuth && userStore.hasAuth && userStore.currentUser" />
 		<div v-else class="splash h-full flex-col-center" style="padding-top: calc(33vh - 5rem)">
 			<div class="flex align-items-center gap-3" style="font-size: 1.5em">
 				<img src="./assets/gemini_logo_2_trans.png" alt="Delfi Logo" class="mb-4" style="width: 3em" />
