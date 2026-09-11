@@ -44,23 +44,23 @@ onBeforeMount(() => {
 		<header class="app-header">
 			<nav class="main-nav flex-row-center">
 				<router-link to="/" class="nav-link">
-					<Icon class="text-xl" name="pi::home" />
+					<Icon class="text-lg" name="pi::home" />
 					<div class="nav-label">Home</div>
 				</router-link>
 				<router-link to="/month" class="nav-link">
-					<Icon class="text-xl" name="pi::wallet" />
+					<Icon class="text-lg" name="pi::wallet" />
 					<div class="nav-label">Budget</div>
 				</router-link>
 				<router-link to="/accounts" class="nav-link">
-					<Icon class="text-xl" name="bank" />
+					<Icon class="text-lg" name="bank" />
 					<div class="nav-label">Accounts</div>
 				</router-link>
 				<!-- <router-link to="/categories" class="nav-link">
-					<Icon class="text-xl" name="category" />
+					<Icon class="text-lg" name="category" />
 					<div class="nav-label">Categories</div>
 				</router-link> -->
 				<router-link to="/rules" class="nav-link">
-					<Icon class="text-xl" name="material-symbols::manufacturing" />
+					<Icon class="text-lg" name="material-symbols::manufacturing" />
 					<div class="nav-label">Rules</div>
 				</router-link>
 			</nav>
@@ -115,7 +115,7 @@ onBeforeMount(() => {
 }
 
 .nav-label {
-	font-size: 0.9em;
+	font-size: 0.85em;
 }
 
 .app-content {
