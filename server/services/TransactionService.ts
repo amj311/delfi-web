@@ -344,6 +344,16 @@ export class TransactionServiceClass extends DaoUser {
 	 * The sync is expected to contain the FULL record from the bank for the time period, so any
 	 * transactions we have that don't exist in it can be removed.
 	 * 
+	 * Ghost definition:
+	 * There is no transaction in the date range that matches date_order, description, and amount.
+	 * If the bank modified the record, it will be in the incoming set with updated values.
+	 * 
+	 * TODO: find ways to identify the same transaction and simply apply updates.
+	 * Careful of look-alikes. Perhaps if there is only one match for the whole day, regardless of date order
+	 * Try to get unique and constant transaction IDs from banks
+	 * 
+	 * DOES NOT APPLY TO PENDING. Those will be assumed to have just ended pending
+	 * 
 	 * @param workspace_id 
 	 * @param account_id 
 	 * @param transactions 
@@ -368,6 +378,11 @@ export class TransactionServiceClass extends DaoUser {
 		// load transactions from range
 		const existingTransactions = await TransactionDao.getTransactionsForAccount(workspace_id, account_id, { start: earliestDate.toString(), end: latestDate.toString() });
 		for (const tx of existingTransactions) {
+			// be sure to keep pending. They are handled in a future step where they may be paired with new transactions.
+			// We may consider moving that logic here, but it's a little out of the way from the main flow.
+			// We do not delete the ghost transactions later because later steps are not so rigidly intended for a full batch over a range
+			if (tx.pending) continue;
+
 			let isGhost = true;
 			for (const newTx of transactions) {
 				if (
@@ -379,8 +394,7 @@ export class TransactionServiceClass extends DaoUser {
 				}
 			}
 			if (isGhost) {
-				console.log("Soft deleting ghost transaction", tx.transaction_id);
-				await TransactionDao.deleteTransaction(workspace_id, tx.transaction_id);
+				await TransactionDao.deleteTransaction(workspace_id, tx.transaction_id, 'determined_ghost');
 			}
 		} 
 	}

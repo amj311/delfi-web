@@ -128,6 +128,7 @@ class TransactionDaoClass extends PrismaDao {
 		return found ? this.dbToTransaction(found) : null;
 	}
 
+	/** INCLUDES PENDING!!!! */
 	async getTransactionsForAccount(workspace_id: string, account_id: string, range?: { start: string, end: string }): Promise<Transaction[]> {
 		const transactions = await this.db.transaction.findMany({
 			where: {
@@ -354,13 +355,18 @@ class TransactionDaoClass extends PrismaDao {
 		updates: Partial<{ budget_id: string | null, budget_child_item_id: string | null, category_id: string | null, group_id: string | null }>
 	): Promise<Transaction[]> {
 		// Verify all attributions belong to this workspace, then update
+		console.log(attributionIds)
 		const attributions = await this.db.transactionAttribution.findMany({
 			where: {
-				transaction_attribution_id: { in: attributionIds },
-				Transaction: { workspace_id },
+				// transaction_attribution_id: { in: attributionIds },
+				transaction_attribution_id: 'ce14a89b-c9dd-4dc9-b5fa-a2690a8d69e4',
+				// Transaction: { workspace_id },
+				// transaction_id: '6d2de756-5eb8-4e8a-9fa0-11bf28104a4d'
 			},
 			select: { transaction_attribution_id: true, transaction_id: true },
 		});
+
+		console.log(attributions)
 
 		if (attributions.length !== attributionIds.length) {
 			throw new Error('One or more attributions not found or not accessible');
@@ -525,7 +531,7 @@ class TransactionDaoClass extends PrismaDao {
 		return potentialPairs.map(this.dbToTransaction);
 	}
 
-	async deleteTransaction(workspace_id: string, transaction_id: string): Promise<void> {
+	async deleteTransaction(workspace_id: string, transaction_id: string, reason: string): Promise<void> {
 		await this.db.transaction.update({
 			where: {
 				transaction_id,
@@ -533,6 +539,7 @@ class TransactionDaoClass extends PrismaDao {
 			},
 			data: {
 				deleted_at: new Date(),
+				delete_reason: reason,
 			}
 		});
 	}

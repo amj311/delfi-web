@@ -38,7 +38,7 @@ export default (app, _, done) => {
 	app.delete('/:transaction_id', async function handler (request) {
 		const workspace_id = request.sessionUser.workspace_id;
 		const { transaction_id } = request.params;
-		await TransactionDao.deleteTransaction(workspace_id, transaction_id);
+		await TransactionDao.deleteTransaction(workspace_id, transaction_id, 'deleted_by_user');
 		return {
 			success: true,
 		};

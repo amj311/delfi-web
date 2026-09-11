@@ -410,6 +410,8 @@ model Transaction {
     transaction_id String   @id @default(uuid())
     created_at     DateTime @default(now())
     updated_at     DateTime @default(now()) @updatedAt
+    deleted_at        DateTime? // soft delete
+	delete_reason     String?
 
     amount               Float
     date                 String // DATE ONLY  e.g. "2023-10-01"
@@ -454,7 +456,6 @@ model Transaction {
     TransferPairSelf  Transaction?       @relation("TransferPair")
     transfer_pair_id  String?            @unique
     TransactionReview TransactionReview?
-    deleted_at        DateTime? // soft delete
 }
 
 // To keep like data all in one place, this table holds data for ALL transactions, even without splits
