@@ -282,10 +282,6 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 						return absNumber * negator;
 					}
 
-					if (account_balance?.includes('+')) {
-						console.log("DETECTED POSITIVE!", account_balance, parseAmount(account_balance, account.type))
-					}
-
 					const tx: ScrapedTransaction = {
 						date: stringToDate(date!, DateRegex.MMDDYYYY),
 						original_description: description!,
