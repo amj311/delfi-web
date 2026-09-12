@@ -1,0 +1,20 @@
+{
+    "lang": "en-us",
+    "name": "Delfi - Intelligent Finances",
+    "short_name": "Delfi",
+    "start_url": "/",
+    "orientation": "any",
+    "display": "fullscreen",
+    "icons": [
+        {
+            "src": "/public/gemini_logo_2_trans.png",
+            "sizes": "512x512"
+        }
+    ],
+	"protocol_handlers": [
+		{
+			"protocol": "web+delfi",
+			"url": "/protocol-handler-page?path=%s"
+		}
+	]
+}
