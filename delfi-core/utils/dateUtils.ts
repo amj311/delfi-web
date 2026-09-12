@@ -25,6 +25,7 @@ export type DelfiDate =
 	& Replace<dayjs.Dayjs, {
 		toString: () => string;
 		add(...args: Parameters<dayjs.Dayjs['add']>): DelfiDate;
+		set(...args: Parameters<dayjs.Dayjs['set']>): DelfiDate;
 		subtract(...args: Parameters<dayjs.Dayjs['subtract']>): DelfiDate;
 		startOf(...args: Parameters<dayjs.Dayjs['startOf']>): DelfiDate;
 		endOf(...args: Parameters<dayjs.Dayjs['endOf']>): DelfiDate;
@@ -59,7 +60,7 @@ export const ddate = (input: DelfiDateConfig = new Date()) => {
 	d.isToday = () => d.isSame(ddate());
 	d.toDate = () => new Date(d.toString());
 
-	const proxyMethods = [ 'add', 'subtract', 'startOf', 'endOf'] as const;
+	const proxyMethods = [ 'set', 'add', 'subtract', 'startOf', 'endOf'] as const;
 	for (const method of proxyMethods) {
 		// @ts-ignore
 		d[method] = (...args) => ddate(dayjs(d)[method](...args));

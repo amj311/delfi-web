@@ -27,11 +27,12 @@ import { BudgetEventSummary, RealityTally, type BudgetSnapshot, type CommonEvent
 import { useContextStore } from '@/stores/context.store';
 import CommonEventRow from '@/components/CommonEventRow.vue';
 import Button from 'primevue/button';
-import { currency } from 'delfi-core/utils/miscUtils';
+import { currency, wait } from 'delfi-core/utils/miscUtils';
 import CollapseList from '@/components/utils/CollapseList.vue';
 import Dialog from 'primevue/dialog';
 import { useAppStore } from '@/stores/app.store';
 import VirtualScroll, { type VirtualScrollRow } from '@/components/utils/VirtualScroll.vue';
+import MonthSelector from '@/components/MonthSelector.vue';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -90,6 +91,8 @@ async function getSummary(month: DelfiDate, silent = false) {
 	if (!month || !delfiStore.delfi) {
 		return null;
 	}
+	// break up the UI updates from the compute beginning
+	await wait(1000);
 	let summary = await delfiStore.getMonthSummary(month);
 	state.summaryData = summary;
 	useContextStore().setCurrentSummary(summary);
@@ -169,25 +172,15 @@ const goForward = async () => {
 		return;
 	}
 	const newMonth = ddate(state.viewingMonth.add(1, 'month'));
-	router.push({
-		name: 'Budget',
-		params: { month: formatMonthForUrl(newMonth) },
-	});
+	
 };
 
-const goBack = async () => {
-	if (!canGoBack.value) {
-		return;
-	}
-	if (!state.viewingMonth) {
-		return;
-	}
-	const newMonth = ddate(state.viewingMonth.subtract(1, 'month'));
+function goToMonth(month: DelfiDate) {
 	router.push({
 		name: 'Budget',
-		params: { month: formatMonthForUrl(newMonth) },
+		params: { month: formatMonthForUrl(month) },
 	});
-};
+}
 
 // Get the events in order of days WITHOUT sorting because that is too slow
 const dailyEvents = computed(() => {
@@ -536,11 +529,11 @@ const virtualTransactionRows = computed<Array<VirtualScrollRow>>(() => {
 
 <template>
 	<main>
-		<div class="bg py-2 flex align-items-center justify-content-between" style="position: sticky; top: 0; z-index: 4; margin: 0 -5px">
-			<Button text @click="goBack()">Back</Button>
-			<span>{{ state.viewingMonth?.format('MMMM YYYY') }}</span>
-			<Button text @click="goForward()">Forward</Button>
+		<div style="position: sticky; top: 0; z-index: 4; margin: 0 -5px">
+			<MonthSelector class="pt-3 bg" :activeMonth="state.viewingMonth" :onSelect="goToMonth" />
+			<div style="height: 2rem; background-image: linear-gradient(down, #fff, #fff0);"></div>
 		</div>
+		
 		<br />
 		<div v-if="state.loading">Loading...</div>
 

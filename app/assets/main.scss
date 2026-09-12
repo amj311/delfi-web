@@ -142,3 +142,16 @@ body .hover-show-trigger:hover .hover-show {
 	left: 50%;
 	translate: -50% -50%;
 }
+
+
+.hide-scroll {
+	/* 1. Firefox standard */
+	scrollbar-width: none; 
+	/* 2. For IE/Edge legacy support (The simple one for this group) */
+	-ms-overflow-style: none; 
+
+	/* 3. Webkit Browsers (STILL Requires the pseudo-element hack) */
+	&::-webkit-scrollbar {
+		display: none;
+	}
+}

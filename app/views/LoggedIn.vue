@@ -42,6 +42,13 @@ onBeforeMount(() => {
 		</main>
 
 		<header class="app-header">
+			<div :class="{ show: delfiStore.isGeneratingForecast }" class="computing-banner">
+				<div class="flex-row-center justify-content-center gap-2 py-2 text-xs">
+					<i class="pi pi-spin pi-spinner" />
+					Computing budgets...
+				</div>
+			</div>
+			
 			<nav class="main-nav flex-row-center">
 				<router-link to="/" class="nav-link">
 					<Icon class="text-lg" name="pi::home" />
@@ -65,12 +72,7 @@ onBeforeMount(() => {
 				</router-link>
 			</nav>
 
-			<div :class="{ show: delfiStore.isGeneratingForecast }" class="computing-banner">
-				<div class="flex-row-center justify-content-center gap-2 py-2 text-xs">
-					<i class="pi pi-spin pi-spinner" />
-					Computing budgets...
-				</div>
-			</div>
+			
 		</header>
 
 		<TransactionSelectionSnackbar />

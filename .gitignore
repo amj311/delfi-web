@@ -34,3 +34,5 @@ __snapshots__
 
 # Scraper
 chrome-data
+
+videos/*
