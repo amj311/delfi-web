@@ -4,10 +4,10 @@
     "short_name": "Delfi",
     "start_url": "/",
     "orientation": "any",
-    "display": "fullscreen",
+    "display": "standalone",
     "icons": [
         {
-            "src": "/public/gemini_logo_2_trans.png",
+            "src": "/gemini_logo_2_trans.png",
             "sizes": "512x512"
         }
     ],
