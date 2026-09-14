@@ -358,9 +358,9 @@ class TransactionDaoClass extends PrismaDao {
 		console.log(attributionIds)
 		const attributions = await this.db.transactionAttribution.findMany({
 			where: {
-				// transaction_attribution_id: { in: attributionIds },
-				transaction_attribution_id: 'ce14a89b-c9dd-4dc9-b5fa-a2690a8d69e4',
-				// Transaction: { workspace_id },
+				transaction_attribution_id: { in: attributionIds },
+				// transaction_attribution_id: 'ce14a89b-c9dd-4dc9-b5fa-a2690a8d69e4',
+				Transaction: { workspace_id },
 				// transaction_id: '6d2de756-5eb8-4e8a-9fa0-11bf28104a4d'
 			},
 			select: { transaction_attribution_id: true, transaction_id: true },
