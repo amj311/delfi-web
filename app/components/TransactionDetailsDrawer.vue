@@ -28,6 +28,7 @@ import DatePicker from 'primevue/datepicker';
 import CollapseList from './utils/CollapseList.vue';
 import type { IconIdentifier } from 'delfi-core/utils/constants.js';
 import request from '@/services/request.js';
+import InputCurrency from './InputCurrency.vue';
 
 const triggerRef = ref<InstanceType<typeof NavTriggerDrawer> | null>(null);
 const event = ref<AttributionEvent>();
@@ -760,7 +761,7 @@ const sourceAccount = computed(() => {
 				</small>
 			</div>
 			<div class="flex">
-				<InputNumber
+				<InputCurrency
 					v-model="attribution.amount"
 					mode="currency"
 					:currency="transaction.iso_currency_code || 'USD'"
