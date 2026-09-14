@@ -13,6 +13,21 @@ export const WEEKDAYS = {
 	SA: { label: 'Saturday', abbreviation: 'Sat', value: 'SA' },
 } as const;
 
+export const MONTHS = [
+	{ label: 'January', abbreviation: 'Jan', value: 0 },
+	{ label: 'February', abbreviation: 'Feb', value: 1 },
+	{ label: 'March', abbreviation: 'Mar', value: 2 },
+	{ label: 'April', abbreviation: 'Apr', value: 3 },
+	{ label: 'May', abbreviation: 'May', value: 4 },
+	{ label: 'June', abbreviation: 'Jun', value: 5 },
+	{ label: 'July', abbreviation: 'Jul', value: 6 },
+	{ label: 'August', abbreviation: 'Aug', value: 7 },
+	{ label: 'September', abbreviation: 'Sep', value: 8 },
+	{ label: 'October', abbreviation: 'Oct', value: 9 },
+	{ label: 'November', abbreviation: 'Nov', value: 10 },
+	{ label: 'December', abbreviation: 'Dec', value: 11 },
+] as const;
+
 export interface IRuleOptions {
 	start: Dayjs;
 	end?: Dayjs;

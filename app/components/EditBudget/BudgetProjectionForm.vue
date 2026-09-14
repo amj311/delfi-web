@@ -5,7 +5,7 @@ import { ddate } from 'delfi-core/utils/dateUtils.js';
 import type { BudgetProjectionSchedule } from 'delfi-core/models/Budget';
 import { isFullArray } from 'delfi-core/utils/miscUtils';
 import MultiSelect from 'primevue/multiselect';
-import { WEEKDAYS } from 'delfi-core/models/schedules/Schedule';
+import { MONTHS, WEEKDAYS } from 'delfi-core/models/schedules/Schedule';
 
 const projection = defineModel<BudgetProjectionSchedule | null>();
 
@@ -17,6 +17,7 @@ const frequencyOptions = [
 
 const detectedStyle = computed(() => {
 	if (!projection.value) return 'standard';
+	if (isFullArray(projection.value.byMonthOfYear)) return 'monthOfYear';
 	if (isFullArray(projection.value.byDayOfMonth)) return 'dayOfMonth';
 	if (isFullArray(projection.value.byDayOfWeek)) return 'dayOfWeek';
 	if (projection.value.frequency && projection.value.interval) return 'interval';
@@ -25,8 +26,9 @@ const detectedStyle = computed(() => {
 
 const projectionStyles: Record<string, { value: string, label: string, default: BudgetProjectionSchedule | null }> = {
 	standard: { value: 'standard', label: 'Standard', default: null },
-	dayOfMonth: { value: 'dayOfMonth', label: 'Specific days of the month', default: { byDayOfMonth: [1] } },
-	dayOfWeek: { value: 'dayOfWeek', label: 'Specific days of the week', default: { byDayOfWeek: ['MO'] } },
+	dayOfMonth: { value: 'dayOfMonth', label: 'On certain days of the month', default: { byDayOfMonth: [1] } },
+	dayOfWeek: { value: 'dayOfWeek', label: 'On certain days of the week', default: { byDayOfWeek: ['MO'] } },
+	monthOfYear: { value: 'monthOfYear', label: 'On certain months', default: { byMonthOfYear: [0] } },
 	interval: { value: 'interval', label: 'Regular intervals', default: { interval: 1, frequency: 'WEEKLY' } },
 };
 
@@ -46,6 +48,11 @@ function changeStyle({ value }: { value: string }) {
 		</div>
 
 		<template v-if="projection">
+			<div v-if="detectedStyle === 'monthOfYear'" class="flex-row-center justify-content-end gap-2">
+				Months:
+				<MultiSelect :options="Object.values(MONTHS)" optionLabel="abbreviation" optionValue="value" v-model="projection.byMonthOfYear" />
+			</div>
+
 			<div v-if="detectedStyle === 'dayOfMonth'" class="flex-row-center justify-content-end gap-2">
 				Days:
 				<MultiSelect :options="Array.from({length: 30}).map((_, i) => i + 1)" v-model="projection.byDayOfMonth" />
@@ -56,10 +63,9 @@ function changeStyle({ value }: { value: string }) {
 				<MultiSelect :options="Object.values(WEEKDAYS)" optionLabel="abbreviation" optionValue="value" v-model="projection.byDayOfWeek" />
 			</div>
 
-
 			<div v-if="detectedStyle === 'interval'" class="flex-row-center justify-content-end gap-2">
-				Occurs every
-				<Select :defaultValue="1" :options="Array.from({length: 12}).map((_, i) => i + 1)" v-model="projection.interval" />
+				Every
+				<Select :options="Array.from({length: 12}).map((_, i) => i + 1)" v-model="projection.interval" />
 				<Select :options="frequencyOptions" :optionLabel="(o) => o.label + (projection?.interval === 1 ? '' : 's')" optionValue="value" v-model="projection.frequency" />
 			</div>
 		</template>
