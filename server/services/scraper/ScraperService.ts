@@ -180,7 +180,14 @@ export class ScraperService {
 		};
 	}
 
-
+	/**
+	 * THIS LOGIN PROCESS SKIPS LOGIN IF ALReADY LOGGED IN!!!
+	 * Works fine for just me, but would not be good if servicing other accounts.
+	 * @param usePage 
+	 * @param institutionId 
+	 * @param workspaceId 
+	 * @returns 
+	 */
 	private static async logInToInstitution(usePage: UsePage, institutionId: string, workspaceId: string) {
 		let success = false;
 		try {

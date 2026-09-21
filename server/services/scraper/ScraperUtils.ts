@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 let browserInstance: Browser | null = null;
+let browserContext: BrowserContext | null = null;
 
 function clearVideosDirectory(): void {
 	const videosDir = './videos';
@@ -26,8 +27,8 @@ function clearVideosDirectory(): void {
 	}
 }
 
-async function createBrowserContext(): Promise<BrowserContext> {
-	if (!browserInstance) {
+async function getBrowserContext(): Promise<BrowserContext> {
+	if (!browserContext) {
 		browserInstance = await chromium.launch({
 			headless: false,           // Set to true to run in headless mode
 			slowMo: 50,                // Reduce the slowdown for more natural behavior
@@ -45,36 +46,40 @@ async function createBrowserContext(): Promise<BrowserContext> {
         process.on('exit', cleanupBrowser);
         process.on('SIGINT', cleanupBrowser);
         process.on('SIGTERM', cleanupBrowser);
+
+		browserContext = await browserInstance.newContext({
+			userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+			viewport: { width: 1280, height: 800 },
+			deviceScaleFactor: 1.75,  // Higher for retina-like display
+			hasTouch: false,
+			locale: 'en-US',
+			timezoneId: 'America/Los_Angeles',
+			geolocation: { longitude: -118.24, latitude: 34.05 },
+			permissions: ['geolocation'],
+			acceptDownloads: true,
+			ignoreHTTPSErrors: true,  // Ignore HTTPS errors
+			recordVideo: {
+				dir: './videos',
+				size: { width: 1280, height: 800 }
+			},
+			extraHTTPHeaders: {       // Add common headers
+				'Accept-Language': 'en-US,en;q=0.9',
+				'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+				'Accept-Encoding': 'gzip, deflate, br',
+				'Connection': 'keep-alive',
+				'Upgrade-Insecure-Requests': '1'
+			}
+		});
 	}
 
-	return await browserInstance.newContext({
-		userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
-		viewport: { width: 1280, height: 800 },
-		deviceScaleFactor: 1.75,  // Higher for retina-like display
-		hasTouch: false,
-		locale: 'en-US',
-		timezoneId: 'America/Los_Angeles',
-		geolocation: { longitude: -118.24, latitude: 34.05 },
-		permissions: ['geolocation'],
-		acceptDownloads: true,
-		ignoreHTTPSErrors: true,  // Ignore HTTPS errors
-		recordVideo: {
-			dir: './videos',
-			size: { width: 1280, height: 800 }
-		},
-		extraHTTPHeaders: {       // Add common headers
-			'Accept-Language': 'en-US,en;q=0.9',
-			'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-			'Accept-Encoding': 'gzip, deflate, br',
-			'Connection': 'keep-alive',
-			'Upgrade-Insecure-Requests': '1'
-		}
-	});
+	return browserContext;
 };
 
 async function cleanupBrowser(): Promise<void> {
     if (browserInstance) {
         try {
+			await browserContext?.close();
+			browserContext = null;
             await browserInstance.close();
             browserInstance = null;
         } catch (error) {
@@ -86,7 +91,7 @@ async function cleanupBrowser(): Promise<void> {
 export type UsePage = (pageOperation: (page: Page) => Promise<void>) => Promise<void>;
 
 export async function useBrowser<T>(operation: (usePage: UsePage) => Promise<T>): Promise<T> {
-	const context = await createBrowserContext();
+	const context = await getBrowserContext();
 
 	// Provide this function to consumers to handle disposing pages
 	async function usePage(pageOperation: (page: Page) => Promise<any>) {
@@ -117,14 +122,6 @@ export async function useBrowser<T>(operation: (usePage: UsePage) => Promise<T>)
 	} finally {
 		// video is only used because it helps the sync process. We can delete videos when done
 		clearVideosDirectory();
-	
-		// Close the browser
-		try {
-			await context.close();
-			console.log('Browser context closed');
-		} catch (closeError) {
-			console.error('Error closing browser context:', closeError);
-		}
 	}
 }
 

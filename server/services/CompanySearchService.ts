@@ -33,7 +33,6 @@ export default class CompanySearchService {
 				return null;
 			}
 
-			console.log(`🔍 Searching for company: ${identifier}, ${locationSearch}`);
 
 			/**
 			 * Do TOW Searches! Some small local businesses do better with location info,
@@ -57,7 +56,6 @@ export default class CompanySearchService {
 
 			const allResults = await Promise.all(searchStrings.map(async (searchStr, i) => {
 				return await LangSearchQueue.add(async () => {
-					console.log("doing lang search")
 					return axios.post('https://api.langsearch.com/v1/web-search', {
 						query: searchStr,
 						num_results: numResults
