@@ -37,8 +37,14 @@ export const useAppStore = defineStore('app', () => {
 		}
 	}, { immediate: true });
 
+	const navDrawerOpen = ref(false);
+
 	return {
 		isTouch,
 		isMobile,
+		navDrawerOpen,
+		toggleDrawer() {
+			navDrawerOpen.value = !navDrawerOpen.value;
+		}
 	};
 })

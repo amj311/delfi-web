@@ -380,6 +380,11 @@ export const Icons = {
 		source: "material-symbols",
 		source_id: "local_dining",
 	},
+	"user": {
+		name: "user",
+		source: "material-symbols",
+		source_id: "account_circle",
+	},
 	"wallet": {
 		name: "wallet",
 		source: "material-symbols",

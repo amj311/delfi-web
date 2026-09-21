@@ -8,7 +8,7 @@ const props = defineProps<{
 	source_id?: string;
 	fill?: boolean;
 	color?: string;
-	size?: number;
+	size?: number | string;
 }>();
 
 const icon = computed<Icon>(() => {
@@ -31,7 +31,7 @@ const color = computed(() => colors[props.color || ''] || props.color || 'inheri
 </script>
 
 <template>
-	<span class="icon-wrapper square flex-center-all" :style="{ color, height: `${size || 1}em`, fontSize: `${size || 1}em` }">
+	<span class="icon-wrapper square flex-center-all" :style="{ color, height: `${size || '1em'}`, fontSize: `${size || '1em'}` }">
 		<template v-if="icon.source === 'material-symbols'">
 			<span class="icon material-symbols-rounded" :class="{ fill }" :style="icon.style">{{ icon.source_id }}</span>
 		</template>
@@ -53,7 +53,7 @@ const color = computed(() => colors[props.color || ''] || props.color || 'inheri
 }
 .material-symbols-rounded {
 	font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' -25, 'opsz' 12;
-	font-size: 1.2em;
+	font-size: 120%;
 
 	&.fill {
 		font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' -25, 'opsz' 12;

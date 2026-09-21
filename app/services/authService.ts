@@ -1,6 +1,6 @@
 import { useUserStore } from '@/stores/user.store';
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, type Auth } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, type Auth, sendPasswordResetEmail } from 'firebase/auth';
 
 const firebaseConfig = {
 	apiKey: import.meta.env.VITE_FB_API_KEY,
@@ -87,6 +87,16 @@ export const AuthService = {
 			
 		} catch (error: any) {
 			console.log('signInWithGoogle error', error)
+			throw new Error(error.message);
+		}
+	},
+
+	async sendPasswordResetEmail(email) {
+		try {
+			console.log("heere")
+			await sendPasswordResetEmail(auth, email);
+			console.log("done")
+		} catch (error: any) {
 			throw new Error(error.message);
 		}
 	},

@@ -5,11 +5,13 @@ import type { Transaction } from 'delfi-core/models/Transaction';
 import NavTrigger from './NavTrigger.vue';
 import Button from 'primevue/button';
 
-const props = defineProps<{
+const { fullMobile = true, ...props } = defineProps<{
 	triggerKey: string;
 	onClose?: (transaction: Transaction) => void;
 	title?: string;
+	position?: string;
 	width?: number;
+	fullMobile?: boolean,
 }>();
 
 const drawerTrigger = ref<InstanceType<typeof NavTrigger> | null>(null);
@@ -29,7 +31,12 @@ defineExpose({
 		:onClose="props.onClose"
 	>
 		<template #default="{ show }">
-			<Drawer :visible="show" position="right" :header="title" :class="`w-full sm:w-${smallWidth}rem`">
+			<Drawer
+				:visible="show"
+				:position="position || 'right'"
+				:header="title"
+				:class="[`sm:w-${smallWidth}rem`, { 'w-full': fullMobile }]"
+			>
 				<template #closebutton>
 					<Button icon="pi pi-times" text @click="drawerTrigger?.close" severity="secondary" />
 				</template>

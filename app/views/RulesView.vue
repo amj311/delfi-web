@@ -20,7 +20,7 @@ const rulesList = ref<InstanceType<typeof RulesList> | null>(null);
 </script>
 
 <template>
-	<div class="rules-view">
+	<div class="rules-view app-padding pt-3">
 		<div class="header-actions">
 			<h2>Automation Rules</h2>
 			<div class="actions">

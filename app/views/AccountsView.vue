@@ -84,7 +84,7 @@ const accounts = computed(() => {
 </script>
 
 <template>
-  <div class="accounts-view">
+  <div class="accounts-view app-padding">
     <h1>Your Accounts</h1>
 
     <div v-if="accountStore.isLoadingAccounts" class="loading">

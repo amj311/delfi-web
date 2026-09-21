@@ -14,6 +14,10 @@ import { ddate } from 'delfi-core/utils/dateUtils';
 import { computed, nextTick, onBeforeMount, ref, watch } from 'vue';
 import SwipeAction from '@/components/utils/SwipeAction.vue';
 import { useBudgetStore } from '@/stores/budget.store';
+import Icon from '@/components/Icon.vue';
+import Avatar from 'primevue/avatar';
+import { useUserStore } from '@/stores/user.store';
+import { useAppStore } from '@/stores/app.store';
 
 
 const upcomingBudgets = ref<ProjectionEvent[]>([]);
@@ -85,46 +89,68 @@ function viewBudget(budget: Budget) {
 </script>
 
 <template>
-	<br />
-	<h3>Accounts</h3>
-	<div v-if="useAccountStore().isLoadingAccounts" class="flex align-items-center gap-2"><i class="pi pi-spin pi-spinner"></i>Loading accounts...</div>
-	<div v-for="account in listAccounts" :key="account.account_id">
-		<div class="flex align-items-center gap-2 border-bottom-1 border-gray-200 py-2" @click="() => $router.push(`/accounts/${account.account_id}`)" style="cursor: pointer;">
-			<AttributionAvatar :image="account.Institution.logo" :size="3" square />
-			<div class="flex flex-column">
-				<div>
-					<span class="font-semibold">{{ account.display_name || account.external_name }}</span>
-					<span v-if="account.mask">&nbsp;****{{ account.mask }}</span>
+	<div class="app-padding">
+		<div class="flex-row-center py-2">
+			<div class="flex align-items-center gap-2">
+				<img src="../assets/gemini_logo_2_trans.png" alt="Delfi Logo" style="width: 2rem" />
+				<div
+					class="font-semibold"
+					style="
+						font-size: 2.2rem;
+						background: linear-gradient(45deg, rgb(108 41 122), rgb(48, 207, 208)) text;
+						-webkit-text-fill-color: transparent;
+					"
+				>
+					Delfi
 				</div>
-				<small>{{ dayjs(account.last_successful_sync).fromNow() }}</small>
 			</div>
-			<div class="flex-grow-1"></div>
-			<Currency :amount="account.current_balance" mode="balance" class="font-medium" />
+			<div class="flex-1" />
+			<div class="cursor-pointer" @click="useAppStore().toggleDrawer">
+				<Avatar :label="useUserStore().currentUser?.email[0].toUpperCase()" shape="circle" />
+			</div>
 		</div>
+		<br />
+		<h3>Accounts</h3>
+		<div v-if="useAccountStore().isLoadingAccounts" class="flex align-items-center gap-2"><i class="pi pi-spin pi-spinner"></i>Loading accounts...</div>
+		<div v-for="account in listAccounts" :key="account.account_id">
+			<div class="flex align-items-center gap-2 border-bottom-1 border-gray-200 py-2" @click="() => $router.push(`/accounts/${account.account_id}`)" style="cursor: pointer;">
+				<AttributionAvatar :image="account.Institution.logo" :size="3" square />
+				<div class="flex flex-column">
+					<div>
+						<span class="font-semibold">{{ account.display_name || account.external_name }}</span>
+						<span v-if="account.mask">&nbsp;****{{ account.mask }}</span>
+					</div>
+					<small>{{ dayjs(account.last_successful_sync).fromNow() }}</small>
+				</div>
+				<div class="flex-grow-1"></div>
+				<Currency :amount="account.current_balance" mode="balance" class="font-medium" />
+			</div>
+		</div>
+
+		<div v-if="isDelfiLoading" class="flex align-items-center gap-2 my-4 justify-content-center"><i class="pi pi-spin pi-spinner"></i>Computing forecast...</div>
+
+		<template v-if="isLoadingNextBudgets || upcomingBudgets.length">
+			<br />
+			<h3 class="my-2">Upcoming Budgets</h3>
+			<div v-if="isLoadingNextBudgets" class="flex align-items-center gap-2 my-2"><i class="pi pi-spin pi-spinner"></i>Loading upcoming budgets...</div>
+			<CollapseList :items="upcomingBudgets" :itemHeight="65">
+				<template #default="{ item }">
+					<CommonEventRow :event="item" showPastDue style="cursor: pointer;" @click="() => viewBudget(item.Budget)" />
+				</template>
+			</CollapseList>
+		</template>
+
+		<template v-if="recentTransactions.length">
+			<br />
+			<h3 class="my-2">Recent Transactions</h3>
+			<CollapseList :items="recentTransactions" :itemHeight="65">
+				<template #default="{ item }">
+					<CommonEventRow :event="item" @click="viewTransaction(item)" />
+				</template>
+			</CollapseList>
+		</template>
+
 	</div>
-
-	<div v-if="isDelfiLoading" class="flex align-items-center gap-2 my-4 justify-content-center"><i class="pi pi-spin pi-spinner"></i>Computing forecast...</div>
-
-	<template v-if="isLoadingNextBudgets || upcomingBudgets.length">
-		<br />
-		<h3 class="my-2">Upcoming Budgets</h3>
-		<div v-if="isLoadingNextBudgets" class="flex align-items-center gap-2 my-2"><i class="pi pi-spin pi-spinner"></i>Loading upcoming budgets...</div>
-		<CollapseList :items="upcomingBudgets" :itemHeight="65">
-			<template #default="{ item }">
-				<CommonEventRow :event="item" showPastDue style="cursor: pointer;" @click="() => viewBudget(item.Budget)" />
-			</template>
-		</CollapseList>
-	</template>
-
-	<template v-if="recentTransactions.length">
-		<br />
-		<h3 class="my-2">Recent Transactions</h3>
-		<CollapseList :items="recentTransactions" :itemHeight="65">
-			<template #default="{ item }">
-				<CommonEventRow :event="item" @click="viewTransaction(item)" />
-			</template>
-		</CollapseList>
-	</template>
 
 	<TransactionDetailsDrawer ref="transactionDetailsDrawer" :key="viewingTransaction?.attributionDetails?.transaction_attribution_id" @close="loadRecentTransactions" />
 </template>

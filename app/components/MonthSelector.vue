@@ -64,7 +64,7 @@ function selectMonth(monthItem: DelfiDate) {
 
 <template>
 	<div class="flex-column gap-2">
-		<div class="month-selector flex-row-center hide-scroll">
+		<div class="month-selector flex-row-center hide-scroll app-padding">
 			<div
 				v-for="(month, index) in monthsToShow" 
 			>
@@ -77,7 +77,7 @@ function selectMonth(monthItem: DelfiDate) {
 				/>
 			</div>
 		</div>
-		<div class="bg flex align-items-center justify-content-between">
+		<div class="bg flex align-items-center justify-content-between app-padding">
 			<Button text @click="goBack()">Back</Button>
 			<span>{{ activeMonth?.format('MMMM YYYY') }}</span>
 			<Button text @click="goForward()">Forward</Button>

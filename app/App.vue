@@ -1,18 +1,15 @@
 <script setup lang="ts">
-import SwipeAction from './components/utils/SwipeAction.vue';
 import { useUserStore } from './stores/user.store';
-import { AuthService } from './services/authService';
-import Registration from './views/Registration.vue';
-import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
+import { onBeforeUnmount, ref } from 'vue';
 import LoggedIn from './views/LoggedIn.vue';
 import PromptModal from './components/utils/PromptModal.vue';
-import Toast from 'primevue/toast';
-import Button from 'primevue/button';
 import { useAppStore } from './stores/app.store';
 import Snackbar from './components/utils/Toast.vue';
 import Message from 'primevue/message';
 import Dialog from 'primevue/dialog';
 import BudgetActions from './components/EditBudget/BudgetActions.vue';
+import LoginForm from './components/LoginForm.vue';
+import NavDrawer from './components/NavDrawer.vue';
 
 const userStore = useUserStore();
 const sessionInterval = setInterval(userStore.loadSessionData, 60000);
@@ -35,7 +32,7 @@ onBeforeUnmount(() => {
 
 	<div class="app" :class="{ touch: useAppStore().isTouch }">
 		<LoggedIn v-if="!waitingForAuth && userStore.hasAuth && userStore.currentUser" />
-		<div v-else class="splash h-full flex-col-center" style="padding-top: calc(33vh - 5rem)">
+		<div v-else class="splash app-padding h-full flex-col-center" style="padding-top: calc(33vh - 5rem)">
 			<div class="flex align-items-center gap-3" style="font-size: 1.5em">
 				<img src="./assets/gemini_logo_2_trans.png" alt="Delfi Logo" class="mb-4" style="width: 3em" />
 				<div
@@ -55,7 +52,7 @@ onBeforeUnmount(() => {
 			</div>
 			<div v-else-if="userStore.hasAuth && !userStore.currentUser">Delfi is not available at this time.</div>
 			<div v-else>
-				<Button @click="AuthService.signInWithGoogle()">Sign in with Google</Button>
+				<LoginForm />
 			</div>
 		</div>
 	</div>
@@ -63,6 +60,7 @@ onBeforeUnmount(() => {
 	<PromptModal />
 	<Snackbar />
 	<BudgetActions />
+	<NavDrawer />
 </template>
 
 <style scoped>

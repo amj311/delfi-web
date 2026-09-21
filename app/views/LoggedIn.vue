@@ -122,7 +122,6 @@ onBeforeMount(() => {
 
 .app-content {
 	flex: 1;
-	padding: 1rem;
 }
 
 .computing-banner {

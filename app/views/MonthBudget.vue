@@ -529,15 +529,14 @@ const virtualTransactionRows = computed<Array<VirtualScrollRow>>(() => {
 
 <template>
 	<main>
-		<div style="position: sticky; top: 0; z-index: 4; margin: 0 -5px">
-			<MonthSelector class="pt-3 bg" :activeMonth="state.viewingMonth" :onSelect="goToMonth" />
-			<div style="height: 2rem; background-image: linear-gradient(down, #fff, #fff0);"></div>
+		<div class style="position: sticky; top: 0; z-index: 4;">
+			<MonthSelector class="pt-3 pb-2 bg" :activeMonth="state.viewingMonth" :onSelect="goToMonth" />
 		</div>
 		
 		<br />
 		<div v-if="state.loading">Loading...</div>
 
-		<div v-else-if="state.summaryData" class="column-layout" :class="{ mobile: useAppStore().isMobile }">
+		<div v-else-if="state.summaryData" class="app-padding column-layout" :class="{ mobile: useAppStore().isMobile }">
 			<!-- column left/bottom -->
 			<div>
 				<div v-if="state.summaryData.groupSummaries.length > 0">
