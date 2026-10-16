@@ -42,8 +42,13 @@ export const useDelfiStore = defineStore('delfi', () => {
 			updateRecomputed();
 			isGeneratingForecast.value = true;
 			await delfi.computeForecast();
+			gatherForecastAlerts();
 			isGeneratingForecast.value = false
 			scheduleCompute(); // schedule another compute to keep data fresh
+		}
+		catch (error) {
+			computationError.value = error as Error;
+			showErrorBanner("Failed to compute forecast");
 		}
 		finally {
 			isInitializing.value = false;
@@ -95,10 +100,33 @@ export const useDelfiStore = defineStore('delfi', () => {
 		}
 		catch (error) {
 			console.error("Error extending projection:", error);
+			computationError.value = error as Error;
+			showErrorBanner("Failed to compute forecast");
 		}
 		finally {
+			gatherForecastAlerts();
 			extendingProjection.value = false;
 		}
+	}
+
+	const computationError = ref<Error | null>(null);
+	const forecastAlerts = ref();
+	function gatherForecastAlerts() {
+		forecastAlerts.value = delfi.forecast.failedBudgets;
+		if (forecastAlerts.value.length) {
+			showErrorBanner("Some budgets could not be computed")
+		}
+	}
+
+	const alerts = computed(() => ({
+		computationError,
+		forecastAlerts,
+	}))
+
+	const bannerError = ref('');
+	function showErrorBanner(msg: string) {
+		bannerError.value = msg;
+		setTimeout(() => bannerError.value = '', 5000);
 	}
 
 	return {
@@ -115,5 +143,7 @@ export const useDelfiStore = defineStore('delfi', () => {
 		reCompute,
 		reComputed,
 		getMonthSummary,
+		alerts,
+		bannerError,
 	}
 })

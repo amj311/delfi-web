@@ -22,6 +22,7 @@ class Forecast {
 
 	occurrences: Map<string, BudgetOccurrence> = new Map();
 	readyMonths: Map<string, MonthForecast> = new Map(); // Months that have been computed
+	failedBudgets: Array<{ budget: Budget, error: Error }> = [];
 
 	constructor(props: ForecastProps) {
 		Object.assign(this, props);
@@ -41,12 +42,22 @@ class Forecast {
 		// But check cache to use already-computed ones if possible
 		const scheduledOccurrences: BudgetOccurrence[] = [];
 		for (let schedule of this.transactionSchedules) {
-			const newOccurrences = BudgetUtils.createScheduledOccurrences(this.start, this.end, schedule);
-			for (let occ of newOccurrences) {
-				if (!this.occurrences.has(occ.occurrence_id)) {
-					this.occurrences.set(occ.occurrence_id, occ);
+			try {
+				const newOccurrences = BudgetUtils.createScheduledOccurrences(this.start, this.end, schedule);
+				for (let occ of newOccurrences) {
+					if (!this.occurrences.has(occ.occurrence_id)) {
+						this.occurrences.set(occ.occurrence_id, occ);
+					}
+					scheduledOccurrences.push(this.occurrences.get(occ.occurrence_id)!);
 				}
-				scheduledOccurrences.push(this.occurrences.get(occ.occurrence_id)!);
+			}
+			catch (e) {
+				console.error("Failed to compute budget", schedule);
+				console.error(e);
+				this.failedBudgets.push({
+					budget: schedule,
+					error: e as Error,
+				})
 			}
 		}
 		const scheduledEvents = scheduledOccurrences.flatMap(o => o.budgetEvents);

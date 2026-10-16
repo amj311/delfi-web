@@ -42,10 +42,16 @@ onBeforeMount(() => {
 		</main>
 
 		<header class="app-header">
-			<div :class="{ show: delfiStore.isGeneratingForecast }" class="computing-banner">
+			<div :class="{ show: delfiStore.isGeneratingForecast }" class="toast-banner computing-banner">
 				<div class="flex-row-center justify-content-center gap-2 py-2 text-xs">
 					<i class="pi pi-spin pi-spinner" />
 					Computing budgets...
+				</div>
+			</div>
+
+			<div :class="{ show: delfiStore.bannerError }" class="toast-banner error-banner">
+				<div class="flex-row-center justify-content-center gap-2 py-2 text-xs">
+					{{ delfiStore.bannerError }}
 				</div>
 			</div>
 			
@@ -124,14 +130,22 @@ onBeforeMount(() => {
 	flex: 1;
 }
 
-.computing-banner {
-	background: rgb(49, 231, 201);
+.toast-banner {
 	max-height: 0;
 	overflow: hidden;
 	transition: 200ms;
 
 	&.show {
 		max-height: 5rem;
+	}
+
+	&.computing-banner {
+		background: rgb(49, 231, 201);
+	}
+
+	&.error-banner {
+		background: rgb(231, 64, 49);
+		color: #fff;
 	}
 }
 </style>

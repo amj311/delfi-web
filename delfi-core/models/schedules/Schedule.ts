@@ -14,18 +14,18 @@ export const WEEKDAYS = {
 } as const;
 
 export const MONTHS = [
-	{ label: 'January', abbreviation: 'Jan', value: 0 },
-	{ label: 'February', abbreviation: 'Feb', value: 1 },
-	{ label: 'March', abbreviation: 'Mar', value: 2 },
-	{ label: 'April', abbreviation: 'Apr', value: 3 },
-	{ label: 'May', abbreviation: 'May', value: 4 },
-	{ label: 'June', abbreviation: 'Jun', value: 5 },
-	{ label: 'July', abbreviation: 'Jul', value: 6 },
-	{ label: 'August', abbreviation: 'Aug', value: 7 },
-	{ label: 'September', abbreviation: 'Sep', value: 8 },
-	{ label: 'October', abbreviation: 'Oct', value: 9 },
-	{ label: 'November', abbreviation: 'Nov', value: 10 },
-	{ label: 'December', abbreviation: 'Dec', value: 11 },
+	{ label: 'January', abbreviation: 'Jan', value: 1 },
+	{ label: 'February', abbreviation: 'Feb', value: 2 },
+	{ label: 'March', abbreviation: 'Mar', value: 3 },
+	{ label: 'April', abbreviation: 'Apr', value: 4 },
+	{ label: 'May', abbreviation: 'May', value: 5 },
+	{ label: 'June', abbreviation: 'Jun', value: 6 },
+	{ label: 'July', abbreviation: 'Jul', value: 7 },
+	{ label: 'August', abbreviation: 'Aug', value: 8 },
+	{ label: 'September', abbreviation: 'Sep', value: 9 },
+	{ label: 'October', abbreviation: 'Oct', value: 10 },
+	{ label: 'November', abbreviation: 'Nov', value: 11 },
+	{ label: 'December', abbreviation: 'Dec', value: 12 },
 ] as const;
 
 export interface IRuleOptions {
