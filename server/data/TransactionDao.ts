@@ -208,6 +208,11 @@ class TransactionDaoClass extends PrismaDao {
 		}
 		await this.verifyAttributionsTotal(transactionData, transactionData.Attributions);
 
+		// don't allow setting done_pending on something that is not pending!
+		if (transactionData.done_pending && !transactionData.pending) {
+			console.log("NOT_PENDING!!!", transactionData, (new Error()).stack)
+		}
+
 		const created = await this.db.transaction.create({
             data: {
     			amount: transactionData.amount,
@@ -220,7 +225,7 @@ class TransactionDaoClass extends PrismaDao {
     			original_description: transactionData.original_description,
     			
 				pending: transactionData.pending || false,
-				done_pending: transactionData.done_pending || false,
+				done_pending: (transactionData.pending && transactionData.done_pending) || false,
     			
 				location_address: transactionData.location?.address,
     			location_lat: transactionData.location?.lat,
@@ -272,6 +277,12 @@ class TransactionDaoClass extends PrismaDao {
 			await this.setAllAttributionsForTransaction(transaction_id, transactionData.Attributions);
 		}
 
+
+		// don't allow setting done_pending on something that is not pending!
+		if (transactionData.done_pending && !transactionData.pending) {
+			console.log("NOT_PENDING!!!", transactionData, (new Error()).stack)
+		}
+
 		await this.db.transaction.update({
 			where: {
 				transaction_id,
@@ -284,7 +295,7 @@ class TransactionDaoClass extends PrismaDao {
 				budget_date: transactionData.budget_date?.toString(),
 				notes: transactionData.notes,
 				pending: transactionData.pending,
-				done_pending: transactionData.done_pending,
+				done_pending: transactionData.pending && transactionData.done_pending,
 				location_address: transactionData.location?.address,
 				location_lat: transactionData.location?.lat,
 				location_lon: transactionData.location?.lon,
@@ -507,7 +518,6 @@ class TransactionDaoClass extends PrismaDao {
 			},
 		});
 	}
-
 
 	async findPotentialTransferPairs(workspace_id: string, transaction: Transaction): Promise<Transaction[]> {
 		if (transaction.TransferPair) {
