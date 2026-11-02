@@ -10,6 +10,7 @@ import type { CategoryKey } from "delfi-core/models/systemCategories";
 import { CategoryDao } from "server/data/CategoryDao";
 import { ddate, type DelfiDate } from "delfi-core/utils/dateUtils";
 import { peek } from "delfi-core/utils/miscUtils";
+import { NotificationService } from "./NotificationService";
 
 export type SyncedTransactionDetails = CreateTransaction & {
 	/** Incoming transaction may have default categories supplied by scrapers */
@@ -84,45 +85,53 @@ export class SyncService {
 		const newTransactions: Array<Transaction> = [];
 		// Update account details and sync new transactions
 		await Promise.all(accountSyncs.map(async result => {
+			const account = await AccountService.getAccountById(workspace_id, result.account_id);
 			if ('error' in result) {
+				await NotificationService.pushToWorkspace(workspace_id, { title: "Failed to sync account: " + account?.external_name })
 				return await AccountService.updateAccount(workspace_id, result.account_id, {
 					last_failed_sync: new Date(),
 					sync_error: result.error || 'Unknown error',
 				});
 			} else {
-				// Hydrate data from sync
-				let parsedTransactions: Array<SyncedTransactionDetails> = result.transactions.map(tx => ({ ...tx, date: ddate(tx.date) }));
-				// First, assign date orders to incoming transactions. When doing so, make sure to preserve any existing date orders.
-				// THE TRANSACTIONS MUST BE A COMPLETE SET OF ALL TRANSACTIONS FOR THE DATES INVOLVED
-				parsedTransactions = TransactionUtils.assignDateOrders(parsedTransactions);
+				try {
+					// Hydrate data from sync
+					let parsedTransactions: Array<SyncedTransactionDetails> = result.transactions.map(tx => ({ ...tx, date: ddate(tx.date) }));
+					// First, assign date orders to incoming transactions. When doing so, make sure to preserve any existing date orders.
+					// THE TRANSACTIONS MUST BE A COMPLETE SET OF ALL TRANSACTIONS FOR THE DATES INVOLVED
+					parsedTransactions = TransactionUtils.assignDateOrders(parsedTransactions);
 
-				// handle cleaning up stale transactions.
-				// Some bank portals will shift the data of a transaction within a few days of it posting
-				// This process makes sure that we don't duplicate transactions when this happens.
-				// Essentially, any transaction must remain unchanged for a few days to stick in our DB
-				await TransactionService.removeGhostTransactionsFromSync(workspace_id, result.account_id, parsedTransactions);
+					// handle cleaning up stale transactions.
+					// Some bank portals will shift the data of a transaction within a few days of it posting
+					// This process makes sure that we don't duplicate transactions when this happens.
+					// Essentially, any transaction must remain unchanged for a few days to stick in our DB
+					await TransactionService.removeGhostTransactionsFromSync(workspace_id, result.account_id, parsedTransactions);
 
-				const transactionsWithCategories = await Promise.all(parsedTransactions.map(async (tx): Promise<CreateTransaction> => {
-					const categoryMapping = await CategoryDao.getWorkspaceCategoryMappingByDetectionKey(workspace_id, tx.category_key);
-					return {
-						...tx,
-						category_id: categoryMapping?.category_id || null,
-					};
-				}));
-				const results = await TransactionService.ingestNewTransactionsForAccount(workspace_id, result.account_id, transactionsWithCategories);
-				newTransactions.push(...results.upsertResults.filter(r => r.created).map(r => r.transaction));
+					const transactionsWithCategories = await Promise.all(parsedTransactions.map(async (tx): Promise<CreateTransaction> => {
+						const categoryMapping = await CategoryDao.getWorkspaceCategoryMappingByDetectionKey(workspace_id, tx.category_key);
+						return {
+							...tx,
+							category_id: categoryMapping?.category_id || null,
+						};
+					}));
+					const results = await TransactionService.ingestNewTransactionsForAccount(workspace_id, result.account_id, transactionsWithCategories);
+					newTransactions.push(...results.upsertResults.filter(r => r.created).map(r => r.transaction));
 
-				await AccountService.updateAccount(workspace_id, result.account_id, {
-					current_balance: result.accountDetails.current_balance,
-					available_balance: result.accountDetails.available_balance,
-					limit: result.accountDetails.limit,
-					external_name: result.accountDetails.external_name,
-					apy: result.accountDetails.apy,
-					apr: result.accountDetails.apr,
-					last_successful_sync: new Date(),
-				});
+					await AccountService.updateAccount(workspace_id, result.account_id, {
+						current_balance: result.accountDetails.current_balance,
+						available_balance: result.accountDetails.available_balance,
+						limit: result.accountDetails.limit,
+						external_name: result.accountDetails.external_name,
+						apy: result.accountDetails.apy,
+						apr: result.accountDetails.apr,
+						last_successful_sync: new Date(),
+					});
 
-				await AccountService.recordBalance(result.account_id, result.accountDetails.current_balance);
+					await AccountService.recordBalance(result.account_id, result.accountDetails.current_balance);
+				}
+				catch (e) {
+					console.log(e);
+					await NotificationService.pushToWorkspace(workspace_id, { title: "Failed to sync account: " + account?.external_name });
+				}
 			}
 		}));
 
@@ -131,6 +140,11 @@ export class SyncService {
 
 		// await PlaidService.searchForPlaidTransactionData(workspace_id);
 		console.log("Finished processing account syncs! New transactions:", newTransactions.length);
+
+		// Notify users!
+		if (newTransactions.length) {
+			await NotificationService.pushToWorkspace(workspace_id, { title: `${newTransactions.length} new transactions synced!`})
+		}
 		return newTransactions;
 	}
 };

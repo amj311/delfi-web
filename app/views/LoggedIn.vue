@@ -8,6 +8,7 @@ import { onBeforeMount } from 'vue';
 import { RouterView } from 'vue-router'
 import Icon from '@/components/Icon.vue';
 import TransactionSelectionSnackbar from '@/components/TransactionSelectionSnackbar.vue';
+import { useAppStore } from '@/stores/app.store';
 
 const delfiStore = useDelfiStore();
 const accountStore = useAccountStore();
@@ -29,8 +30,10 @@ async function initApp() {
 	}
 }
 
-onBeforeMount(() => {
+onBeforeMount(async () => {
 	initApp();
+	useAppStore().askNotificationPermission();
+	console.log(await useAppStore().getPushSubscription());
 });
 
 </script>

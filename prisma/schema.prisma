@@ -19,6 +19,9 @@ model User {
     email              String              @unique
     given_name         String
     family_name        String
+
+	push_sub			Json?
+
     Workspaces         Workspace[]
     AssignedReviews    TransactionReview[] @relation("AssignedTo")
     TransactionReviews TransactionReview[] @relation("ReviewedBy")

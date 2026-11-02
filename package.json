@@ -17,7 +17,7 @@
     "local-prod": "docker compose -f docker-compose-prod-local.yml up -d --build --force-recreate > /dev/null"
   },
   "prisma": {
-	"seed": "tsx server/seed.ts"
+    "seed": "tsx server/seed.ts"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",
@@ -35,7 +35,8 @@
     "playwright": "^1.53.0",
     "prisma": "^5.2.0",
     "tsx": "^4.20.1",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@primeuix/themes": "^1.1.2",
