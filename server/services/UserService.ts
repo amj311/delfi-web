@@ -6,6 +6,8 @@ export type User = {
 	given_name: string;
 	family_name: string;
 	email: string;
+	email_notifs: boolean,
+	push_notifs: boolean,
 }
 
 export const UserService = {

@@ -1,6 +1,7 @@
 import { useUserStore } from '@/stores/user.store';
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, type Auth, sendPasswordResetEmail } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signInWithRedirect, type Auth, sendPasswordResetEmail, updateEmail, verifyBeforeUpdateEmail } from 'firebase/auth';
+import request from './request';
 
 const firebaseConfig = {
 	apiKey: import.meta.env.VITE_FB_API_KEY,
@@ -96,6 +97,18 @@ export const AuthService = {
 			console.log("heere")
 			await sendPasswordResetEmail(auth, email);
 			console.log("done")
+		} catch (error: any) {
+			throw new Error(error.message);
+		}
+	},
+
+	async changeUserEmail(newEmail: string, password: string,) {
+		try {
+			if (!this.currentUser) return;
+			await this.signInWithEmail(this.currentUser.email, password);
+			await verifyBeforeUpdateEmail(this.currentUser, newEmail);
+			// update in db
+			await request.put('/user/', { email: newEmail });
 		} catch (error: any) {
 			throw new Error(error.message);
 		}

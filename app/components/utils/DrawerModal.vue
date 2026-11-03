@@ -6,6 +6,7 @@ import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import { defineStore } from 'pinia';
 import NavTrigger from './NavTrigger/NavTrigger.vue';
+import { wait } from 'delfi-core/utils/miscUtils.js';
 
 // Define the component using Options API
 const navTriggerRef = ref<InstanceType<typeof NavTrigger> | null>(null);
@@ -34,11 +35,13 @@ onBeforeUnmount(() => {
 });
 
 defineExpose({
-	open: () => {
-		navTriggerRef.value?.open();
+	open: async () => {
+		await navTriggerRef.value?.open();
 	},
-	close: () => {
-		navTriggerRef.value?.close();
+	close: async () => {
+		await navTriggerRef.value?.close();
+		// wait some time for animation
+		await wait(100);
 	},
 })
 

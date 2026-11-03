@@ -1,6 +1,7 @@
 <!-- Opens menus and overlays attached with navigation state such that they can be properly dismissed when navigating away -->
 
 <script lang="ts">
+import { wait } from 'delfi-core/utils/miscUtils';
 import { defineStore } from 'pinia';
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -16,7 +17,7 @@ const useStore = defineStore('NavTrigger', () => {
 		return router.currentRoute.value.query.v?.toString() || '';
 	});
 
-	function open(viewKey: string) {
+	async function open(viewKey: string) {
 		try {
 			viewStack.value.push(viewKey);
 			router.push({
@@ -27,15 +28,21 @@ const useStore = defineStore('NavTrigger', () => {
 			console.error('Error opening NavTrigger:', error);
 		}
 	}
-	function close(cb?: () => void) {
+	async function close(viewKey: string, cb?: () => void) {
+		// only execute if viewKey is present
+		if (!viewStack.value.includes(viewKey)) return;
+		viewStack.value = viewStack.value.filter(k => k !== viewKey);
 		router.back();
 		cb?.();
+		// wait a smidge to avoid collision
+		await wait(100);
 	}
 
 	watch(
 		vQuery,
 		(newValue, oldValue) => {
 			const indexOfNew = viewStack.value.indexOf(newValue);
+			// Cut off anything after the new value
 			// If the new value doesn't exist, the entire stack is cleared
 			viewStack.value = viewStack.value.slice(0, indexOfNew + 1);
 
@@ -87,7 +94,7 @@ export default {
 		return {
 			show,
 			open: () => store.open(trueKey.value),
-			close: () => store.close(props.onClose),
+			close: () => store.close(trueKey.value, props.onClose),
 		};
 	},
 };

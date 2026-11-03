@@ -87,7 +87,7 @@ export class SyncService {
 		await Promise.all(accountSyncs.map(async result => {
 			const account = await AccountService.getAccountById(workspace_id, result.account_id);
 			if ('error' in result) {
-				await NotificationService.pushToWorkspace(workspace_id, { title: "Failed to sync account: " + account?.external_name })
+				await NotificationService.notifyWorkspace(workspace_id, { title: "Failed to sync account: " + account?.external_name })
 				return await AccountService.updateAccount(workspace_id, result.account_id, {
 					last_failed_sync: new Date(),
 					sync_error: result.error || 'Unknown error',
@@ -130,7 +130,7 @@ export class SyncService {
 				}
 				catch (e) {
 					console.log(e);
-					await NotificationService.pushToWorkspace(workspace_id, { title: "Failed to sync account: " + account?.external_name });
+					await NotificationService.notifyWorkspace(workspace_id, { title: "Failed to sync account: " + account?.external_name });
 				}
 			}
 		}));
@@ -143,7 +143,7 @@ export class SyncService {
 
 		// Notify users!
 		if (newTransactions.length) {
-			await NotificationService.pushToWorkspace(workspace_id, { title: `${newTransactions.length} new transactions synced!`})
+			await NotificationService.notifyWorkspace(workspace_id, { title: `${newTransactions.length} new transactions synced!`})
 		}
 		return newTransactions;
 	}

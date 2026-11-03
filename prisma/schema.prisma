@@ -15,12 +15,14 @@ model User {
     created_at DateTime @default(now())
     updated_at DateTime @default(now()) @updatedAt
 
-    auth_id            String              @unique
-    email              String              @unique
-    given_name         String
-    family_name        String
+    auth_id     String @unique
+    email       String @unique
+    given_name  String
+    family_name String
 
-	push_sub			Json?
+    push_sub     Json?
+    email_notifs Boolean @default(true)
+    push_notifs  Boolean @default(true)
 
     Workspaces         Workspace[]
     AssignedReviews    TransactionReview[] @relation("AssignedTo")
@@ -286,7 +288,7 @@ model BudgetScheduleVariant {
     // projection_interval String?
     // projection_quantity Int?
 
-	notes String?
+    notes String?
 }
 
 // model BudgetTriggerVariant {
@@ -410,11 +412,11 @@ model BudgetGroup {
 
 // Real transaction, created manually or imported from source (plaid)
 model Transaction {
-    transaction_id String   @id @default(uuid())
-    created_at     DateTime @default(now())
-    updated_at     DateTime @default(now()) @updatedAt
-    deleted_at        DateTime? // soft delete
-	delete_reason     String?
+    transaction_id String    @id @default(uuid())
+    created_at     DateTime  @default(now())
+    updated_at     DateTime  @default(now()) @updatedAt
+    deleted_at     DateTime? // soft delete
+    delete_reason  String?
 
     amount               Float
     date                 String // DATE ONLY  e.g. "2023-10-01"

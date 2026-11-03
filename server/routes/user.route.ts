@@ -1,4 +1,5 @@
 import { NotificationService } from "server/services/NotificationService";
+import { UserService } from "server/services/UserService";
 
 export default (fastify, _, done) => {
 
@@ -9,6 +10,29 @@ export default (fastify, _, done) => {
         }
     });
 	
+	// update profile details
+	fastify.put('/', async (request, reply) => {
+		const {
+			given_name,
+			family_name,
+			email,
+			email_notifs,
+			push_notifs,
+		} = request.body;
+
+		const data = await UserService.updateUser(request.sessionUser.user_id, {
+			given_name,
+			family_name,
+			email,
+			email_notifs,
+			push_notifs,
+		});
+		
+        return {
+            success: true,
+			data,
+        }
+    });
 
     fastify.post('/push_sub', async (request, reply) => {
 		const subscription = request.body;

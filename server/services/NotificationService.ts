@@ -1,6 +1,7 @@
 import type { Account } from "delfi-core/models/Account";
 import webpush from 'web-push';
 import { prisma } from "../../prisma/client";
+import { EmailService } from "./EmailService";
 
 export const NotificationService = {
 
@@ -13,27 +14,28 @@ export const NotificationService = {
 		})
 	},
 
-	async pushToUser(userId: string, notification) {
+	async notifyUser(userId: string, notification) {
 		const user = await prisma.user.findFirst({
 			where: {
 				user_id: userId,
 			}
 		})
-		if (!user?.push_sub) {
-			return;
+		if (user?.email_notifs) {
+			await EmailService.sendEmail({
+				to: [{
+					name: user.given_name,
+					email: user.email,
+				}],
+				subject: notification.title,
+				text: notification.text || notification.title,
+			})
 		}
-		webpush.setVapidDetails(
-			process.env.VAPID_SUBJECT!,
-			process.env.VITE_VAPID_PUBLIC_KEY!,
-			process.env.VAPID_PRIVATE_KEY!
-		)
-		const res = await webpush.sendNotification(user.push_sub, JSON.stringify({
-			...notification
-		}));
-		console.log("PUSHED!!!!", res)
+		if (user?.push_notifs && user?.push_sub) {
+			await pushNotification(user?.push_sub, notification);
+		}
 	},
 
-	async pushToWorkspace(workspace_id: string, notification) {
+	async notifyWorkspace(workspace_id: string, notification) {
 		const users = await prisma.user.findMany({
 			where: {
 				Workspaces: {
@@ -44,6 +46,18 @@ export const NotificationService = {
 			}
 		})
 
-		await Promise.all(users.map(u => this.pushToUser(u.user_id, notification)));
+		await Promise.all(users.map(u => this.notifyUser(u.user_id, notification)));
 	}
 };
+
+async function pushNotification(subscription, notification) {
+		webpush.setVapidDetails(
+			process.env.VAPID_SUBJECT!,
+			process.env.VITE_VAPID_PUBLIC_KEY!,
+			process.env.VAPID_PRIVATE_KEY!
+		)
+		const res = await webpush.sendNotification(subscription, JSON.stringify({
+			...notification
+		}));
+		console.log(res);
+}
