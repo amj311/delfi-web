@@ -236,7 +236,7 @@ export const dollarsToNumber = (dollars) => {
 
 export const numberToDollars = (number) => {
 	if (!number) {
-		return 0;
+		return '0';
 	}
 	if (typeof number !== "number") {
 		throw new Error("number must be a number. Got " + number);

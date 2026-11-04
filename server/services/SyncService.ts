@@ -11,6 +11,7 @@ import { CategoryDao } from "server/data/CategoryDao";
 import { ddate, type DelfiDate } from "delfi-core/utils/dateUtils";
 import { peek } from "delfi-core/utils/miscUtils";
 import { NotificationService } from "./NotificationService";
+import { numberToDollars } from "./scraper/ScraperUtils";
 
 export type SyncedTransactionDetails = CreateTransaction & {
 	/** Incoming transaction may have default categories supplied by scrapers */
@@ -85,13 +86,8 @@ export class SyncService {
 		const newTransactions: Array<Transaction> = [];
 		// Update account details and sync new transactions
 		await Promise.all(accountSyncs.map(async result => {
-			const account = await AccountService.getAccountById(workspace_id, result.account_id);
 			if ('error' in result) {
-				await NotificationService.notifyWorkspace(workspace_id, { title: "Failed to sync account: " + account?.external_name })
-				return await AccountService.updateAccount(workspace_id, result.account_id, {
-					last_failed_sync: new Date(),
-					sync_error: result.error || 'Unknown error',
-				});
+				await this.recordAccountSyncFailure(workspace_id, result.account_id, result.error);
 			} else {
 				try {
 					// Hydrate data from sync
@@ -130,7 +126,7 @@ export class SyncService {
 				}
 				catch (e) {
 					console.log(e);
-					await NotificationService.notifyWorkspace(workspace_id, { title: "Failed to sync account: " + account?.external_name });
+					await this.recordAccountSyncFailure(workspace_id, result.account_id, e);
 				}
 			}
 		}));
@@ -143,9 +139,51 @@ export class SyncService {
 
 		// Notify users!
 		if (newTransactions.length) {
-			await NotificationService.notifyWorkspace(workspace_id, { title: `${newTransactions.length} new transactions synced!`})
+			const displayCap = 5;
+			const visibleTrans = newTransactions.slice(0,displayCap);
+			const remainder = Math.max(0, newTransactions.length - displayCap);
+			await NotificationService.notifyWorkspace(workspace_id, {
+				subject: `New transactions to review`,
+				textBody:
+`You have ${newTransactions.length} to review:
+
+${ visibleTrans.map(tx => [ddate(tx.date).format('MM/DD/YYYY'), tx.original_description.slice(0, 30).padEnd(30), numberToDollars(tx.amount).padStart(10)].join('   ')).join('\n') }
+
+${ remainder ? `... and ${remainder} more.` : ''} }`,
+			})
 		}
 		return newTransactions;
+	}
+
+
+	public static async recordAccountSyncFailure(workspace_id: string, account_id: string, error) {
+		const account = await AccountService.getAccountById(workspace_id, account_id);
+		const lastSuccess = account?.last_successful_sync;
+
+		const errorText = error?.message || error || 'Unknown error';
+
+		if (lastSuccess) {
+			// don't report every single failure
+			// some fail on fluke scrape timeouts and then succeed next time.
+			// consider detecting retry cases
+			const reportFailureDays = [1, 7];
+			const hoursSinceSuccess = Math.floor((Date.now() - lastSuccess.getTime()) / 3600000);
+			console.log("FAILED HOURS!", hoursSinceSuccess)
+			if (reportFailureDays.some(d => hoursSinceSuccess === d * 24)) {
+				await NotificationService.notifyWorkspace(workspace_id, {
+					subject: "Failed to sync account!",
+					textBody:
+`Sync has been failing for account ${account.external_name} for ${hoursSinceSuccess / 24} days./
+
+Latest cause: ${errorText}.`,
+				})
+			}
+		}
+
+		return await AccountService.updateAccount(workspace_id, account_id, {
+			last_failed_sync: new Date(),
+			sync_error: errorText,
+		});
 	}
 };
 
