@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { nextTick, ref } from 'vue';
 import DrawerModal from './utils/DrawerModal.vue';
 // import { useSettingsStore } from '@/stores/settings.store';
 import RadioButton from 'primevue/radiobutton';
@@ -34,6 +34,7 @@ async function open() {
 defineExpose({ open });
 
 async function save() {
+	await nextTick();
 	const { email_notifs, push_notifs, given_name, family_name } = userDraft.value;
 	try {
 		await request.put('/user', { email_notifs,push_notifs });
@@ -41,6 +42,10 @@ async function save() {
 			severity:'success',
 			title: 'Saved settings'
 		})
+		useUserStore().currentUser = {
+			...useUserStore().currentUser,
+			...userDraft.value,
+		}
 	}
 	catch (e) {
 		console.error(e);
@@ -58,7 +63,8 @@ async function changeEmail() {
 	try {
 		await AuthService.changeUserEmail(newEmail.value, password.value);
 		changingEmail.value = false;
-		userDraft.value = newEmail.value;
+		userDraft.value.email = newEmail.value;
+		useUserStore().currentUser.email = newEmail.value;
 		useToast().add({
 			severity:'success',
 			title: 'Changed email'
@@ -97,7 +103,7 @@ const changingEmail = ref(false);
 					<div class="flex align-items-center gap-2">
 						<label>Email</label>
 						<InputText
-							v-model="userDraft.email"
+							:value="userDraft.email"
 							disabled
 						/>
 						<Button text label="Change" @click="() => emailModal?.open()" />
@@ -111,16 +117,14 @@ const changingEmail = ref(false);
 					<div class="flex align-items-center gap-2">
 						<ToggleSwitch
 							input-id="email-notifs"
-							:modelValue="userDraft.email_notifs"
-							@click="save"
+							v-model="userDraft.email_notifs"
 						/>
 						<label for="email-notifs" class="">Email</label>
 					</div>
 					<div class="flex align-items-center gap-2">
 						<ToggleSwitch
 							input-id="push-notifs"
-							:modelValue="userDraft.email_notifs"
-							@click="save"
+							v-model="userDraft.push_notifs"
 						/>
 						<label for="push-notifs" class="">Mobile</label>
 					</div>
