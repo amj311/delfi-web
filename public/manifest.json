@@ -2,7 +2,7 @@
     "lang": "en-us",
     "name": "Delfi - Intelligent Finances",
     "short_name": "Delfi",
-    "start_url": "/",
+    "start_url": "./",
     "orientation": "any",
     "display": "standalone",
     "icons": [

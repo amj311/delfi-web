@@ -10,6 +10,7 @@ import { useToast } from './utils/Toast.vue';
 import request from '@/services/request.js';
 import InputText from 'primevue/inputtext';
 import { AuthService } from '@/services/authService.js';
+import { useAppStore } from '@/stores/app.store.js';
 
 const drawerModal = ref<InstanceType<typeof DrawerModal> | null>(null);
 const emailModal = ref<InstanceType<typeof DrawerModal> | null>(null);
@@ -37,7 +38,7 @@ async function save() {
 	await nextTick();
 	const { email_notifs, push_notifs, given_name, family_name } = userDraft.value;
 	try {
-		await request.put('/user', { email_notifs,push_notifs });
+		await request.put('/user', { email_notifs, push_notifs, family_name, given_name });
 		useToast().add({
 			severity:'success',
 			title: 'Saved settings'
@@ -80,6 +81,13 @@ async function changeEmail() {
 }
 
 const changingEmail = ref(false);
+
+function askForPush(e) {
+	if (e.target.checked) {
+		useAppStore().askNotificationPermission();
+		useAppStore().getPushSubscription();
+	};
+}
 </script>
 
 <template>
@@ -125,6 +133,7 @@ const changingEmail = ref(false);
 						<ToggleSwitch
 							input-id="push-notifs"
 							v-model="userDraft.push_notifs"
+							@change="askForPush"
 						/>
 						<label for="push-notifs" class="">Mobile</label>
 					</div>

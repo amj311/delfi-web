@@ -18,6 +18,10 @@ export const NotificationService = {
 				push_sub: subscription || null,
 			}
 		})
+
+		//test
+		// console.log("REGISTERED!!!!!")
+		// await this.notifyUser(userId, { subject: 'test', textBody: 'test'})
 	},
 
 	async notifyUser(userId: string, notification: Notification) {

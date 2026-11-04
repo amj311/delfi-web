@@ -87,7 +87,7 @@ export const useAppStore = defineStore('app', () => {
 		}
 	}
 
-	async function getSwSubscription() {
+	async function getPushSubscription() {
 		if (!swRegistration) {
 			swRegistration = await registerServiceWorker();
 		}
@@ -114,7 +114,7 @@ export const useAppStore = defineStore('app', () => {
 		canNotification,
 		hasNotificationPermission,
 		askNotificationPermission,
-		getPushSubscription: getSwSubscription,
+		getPushSubscription,
 	};
 })
 

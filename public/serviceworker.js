@@ -173,22 +173,24 @@ self.addEventListener('push', async function (event) {
 });
 
 self.addEventListener('notificationclick', async (event) => {
-	// const gameRoomId = event.notification.data.gameRoomId;
-	const appUrl = self.location.origin;
-
 	event.notification.close();
-	event.waitUntil(
-		(async () => {
-			const openTabs = await clients.matchAll({ type: 'window' });
-			const gameTab = openTabs.find((tab) => {
-				return tab.url === appUrl;
-			});
 
-			if (gameTab) {
-				gameTab.focus();
-			} else {
-				await clients.openWindow(appUrl);
-			}
-		})()
-	);
+	//For root applications: just change "'./'" to "'/'"
+    //Very important having the last forward slash on "new URL('./', location)..."
+    const rootUrl = new URL('./', location).href; 
+    event.notification.close();
+    event.waitUntil(
+        clients.matchAll().then(matchedClients =>
+        {
+            for (let client of matchedClients)
+            {
+                if (client.url.indexOf(rootUrl) >= 0)
+                {
+                    return client.focus();
+                }
+            }
+
+            return clients.openWindow(rootUrl).then(function (client) { client.focus(); });
+        })
+    );
 });
