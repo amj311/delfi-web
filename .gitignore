@@ -36,3 +36,5 @@ __snapshots__
 chrome-data
 
 videos/*
+
+login-failed-*

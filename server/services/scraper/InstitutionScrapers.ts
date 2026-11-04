@@ -166,7 +166,10 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 			const type = accountType.includes('credit') ? AccountType.credit : AccountType.depository;
 			const balanceNegator = type === AccountType.credit ? -1 : 1;
 
-			const current_balance = balanceNegator * dollarsToNumber(await getDetailRowAmount(accountTypeConfig.balance));
+			// credit balance shows "$25.00" for owed balance and "+ $25.00" for surplus balance
+			const stringDollar = await getDetailRowAmount(accountTypeConfig.balance);
+			const forcedPlus = stringDollar.startsWith('+');
+			const current_balance = (forcedPlus ? 1 : balanceNegator) * dollarsToNumber(stringDollar);
 
 			if (!current_balance && current_balance !== 0) {
 				await throwDebugError(page, "Could not get current balance!");
