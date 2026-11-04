@@ -211,7 +211,7 @@ async function archiveAccount() {
 </script>
 
 <template>
-	<div class="account-details-view">
+	<div class="account-details-view app-padding pt-2">
 		<div v-if="isLoading" class="loading">
 			<div class="loading-spinner"></div>
 			<p>Loading account information...</p>
