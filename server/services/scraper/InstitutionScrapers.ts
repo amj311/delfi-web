@@ -1,7 +1,7 @@
 import type { Page } from "playwright";
 import type { InstitutionScraper, ScrapedAccount, ScrapedTransaction } from "./ScraperService";
 import { AccountSubtype, AccountType, type AccountDetails, type Account } from "delfi-core/models/Account";
-import { DateRegex, dollarsToNumber, find, findInnerText, stringToDate } from "./ScraperUtils";
+import { DateRegex, dollarsToNumber, find, findInnerText, stringToDate, throwDebugError } from "./ScraperUtils";
 import { TransactionUtils } from "delfi-core/models/Transaction";
 import { peek, wait } from "delfi-core/utils/miscUtils";
 
@@ -166,11 +166,17 @@ export const InstitutionScrapers: Record<string, InstitutionScraper> = {
 			const type = accountType.includes('credit') ? AccountType.credit : AccountType.depository;
 			const balanceNegator = type === AccountType.credit ? -1 : 1;
 
+			const current_balance = balanceNegator * dollarsToNumber(await getDetailRowAmount(accountTypeConfig.balance));
+
+			if (!current_balance && current_balance !== 0) {
+				await throwDebugError(page, "Could not get current balance!");
+			}
+
 			return {
 				external_account_id,
 				mask: '',
 				external_name: name,
-				current_balance: balanceNegator * dollarsToNumber(await getDetailRowAmount(accountTypeConfig.balance)),
+				current_balance,
 				type,
 				subtype: accountType as any,
 				iso_currency_code: 'USD',

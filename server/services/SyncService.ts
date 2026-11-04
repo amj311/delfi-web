@@ -12,6 +12,7 @@ import { ddate, type DelfiDate } from "delfi-core/utils/dateUtils";
 import { peek } from "delfi-core/utils/miscUtils";
 import { NotificationService } from "./NotificationService";
 import { numberToDollars } from "./scraper/ScraperUtils";
+import { hasInjectionContext } from "vue";
 
 export type SyncedTransactionDetails = CreateTransaction & {
 	/** Incoming transaction may have default categories supplied by scrapers */
@@ -50,7 +51,7 @@ export class SyncService {
 		await this.syncWorkspaceAccounts(workspace_id, accounts.map(account => account.external_account_id));
 	}
 
-	public static async syncWorkspaceAccounts(workspace_id: string, ids?: string[]): Promise<void> {
+	public static async syncWorkspaceAccounts(workspace_id: string, ids?: string[]) {
 		console.log(`\n\nSyncing accounts for workspace: ${workspace_id}`);
 		const workspaceAccounts = (await AccountService.getAllAccounts(workspace_id)).filter(account => !ids || ids.includes(account.account_id));
 
@@ -58,7 +59,7 @@ export class SyncService {
 		const scraperAccounts = workspaceAccounts.filter(account => account.Institution?.scraper === 'scraper');
 		const scrapeResults = await ScraperService.scrapeWorkspaceAccounts(workspace_id, scraperAccounts);
 
-		await this.ingestAccountSyncs(workspace_id, scrapeResults);
+		return await this.ingestAccountSyncs(workspace_id, scrapeResults);
 	}
 
 	public static async syncAllWorkspacesAccounts(): Promise<void> {
@@ -83,11 +84,53 @@ export class SyncService {
 	 */
 	public static async ingestAccountSyncs(workspace_id: string, accountSyncs: Array<AccountSyncResult>) {
 		console.log("Processing incoming account syncs");
-		const newTransactions: Array<Transaction> = [];
+		const ingestionResults = {
+			failedAccounts: [] as Array<{
+				account_id: string,
+				errorText: string,
+			}>,
+			newTransactions: [] as Array<Transaction>,
+		}
+
+		async function recordAccountSyncFailure(workspace_id: string, account_id: string, error) {
+			const account = await AccountService.getAccountById(workspace_id, account_id);
+			const lastSuccess = account?.last_successful_sync;
+
+			const errorText = error?.message || error || 'Unknown error';
+
+			if (lastSuccess) {
+				// don't report every single failure
+				// some fail on fluke scrape timeouts and then succeed next time.
+				// consider detecting retry cases
+				const reportFailureDays = [1, 7];
+				const hoursSinceSuccess = Math.floor((Date.now() - lastSuccess.getTime()) / 3600000);
+				console.log("FAILED HOURS!", hoursSinceSuccess)
+				if (reportFailureDays.some(d => hoursSinceSuccess === d * 24)) {
+					await NotificationService.notifyWorkspace(workspace_id, {
+						subject: "Failed to sync account!",
+						textBody:
+	`Sync has been failing for account ${account.external_name} for ${hoursSinceSuccess / 24} days./
+
+	Latest cause: ${errorText}.`,
+					})
+				}
+			}
+
+			ingestionResults.failedAccounts.push({
+				account_id,
+				errorText,
+			})
+
+			await AccountService.updateAccount(workspace_id, account_id, {
+				last_failed_sync: new Date(),
+				sync_error: errorText,
+			});
+		}
+
 		// Update account details and sync new transactions
 		await Promise.all(accountSyncs.map(async result => {
 			if ('error' in result) {
-				await this.recordAccountSyncFailure(workspace_id, result.account_id, result.error);
+				await recordAccountSyncFailure(workspace_id, result.account_id, result.error);
 			} else {
 				try {
 					// Hydrate data from sync
@@ -110,7 +153,7 @@ export class SyncService {
 						};
 					}));
 					const results = await TransactionService.ingestNewTransactionsForAccount(workspace_id, result.account_id, transactionsWithCategories);
-					newTransactions.push(...results.upsertResults.filter(r => r.created).map(r => r.transaction));
+					ingestionResults.newTransactions.push(...results.upsertResults.filter(r => r.created).map(r => r.transaction));
 
 					await AccountService.updateAccount(workspace_id, result.account_id, {
 						current_balance: result.accountDetails.current_balance,
@@ -126,64 +169,33 @@ export class SyncService {
 				}
 				catch (e) {
 					console.log(e);
-					await this.recordAccountSyncFailure(workspace_id, result.account_id, e);
+					await recordAccountSyncFailure(workspace_id, result.account_id, e);
 				}
 			}
 		}));
 
 		// Once all accounts are synced, find transfer pairs for new transactions
-		await TransactionService.findAndLinkTransferPairs(workspace_id, newTransactions);
+		await TransactionService.findAndLinkTransferPairs(workspace_id, ingestionResults.newTransactions);
 
 		// await PlaidService.searchForPlaidTransactionData(workspace_id);
-		console.log("Finished processing account syncs! New transactions:", newTransactions.length);
+		console.log("Finished processing account syncs! New transactions:", ingestionResults.newTransactions.length);
 
 		// Notify users!
-		if (newTransactions.length) {
+		if (ingestionResults.newTransactions.length) {
 			const displayCap = 5;
-			const visibleTrans = newTransactions.slice(0,displayCap);
-			const remainder = Math.max(0, newTransactions.length - displayCap);
+			const visibleTrans = ingestionResults.newTransactions.slice(0,displayCap);
+			const remainder = Math.max(0, ingestionResults.newTransactions.length - displayCap);
 			await NotificationService.notifyWorkspace(workspace_id, {
 				subject: `New transactions to review`,
 				textBody:
-`You have ${newTransactions.length} to review:
+`You have ${ingestionResults.newTransactions.length} to review:
 
 ${ visibleTrans.map(tx => [ddate(tx.date).format('MM/DD/YYYY'), tx.original_description.slice(0, 30).padEnd(30), numberToDollars(tx.amount).padStart(10)].join('   ')).join('\n') }
 
 ${ remainder ? `... and ${remainder} more.` : ''} }`,
 			})
 		}
-		return newTransactions;
-	}
-
-
-	public static async recordAccountSyncFailure(workspace_id: string, account_id: string, error) {
-		const account = await AccountService.getAccountById(workspace_id, account_id);
-		const lastSuccess = account?.last_successful_sync;
-
-		const errorText = error?.message || error || 'Unknown error';
-
-		if (lastSuccess) {
-			// don't report every single failure
-			// some fail on fluke scrape timeouts and then succeed next time.
-			// consider detecting retry cases
-			const reportFailureDays = [1, 7];
-			const hoursSinceSuccess = Math.floor((Date.now() - lastSuccess.getTime()) / 3600000);
-			console.log("FAILED HOURS!", hoursSinceSuccess)
-			if (reportFailureDays.some(d => hoursSinceSuccess === d * 24)) {
-				await NotificationService.notifyWorkspace(workspace_id, {
-					subject: "Failed to sync account!",
-					textBody:
-`Sync has been failing for account ${account.external_name} for ${hoursSinceSuccess / 24} days./
-
-Latest cause: ${errorText}.`,
-				})
-			}
-		}
-
-		return await AccountService.updateAccount(workspace_id, account_id, {
-			last_failed_sync: new Date(),
-			sync_error: errorText,
-		});
+		return ingestionResults;
 	}
 };
 

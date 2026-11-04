@@ -84,7 +84,7 @@ export default (route, _, done) => {
 			}
 		}
 		console.log(`Received sync results for workspace ${workspace_id}:`, results);
-		const newTransactions = await SyncService.ingestAccountSyncs(workspace_id, results);
+		const { newTransactions } = await SyncService.ingestAccountSyncs(workspace_id, results);
 		return {
 			success: true,
 			data: {

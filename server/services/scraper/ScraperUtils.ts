@@ -96,21 +96,23 @@ export async function useBrowser<T>(operation: (usePage: UsePage) => Promise<T>)
 	// Provide this function to consumers to handle disposing pages
 	async function usePage(pageOperation: (page: Page) => Promise<any>) {
 		const newPage = await context.newPage();
-		try {
-			return await pageOperation(newPage);
-		}
-		catch (error) {
-			console.error('Error occurred while using page:', error);
-			throw error; // Re-throw to handle it in the main operation
-		}
-		finally {
+		return await debugErrorBoundary(newPage, async () => {
 			try {
-				await newPage.close();
+				return await pageOperation(newPage);
 			}
-			catch (e) {
-				console.error("Error while closing tab:", e)
+			catch (error) {
+				console.error('Error occurred while using page:', error);
+				throw error; // Re-throw to handle it in the main operation
 			}
-		}
+			finally {
+				try {
+					await newPage.close();
+				}
+				catch (e) {
+					console.error("Error while closing tab:", e)
+				}
+			}
+		})
 	}
 
 	try {
@@ -231,7 +233,8 @@ export const dollarsToNumber = (dollars) => {
 	if (typeof dollars !== "string") {
 		throw new Error("dollars must be a string. Got " + dollars);
 	}
-	return Number(dollars.replaceAll(/[$,]/g, ''));
+	// handle "+ $..." "-$..." "$-..." etc
+	return Number(dollars.replaceAll(/[^\d.\-+]/g, ''))
 }
 
 export const numberToDollars = (number) => {
@@ -479,4 +482,88 @@ export async function find(locator: Locator, selector, options: any = {}) {
 
 export async function findInnerText(locator: Locator, selector, options = {}) {
 	return (await (await find(locator, selector, options))?.innerText())?.trim();
+}
+
+export async function debugErrorBoundary<T>(page: Page, operation: () => Promise<T>) {
+	try {
+		return await operation();
+	}
+	catch (e: any) {
+		if (process.env.DELFI_ENV === 'production') {
+			throw e;
+		}
+
+		const errorText = e.message || e;
+
+		const action = await page.evaluate((errorText) => {
+			return new Promise<'continue' | 'throw'>(res => {
+				console.error("[DELFI_DEBUG]", errorText);
+				document.body.insertAdjacentHTML('beforeend', /* html */`
+					<delfi-debug-error>
+						<delfi-h1>Scrape error!</delfi-h1>
+						<delfi-p>${errorText}</delfi-p>
+						<delfi-buttons>
+							<delfi-button delfi-continue>Continue</delfi-button>
+							<delfi-button delfi-throw>Throw</delfi-button>
+						</delfi-buttons>
+					</delfi-debug-error>
+
+					<style>
+						delfi-debug-error {
+							font-size: 14px;
+
+							position: fixed;
+							top: 1em;
+							right: 1em;
+							background: #fff;
+							box-shadow: 0 0 5px #0002;
+							
+							padding: 1em;
+							display: flex;
+							flex-direction: column;
+							gap: 1em;
+							color: #000;
+						}
+
+						delfi-h1 {
+							font-size: 1.3em;
+							font-weight: bold;
+						}
+
+						delfi-buttons {
+							display: flex;
+							justify-content: end;
+							gap: 0.25em;
+						}
+
+						delfi-button {
+							text-transform: uppercase;
+							padding: 0.4em 0.6em;
+						}
+
+						delfi-button:hover {
+							background: #eee;
+						}
+
+						delfi-button[delfi-throw] {
+							color: red;
+						}
+					</style>
+				`)
+
+				document.querySelector('delfi-button[delfi-continue]')?.addEventListener('click', () => res('continue'));
+				document.querySelector('delfi-button[delfi-throw]')?.addEventListener('click', () => res('throw'));
+			});
+		}, errorText);
+
+		if (action === 'throw') {
+			throw e;
+		}
+	}
+}
+
+export async function throwDebugError(page, message: string) {
+	await debugErrorBoundary(page, async () => {
+		throw new Error(message);
+	})
 }
